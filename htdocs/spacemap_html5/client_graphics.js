@@ -1583,6 +1583,8 @@ function rebuildMinimapEntityRenderCache(miniScaleX, miniScaleY, nowMs) {
         if (e.kind === "box" && !isSpaceball) continue;
         if (typeof isEntityInvisibleOnMinimap === "function" && isEntityInvisibleOnMinimap(e)) continue;
         const item = minimapEntityRenderCache[writeIndex] || {};
+        item.id = e.id;
+        item.entityRef = e;
         item.localX = (e.x - MAP_MIN_X) * miniScaleX;
         item.localY = (e.y - MAP_MIN_Y) * miniScaleY;
         item.isSpaceball = isSpaceball;
@@ -1919,10 +1921,16 @@ function drawMiniMap() {
     }
     for (let i = 0; i < minimapEntityRenderCache.length; i++) {
         const item = minimapEntityRenderCache[i];
-        const mx = x + item.localX;
-        const my = mapY + item.localY;
-        if (item.fadedUntil && item.fadedUntil > nowMs) {
-            const a = Math.max(0, Math.min(1, (item.fadedUntil - nowMs) / 600));
+        const liveEntity = item.entityRef && entities[item.id] === item.entityRef ? item.entityRef : entities[item.id] || entities[String(item.id)];
+        if (!liveEntity || liveEntity.id === heroId || liveEntity.kind === "unknown") continue;
+        if (!Number.isFinite(liveEntity.x) || !Number.isFinite(liveEntity.y)) continue;
+        const liveLocalX = (liveEntity.x - MAP_MIN_X) * miniScaleX;
+        const liveLocalY = (liveEntity.y - MAP_MIN_Y) * miniScaleY;
+        const mx = x + liveLocalX;
+        const my = mapY + liveLocalY;
+        const fadedUntil = liveEntity.fadedUntil || item.fadedUntil || 0;
+        if (fadedUntil && fadedUntil > nowMs) {
+            const a = Math.max(0, Math.min(1, (fadedUntil - nowMs) / 600));
             ctx.save();
             ctx.globalAlpha = a;
             if (item.isSpaceball && spaceballReady) {
