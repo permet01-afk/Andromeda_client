@@ -1,0 +1,178 @@
+{
+  "abilityId": "solace",
+  "sourceSwf": "spacemap/graphics/shields/solace-effect.swf",
+  "symbol": "mc",
+  "fps": 24.0,
+  "frameCount": 27,
+  "loop": false,
+  "instantLoops": 3,
+  "framePattern": "frame_%03d.png",
+  "frameWidth": 200,
+  "frameHeight": 200,
+  "version": 1,
+  "atlasPath": "graphics/shields/solace-effect/shield_atlas_v1.png",
+  "frames": {
+    "graphics/shields/solace-effect/frame_001.png": {
+      "x": 1,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_002.png": {
+      "x": 203,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_003.png": {
+      "x": 405,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_004.png": {
+      "x": 607,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_005.png": {
+      "x": 809,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_006.png": {
+      "x": 1011,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_007.png": {
+      "x": 1,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_008.png": {
+      "x": 203,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_009.png": {
+      "x": 405,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_010.png": {
+      "x": 607,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_011.png": {
+      "x": 809,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_012.png": {
+      "x": 1011,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_013.png": {
+      "x": 1,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_014.png": {
+      "x": 203,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_015.png": {
+      "x": 405,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_016.png": {
+      "x": 607,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_017.png": {
+      "x": 809,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_018.png": {
+      "x": 1011,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_019.png": {
+      "x": 1,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_020.png": {
+      "x": 203,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_021.png": {
+      "x": 405,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_022.png": {
+      "x": 607,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_023.png": {
+      "x": 809,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_024.png": {
+      "x": 1011,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_025.png": {
+      "x": 1,
+      "y": 809,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_026.png": {
+      "x": 203,
+      "y": 809,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/solace-effect/frame_027.png": {
+      "x": 405,
+      "y": 809,
+      "w": 200,
+      "h": 200
+    }
+  }
+}

@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "atlasPath": "graphics/ships/66/ship_atlas_v1.png",
+  "frames": {
+    "graphics/ships/66/1.png": {
+      "x": 947,
+      "y": 644,
+      "w": 226,
+      "h": 164
+    },
+    "graphics/ships/66/2.png": {
+      "x": 1,
+      "y": 644,
+      "w": 240,
+      "h": 170
+    },
+    "graphics/ships/66/3.png": {
+      "x": 977,
+      "y": 465,
+      "w": 242,
+      "h": 170
+    },
+    "graphics/ships/66/4.png": {
+      "x": 481,
+      "y": 644,
+      "w": 236,
+      "h": 164
+    },
+    "graphics/ships/66/5.png": {
+      "x": 437,
+      "y": 978,
+      "w": 222,
+      "h": 152
+    },
+    "graphics/ships/66/6.png": {
+      "x": 865,
+      "y": 978,
+      "w": 204,
+      "h": 146
+    },
+    "graphics/ships/66/7.png": {
+      "x": 481,
+      "y": 815,
+      "w": 212,
+      "h": 154
+    },
+    "graphics/ships/66/8.png": {
+      "x": 694,
+      "y": 815,
+      "w": 212,
+      "h": 154
+    },
+    "graphics/ships/66/9.png": {
+      "x": 660,
+      "y": 978,
+      "w": 204,
+      "h": 150
+    },
+    "graphics/ships/66/10.png": {
+      "x": 907,
+      "y": 815,
+      "w": 210,
+      "h": 154
+    },
+    "graphics/ships/66/11.png": {
+      "x": 1,
+      "y": 978,
+      "w": 210,
+      "h": 154
+    },
+    "graphics/ships/66/12.png": {
+      "x": 1070,
+      "y": 978,
+      "w": 202,
+      "h": 146
+    },
+    "graphics/ships/66/13.png": {
+      "x": 212,
+      "y": 978,
+      "w": 224,
+      "h": 152
+    },
+    "graphics/ships/66/14.png": {
+      "x": 242,
+      "y": 644,
+      "w": 238,
+      "h": 164
+    },
+    "graphics/ships/66/15.png": {
+      "x": 489,
+      "y": 465,
+      "w": 244,
+      "h": 170
+    },
+    "graphics/ships/66/16.png": {
+      "x": 734,
+      "y": 465,
+      "w": 242,
+      "h": 170
+    },
+    "graphics/ships/66/17.png": {
+      "x": 718,
+      "y": 644,
+      "w": 228,
+      "h": 164
+    },
+    "graphics/ships/66/18.png": {
+      "x": 1,
+      "y": 815,
+      "w": 240,
+      "h": 162
+    },
+    "graphics/ships/66/19.png": {
+      "x": 1,
+      "y": 465,
+      "w": 244,
+      "h": 178
+    },
+    "graphics/ships/66/20.png": {
+      "x": 652,
+      "y": 236,
+      "w": 238,
+      "h": 200
+    },
+    "graphics/ships/66/21.png": {
+      "x": 204,
+      "y": 236,
+      "w": 224,
+      "h": 218
+    },
+    "graphics/ships/66/22.png": {
+      "x": 1,
+      "y": 236,
+      "w": 202,
+      "h": 228
+    },
+    "graphics/ships/66/23.png": {
+      "x": 427,
+      "y": 1,
+      "w": 210,
+      "h": 234
+    },
+    "graphics/ships/66/24.png": {
+      "x": 638,
+      "y": 1,
+      "w": 210,
+      "h": 234
+    },
+    "graphics/ships/66/25.png": {
+      "x": 849,
+      "y": 1,
+      "w": 204,
+      "h": 232
+    },
+    "graphics/ships/66/26.png": {
+      "x": 1,
+      "y": 1,
+      "w": 212,
+      "h": 234
+    },
+    "graphics/ships/66/27.png": {
+      "x": 214,
+      "y": 1,
+      "w": 212,
+      "h": 234
+    },
+    "graphics/ships/66/28.png": {
+      "x": 1054,
+      "y": 1,
+      "w": 204,
+      "h": 228
+    },
+    "graphics/ships/66/29.png": {
+      "x": 429,
+      "y": 236,
+      "w": 222,
+      "h": 218
+    },
+    "graphics/ships/66/30.png": {
+      "x": 891,
+      "y": 236,
+      "w": 236,
+      "h": 200
+    },
+    "graphics/ships/66/31.png": {
+      "x": 246,
+      "y": 465,
+      "w": 242,
+      "h": 178
+    },
+    "graphics/ships/66/32.png": {
+      "x": 242,
+      "y": 815,
+      "w": 238,
+      "h": 162
+    }
+  }
+}

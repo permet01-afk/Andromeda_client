@@ -1,0 +1,10 @@
+{
+  "sourceSwf": "spacemap/graphics/lasers/elaCloud1.swf",
+  "symbol": "mc",
+  "loop": true,
+  "instantLoops": 0,
+  "framePattern": "frame_%03d.png",
+  "frameCount": 10,
+  "fps": 12.0,
+  "extraction": "raw-definebitsjpeg3-sequence"
+}

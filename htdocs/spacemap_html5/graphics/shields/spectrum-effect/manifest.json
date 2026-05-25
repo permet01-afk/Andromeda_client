@@ -1,0 +1,226 @@
+{
+  "abilityId": "spectrum",
+  "sourceSwf": "spacemap/graphics/shields/spectrum-effect.swf",
+  "symbol": "mc",
+  "fps": 24.0,
+  "frameCount": 35,
+  "loop": true,
+  "instantLoops": 0,
+  "framePattern": "frame_%03d.png",
+  "frameWidth": 200,
+  "frameHeight": 200,
+  "version": 1,
+  "atlasPath": "graphics/shields/spectrum-effect/shield_atlas_v1.png",
+  "frames": {
+    "graphics/shields/spectrum-effect/frame_001.png": {
+      "x": 1,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_002.png": {
+      "x": 203,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_003.png": {
+      "x": 405,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_004.png": {
+      "x": 607,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_005.png": {
+      "x": 809,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_006.png": {
+      "x": 1011,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_007.png": {
+      "x": 1213,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_008.png": {
+      "x": 1415,
+      "y": 1,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_009.png": {
+      "x": 1,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_010.png": {
+      "x": 203,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_011.png": {
+      "x": 405,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_012.png": {
+      "x": 607,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_013.png": {
+      "x": 809,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_014.png": {
+      "x": 1011,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_015.png": {
+      "x": 1213,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_016.png": {
+      "x": 1415,
+      "y": 203,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_017.png": {
+      "x": 1,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_018.png": {
+      "x": 203,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_019.png": {
+      "x": 405,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_020.png": {
+      "x": 607,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_021.png": {
+      "x": 809,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_022.png": {
+      "x": 1011,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_023.png": {
+      "x": 1213,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_024.png": {
+      "x": 1415,
+      "y": 405,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_025.png": {
+      "x": 1,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_026.png": {
+      "x": 203,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_027.png": {
+      "x": 405,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_028.png": {
+      "x": 607,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_029.png": {
+      "x": 809,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_030.png": {
+      "x": 1011,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_031.png": {
+      "x": 1213,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_032.png": {
+      "x": 1415,
+      "y": 607,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_033.png": {
+      "x": 1,
+      "y": 809,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_034.png": {
+      "x": 203,
+      "y": 809,
+      "w": 200,
+      "h": 200
+    },
+    "graphics/shields/spectrum-effect/frame_035.png": {
+      "x": 405,
+      "y": 809,
+      "w": 200,
+      "h": 200
+    }
+  }
+}

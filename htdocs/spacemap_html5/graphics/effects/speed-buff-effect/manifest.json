@@ -1,0 +1,12 @@
+{
+  "abilityId": "lightning",
+  "sourceSwf": "spacemap/graphics/effects/speed-buff-effect.swf",
+  "symbol": "mc",
+  "fps": 24.0,
+  "frameCount": 3,
+  "loop": true,
+  "instantLoops": 0,
+  "framePattern": "frame_%03d.png",
+  "frameWidth": 125,
+  "frameHeight": 40
+}

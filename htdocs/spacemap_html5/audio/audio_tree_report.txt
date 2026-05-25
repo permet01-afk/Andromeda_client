@@ -1,0 +1,97 @@
+Audit audio - 09.02.2026 17:31:15,26 
+Root: "C:\xampp\htdocs\spacemap_html5\audio\" 
+ 
+====== TREE (dossiers + fichiers) ====== 
+Structure du dossier pour le volume Boot
+Le numéro de série du volume est 8491-6B39
+C:\XAMPP\HTDOCS\SPACEMAP_HTML5\AUDIO
+|   audio_tree_report.txt
+|   audit_audio_tree.bat
+|   
++---music
+|   \---track0
+|           track.mp3
+|           
+\---sounds
+    +---combatSounds
+    |       absorber0.mp3
+    |       airstrike.mp3
+    |       crystal0.mp3
+    |       devolarium0.mp3
+    |       laser0.mp3
+    |       laser1.mp3
+    |       laser2.mp3
+    |       laser3.mp3
+    |       laser5.mp3
+    |       laser6.mp3
+    |       laserA1.mp3
+    |       laserA2.mp3
+    |       laserB1.mp3
+    |       laserB2.mp3
+    |       lightningLoop.mp3
+    |       lightningStart.mp3
+    |       nettel0.mp3
+    |       protegit0.mp3
+    |       pulse.mp3
+    |       rocket0.mp3
+    |       
+    +---damageSounds
+    |       electric.mp3
+    |       emp.mp3
+    |       explosion0.mp3
+    |       explosion1.mp3
+    |       explosion2.mp3
+    |       firework.mp3
+    |       instashield0.mp3
+    |       rocketDamage0.mp3
+    |       shockwave2.mp3
+    |       smartbomb0.mp3
+    |       
+    +---introSounds
+    |       atmosphere0.mp3
+    |       atmosphere1.mp3
+    |       space.mp3
+    |       
+    +---miscSounds
+    |       beam0.mp3
+    |       engine0.mp3
+    |       repair.mp3
+    |       
+    +---pirateSounds
+    |       heal.mp3
+    |       invincibility.mp3
+    |       kamikaze.mp3
+    |       rage.mp3
+    |       sabshot.mp3
+    |       spawn.mp3
+    |       
+    +---portalSounds
+    |       portalDone.mp3
+    |       portalJump0.mp3
+    |       
+    +---tdmSounds
+    |       tdmIntro.mp3
+    |       tdm_counter.mp3
+    |       tdm_start.mp3
+    |       
+    +---uiSounds
+    |       new_achievement.mp3
+    |       noise.mp3
+    |       rocketLoad.mp3
+    |       rocketsLoaded.mp3
+    |       select0.mp3
+    |       select1.mp3
+    |       shieldSelected.mp3
+    |       signal_0.mp3
+    |       signal_1.mp3
+    |       signal_2.mp3
+    |       slotMove.mp3
+    |       
+    \---voiceSounds
+            voice_accessDenied.mp3
+            voice_activate.mp3
+            voice_ready.mp3
+            voice_standby.mp3
+            voice_warning.mp3
+            
+ 
