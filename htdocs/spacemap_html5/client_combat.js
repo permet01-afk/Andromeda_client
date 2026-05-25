@@ -2297,15 +2297,11 @@ function drawSabShots() {
     }
 }
 
-const __entitySnapshotFrameCache = Object.create(null);
-const __entitySnapshotFrameCacheKeys = [];
+const __entitySnapshotFrameCache = new Map();
 let __entitySnapshotFrameCacheActive = false;
 
 function clearEntitySnapshotFrameCache() {
-    for (let i = 0; i < __entitySnapshotFrameCacheKeys.length; i++) {
-        delete __entitySnapshotFrameCache[__entitySnapshotFrameCacheKeys[i]];
-    }
-    __entitySnapshotFrameCacheKeys.length = 0;
+    __entitySnapshotFrameCache.clear();
 }
 
 function beginEntitySnapshotFrame() {
@@ -2354,13 +2350,12 @@ function buildEntitySnapshotById(id) {
 function snapshotEntityById(id) {
     if (!__entitySnapshotFrameCacheActive) return buildEntitySnapshotById(id);
     const cacheKey = String(id);
-    if (Object.prototype.hasOwnProperty.call(__entitySnapshotFrameCache, cacheKey)) {
-        return __entitySnapshotFrameCache[cacheKey];
+    if (__entitySnapshotFrameCache.has(cacheKey)) {
+        return __entitySnapshotFrameCache.get(cacheKey);
     }
     const snapshot = buildEntitySnapshotById(id);
     if (snapshot) {
-        __entitySnapshotFrameCache[cacheKey] = snapshot;
-        __entitySnapshotFrameCacheKeys.push(cacheKey);
+        __entitySnapshotFrameCache.set(cacheKey, snapshot);
     }
     return snapshot;
 }
