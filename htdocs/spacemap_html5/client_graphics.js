@@ -177,6 +177,38 @@ const engineAnimationState = {};
 
 const engineSmokeState = {};
 
+const ENGINE_SMOKE_PARTICLE_POOL_LIMIT = 2048;
+
+const engineSmokeParticlePool = [];
+
+function acquireEngineSmokeParticle(ownerKey, x, y, createdAt) {
+    const particle = engineSmokeParticlePool.length > 0 ? engineSmokeParticlePool.pop() : {
+        x: 0,
+        y: 0,
+        createdAt: 0,
+        ownerKey: "",
+        active: false
+    };
+    particle.x = x;
+    particle.y = y;
+    particle.createdAt = createdAt;
+    particle.ownerKey = ownerKey || "";
+    particle.active = true;
+    return particle;
+}
+
+function releaseEngineSmokeParticle(particle) {
+    if (!particle) return;
+    particle.x = 0;
+    particle.y = 0;
+    particle.createdAt = 0;
+    particle.ownerKey = "";
+    particle.active = false;
+    if (engineSmokeParticlePool.length < ENGINE_SMOKE_PARTICLE_POOL_LIMIT) {
+        engineSmokeParticlePool.push(particle);
+    }
+}
+
 const ENGINE_VISUAL_SHIFT_SHIP_IDS = new Set([ 63, 64, 65, 66, 67 ]);
 
 function shouldApplyEngineVisualShift(shipId) {
@@ -1437,11 +1469,7 @@ function drawEngineSmokeTrail(key, thrusterX, thrusterY, angleRad, isMoving, scr
     };
     if (isMoving && now - state.lastSpawn >= (def.spawnInterval || 50)) {
         state.lastSpawn = now;
-        state.particles.push({
-            x: thrusterX,
-            y: thrusterY,
-            createdAt: now
-        });
+        state.particles.push(acquireEngineSmokeParticle(key, thrusterX, thrusterY, now));
     }
     let frames = def.frames && def.frames.length > 0 ? def.frames : def._frameNumbers;
     if (!frames || frames.length === 0) {
@@ -1456,7 +1484,10 @@ function drawEngineSmokeTrail(key, thrusterX, thrusterY, angleRad, isMoving, scr
     for (let i = 0; i < state.particles.length; i++) {
         const p = state.particles[i];
         const age = now - p.createdAt;
-        if (age > duration) continue;
+        if (age > duration) {
+            releaseEngineSmokeParticle(p);
+            continue;
+        }
         const lifeRatio = age / duration;
         const frameIdx = Math.min(frameCount - 1, Math.floor(lifeRatio * frameCount));
         const img = getEngineSmokeSpriteFrame(DEFAULT_ENGINE_SMOKE_KEY, frameIdx);
