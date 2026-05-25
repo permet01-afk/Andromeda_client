@@ -1618,6 +1618,8 @@ let currentRocketId = null;
 
 const RSB_AMMO_ID = 6;
 
+const SAB_AMMO_ID = 5;
+
 let SAB_SHOT_DURATION_MS = 1e3;
 
 let setting_show_drones = true;
@@ -7122,6 +7124,10 @@ function updateLocalAmmoSelection(ammoId) {
     }
     if (ammoId != null && ammoId !== RSB_AMMO_ID) {
         primaryAmmoId = ammoId;
+    }
+    const nextAmmoId = Number(ammoId) || 0;
+    if (nextAmmoId !== Number(SAB_AMMO_ID) && typeof clearSabLaserVisualJobsForLocalHero === "function") {
+        clearSabLaserVisualJobsForLocalHero();
     }
     if (actionDrawerCategory === "laser") {
         renderActionDrawerItems();

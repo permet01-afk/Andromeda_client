@@ -556,6 +556,9 @@ function sendLaserStop(targetId, force = false, keepIntent = false) {
     if (window.FLASH_PARITY_DEBUG) {
         console.log("[WS] Sending LASER_STOP →", packet);
     }
+    if (typeof clearSabLaserVisualJobsForLocalHero === "function") {
+        clearSabLaserVisualJobsForLocalHero();
+    }
     if (currentLaserTargetId === targetId) currentLaserTargetId = null;
     if (!keepIntent && attackIntentTargetId === targetId) attackIntentTargetId = null;
     if (!keepIntent && confirmedAttackTargetId === targetId) {
