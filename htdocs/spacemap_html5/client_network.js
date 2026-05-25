@@ -2617,6 +2617,18 @@ function mapDronePosition(droneCount, droneIndex) {
     return DRONE_POSITION_DOWN;
 }
 
+function createDroneAnimState() {
+    return {
+        currentRotationDeg: NaN,
+        startRotationDeg: NaN,
+        targetRotationDeg: NaN,
+        startTimeMs: NaN,
+        lastBaseRotationDeg: NaN,
+        lastRetargetMs: 0,
+        desiredBaseRotationDeg: NaN
+    };
+}
+
 function parseDrones(droneStr) {
     const emptyResult = {
         groupCount: 0,
@@ -2661,7 +2673,8 @@ function parseDrones(droneStr) {
         if (drones.length) {
             groups.push({
                 position: mapGroupPosition(groupCount, i),
-                drones: drones
+                drones: drones,
+                _anim: createDroneAnimState()
             });
         }
     }
@@ -2685,6 +2698,8 @@ function transferDroneAnimState(prevConnector, nextConnector) {
         const old = prevByPos[g.position];
         if (old && old._anim) {
             g._anim = old._anim;
+        } else if (!g._anim) {
+            g._anim = createDroneAnimState();
         }
     }
 }

@@ -3310,6 +3310,30 @@ const havokDroneFrameImages = new Array(DRONE_DIRECTION_FRAME_COUNT);
 
 const havokDroneFrameStatus = new Array(DRONE_DIRECTION_FRAME_COUNT).fill("idle");
 
+const droneSpriteFrameDefCache = {
+    iris: new Array(DRONE_DIRECTION_FRAME_COUNT),
+    flax: new Array(DRONE_DIRECTION_FRAME_COUNT),
+    havok: new Array(DRONE_DIRECTION_FRAME_COUNT)
+};
+
+const pendingDroneSpriteFrameDefs = {
+    iris: {
+        pendingAtlas: true,
+        width: DRONES_ATLAS_ROWS.iris.frameWidth,
+        height: DRONES_ATLAS_ROWS.iris.frameHeight
+    },
+    flax: {
+        pendingAtlas: true,
+        width: DRONES_ATLAS_ROWS.flax.frameWidth,
+        height: DRONES_ATLAS_ROWS.flax.frameHeight
+    },
+    havok: {
+        pendingAtlas: true,
+        width: HAVOK_DRONE_FRAME_WIDTH,
+        height: HAVOK_DRONE_FRAME_HEIGHT
+    }
+};
+
 function markHavokDroneFrameReadyIfDecoded(idx, img) {
     if (img && img.complete && img.width > 0 && img.height > 0) {
         havokDroneFrameStatus[idx] = "ready";
@@ -3347,17 +3371,17 @@ function getHavokDroneSpriteFrame(directionIndex) {
     const status = havokDroneFrameStatus[frame.idx];
     if (status === "error") return null;
     if (status !== "ready") {
-        return {
-            pendingAtlas: true,
-            width: HAVOK_DRONE_FRAME_WIDTH,
-            height: HAVOK_DRONE_FRAME_HEIGHT
-        };
+        return pendingDroneSpriteFrameDefs.havok;
     }
-    return {
+    const cached = droneSpriteFrameDefCache.havok[frame.idx];
+    if (cached) return cached;
+    const frameDef = {
         img: frame.img,
         width: HAVOK_DRONE_FRAME_WIDTH,
         height: HAVOK_DRONE_FRAME_HEIGHT
     };
+    droneSpriteFrameDefCache.havok[frame.idx] = frameDef;
+    return frameDef;
 }
 
 function markDronesAtlasReadyIfDecoded(img) {
@@ -3400,13 +3424,11 @@ function getDroneSpriteFrame(kind, directionIndex) {
     const atlas = getDronesAtlasImage();
     if (!atlas) return null;
     if (dronesAtlasStatus !== "ready") {
-        return dronesAtlasStatus === "error" ? null : {
-            pendingAtlas: true,
-            width: row.frameWidth,
-            height: row.frameHeight
-        };
+        return dronesAtlasStatus === "error" ? null : pendingDroneSpriteFrameDefs[rowKey];
     }
     const idx = (directionIndex % row.frameCount + row.frameCount) % row.frameCount;
+    const cached = droneSpriteFrameDefCache[rowKey][idx];
+    if (cached) return cached;
     const sx = idx * DRONES_ATLAS_CELL_WIDTH + DRONES_ATLAS_PADDING;
     const sy = row.atlasRow * DRONES_ATLAS_CELL_HEIGHT + DRONES_ATLAS_PADDING;
     const sw = row.frameWidth;
@@ -3415,7 +3437,7 @@ function getDroneSpriteFrame(kind, directionIndex) {
         dronesAtlasStatus = "error";
         return null;
     }
-    return {
+    const frameDef = {
         atlas: atlas,
         sx: sx,
         sy: sy,
@@ -3424,6 +3446,8 @@ function getDroneSpriteFrame(kind, directionIndex) {
         width: row.frameWidth,
         height: row.frameHeight
     };
+    droneSpriteFrameDefCache[rowKey][idx] = frameDef;
+    return frameDef;
 }
 
 function pickDroneKind(drone) {
