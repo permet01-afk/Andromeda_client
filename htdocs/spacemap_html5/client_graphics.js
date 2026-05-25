@@ -1,13 +1,16 @@
-function getStarfieldAnchor(cameraXValue, cameraYValue) {
+function getStarfieldAnchor(cameraXValue, cameraYValue, out = null) {
     const camX = typeof cameraXValue === "number" ? cameraXValue : 0;
     const camY = typeof cameraYValue === "number" ? cameraYValue : 0;
     const halfW = canvas ? canvas.width / 2 : 0;
     const halfH = canvas ? canvas.height / 2 : 0;
     const scale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
-    return {
-        x: halfW - camX * scale,
-        y: halfH - camY * scale
+    const anchor = out || {
+        x: 0,
+        y: 0
     };
+    anchor.x = halfW - camX * scale;
+    anchor.y = halfH - camY * scale;
+    return anchor;
 }
 
 function ensureStarfieldInitialized() {
@@ -35,12 +38,12 @@ function ensureStarfieldInitialized() {
         lastTick: performance.now(),
         timeAccumulator: 0
     };
-    lastStarfieldAnchor = getStarfieldAnchor(cameraX, cameraY);
+    getStarfieldAnchor(cameraX, cameraY, lastStarfieldAnchor);
 }
 
 function resetStarfieldState() {
     starfieldState = null;
-    lastStarfieldAnchor = getStarfieldAnchor(cameraX, cameraY);
+    getStarfieldAnchor(cameraX, cameraY, lastStarfieldAnchor);
     ensureStarfieldInitialized();
 }
 
@@ -62,7 +65,11 @@ function updateStarfield(cameraXValue, cameraYValue) {
     if (!starfieldEnabled) return;
     ensureStarfieldInitialized();
     if (!starfieldState || !starfieldState.stars.length) return;
-    const targetAnchor = getStarfieldAnchor(cameraXValue, cameraYValue);
+    const targetAnchor = updateStarfield._targetAnchor || (updateStarfield._targetAnchor = {
+        x: 0,
+        y: 0
+    });
+    getStarfieldAnchor(cameraXValue, cameraYValue, targetAnchor);
     const deltaX = targetAnchor.x - lastStarfieldAnchor.x;
     const deltaY = targetAnchor.y - lastStarfieldAnchor.y;
     let moveX = deltaX || 0;
@@ -77,16 +84,19 @@ function updateStarfield(cameraXValue, cameraYValue) {
     const tickDuration = 1e3 / STARFIELD_FPS;
     starfieldState.timeAccumulator += Math.max(0, now - (starfieldState.lastTick || now));
     while (starfieldState.timeAccumulator >= tickDuration) {
-        starfieldState.stars.forEach(star => {
+        const stars = starfieldState.stars;
+        for (let i = 0; i < stars.length; i++) {
+            const star = stars[i];
             const nextX = star.x + starfieldState.velocityX * star.speed;
             const nextY = star.y + starfieldState.velocityY * star.speed;
             star.x = nextX < 0 ? nextX + starfieldState.width : nextX > starfieldState.width ? nextX - starfieldState.width : nextX;
             star.y = nextY < 0 ? nextY + starfieldState.height : nextY > starfieldState.height ? nextY - starfieldState.height : nextY;
-        });
+        }
         starfieldState.timeAccumulator -= tickDuration;
     }
     starfieldState.lastTick = now;
-    lastStarfieldAnchor = targetAnchor;
+    lastStarfieldAnchor.x = targetAnchor.x;
+    lastStarfieldAnchor.y = targetAnchor.y;
 }
 
 function drawStarfield() {
@@ -95,11 +105,13 @@ function drawStarfield() {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalCompositeOperation = "lighter";
     ctx.fillStyle = `#${(starfieldColor >>> 0).toString(16).padStart(6, "0")}`;
-    starfieldState.stars.forEach(star => {
+    const stars = starfieldState.stars;
+    for (let i = 0; i < stars.length; i++) {
+        const star = stars[i];
         const x = Math.round(star.x);
         const y = Math.round(star.y);
         ctx.fillRect(x, y, 1, 1);
-    });
+    }
     ctx.restore();
 }
 
@@ -133,24 +145,24 @@ function drawMapBackground() {
     updateStarfield(cameraX, cameraY);
     if (backgroundLayersEnabled && currentBackgroundLayers && currentBackgroundLayers.length) {
         const scale = 1;
-        currentBackgroundLayers.forEach(layer => {
+        for (let i = 0; i < currentBackgroundLayers.length; i++) {
+            const layer = currentBackgroundLayers[i];
             const bg = layer.image;
-            if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) return;
+            if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) continue;
             const parallax = layer.parallax || DEFAULT_BACKGROUND_PARALLAX;
             const drawWidth = bg.width * scale;
             const drawHeight = bg.height * scale;
-            if (drawWidth < 1 || drawHeight < 1) return;
-            const offsets = layer.offsets || {
-                x: layer.shiftX || 0,
-                y: layer.shiftY || 0
-            };
-            const screenX = LOGICAL_WIDTH / 2 - cameraX / parallax * scale + offsets.x * scale;
-            const screenY = LOGICAL_HEIGHT / 2 - cameraY / parallax * scale + offsets.y * scale;
+            if (drawWidth < 1 || drawHeight < 1) continue;
+            const offsets = layer.offsets;
+            const offsetX = offsets ? offsets.x || 0 : layer.shiftX || 0;
+            const offsetY = offsets ? offsets.y || 0 : layer.shiftY || 0;
+            const screenX = LOGICAL_WIDTH / 2 - cameraX / parallax * scale + offsetX * scale;
+            const screenY = LOGICAL_HEIGHT / 2 - cameraY / parallax * scale + offsetY * scale;
             const previousSmoothing = ctx.imageSmoothingEnabled;
             ctx.imageSmoothingEnabled = false;
             ctx.drawImage(bg, screenX, screenY, drawWidth, drawHeight);
             ctx.imageSmoothingEnabled = previousSmoothing;
-        });
+        }
     }
     drawStarfield();
 }
@@ -560,18 +572,18 @@ function startCollectableBoxBeam(worldX, worldY, durationMs = FLASH_BOX_BEAM_DEF
 
 function drawActiveCollectableBoxBeams(now) {
     if (!activeCollectableBoxBeams.length) return;
-    for (let i = activeCollectableBoxBeams.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < activeCollectableBoxBeams.length; i++) {
         const beam = activeCollectableBoxBeams[i];
         if (!beam) {
-            activeCollectableBoxBeams.splice(i, 1);
             continue;
         }
         const durationMs = beam.durationMs || FLASH_BOX_BEAM_DEFAULT_DURATION_MS;
         const elapsed = now - beam.startedAt;
         if (elapsed >= durationMs) {
-            activeCollectableBoxBeams.splice(i, 1);
             continue;
         }
+        activeCollectableBoxBeams[keepCount++] = beam;
         const progress = durationMs > 0 ? Math.max(0, Math.min(.999999, elapsed / durationMs)) : 0;
         const frameIndex = Math.min(FLASH_BOX_BEAM_FRAME_COUNT - 1, Math.floor(progress * FLASH_BOX_BEAM_FRAME_COUNT));
         const img = getFlashBoxBeamFrame(frameIndex);
@@ -582,20 +594,23 @@ function drawActiveCollectableBoxBeams(now) {
         const screenY = mapToScreenY(beam.y);
         ctx.drawImage(img, screenX + FLASH_BOX_BEAM_OFFSET_X, screenY + FLASH_BOX_BEAM_OFFSET_Y);
     }
+    activeCollectableBoxBeams.length = keepCount;
 }
 
 function clearCollectableFadeOut(identifier) {
     if (identifier == null || !activeCollectableFadeOuts.length) return;
-    for (let i = activeCollectableFadeOuts.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < activeCollectableFadeOuts.length; i++) {
         const fade = activeCollectableFadeOuts[i];
         if (!fade) {
-            activeCollectableFadeOuts.splice(i, 1);
             continue;
         }
         if (fade.id == identifier || fade.serverId == identifier) {
-            activeCollectableFadeOuts.splice(i, 1);
+            continue;
         }
+        activeCollectableFadeOuts[keepCount++] = fade;
     }
+    activeCollectableFadeOuts.length = keepCount;
 }
 
 function startCollectableFadeOut(entity, durationMs = FLASH_COLLECTABLE_REMOVE_FADE_MS) {
@@ -685,19 +700,20 @@ function drawCollectableFadeOutEntry(fade, now) {
 
 function drawActiveCollectableFadeOuts(now) {
     if (!activeCollectableFadeOuts.length) return;
-    for (let i = activeCollectableFadeOuts.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < activeCollectableFadeOuts.length; i++) {
         const fade = activeCollectableFadeOuts[i];
         if (!fade) {
-            activeCollectableFadeOuts.splice(i, 1);
             continue;
         }
         const durationMs = fade.durationMs || FLASH_COLLECTABLE_REMOVE_FADE_MS;
         if (now - fade.startedAt >= durationMs) {
-            activeCollectableFadeOuts.splice(i, 1);
             continue;
         }
+        activeCollectableFadeOuts[keepCount++] = fade;
         drawCollectableFadeOutEntry(fade, now);
     }
+    activeCollectableFadeOuts.length = keepCount;
 }
 
 function markRepairRobotAtlasReadyIfDecoded(img) {
@@ -1579,6 +1595,223 @@ function rebuildMinimapEntityRenderCache(miniScaleX, miniScaleY, nowMs) {
     minimapEntityRenderCacheLastUpdate = nowMs;
 }
 
+function drawMinimapPixel(mx, my, color, left, top) {
+    const px = Math.round(mx);
+    const py = Math.round(my);
+    const right = left + MINIMAP_WIDTH;
+    const bottom = top + MINIMAP_HEIGHT;
+    const pixelSize = 3;
+    const pixelHalf = Math.floor(pixelSize / 2);
+    ctx.fillStyle = color;
+    if (px > left + 2 && py > top + 2 && px < right - 4 && py < bottom - 4) {
+        ctx.fillRect(px - pixelHalf, py - pixelHalf, pixelSize, pixelSize);
+        return;
+    }
+    if (px <= left + 1) {
+        if (py <= top + 2) {
+            ctx.fillRect(left + 3, top + 3, 1, 1);
+            ctx.fillRect(left + 4, top + 4, 1, 1);
+            ctx.fillRect(left + 4, top + 5, 1, 1);
+            ctx.fillRect(left + 5, top + 4, 1, 1);
+        } else if (py >= bottom - 4) {
+            ctx.fillRect(left + 3, bottom - 5, 1, 1);
+            ctx.fillRect(left + 4, bottom - 6, 1, 1);
+            ctx.fillRect(left + 4, bottom - 7, 1, 1);
+            ctx.fillRect(left + 5, bottom - 6, 1, 1);
+        } else {
+            ctx.fillRect(left + 2, py, 1, 1);
+            ctx.fillRect(left + 3, py, 1, 1);
+            ctx.fillRect(left + 3, py + 1, 1, 1);
+            ctx.fillRect(left + 3, py - 1, 1, 1);
+            ctx.fillRect(left + 4, py + 1, 1, 1);
+            ctx.fillRect(left + 4, py - 1, 1, 1);
+        }
+        return;
+    }
+    if (px >= right - 4) {
+        if (py <= top + 1) {
+            ctx.fillRect(right - 3, top + 2, 1, 1);
+            ctx.fillRect(right - 4, top + 3, 1, 1);
+            ctx.fillRect(right - 4, top + 4, 1, 1);
+            ctx.fillRect(right - 5, top + 3, 1, 1);
+        } else if (py >= bottom - 4) {
+            ctx.fillRect(right - 3, bottom - 3, 1, 1);
+            ctx.fillRect(right - 4, bottom - 4, 1, 1);
+            ctx.fillRect(right - 4, bottom - 5, 1, 1);
+            ctx.fillRect(right - 5, bottom - 4, 1, 1);
+        } else {
+            ctx.fillRect(right - 3, py, 1, 1);
+            ctx.fillRect(right - 4, py, 1, 1);
+            ctx.fillRect(right - 4, py + 1, 1, 1);
+            ctx.fillRect(right - 4, py - 1, 1, 1);
+            ctx.fillRect(right - 5, py + 1, 1, 1);
+            ctx.fillRect(right - 5, py - 1, 1, 1);
+        }
+        return;
+    }
+    if (py <= top + 2) {
+        ctx.fillRect(px, top + 2, 1, 1);
+        ctx.fillRect(px, top + 3, 1, 1);
+        ctx.fillRect(px + 1, top + 3, 1, 1);
+        ctx.fillRect(px - 1, top + 3, 1, 1);
+        ctx.fillRect(px + 1, top + 4, 1, 1);
+        ctx.fillRect(px - 1, top + 4, 1, 1);
+        return;
+    }
+    if (py >= bottom - 4) {
+        ctx.fillRect(px, bottom - 3, 1, 1);
+        ctx.fillRect(px, bottom - 4, 1, 1);
+        ctx.fillRect(px + 1, bottom - 4, 1, 1);
+        ctx.fillRect(px - 1, bottom - 4, 1, 1);
+        ctx.fillRect(px + 1, bottom - 5, 1, 1);
+        ctx.fillRect(px - 1, bottom - 5, 1, 1);
+    }
+}
+
+function getStationMinimapIcon(station, scaleFactor, mapScale) {
+    const type = station && (station.type || station.stationType) ? station.type || station.stationType : "";
+    const key = `${type}_${scaleFactor}_${mapScale}`;
+    if (minimapStationIconCache[key]) {
+        return minimapStationIconCache[key];
+    }
+    const baseImg = stationImages[type];
+    if (!baseImg || !baseImg.complete || baseImg.width <= 0) {
+        return null;
+    }
+    const flashStationMeta = typeof getFlashStationPatternMeta === "function" ? getFlashStationPatternMeta(station) : null;
+    const clipW = flashStationMeta && flashStationMeta.width ? flashStationMeta.width : baseImg.width;
+    const clipH = flashStationMeta && flashStationMeta.height ? flashStationMeta.height : baseImg.height;
+    const iconParam = scaleFactor * mapScale + 20;
+    const iconW = Math.max(1, Math.floor(clipW / iconParam));
+    const iconH = Math.max(1, Math.floor(clipH / iconParam));
+    const iconCanvas = document.createElement("canvas");
+    iconCanvas.width = iconW;
+    iconCanvas.height = iconH;
+    const iconCtx = iconCanvas.getContext("2d");
+    if (!iconCtx) {
+        return null;
+    }
+    const scaleSize = 1 / (Math.max(1, scaleFactor) * 10);
+    iconCtx.setTransform(scaleSize, 0, 0, scaleSize, clipW / 2 * scaleSize, clipH / 2 * scaleSize);
+    iconCtx.drawImage(baseImg, -clipW / 2, -clipH / 2);
+    const result = {
+        image: iconCanvas,
+        clipW: clipW,
+        clipH: clipH
+    };
+    minimapStationIconCache[key] = result;
+    return result;
+}
+
+function formatMinimapMapId(mapId) {
+    switch (mapId) {
+      case 1:
+        return "1-1";
+
+      case 2:
+        return "1-2";
+
+      case 3:
+        return "1-3";
+
+      case 4:
+        return "1-4";
+
+      case 5:
+        return "2-1";
+
+      case 6:
+        return "2-2";
+
+      case 7:
+        return "2-3";
+
+      case 8:
+        return "2-4";
+
+      case 9:
+        return "3-1";
+
+      case 10:
+        return "3-2";
+
+      case 11:
+        return "3-3";
+
+      case 12:
+        return "3-4";
+
+      case 13:
+        return "4-1";
+
+      case 14:
+        return "4-2";
+
+      case 15:
+        return "4-3";
+
+      case 16:
+        return "4-4";
+
+      case 17:
+        return "1-5";
+
+      case 18:
+        return "1-6";
+
+      case 19:
+        return "1-7";
+
+      case 20:
+        return "1-8";
+
+      case 21:
+        return "2-5";
+
+      case 22:
+        return "2-6";
+
+      case 23:
+        return "2-7";
+
+      case 24:
+        return "2-8";
+
+      case 25:
+        return "3-5";
+
+      case 26:
+        return "3-6";
+
+      case 27:
+        return "3-7";
+
+      case 28:
+        return "3-8";
+
+      case 51:
+        return "GGA";
+
+      case 52:
+        return "GGB";
+
+      case 53:
+        return "GGG";
+
+      case 55:
+        return "GGD";
+
+      case 80:
+        return "Surv";
+
+      case 81:
+        return "Inva";
+
+      default:
+        return "1-1";
+    }
+}
+
 function drawMiniMap() {
     const layout = typeof getMinimapLayout === "function" ? getMinimapLayout() : null;
     if (!layout) {
@@ -1622,85 +1855,6 @@ function drawMiniMap() {
     minimapHitboxes.zoomOut = layout.zoomOutHitbox || null;
     const miniScaleX = MINIMAP_WIDTH / MAP_WIDTH;
     const miniScaleY = MINIMAP_HEIGHT / MAP_HEIGHT;
-    const toMiniX = wx => x + (wx - MAP_MIN_X) * miniScaleX;
-    const toMiniY = wy => mapY + (wy - MAP_MIN_Y) * miniScaleY;
-    const drawMiniPixel = (mx, my, color) => {
-        const px = Math.round(mx);
-        const py = Math.round(my);
-        const left = x;
-        const top = mapY;
-        const right = x + MINIMAP_WIDTH;
-        const bottom = mapY + MINIMAP_HEIGHT;
-        const pixelSize = 3;
-        const pixelHalf = Math.floor(pixelSize / 2);
-        const put = (ix, iy) => {
-            ctx.fillRect(ix, iy, 1, 1);
-        };
-        ctx.fillStyle = color;
-        if (px > left + 2 && py > top + 2 && px < right - 4 && py < bottom - 4) {
-            ctx.fillRect(px - pixelHalf, py - pixelHalf, pixelSize, pixelSize);
-            return;
-        }
-        if (px <= left + 1) {
-            if (py <= top + 2) {
-                put(left + 3, top + 3);
-                put(left + 4, top + 4);
-                put(left + 4, top + 5);
-                put(left + 5, top + 4);
-            } else if (py >= bottom - 4) {
-                put(left + 3, bottom - 5);
-                put(left + 4, bottom - 6);
-                put(left + 4, bottom - 7);
-                put(left + 5, bottom - 6);
-            } else {
-                put(left + 2, py);
-                put(left + 3, py);
-                put(left + 3, py + 1);
-                put(left + 3, py - 1);
-                put(left + 4, py + 1);
-                put(left + 4, py - 1);
-            }
-            return;
-        }
-        if (px >= right - 4) {
-            if (py <= top + 1) {
-                put(right - 3, top + 2);
-                put(right - 4, top + 3);
-                put(right - 4, top + 4);
-                put(right - 5, top + 3);
-            } else if (py >= bottom - 4) {
-                put(right - 3, bottom - 3);
-                put(right - 4, bottom - 4);
-                put(right - 4, bottom - 5);
-                put(right - 5, bottom - 4);
-            } else {
-                put(right - 3, py);
-                put(right - 4, py);
-                put(right - 4, py + 1);
-                put(right - 4, py - 1);
-                put(right - 5, py + 1);
-                put(right - 5, py - 1);
-            }
-            return;
-        }
-        if (py <= top + 2) {
-            put(px, top + 2);
-            put(px, top + 3);
-            put(px + 1, top + 3);
-            put(px - 1, top + 3);
-            put(px + 1, top + 4);
-            put(px - 1, top + 4);
-            return;
-        }
-        if (py >= bottom - 4) {
-            put(px, bottom - 3);
-            put(px, bottom - 4);
-            put(px + 1, bottom - 4);
-            put(px - 1, bottom - 4);
-            put(px + 1, bottom - 5);
-            put(px - 1, bottom - 5);
-        }
-    };
     const nowMs = performance.now();
     let heroLocalX = Math.floor((shipX - MAP_MIN_X) * miniScaleX);
     let heroLocalY = Math.floor((shipY - MAP_MIN_Y) * miniScaleY);
@@ -1720,8 +1874,8 @@ function drawMiniMap() {
             const p = portals[pid];
             if (!p) continue;
             if (p.visibleOnMiniMap === false) continue;
-            const mx = toMiniX(p.x);
-            const my = toMiniY(p.y);
+            const mx = x + (p.x - MAP_MIN_X) * miniScaleX;
+            const my = mapY + (p.y - MAP_MIN_Y) * miniScaleY;
             if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= mapY && my <= mapY + MINIMAP_HEIGHT) {
                 ctx.drawImage(portalIcon, mx - portalIcon.width / 2, my - portalIcon.height / 2, portalIcon.width, portalIcon.height);
             }
@@ -1729,40 +1883,6 @@ function drawMiniMap() {
     }
     const scaleFactor = typeof minimapScaleFactor === "number" && Number.isFinite(minimapScaleFactor) ? minimapScaleFactor : 1;
     const mapScale = typeof mapScaleFactor === "number" && Number.isFinite(mapScaleFactor) && mapScaleFactor > 0 ? mapScaleFactor : 1;
-    function getStationMinimapIcon(station, scaleFactor, mapScale) {
-        const type = station && (station.type || station.stationType) ? station.type || station.stationType : "";
-        const key = `${type}_${scaleFactor}_${mapScale}`;
-        if (minimapStationIconCache[key]) {
-            return minimapStationIconCache[key];
-        }
-        const baseImg = stationImages[type];
-        if (!baseImg || !baseImg.complete || baseImg.width <= 0) {
-            return null;
-        }
-        const flashStationMeta = typeof getFlashStationPatternMeta === "function" ? getFlashStationPatternMeta(station) : null;
-        const clipW = flashStationMeta && flashStationMeta.width ? flashStationMeta.width : baseImg.width;
-        const clipH = flashStationMeta && flashStationMeta.height ? flashStationMeta.height : baseImg.height;
-        const iconParam = scaleFactor * mapScale + 20;
-        const iconW = Math.max(1, Math.floor(clipW / iconParam));
-        const iconH = Math.max(1, Math.floor(clipH / iconParam));
-        const iconCanvas = document.createElement("canvas");
-        iconCanvas.width = iconW;
-        iconCanvas.height = iconH;
-        const iconCtx = iconCanvas.getContext("2d");
-        if (!iconCtx) {
-            return null;
-        }
-        const scaleSize = 1 / (Math.max(1, scaleFactor) * 10);
-        iconCtx.setTransform(scaleSize, 0, 0, scaleSize, clipW / 2 * scaleSize, clipH / 2 * scaleSize);
-        iconCtx.drawImage(baseImg, -clipW / 2, -clipH / 2);
-        const result = {
-            image: iconCanvas,
-            clipW: clipW,
-            clipH: clipH
-        };
-        minimapStationIconCache[key] = result;
-        return result;
-    }
     for (const s of stations) {
         const stationIcon = getStationMinimapIcon(s, scaleFactor, mapScale);
         if (!stationIcon || !stationIcon.image) continue;
@@ -1775,8 +1895,8 @@ function drawMiniMap() {
     ctx.fillRect(heroPx, mapY, 2, MINIMAP_HEIGHT);
     const finishIcon = getUiImage(UI_SPRITES.minimapFinishIcon);
     if (moveTargetFromMinimap && moveTargetX !== null && moveTargetY !== null && Number.isFinite(moveTargetX) && Number.isFinite(moveTargetY)) {
-        const tx = toMiniX(moveTargetX);
-        const ty = toMiniY(moveTargetY);
+        const tx = x + (moveTargetX - MAP_MIN_X) * miniScaleX;
+        const ty = mapY + (moveTargetY - MAP_MIN_Y) * miniScaleY;
         ctx.strokeStyle = "#6575d6";
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -1787,7 +1907,7 @@ function drawMiniMap() {
             ctx.drawImage(finishIcon, tx - finishIcon.width / 2, ty - finishIcon.height / 2, finishIcon.width, finishIcon.height);
         }
     }
-    drawMiniPixel(heroPx, heroPy, "#33cc00");
+    drawMinimapPixel(heroPx, heroPy, "#33cc00", x, mapY);
     const alertIcon = getUiImage(UI_SPRITES.minimapAlertIcon);
     const spaceballIcon = getUiImage(UI_SPRITES.minimapSpaceballIcon);
     const alertReady = !!(alertIcon && alertIcon.complete && alertIcon.width > 0);
@@ -1810,7 +1930,7 @@ function drawMiniMap() {
             } else if (item.warnIconOnMap && alertReady) {
                 ctx.drawImage(alertIcon, mx - alertIcon.width / 2, my - alertIcon.height / 2, alertIcon.width, alertIcon.height);
             } else {
-                drawMiniPixel(mx, my, item.color);
+                drawMinimapPixel(mx, my, item.color, x, mapY);
             }
             ctx.restore();
         } else {
@@ -1819,7 +1939,7 @@ function drawMiniMap() {
             } else if (item.warnIconOnMap && alertReady) {
                 ctx.drawImage(alertIcon, mx - alertIcon.width / 2, my - alertIcon.height / 2, alertIcon.width, alertIcon.height);
             } else {
-                drawMiniPixel(mx, my, item.color);
+                drawMinimapPixel(mx, my, item.color, x, mapY);
             }
         }
     }
@@ -1909,8 +2029,8 @@ function drawMiniMap() {
         } else {
             const img = getMinimapSpriteFrame("pointer", frameIndex);
             if (img && img.complete && img.width > 0) {
-                const mx = toMiniX(ptr.x);
-                const my = toMiniY(ptr.y);
+                const mx = x + (ptr.x - MAP_MIN_X) * miniScaleX;
+                const my = mapY + (ptr.y - MAP_MIN_Y) * miniScaleY;
                 ctx.drawImage(img, mx - img.width / 2, my - img.height / 2, img.width, img.height);
             }
         }
@@ -1926,115 +2046,7 @@ function drawMiniMap() {
         const displayX = Math.round(shipX / 100);
         const displayY = Math.round(shipY / 100);
         const coordText = `${displayX}/${displayY}`;
-        const formatMapId = mapId => {
-            switch (mapId) {
-              case 1:
-                return "1-1";
-
-              case 2:
-                return "1-2";
-
-              case 3:
-                return "1-3";
-
-              case 4:
-                return "1-4";
-
-              case 5:
-                return "2-1";
-
-              case 6:
-                return "2-2";
-
-              case 7:
-                return "2-3";
-
-              case 8:
-                return "2-4";
-
-              case 9:
-                return "3-1";
-
-              case 10:
-                return "3-2";
-
-              case 11:
-                return "3-3";
-
-              case 12:
-                return "3-4";
-
-              case 13:
-                return "4-1";
-
-              case 14:
-                return "4-2";
-
-              case 15:
-                return "4-3";
-
-              case 16:
-                return "4-4";
-
-              case 17:
-                return "1-5";
-
-              case 18:
-                return "1-6";
-
-              case 19:
-                return "1-7";
-
-              case 20:
-                return "1-8";
-
-              case 21:
-                return "2-5";
-
-              case 22:
-                return "2-6";
-
-              case 23:
-                return "2-7";
-
-              case 24:
-                return "2-8";
-
-              case 25:
-                return "3-5";
-
-              case 26:
-                return "3-6";
-
-              case 27:
-                return "3-7";
-
-              case 28:
-                return "3-8";
-
-              case 51:
-                return "GGA";
-
-              case 52:
-                return "GGB";
-
-              case 53:
-                return "GGG";
-
-              case 55:
-                return "GGD";
-
-              case 80:
-                return "Surv";
-
-              case 81:
-                return "Inva";
-
-              default:
-                return "1-1";
-            }
-        };
-        const mapText = formatMapId(currentMapId);
+        const mapText = formatMinimapMapId(currentMapId);
         ctx.save();
         ctx.font = "bold 11px Tahoma";
         ctx.textAlign = "left";
@@ -2827,15 +2839,16 @@ function flashResolveLightningEffectPlacement(centerX, centerY, shipId, frameInd
         let sumX = 0;
         let sumY = 0;
         let count = 0;
-        offsets.forEach(offset => {
-            if (!offset) return;
+        for (let i = 0; i < offsets.length; i++) {
+            const offset = offsets[i];
+            if (!offset) continue;
             const ox = Number(offset.x);
             const oy = Number(offset.y);
-            if (!Number.isFinite(ox) || !Number.isFinite(oy)) return;
+            if (!Number.isFinite(ox) || !Number.isFinite(oy)) continue;
             sumX += ox;
             sumY += oy;
             count++;
-        });
+        }
         if (count > 0) {
             drawX += (sumX / count) * entityScale;
             drawY += (sumY / count) * entityScale;
@@ -2954,12 +2967,13 @@ function drawShipSkillVisualEffectsForEntity(entityId, centerX, centerY, shipId,
     if (!states || !states.length) return;
     const engineState = entityKey && typeof engineAnimationState !== "undefined" ? engineAnimationState[entityKey] || null : null;
     const isMoving = !!(engineState && engineState.isMoving);
-    states.forEach(state => {
+    for (let i = 0; i < states.length; i++) {
+        const state = states[i];
         if (typeof flashUpdateShipSkillRuntimeAudio === "function") {
             flashUpdateShipSkillRuntimeAudio(state, worldX, worldY, isMoving);
         }
         flashDrawShipSkillVisualState(state, centerX, centerY, shipId, frameIndex, angleRad, spriteHeight, entityKey);
-    });
+    }
 }
 
 const shipStableVisualHeightCache = Object.create(null);
@@ -3029,19 +3043,21 @@ function drawHeroLevelUpEffects(screenX, screenY) {
     const frameCount = LEVEL_UP_ANIM.frameCount || 1;
     const totalDuration = frameCount * frameDurationMs;
     const yOffset = (typeof LEVEL_UP_ANIM.yOffset === "number" ? LEVEL_UP_ANIM.yOffset : -150) * entityScale;
-    for (let idx = heroLevelUpEffects.length - 1; idx >= 0; idx--) {
+    let writeIndex = 0;
+    for (let idx = 0; idx < heroLevelUpEffects.length; idx++) {
         const fx = heroLevelUpEffects[idx];
         const elapsed = now - fx.startedAt;
         if (!Number.isFinite(elapsed) || elapsed < 0 || elapsed >= totalDuration) {
-            heroLevelUpEffects.splice(idx, 1);
             continue;
         }
+        heroLevelUpEffects[writeIndex++] = fx;
         const frame = Math.floor(elapsed / frameDurationMs);
         if (frame < 0 || frame >= frameCount) continue;
         const frameDef = getLevelUpFrame(frame);
         if (!frameDef) continue;
         drawCenteredEffectFrame(frameDef, screenX, screenY + yOffset, entityScale);
     }
+    heroLevelUpEffects.length = writeIndex;
 }
 
 window.triggerHeroLevelUpEffect = triggerHeroLevelUpEffect;
@@ -3947,12 +3963,15 @@ function drawTooltip() {
 function drawDebugInfo() {
     if (!infoMessages || infoMessages.length === 0) return;
     const now = performance.now();
-    for (let k = infoMessages.length - 1; k >= 0; k--) {
+    let writeIndex = 0;
+    for (let k = 0; k < infoMessages.length; k++) {
         const m = infoMessages[k];
-        if (m && now - m.createdAt > (m.duration || 2500)) {
-            infoMessages.splice(k, 1);
+        if (!m || now - m.createdAt > (m.duration || 2500)) {
+            continue;
         }
+        infoMessages[writeIndex++] = m;
     }
+    infoMessages.length = writeIndex;
     if (infoMessages.length === 0) return;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);

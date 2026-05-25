@@ -1,5 +1,3 @@
-console.log("ANDROMEDA_CONFIG =", window.ANDROMEDA_CONFIG);
-
 const LOGICAL_WIDTH = 1920;
 
 const LOGICAL_HEIGHT = 1080;
@@ -1586,7 +1584,6 @@ let heroId = 0;
 
 if (window.ANDROMEDA_CONFIG && window.ANDROMEDA_CONFIG.userID) {
     heroId = parseInt(window.ANDROMEDA_CONFIG.userID, 10);
-    console.log("[SYSTEM] HeroID forced via PHP config: " + heroId);
 } else {
     console.error("[SYSTEM] CRITICAL ERROR: ID not found!");
 }
@@ -3267,7 +3264,6 @@ function parsePulseLaserBurstFromXml(xmlDoc) {
         spacingMs: spacingMs,
         attackLengthMs: total
     };
-    console.log("[XML] Auto RSB burst:", window.RSB_VISUAL_BURST);
 }
 
 function parseSabLaserVisualFromXml(xmlDoc) {
@@ -5388,13 +5384,22 @@ function buildShipExpansionAtlasFrameCanvas(def, atlas, atlasIndex, atlasFrameEn
     return frameCanvas;
 }
 
+function getFrameNumbersForDef(def, fallbackCount = 1) {
+    if (!def) return [];
+    if (def.frames && def.frames.length > 0) return def.frames;
+    if (def._frameNumbers && def._frameNumbers.length > 0) return def._frameNumbers;
+    const count = Math.max(1, Number(def.frameCount) || fallbackCount || 1);
+    const frames = [];
+    for (let i = 0; i < count; i++) frames.push(i + 1);
+    def._frameNumbers = frames;
+    return frames;
+}
+
 function getShipExpansionAtlasFrame(def, frameIndex) {
     if (!def || !def.atlasPath) return null;
     const atlas = getShipExpansionAtlasImage(def.atlasPath);
     if (!atlas) return null;
-    const frames = def.frames && def.frames.length > 0 ? def.frames : Array.from({
-        length: def.frameCount || 1
-    }, (_, idx) => idx + 1);
+    const frames = getFrameNumbersForDef(def, 1);
     let idx = frameIndex % frames.length;
     if (idx < 0) idx += frames.length;
     const fileNumber = Number(frames[idx]) || idx + 1;
@@ -5692,9 +5697,7 @@ function getShipSpriteFrame(shipId, frameIndex) {
 function getShipExpansionFrame(shipId, frameIndex) {
     const def = SHIP_EXPANSION_DEFS[shipId];
     if (!def) return null;
-    const frames = def.frames && def.frames.length > 0 ? def.frames : Array.from({
-        length: def.frameCount || 1
-    }, (_, idx) => idx + 1);
+    const frames = getFrameNumbersForDef(def, 1);
     let idx = frameIndex % frames.length;
     if (idx < 0) idx += frames.length;
     const cacheKey = `${shipId}_${idx}`;
@@ -5716,9 +5719,7 @@ function getEngineSpriteFrame(engineKey, frameIndex) {
     const key = engineKey || DEFAULT_ENGINE_KEY;
     const def = ENGINE_SPRITE_DEFS[key];
     if (!def) return null;
-    const frames = def.frames && def.frames.length > 0 ? def.frames : Array.from({
-        length: def.frameCount
-    }, (_, idx) => idx + 1);
+    const frames = getFrameNumbersForDef(def, 1);
     let idx = frameIndex % frames.length;
     if (idx < 0) idx += frames.length;
     const fileNumber = frames[idx];
@@ -5733,9 +5734,7 @@ function getEngineSmokeSpriteFrame(engineSmokeKey, frameIndex) {
     const key = engineSmokeKey || DEFAULT_ENGINE_SMOKE_KEY;
     const def = ENGINE_SMOKE_DEFS[key];
     if (!def) return null;
-    const frames = def.frames && def.frames.length > 0 ? def.frames : Array.from({
-        length: def.frameCount || 1
-    }, (_, idx) => idx + 1);
+    const frames = getFrameNumbersForDef(def, 1);
     let idx = frameIndex % frames.length;
     if (idx < 0) idx += frames.length;
     const fileNumber = frames[idx];
@@ -5750,9 +5749,7 @@ function getRocketSmokeSpriteFrame(smokeKey, frameIndex) {
     const key = smokeKey;
     const def = ROCKET_SMOKE_DEFS[key];
     if (!def) return null;
-    const frames = def.frames && def.frames.length > 0 ? def.frames : Array.from({
-        length: def.frameCount || 1
-    }, (_, idx) => idx + 1);
+    const frames = getFrameNumbersForDef(def, 1);
     let idx = frameIndex % frames.length;
     if (idx < 0) idx += frames.length;
     const fileNumber = frames[idx];
@@ -5987,7 +5984,6 @@ function preloadStationSprites() {
         let def = STATION_SPRITE_DEFS[key];
         let img = andromedaCreateImage(def.path);
         stationImages[key] = img;
-        console.log("Loading station: " + key);
     }
 }
 

@@ -261,7 +261,6 @@ function sendSetting(key, value) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     const keyUpper = key.toUpperCase();
     const packet = `7|${keyUpper}|${value}`;
-    console.log("[WS] Sending SETTING →", packet);
     sendRaw(packet);
     updateLocalSetting(keyUpper, value);
 }
@@ -351,18 +350,13 @@ function updateLocalSetting(key, value) {
             setMinimapScale(val, {
                 forceSend: false
             });
-            console.log("[SETTINGS] MINIMAP_SCALE received → scale =", val);
         }
         break;
 
       case "CLIENT_RESOLUTION":
-        console.log("[SETTINGS] CLIENT_RESOLUTION =", value);
         applyClientResolution(value);
         break;
 
-      default:
-        console.log(`[SETTINGS] Stored setting: ${keyUpper} = ${value}`);
-        break;
     }
 }
 
@@ -387,14 +381,12 @@ function labOreKeyToId(key) {
 function sendLabStatusRequest() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     const packet = "LAB|UPD|GET";
-    console.log("[WS] Sending LAB STATUS →", packet);
     sendRaw(packet);
 }
 
 function sendLabSafeGet() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     const packet = "LAB|SAFE|GET";
-    console.log("[WS] Sending SAFE GET →", packet);
     sendRaw(packet);
 }
 
@@ -419,7 +411,6 @@ function sendLabSafeUnlock(level) {
         return;
     }
     const packet = `LAB|SAFE|UNLOCK|${safeLevel}`;
-    console.log("[WS] Sending SAFE UNLOCK →", packet);
     sendRaw(packet);
 }
 
@@ -431,7 +422,6 @@ function sendLabSafeDeposit(amount) {
         return;
     }
     const packet = `LAB|SAFE|DEPOSIT|${safeAmount}`;
-    console.log("[WS] Sending SAFE DEPOSIT →", packet);
     sendRaw(packet);
 }
 
@@ -443,14 +433,12 @@ function sendLabSafeWithdraw(amount) {
         return;
     }
     const packet = `LAB|SAFE|WITHDRAW|${safeAmount}`;
-    console.log("[WS] Sending SAFE WITHDRAW →", packet);
     sendRaw(packet);
 }
 
 function sendProduce(productId, amount) {
     if (!ws || ws.readyState !== WebSocket.OPEN || amount <= 0) return;
     const packet = `LAB|REF|PROD|${productId}|${amount}`;
-    console.log("[WS] Sending PRODUCTION →", packet);
     sendRaw(packet);
     addInfoMessage(`Production requested: ${amount} units.`);
 }
@@ -464,7 +452,6 @@ function sendRefiningUpgrade(target, oreKey, amount) {
         return;
     }
     const packet = `LAB|UPD|SET|${tgt}|${oreId}|${amount}`;
-    console.log("[WS] Sending UPGRADE →", packet);
     sendRaw(packet);
     addInfoMessage(`Upgrade ${tgt} requested (${amount} ${String(oreKey || "").toUpperCase()}).`);
 }
@@ -477,7 +464,6 @@ function flashIntCoordinate(value) {
 
 function sendMoveToServer(x, y) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.warn("[WS] Move ignored, WS not connected");
         return;
     }
     const ix = flashIntCoordinate(x);
@@ -501,21 +487,18 @@ function sendPortalJump() {
     clearPendingCollectState();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     const packet = "j";
-    console.log("[WS] Sending PORTAL_JUMP →", packet);
     sendRaw(packet);
 }
 
 function sendLogoutRequest() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     const packet = "l";
-    console.log("[WS] Sending LOGOUT →", packet);
     sendRaw(packet);
 }
 
 function sendLogoutCancel() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     const packet = "o";
-    console.log("[WS] Sending LOGOUT_CANCEL_FROM_CLIENT →", packet);
     sendRaw(packet);
 }
 
@@ -664,7 +647,6 @@ function sendCollectBox(id, options = {}) {
     }
     const serverId = typeof extractCollectableServerId === "function" ? extractCollectableServerId(id) : typeof id === "string" && id.startsWith("c:") ? id.slice(2) : id;
     const packet = `x|${serverId}`;
-    console.log("[WS] Sending COLLECT →", packet);
     sendRaw(packet);
     if (opts.playFlashFeedback) {
         if (typeof playFlashExactCollectFeedback === "function") {
@@ -1622,7 +1604,8 @@ function getLaserSpriteFrame(spriteId, skilledLaser = false) {
 }
 
 function updateLaserBeams(now) {
-    for (let i = laserBeams.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < laserBeams.length; i++) {
         const beam = laserBeams[i];
         const elapsed = now - beam.createdAt;
         if (elapsed >= beam.duration) {
@@ -1630,9 +1613,11 @@ function updateLaserBeams(now) {
                 handleLaserImpact(beam);
                 beam.hitHandled = true;
             }
-            laserBeams.splice(i, 1);
+            continue;
         }
+        laserBeams[keepCount++] = beam;
     }
+    laserBeams.length = keepCount;
 }
 
 function handleLaserImpact(beam) {
@@ -1666,14 +1651,17 @@ function getRocketLifetimeMs(beam) {
 
 function updateRocketLauncherMissDisplays(now = performance.now()) {
     if (!Array.isArray(rocketLauncherMissDisplays) || rocketLauncherMissDisplays.length === 0) return;
-    for (let i = rocketLauncherMissDisplays.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < rocketLauncherMissDisplays.length; i++) {
         const entry = rocketLauncherMissDisplays[i];
         if (!entry) {
-            rocketLauncherMissDisplays.splice(i, 1);
             continue;
         }
         const triggerAt = Number(entry.triggerAt) || 0;
-        if (now < triggerAt) continue;
+        if (now < triggerAt) {
+            rocketLauncherMissDisplays[keepCount++] = entry;
+            continue;
+        }
         damageBubbles.push({
             entityId: entry.targetId,
             visualLifeId: entry.targetVisualLifeId != null ? entry.targetVisualLifeId : null,
@@ -1686,8 +1674,8 @@ function updateRocketLauncherMissDisplays(now = performance.now()) {
             showPlus: false,
             createdAt: now
         });
-        rocketLauncherMissDisplays.splice(i, 1);
     }
+    rocketLauncherMissDisplays.length = keepCount;
 }
 
 function queueRocketLauncherMissDisplay(targetId, delayMs, now = performance.now(), targetSnapshot = null) {
@@ -1775,7 +1763,8 @@ function getRocketWorldPositions(beam, now = performance.now()) {
 
 function updateRocketAttacks(now) {
     updateRocketLauncherMissDisplays(now);
-    for (let i = rocketAttacks.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < rocketAttacks.length; i++) {
         const beam = rocketAttacks[i];
         const duration = getRocketLifetimeMs(beam);
         if (now - beam.createdAt > duration) {
@@ -1788,21 +1777,25 @@ function updateRocketAttacks(now) {
                 }
                 beam.impactHandled = true;
             }
-            rocketAttacks.splice(i, 1);
+            continue;
         }
+        rocketAttacks[keepCount++] = beam;
     }
+    rocketAttacks.length = keepCount;
 }
 
 function updateSabShots(now) {
-    for (let i = sabShots.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < sabShots.length; i++) {
         const shot = sabShots[i];
         const SAB_SPEED_MULT = 2;
         const baseDuration = shot.duration || SAB_SHOT_DURATION_MS || 1e3;
         const duration = baseDuration / SAB_SPEED_MULT;
-        if (now - shot.createdAt >= duration) {
-            sabShots.splice(i, 1);
+        if (now - shot.createdAt < duration) {
+            sabShots[keepCount++] = shot;
         }
     }
+    sabShots.length = keepCount;
 }
 
 function flashIsEnergyLeechLaserEchoActiveForEntity(entityId, now = performance.now()) {
@@ -1846,19 +1839,19 @@ function spawnEnergyLeechLaserEchoAttack(attackerId, targetId, createdAt = perfo
 function drawEnergyLeechLaserEchoBeams(now = performance.now()) {
     if (!energyLeechEchoBeams.length) return;
     if (typeof flashGetTechEffectSequenceFrameNumber !== "function" || typeof flashGetTechEffectFrameImage !== "function") return;
-    for (let i = energyLeechEchoBeams.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < energyLeechEchoBeams.length; i++) {
         const echo = energyLeechEchoBeams[i];
         if (!echo) {
-            energyLeechEchoBeams.splice(i, 1);
             continue;
         }
         const age = now - (Number(echo.createdAt) || now);
         const duration = Math.max(1, Number(echo.duration) || 500);
-        if (age < 0) continue;
         if (age >= duration) {
-            energyLeechEchoBeams.splice(i, 1);
             continue;
         }
+        energyLeechEchoBeams[keepCount++] = echo;
+        if (age < 0) continue;
         const progress = Math.max(0, Math.min(1, age / duration));
         const frameNumber = flashGetTechEffectSequenceFrameNumber("ELACLOUD1", Number(echo.createdAt) || now, now);
         if (!(frameNumber > 0)) continue;
@@ -1884,6 +1877,7 @@ function drawEnergyLeechLaserEchoBeams(now = performance.now()) {
         ctx.drawImage(frameImg, -width / 2, -height / 2, width, height);
         ctx.restore();
     }
+    energyLeechEchoBeams.length = keepCount;
 }
 
 function drawLaserBeams() {
@@ -2427,22 +2421,29 @@ function getRecentBeamAngleForTarget(targetId) {
 }
 
 function updateDamageBubbles(now) {
-    for (let i = damageBubbles.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < damageBubbles.length; i++) {
         const b = damageBubbles[i];
-        if (now - b.createdAt > DAMAGE_BUBBLE_DURATION) {
-            damageBubbles.splice(i, 1);
+        if (b && now - b.createdAt <= DAMAGE_BUBBLE_DURATION) {
+            damageBubbles[keepCount++] = b;
         }
     }
+    damageBubbles.length = keepCount;
 }
 
-function resolveDamageBubblePosition(b) {
+function resolveDamageBubblePosition(b, out = null) {
+    const position = out || {
+        x: 0,
+        y: 0,
+        shipId: null,
+        isHero: false
+    };
     if (b.entityId === heroId) {
-        return {
-            x: shipX,
-            y: shipY,
-            shipId: heroShipId,
-            isHero: true
-        };
+        position.x = shipX;
+        position.y = shipY;
+        position.shipId = heroShipId;
+        position.isHero = true;
+        return position;
     }
     const ent = entities[b.entityId];
     if (ent) {
@@ -2451,30 +2452,27 @@ function resolveDamageBubblePosition(b) {
             b.snapshotX = ent.x;
             b.snapshotY = ent.y;
             b.snapshotShipId = ent.shipId ?? ent.type ?? null;
-            return {
-                x: ent.x,
-                y: ent.y,
-                shipId: ent.shipId ?? ent.type ?? null,
-                isHero: false
-            };
+            position.x = ent.x;
+            position.y = ent.y;
+            position.shipId = ent.shipId ?? ent.type ?? null;
+            position.isHero = false;
+            return position;
         }
     }
     if (Number.isFinite(b.snapshotX) && Number.isFinite(b.snapshotY)) {
-        return {
-            x: b.snapshotX,
-            y: b.snapshotY,
-            shipId: b.snapshotShipId ?? null,
-            isHero: false
-        };
+        position.x = b.snapshotX;
+        position.y = b.snapshotY;
+        position.shipId = b.snapshotShipId ?? null;
+        position.isHero = false;
+        return position;
     }
     const removedSnapshot = typeof getRemovedEntitySnapshot === "function" ? getRemovedEntitySnapshot(b.entityId) : null;
     if (removedSnapshot && Number.isFinite(removedSnapshot.x) && Number.isFinite(removedSnapshot.y)) {
-        return {
-            x: removedSnapshot.x,
-            y: removedSnapshot.y,
-            shipId: removedSnapshot.shipId ?? removedSnapshot.type ?? null,
-            isHero: false
-        };
+        position.x = removedSnapshot.x;
+        position.y = removedSnapshot.y;
+        position.shipId = removedSnapshot.shipId ?? removedSnapshot.type ?? null;
+        position.isHero = false;
+        return position;
     }
     return null;
 }
@@ -2511,21 +2509,34 @@ function computeDamageBubbleScreenLift(position) {
     return (safeVisualHeight / 2 + energyOffset + 14) * viewportScale;
 }
 
-function resolveDamageBubbleScreenPosition(b) {
-    const position = resolveDamageBubblePosition(b);
+function resolveDamageBubbleScreenPosition(b, out = null) {
+    const worldPosition = resolveDamageBubbleScreenPosition._worldPosition || (resolveDamageBubbleScreenPosition._worldPosition = {
+        x: 0,
+        y: 0,
+        shipId: null,
+        isHero: false
+    });
+    const position = resolveDamageBubblePosition(b, worldPosition);
     if (!position) return null;
     const bubbleScreenX = typeof mapToViewportScreenX === "function" ? mapToViewportScreenX(position.x) : mapToScreenX(position.x);
     const bubbleScreenY = (typeof mapToViewportScreenY === "function" ? mapToViewportScreenY(position.y) : mapToScreenY(position.y)) - computeDamageBubbleScreenLift(position);
-    return {
-        x: bubbleScreenX,
-        y: bubbleScreenY
+    const screenPosition = out || {
+        x: 0,
+        y: 0
     };
+    screenPosition.x = bubbleScreenX;
+    screenPosition.y = bubbleScreenY;
+    return screenPosition;
 }
 
 function drawDamageBubbles() {
     const now = performance.now();
+    const screenPosition = drawDamageBubbles._screenPosition || (drawDamageBubbles._screenPosition = {
+        x: 0,
+        y: 0
+    });
     for (const b of damageBubbles) {
-        const pos = resolveDamageBubbleScreenPosition(b);
+        const pos = resolveDamageBubbleScreenPosition(b, screenPosition);
         if (!pos) continue;
         const bubbleScreenX = pos.x;
         const bubbleScreenY = pos.y;
@@ -2626,13 +2637,15 @@ function showHeroShieldTwinkle(param) {
 
 function updateShieldTwinkles(now) {
     if (typeof shieldTwinkles === "undefined" || !Array.isArray(shieldTwinkles)) return;
-    for (let i = shieldTwinkles.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < shieldTwinkles.length; i++) {
         const tw = shieldTwinkles[i];
         const lifeMs = tw.lifeMs || 1500;
-        if (now - tw.createdAt > lifeMs) {
-            shieldTwinkles.splice(i, 1);
+        if (now - tw.createdAt <= lifeMs) {
+            shieldTwinkles[keepCount++] = tw;
         }
     }
+    shieldTwinkles.length = keepCount;
 }
 
 function drawShieldTwinkles() {
@@ -2673,6 +2686,11 @@ function drawShieldTwinkles() {
     const centerY = sy - shiftY;
     const shipRadius = Math.max(shipW, shipH) / 2;
     const scaleFactor = shipRadius / 65;
+    const drawOptions = drawShieldTwinkles._drawOptions || (drawShieldTwinkles._drawOptions = {
+        drawWidth: 0,
+        drawHeight: 0,
+        alpha: 1
+    });
     for (const tw of shieldTwinkles) {
         const fadeInMs = tw.fadeInMs || 250;
         const holdMs = tw.holdMs || 1e3;
@@ -2695,20 +2713,19 @@ function drawShieldTwinkles() {
         if (sourceWidth <= 0 || sourceHeight <= 0) continue;
         const w = sourceWidth * scaleFactor;
         const h = sourceHeight * scaleFactor;
-        drawFrameDefCentered(frameDef, centerX, centerY, {
-            drawWidth: w,
-            drawHeight: h,
-            alpha: alpha
-        });
+        drawOptions.drawWidth = w;
+        drawOptions.drawHeight = h;
+        drawOptions.alpha = alpha;
+        drawFrameDefCentered(frameDef, centerX, centerY, drawOptions);
     }
 }
 
 function updateShieldBursts(now) {
-    for (let i = shieldBursts.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < shieldBursts.length; i++) {
         const sb = shieldBursts[i];
         const lifeMs = sb.lifeMs || 350;
         if (now - sb.createdAt > lifeMs) {
-            shieldBursts.splice(i, 1);
             if (sb.targetId !== undefined && sb.targetId !== null) {
                 if (heroId !== null && sb.targetId === heroId) {
                     heroShieldDamageCount = Math.max(0, heroShieldDamageCount - 1);
@@ -2717,8 +2734,11 @@ function updateShieldBursts(now) {
                     ent.shieldDamageCount = Math.max(0, ent.shieldDamageCount - 1);
                 }
             }
+            continue;
         }
+        shieldBursts[keepCount++] = sb;
     }
+    shieldBursts.length = keepCount;
 }
 
 function spawnShieldBurstAt(x, y, sprite = "hit", options = {}) {
@@ -2757,42 +2777,47 @@ function spawnShieldBurstAt(x, y, sprite = "hit", options = {}) {
 }
 
 function updateHullDamageEffects(now) {
-    for (let i = hullDamageEffects.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < hullDamageEffects.length; i++) {
         const eff = hullDamageEffects[i];
-        if (!eff || now - eff.createdAt > eff.duration) {
-            hullDamageEffects.splice(i, 1);
+        if (eff && now - eff.createdAt <= eff.duration) {
+            hullDamageEffects[keepCount++] = eff;
         }
     }
+    hullDamageEffects.length = keepCount;
 }
 
-function resolveHullDamagePosition(eff) {
+function resolveHullDamagePosition(eff, out = null) {
     const isHero = heroId !== null && eff.entityId === heroId;
     let targetSnap = isHero ? snapshotEntityById(heroId) : null;
     if (!isHero) {
         targetSnap = typeof resolveLiveEntitySnapshotForVisual === "function" ? resolveLiveEntitySnapshotForVisual(eff.entityId, eff.visualLifeId) : snapshotEntityById(eff.entityId);
-        if (!targetSnap && Number.isFinite(eff.snapshotX) && Number.isFinite(eff.snapshotY)) {
-            targetSnap = {
-                x: eff.snapshotX,
-                y: eff.snapshotY,
-                shipId: eff.snapshotShipId ?? null,
-                angle: Number.isFinite(eff.snapshotAngle) ? eff.snapshotAngle : 0
-            };
-        }
     }
-    if (!isHero && !targetSnap) return null;
-    const baseX = isHero ? shipX : targetSnap.x;
-    const baseY = isHero ? shipY : targetSnap.y;
-    const angle = targetSnap && typeof targetSnap.angle === "number" ? targetSnap.angle : 0;
+    const hasSnapshotFallback = !isHero && !targetSnap && Number.isFinite(eff.snapshotX) && Number.isFinite(eff.snapshotY);
+    if (!isHero && !targetSnap && !hasSnapshotFallback) return null;
+    const baseX = isHero ? shipX : targetSnap ? targetSnap.x : eff.snapshotX;
+    const baseY = isHero ? shipY : targetSnap ? targetSnap.y : eff.snapshotY;
+    const angle = targetSnap && typeof targetSnap.angle === "number" ? targetSnap.angle : Number.isFinite(eff.snapshotAngle) ? eff.snapshotAngle : 0;
     const offsetX = Math.cos(angle + eff.angleOffset) * eff.distance;
     const offsetY = Math.sin(angle + eff.angleOffset) * eff.distance;
-    return {
-        x: baseX + offsetX,
-        y: baseY + offsetY
+    const position = out || {
+        x: 0,
+        y: 0
     };
+    position.x = baseX + offsetX;
+    position.y = baseY + offsetY;
+    return position;
 }
 
 function drawHullDamageEffects() {
     const now = performance.now();
+    const position = drawHullDamageEffects._position || (drawHullDamageEffects._position = {
+        x: 0,
+        y: 0
+    });
+    const drawOptions = drawHullDamageEffects._drawOptions || (drawHullDamageEffects._drawOptions = {
+        rotation: 0
+    });
     for (const eff of hullDamageEffects) {
         const def = LASER_DAMAGE_SPRITES[eff.type];
         if (!def) continue;
@@ -2800,13 +2825,12 @@ function drawHullDamageEffects() {
         const frame = Math.min(def.frameCount - 1, Math.floor(def.frameCount * life));
         const frameDef = getLaserDamageFrame(eff.type, frame);
         if (!frameDef || frameDef.pendingAtlas) continue;
-        const pos = resolveHullDamagePosition(eff);
+        const pos = resolveHullDamagePosition(eff, position);
         if (!pos) continue;
         const screenX = mapToScreenX(pos.x);
         const screenY = mapToScreenY(pos.y);
-        drawFrameDefCentered(frameDef, screenX, screenY, {
-            rotation: eff.rotation
-        });
+        drawOptions.rotation = eff.rotation;
+        drawFrameDefCentered(frameDef, screenX, screenY, drawOptions);
     }
 }
 
@@ -2822,11 +2846,14 @@ function spawnHullDamageEffect(targetId, typeId = null) {
     const angleOffset = Math.random() * Math.PI * 2;
     const distance = Math.random() * computeHullImpactRadius(targetSnap);
     const rotation = Math.random() * Math.PI * 2;
-    for (let i = hullDamageEffects.length - 1; i >= 0; i--) {
-        if (hullDamageEffects[i].entityId === targetId) {
-            hullDamageEffects.splice(i, 1);
+    let writeIndex = 0;
+    for (let i = 0; i < hullDamageEffects.length; i++) {
+        const effect = hullDamageEffects[i];
+        if (effect.entityId !== targetId) {
+            hullDamageEffects[writeIndex++] = effect;
         }
     }
+    hullDamageEffects.length = writeIndex;
     hullDamageEffects.push({
         entityId: targetId,
         visualLifeId: targetSnap && targetSnap.visualLifeId != null ? targetSnap.visualLifeId : null,
@@ -2881,12 +2908,14 @@ function spawnRocketDamageEffect(x, y, typeId = 1) {
 }
 
 function updateRocketDamageEffects(now) {
-    for (let i = rocketDamageEffects.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < rocketDamageEffects.length; i++) {
         const fx = rocketDamageEffects[i];
-        if (!fx || now - fx.createdAt > fx.duration) {
-            rocketDamageEffects.splice(i, 1);
+        if (fx && now - fx.createdAt <= fx.duration) {
+            rocketDamageEffects[keepCount++] = fx;
         }
     }
+    rocketDamageEffects.length = keepCount;
 }
 
 function drawRocketDamageEffects() {
@@ -2957,49 +2986,56 @@ function spawnEmpEffect(targetId, x = null, y = null) {
 
 function updatePortalJumpEffects(now) {
     const totalDuration = (PORTAL_JUMP_ANIM.frameCount || 1) * (PORTAL_JUMP_ANIM.frameDuration || 40);
-    for (let i = portalJumpEffects.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < portalJumpEffects.length; i++) {
         const fx = portalJumpEffects[i];
-        if (now - fx.startedAt >= totalDuration) {
-            portalJumpEffects.splice(i, 1);
+        if (now - fx.startedAt < totalDuration) {
+            portalJumpEffects[keepCount++] = fx;
         }
     }
+    portalJumpEffects.length = keepCount;
 }
 
 function updateSmartbombEffects(now) {
     const totalDuration = (SMARTBOMB_ANIM.frameCount || 1) * (SMARTBOMB_ANIM.frameDuration || 20);
-    for (let i = smartbombEffects.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < smartbombEffects.length; i++) {
         const fx = smartbombEffects[i];
-        if (now - fx.startedAt >= totalDuration) {
-            smartbombEffects.splice(i, 1);
+        if (now - fx.startedAt < totalDuration) {
+            smartbombEffects[keepCount++] = fx;
         }
     }
+    smartbombEffects.length = keepCount;
 }
 
 function updateEmpEffects(now) {
     if (!EMP_ANIM) return;
     const totalDuration = Math.max(EMP_ANIM.ring.delay * Math.max(EMP_ANIM.ring.count - 1, 0) + EMP_ANIM.ring.duration, EMP_ANIM.blitz.duration);
-    for (let i = empEffects.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < empEffects.length; i++) {
         const fx = empEffects[i];
-        if (now - fx.startedAt >= totalDuration) {
-            empEffects.splice(i, 1);
+        if (now - fx.startedAt < totalDuration) {
+            empEffects[keepCount++] = fx;
         }
     }
+    empEffects.length = keepCount;
 }
 
-function drawFrameDefCentered(frameDef, centerX, centerY, options = {}) {
+function drawFrameDefCentered(frameDef, centerX, centerY, options = null) {
     if (!frameDef || frameDef.pendingAtlas) return false;
+    const drawOptions = options || drawFrameDefCentered._emptyOptions || (drawFrameDefCentered._emptyOptions = {});
     const source = frameDef.atlas || frameDef.img || frameDef;
     if (!source || !source.complete || source.width <= 0 || source.height <= 0) return false;
     const sourceWidth = frameDef.width || source.width;
     const sourceHeight = frameDef.height || source.height;
     if (sourceWidth <= 0 || sourceHeight <= 0) return false;
-    const drawWidth = typeof options.drawWidth === "number" ? options.drawWidth : sourceWidth;
-    const drawHeight = typeof options.drawHeight === "number" ? options.drawHeight : sourceHeight;
-    const rotation = options.rotation || 0;
+    const drawWidth = typeof drawOptions.drawWidth === "number" ? drawOptions.drawWidth : sourceWidth;
+    const drawHeight = typeof drawOptions.drawHeight === "number" ? drawOptions.drawHeight : sourceHeight;
+    const rotation = drawOptions.rotation || 0;
     ctx.save();
-    if (options.composite) ctx.globalCompositeOperation = options.composite;
-    if (typeof options.alpha === "number") {
-        ctx.globalAlpha = Math.max(0, Math.min(1, options.alpha));
+    if (drawOptions.composite) ctx.globalCompositeOperation = drawOptions.composite;
+    if (typeof drawOptions.alpha === "number") {
+        ctx.globalAlpha = Math.max(0, Math.min(1, drawOptions.alpha));
     }
     if (rotation) {
         ctx.translate(centerX, centerY);
@@ -3692,18 +3728,23 @@ function spawnExplosionAt(x, y, explosionType = 2) {
 }
 
 function updateExplosions(now) {
-    for (let i = explosions.length - 1; i >= 0; i--) {
+    let keepCount = 0;
+    for (let i = 0; i < explosions.length; i++) {
         const ex = explosions[i];
         const anim = EXPLOSION_ANIMATIONS[ex.type] || EXPLOSION_ANIMATIONS[2];
         const totalDuration = (anim.frameCount || 1) * (anim.frameDuration || 40);
-        if (now - ex.startedAt > totalDuration) {
-            explosions.splice(i, 1);
+        if (now - ex.startedAt <= totalDuration) {
+            explosions[keepCount++] = ex;
         }
     }
+    explosions.length = keepCount;
 }
 
 function drawExplosions() {
     const now = performance.now();
+    const drawOptions = drawExplosions._drawOptions || (drawExplosions._drawOptions = {
+        composite: "lighter"
+    });
     for (const ex of explosions) {
         const anim = EXPLOSION_ANIMATIONS[ex.type] || EXPLOSION_ANIMATIONS[2];
         const frameDuration = anim.frameDuration || 40;
@@ -3713,16 +3754,18 @@ function drawExplosions() {
         if (!frameDef || frameDef.pendingAtlas) continue;
         const explosionScreenX = mapToScreenX(ex.x);
         const explosionScreenY = mapToScreenY(ex.y);
-        drawFrameDefCentered(frameDef, explosionScreenX, explosionScreenY, {
-            composite: "lighter"
-        });
+        drawFrameDefCentered(frameDef, explosionScreenX, explosionScreenY, drawOptions);
     }
 }
 
-function drawSmartbombEffects(options = {}) {
+function drawSmartbombEffects(options = null) {
     if (!SMARTBOMB_ANIM) return;
-    const {onlyHero: onlyHero = false, excludeHero: excludeHero = false} = options;
+    const onlyHero = !!(options && options.onlyHero);
+    const excludeHero = !!(options && options.excludeHero);
     const now = performance.now();
+    const drawOptions = drawSmartbombEffects._drawOptions || (drawSmartbombEffects._drawOptions = {
+        rotation: 0
+    });
     for (const fx of smartbombEffects) {
         if (onlyHero && !fx.onHero) continue;
         if (excludeHero && fx.onHero) continue;
@@ -3737,9 +3780,8 @@ function drawSmartbombEffects(options = {}) {
         if (frameDef.atlas && !frameDef.__andromedaPreparedSmartbombFrame) continue;
         const sx = mapToScreenX(fx.x) + (SMARTBOMB_ANIM.offsetX || 0);
         const sy = mapToScreenY(fx.y) + (SMARTBOMB_ANIM.offsetY || 0);
-        drawFrameDefCentered(frameDef, sx, sy, {
-            rotation: fx.rotation || 0
-        });
+        drawOptions.rotation = fx.rotation || 0;
+        drawFrameDefCentered(frameDef, sx, sy, drawOptions);
     }
 }
 
@@ -3747,6 +3789,11 @@ function drawEmpEffects() {
     if (!EMP_ANIM) return;
     const now = performance.now();
     const ringFrame = getEmpRingFrame();
+    const drawOptions = drawEmpEffects._drawOptions || (drawEmpEffects._drawOptions = {
+        alpha: 1,
+        drawWidth: 0,
+        drawHeight: 0
+    });
     for (const fx of empEffects) {
         let centerX = fx.x;
         let centerY = fx.y;
@@ -3774,11 +3821,10 @@ function drawEmpEffects() {
                     const fadeT = Math.min(1, (blitzElapsed - EMP_ANIM.blitz.fadeOutStart) / EMP_ANIM.blitz.fadeOutDuration);
                     alpha = 1 - fadeT;
                 }
-                drawFrameDefCentered(blitzFrame, sx, sy, {
-                    alpha: alpha,
-                    drawWidth: (blitzFrame.width || 0) * scale,
-                    drawHeight: (blitzFrame.height || 0) * scale
-                });
+                drawOptions.alpha = alpha;
+                drawOptions.drawWidth = (blitzFrame.width || 0) * scale;
+                drawOptions.drawHeight = (blitzFrame.height || 0) * scale;
+                drawFrameDefCentered(blitzFrame, sx, sy, drawOptions);
             }
         }
         if (ringFrame && !ringFrame.pendingAtlas) {
@@ -3789,11 +3835,10 @@ function drawEmpEffects() {
                 const t = elapsed / EMP_ANIM.ring.duration;
                 const scale = EMP_ANIM.ring.startScale + (EMP_ANIM.ring.endScale - EMP_ANIM.ring.startScale) * t;
                 const alpha = EMP_ANIM.ring.startAlpha + (EMP_ANIM.ring.endAlpha - EMP_ANIM.ring.startAlpha) * t;
-                drawFrameDefCentered(ringFrame, sx, sy, {
-                    alpha: alpha,
-                    drawWidth: (ringFrame.width || 0) * scale,
-                    drawHeight: (ringFrame.height || 0) * scale
-                });
+                drawOptions.alpha = alpha;
+                drawOptions.drawWidth = (ringFrame.width || 0) * scale;
+                drawOptions.drawHeight = (ringFrame.height || 0) * scale;
+                drawFrameDefCentered(ringFrame, sx, sy, drawOptions);
             }
         }
     }

@@ -53,64 +53,71 @@ const HTML_WINDOWS_UPDATE_INTERVAL_MS = 100;
 
 let lastHtmlWindowsUpdateMs = 0;
 
+const DRAW_SMARTBOMB_ONLY_HERO_OPTIONS = {
+    onlyHero: true
+};
+
+const DRAW_SMARTBOMB_EXCLUDE_HERO_OPTIONS = {
+    excludeHero: true
+};
+
 function render(now) {
     if (typeof beginEntitySnapshotFrame === "function") beginEntitySnapshotFrame();
-    updateGameLogic(now);
-    const worldScale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
-    const mapScale = typeof getMapViewScaleValue === "function" ? getMapViewScaleValue() : 1;
-    const totalScale = worldScale * mapScale;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.scale(totalScale, totalScale);
-    ctx.translate(-LOGICAL_WIDTH / 2, -LOGICAL_HEIGHT / 2);
-    drawMapBackground();
-    if (typeof stations !== "undefined" && typeof stationImages !== "undefined") {
-        for (let s of stations) {
-            let img = stationImages[s.type];
-            if (img && img.complete) {
-                let drawX = mapToScreenX(s.x);
-                let drawY = mapToScreenY(s.y);
-                ctx.drawImage(img, drawX - img.width / 2, drawY - img.height / 2);
+    try {
+        updateGameLogic(now);
+        const worldScale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
+        const mapScale = typeof getMapViewScaleValue === "function" ? getMapViewScaleValue() : 1;
+        const totalScale = worldScale * mapScale;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.scale(totalScale, totalScale);
+        ctx.translate(-LOGICAL_WIDTH / 2, -LOGICAL_HEIGHT / 2);
+        drawMapBackground();
+        if (typeof stations !== "undefined" && typeof stationImages !== "undefined") {
+            for (let s of stations) {
+                let img = stationImages[s.type];
+                if (img && img.complete) {
+                    let drawX = mapToScreenX(s.x);
+                    let drawY = mapToScreenY(s.y);
+                    ctx.drawImage(img, drawX - img.width / 2, drawY - img.height / 2);
+                }
             }
         }
-    }
-    drawPortals();
-    drawEntities();
-    drawSmartbombEffects({
-        onlyHero: true
-    });
-    drawShip();
-    if (typeof drawShieldTwinkles === "function") drawShieldTwinkles();
-    drawEmpEffects();
-    drawPortalJumpEffects();
-    drawSmartbombEffects({
-        excludeHero: true
-    });
-    drawShieldBursts();
-    drawHullDamageEffects();
-    drawRocketDamageEffects();
-    drawExplosions();
-    drawRocketAttacks();
-    drawLaserBeams();
-    drawSabShots();
-    ctx.restore();
-    drawRadiationOverlay();
-    drawPvpOverlay();
-    drawDamageBubbles();
-    drawMiniMap();
-    if (typeof updateHtmlWindows === "function") {
-        if (now - lastHtmlWindowsUpdateMs >= HTML_WINDOWS_UPDATE_INTERVAL_MS) {
-            updateHtmlWindows();
-            lastHtmlWindowsUpdateMs = now;
+        drawPortals();
+        drawEntities();
+        drawSmartbombEffects(DRAW_SMARTBOMB_ONLY_HERO_OPTIONS);
+        drawShip();
+        if (typeof drawShieldTwinkles === "function") drawShieldTwinkles();
+        drawEmpEffects();
+        drawPortalJumpEffects();
+        drawSmartbombEffects(DRAW_SMARTBOMB_EXCLUDE_HERO_OPTIONS);
+        drawShieldBursts();
+        drawHullDamageEffects();
+        drawRocketDamageEffects();
+        drawExplosions();
+        drawRocketAttacks();
+        drawLaserBeams();
+        drawSabShots();
+        ctx.restore();
+        drawRadiationOverlay();
+        drawPvpOverlay();
+        drawDamageBubbles();
+        drawMiniMap();
+        if (typeof updateHtmlWindows === "function") {
+            if (now - lastHtmlWindowsUpdateMs >= HTML_WINDOWS_UPDATE_INTERVAL_MS) {
+                updateHtmlWindows();
+                lastHtmlWindowsUpdateMs = now;
+            }
         }
+        drawQuickbar();
+        drawDebugInfo();
+        drawTooltip();
+        heroSmbJustUsed = false;
+    } finally {
+        if (typeof endEntitySnapshotFrame === "function") endEntitySnapshotFrame();
     }
-    drawQuickbar();
-    drawDebugInfo();
-    drawTooltip();
-    heroSmbJustUsed = false;
-    if (typeof endEntitySnapshotFrame === "function") endEntitySnapshotFrame();
     requestAnimationFrame(render);
 }
 
@@ -184,7 +191,6 @@ function __androTryPlayStartupSounds(reason = "") {
 window.__ANDRO_TRY_PLAY_STARTUP_SOUNDS = __androTryPlayStartupSounds;
 
 window.initGame = async function() {
-    console.log("[Bootstrap] Initializing game...");
     try {
         if (window.AudioManager && typeof window.AudioManager.unlock === "function") {
             await window.AudioManager.unlock();
@@ -252,7 +258,6 @@ window.initGame = async function() {
         window.startNetwork();
     }
     requestAnimationFrame(render);
-    console.log("[Bootstrap] Render loop started.");
 };
 
 const __flashInfoLayoutCache = {};

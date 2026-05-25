@@ -1434,7 +1434,6 @@ window.addEventListener("keydown", e => {
             }
         }
         if (nearest) {
-            console.log("[INPUT] J key → JUMP (portal id=" + nearest.id + ")");
             if (!inJumpZone) {
                 try {
                     if (window.AudioManager && typeof window.AudioManager.playSoundEffect === "function") {

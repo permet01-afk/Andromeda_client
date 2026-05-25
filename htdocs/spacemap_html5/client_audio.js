@@ -1511,10 +1511,6 @@
                 if (!this.pyroSoundByClassId[classId]) this.pyroSoundByClassId[classId] = {};
                 this.pyroSoundByClassId[classId][id] = isNaN(soundId) ? -1 : soundId;
             });
-            console.log("[AudioManager] game.xml audio patterns loaded:", {
-                soundPatterns: Object.keys(this.soundPatterns || {}).length,
-                musicPatterns: Object.keys(this.musicPatterns || {}).length
-            });
             this._patternsReady = true;
             try {
                 if (Array.isArray(this._pendingSfxBeforePatterns) && this._pendingSfxBeforePatterns.length) {

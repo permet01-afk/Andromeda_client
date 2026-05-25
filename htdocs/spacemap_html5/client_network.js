@@ -19,9 +19,6 @@ let wsLoginAttemptPending = false;
 const pendingAttackLocksByAttackerId = new Map();
 
 function resetWsLoginAttempt(reason = "") {
-    if (wsLoginAttemptPending && reason) {
-        console.log(`[WS] Login gate reset (${reason})`);
-    }
     wsLoginAttemptPending = false;
 }
 
@@ -89,9 +86,6 @@ function queueMapLoaded(reason = "") {
         mapLoadedMarkTimer = null;
         mapLoadedMarkTimerType = "";
         mapLoaded = true;
-        if (reason) {
-            console.log(`[MAP] mapLoaded = true (${reason})`);
-        }
         trySendRdyMap();
     };
     if (typeof requestAnimationFrame === "function") {
@@ -114,7 +108,6 @@ function trySendRdyMap() {
     if (!sentRdyMap && heroLoaded && mapLoaded) {
         sendRaw("RDY|MAP");
         sentRdyMap = true;
-        console.log("[WS] Sending RDY|MAP");
     }
 }
 
@@ -230,9 +223,6 @@ function applySelectedRocketFromServer(rawValue, source = "") {
             }
         } catch (_) {}
     }
-    if (source) {
-        console.log(`[ROCKET] Selected rocket sync from ${source}:`, rocketId);
-    }
     return changed;
 }
 
@@ -264,9 +254,6 @@ function applySelectedAmmoFromServer(rawValue, source = "") {
                 drawQuickbar();
             }
         } catch (_) {}
-    }
-    if (source) {
-        console.log(`[AMMO] Selected ammo sync from ${source}:`, ammoId);
     }
     return changed;
 }
@@ -788,7 +775,6 @@ function buildAndromedaWsUrl() {
 function connectToServer(isReconnect = false) {
     hideFlashConnectionLostWindowSafe();
     const url = buildAndromedaWsUrl();
-    console.log("[WS] Connecting to:", url);
     if (!isReconnect) wsReconnectAttempts = 0;
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
         return;
@@ -818,14 +804,12 @@ function connectToServer(isReconnect = false) {
         resetReadyFlags();
         netBuffer = "";
         wsUsesNullDelimiter = false;
-        console.log("[WS] Connected!");
         const version = "4.1";
         if (wsLoginAttemptPending) {
             console.warn("[WS] LOGIN already pending, suppressing duplicate startup LOGIN");
         } else {
             wsLoginAttemptPending = true;
             const loginCmd = `LOGIN|${cfg.userID}|${cfg.sessionID}|${version}`;
-            console.log("[WS] Sending LOGIN →", loginCmd);
             sendRaw(loginCmd);
         }
         startPingTimer();
@@ -910,19 +894,16 @@ function renderChatTabsSafe(attempt = 0) {
 
 function connectToChat() {
     if (chatWs && (chatWs.readyState === WebSocket.OPEN || chatWs.readyState === WebSocket.CONNECTING)) {
-        console.log("[CHAT-WS] Already connected/connection in progress, skipping.");
         return;
     }
     clearChatReconnectTimer();
     chatManualClose = false;
     const url = buildAndromedaWsUrl();
-    console.log("[CHAT-WS] Connecting to Chat/Group channel...");
     chatWs = new WebSocket(url);
     const __chatWsInstance = chatWs;
     chatWs.binaryType = "arraybuffer";
     chatWs.onopen = () => {
         if (chatWs !== __chatWsInstance) return;
-        console.log("[CHAT-WS] Connected! Waiting before init...");
         chatManualClose = false;
         chatServerFrameSeen = false;
         chatBuffer = "";
@@ -935,7 +916,6 @@ function connectToChat() {
                 return;
             }
                 const chatInitCmd = `bu|u|0|${heroId}|${cfg.sessionID}`;
-                console.log("[CHAT-WS] Sending INIT:", chatInitCmd);
                 sendChatRaw(chatInitCmd, __chatWsInstance);
                 setTimeout(() => {
                     if (chatWs === __chatWsInstance && __chatWsInstance.readyState === WebSocket.OPEN) {
@@ -2311,10 +2291,8 @@ function handlePacket_i(parts, i) {
     } catch (_) {}
     const __curMapId = typeof currentMapId !== "undefined" && currentMapId !== null ? parseInt(currentMapId, 10) : NaN;
     if (!isNaN(__curMapId) && __curMapId === newMapId) {
-        console.log("[MAP] Packet i received but map is already active:", newMapId, "(ignored)");
         return;
     }
-    console.log("[MAP] Changing map to: " + newMapId);
     const prevMapId = typeof currentMapId !== "undefined" ? currentMapId : null;
     resetMapState(newMapId);
     if (prevMapId !== null && prevMapId !== newMapId) {
@@ -2829,7 +2807,6 @@ function handlePacket_m(parts, i) {
     const cx = parseInt(parts[start + 1], 10);
     const cy = parseInt(parts[start + 2], 10);
     if (isNaN(cx) || isNaN(cy)) return;
-    console.log(`[MAP] Packet m (mode=${mode}) center=(${cx},${cy})`);
     queueMapLoaded("packet m");
     try {
         if (typeof endPortalJumpLock === "function" && typeof isPortalJumpLocked === "function" && isPortalJumpLocked()) {
@@ -5753,7 +5730,6 @@ function handlePacket_K(parts, i) {
         spawnExplosionAt(entityX, entityY, explosionType);
     }
     if (id === heroId) {
-        console.log("[DEATH] Ship destroyed!");
         addServerInfoLogMessage("SHIP DESTROYED!");
         try {
             if (window.AudioManager && typeof window.AudioManager.playSoundEffect === "function") {
@@ -5815,7 +5791,6 @@ function handlePacket_E(parts, i) {
     };
     const CARGO_ORE_KEYS = [ "prometium", "endurium", "terbium", "prometid", "duranium", "promerium", "seprom", "palladium" ];
     heroCargo = CARGO_ORE_KEYS.reduce((sum, key) => sum + (parseInt(window.oreCargo[key], 10) || 0), 0);
-    console.log("[LAB] Cargo received:", window.oreCargo);
     if (typeof refreshTradeUI === "function") {
         refreshTradeUI();
     }
@@ -5869,7 +5844,6 @@ function handlePacket_T(parts, i) {
             addServerInfoLogMessage("Trade Drone HM7: " + amount + " use(s) remaining.");
         }
     }
-    console.log("[CPU] T packet received:", type, amount);
 }
 
 function handlePacket_b(parts, i) {
@@ -5981,7 +5955,6 @@ function handlePacket_LAB(parts, i) {
         if (updates.length && typeof refreshRefiningWindow === "function") {
             refreshRefiningWindow(true);
         }
-        console.log("[LAB] Lab state received.", updates);
     }
 }
 
@@ -6110,7 +6083,6 @@ function handleTechAction(parts, startIndex) {
                         window.AudioManager.playSoundEffect(37, false, false, -1, -1, true);
                     }
                 } catch (_) {}
-                console.log("[TECH] Shield Backup activated (visual)");
             }
         }
     }
