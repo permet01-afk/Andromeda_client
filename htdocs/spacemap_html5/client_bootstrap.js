@@ -54,6 +54,7 @@ const HTML_WINDOWS_UPDATE_INTERVAL_MS = 100;
 let lastHtmlWindowsUpdateMs = 0;
 
 function render(now) {
+    if (typeof beginEntitySnapshotFrame === "function") beginEntitySnapshotFrame();
     updateGameLogic(now);
     const worldScale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
     const mapScale = typeof getMapViewScaleValue === "function" ? getMapViewScaleValue() : 1;
@@ -109,6 +110,7 @@ function render(now) {
     drawDebugInfo();
     drawTooltip();
     heroSmbJustUsed = false;
+    if (typeof endEntitySnapshotFrame === "function") endEntitySnapshotFrame();
     requestAnimationFrame(render);
 }
 

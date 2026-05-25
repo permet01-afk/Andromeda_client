@@ -950,11 +950,8 @@ function updateCombat() {
     }
     const targetId = attackIntentTargetId || currentLaserTargetId;
     if (targetId == null) return;
-    const target = targetId === heroId ? {
-        x: shipX,
-        y: shipY
-    } : entities[targetId];
-    if (!target) {
+    const hasTarget = targetId === heroId || !!entities[targetId];
+    if (!hasTarget) {
         noteHeroMissingCombatTarget(targetId);
         return;
     }
@@ -1006,11 +1003,19 @@ function updateCombatRotations() {
             if (attackerId == null || attackerId === heroId) continue;
             const attacker = entities[attackerId];
             if (!attacker) continue;
-            const target = tId === heroId ? {
-                x: shipX,
-                y: shipY
-            } : entities[tId];
-            if (!target) {
+            let targetX;
+            let targetY;
+            if (tId === heroId) {
+                targetX = shipX;
+                targetY = shipY;
+            } else {
+                const target = entities[tId];
+                if (target) {
+                    targetX = target.x;
+                    targetY = target.y;
+                }
+            }
+            if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
                 attacker.attackTargetId = null;
                 attacker.attackLockUntil = 0;
                 continue;
@@ -1020,8 +1025,8 @@ function updateCombatRotations() {
                 const lockUntil = beam.createdAt + beam.duration;
                 attacker.attackLockUntil = Math.max(attacker.attackLockUntil || 0, lockUntil);
             }
-            const dx = target.x - attacker.x;
-            const dy = target.y - attacker.y;
+            const dx = targetX - attacker.x;
+            const dy = targetY - attacker.y;
             attacker.desiredAngle = Math.atan2(dy, dx) + Math.PI;
         }
     }
@@ -1043,20 +1048,26 @@ function updateCombatRotations() {
             }
             continue;
         }
-        let target = ent.attackTargetId === heroId ? {
-            x: shipX,
-            y: shipY
-        } : entities[ent.attackTargetId];
-        if (target && Number.isFinite(target.x) && Number.isFinite(target.y)) {
-            ent.attackLockX = target.x;
-            ent.attackLockY = target.y;
-        } else if (Number.isFinite(ent.attackLockX) && Number.isFinite(ent.attackLockY)) {
-            target = {
-                x: ent.attackLockX,
-                y: ent.attackLockY
-            };
+        let targetX;
+        let targetY;
+        if (ent.attackTargetId === heroId) {
+            targetX = shipX;
+            targetY = shipY;
+        } else {
+            const target = entities[ent.attackTargetId];
+            if (target) {
+                targetX = target.x;
+                targetY = target.y;
+            }
         }
-        if (!target) {
+        if (Number.isFinite(targetX) && Number.isFinite(targetY)) {
+            ent.attackLockX = targetX;
+            ent.attackLockY = targetY;
+        } else if (Number.isFinite(ent.attackLockX) && Number.isFinite(ent.attackLockY)) {
+            targetX = ent.attackLockX;
+            targetY = ent.attackLockY;
+        }
+        if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
             if (typeof clearAttackLockForEntity === "function") {
                 clearAttackLockForEntity(ent);
             } else {
@@ -1067,8 +1078,8 @@ function updateCombatRotations() {
             }
             continue;
         }
-        const dx = target.x - ent.x;
-        const dy = target.y - ent.y;
+        const dx = targetX - ent.x;
+        const dy = targetY - ent.y;
         ent.desiredAngle = Math.atan2(dy, dx) + Math.PI;
     }
 }
@@ -1697,22 +1708,24 @@ function queueRocketLauncherMissDisplay(targetId, delayMs, now = performance.now
 
 function resolveRocketTargetPosition(beam) {
     const targetSnap = typeof resolveLiveEntitySnapshotForVisual === "function" ? resolveLiveEntitySnapshotForVisual(beam.targetId, beam.targetVisualLifeId) : snapshotEntityById(beam.targetId);
+    const reusableTargetPosition = beam._targetPosition || (beam._targetPosition = {
+        x: 0,
+        y: 0
+    });
     if (!beam.targetDetached && targetSnap && targetSnap.x != null && targetSnap.y != null) {
         beam.targetLastX = targetSnap.x;
         beam.targetLastY = targetSnap.y;
         if (beam.targetVisualLifeId == null && targetSnap.visualLifeId != null) {
             beam.targetVisualLifeId = targetSnap.visualLifeId;
         }
-        return {
-            x: targetSnap.x,
-            y: targetSnap.y
-        };
+        reusableTargetPosition.x = targetSnap.x;
+        reusableTargetPosition.y = targetSnap.y;
+        return reusableTargetPosition;
     }
     if (Number.isFinite(beam.targetLastX) && Number.isFinite(beam.targetLastY)) {
-        return {
-            x: beam.targetLastX,
-            y: beam.targetLastY
-        };
+        reusableTargetPosition.x = beam.targetLastX;
+        reusableTargetPosition.y = beam.targetLastY;
+        return reusableTargetPosition;
     }
     return null;
 }
@@ -1741,15 +1754,23 @@ function getRocketWorldPositions(beam, now = performance.now()) {
         tx += (Number(beam.initialTargetGapX) || 0) * gapScale;
         ty += (Number(beam.initialTargetGapY) || 0) * gapScale;
     }
-    return {
-        ax: ax,
-        ay: ay,
-        tx: tx,
-        ty: ty,
-        targetBaseX: targetBase.x,
-        targetBaseY: targetBase.y,
-        duration: duration
-    };
+    const positions = beam._worldPositions || (beam._worldPositions = {
+        ax: 0,
+        ay: 0,
+        tx: 0,
+        ty: 0,
+        targetBaseX: 0,
+        targetBaseY: 0,
+        duration: 0
+    });
+    positions.ax = ax;
+    positions.ay = ay;
+    positions.tx = tx;
+    positions.ty = ty;
+    positions.targetBaseX = targetBase.x;
+    positions.targetBaseY = targetBase.y;
+    positions.duration = duration;
+    return positions;
 }
 
 function updateRocketAttacks(now) {
@@ -1868,9 +1889,14 @@ function drawEnergyLeechLaserEchoBeams(now = performance.now()) {
 function drawLaserBeams() {
     const now = performance.now();
     for (const beam of laserBeams) {
+        let attackerSnapshot = null;
+        let attackerSnapshotReady = false;
+        let targetSnapshot = null;
+        let targetSnapshotReady = false;
         if (beam.attackerId) {
-            const attacker = snapshotEntityById(beam.attackerId);
-            if (attacker && (attacker.shipId === 31 || attacker.shipId === 73)) {
+            attackerSnapshot = snapshotEntityById(beam.attackerId);
+            attackerSnapshotReady = true;
+            if (attackerSnapshot && (attackerSnapshot.shipId === 31 || attackerSnapshot.shipId === 73)) {
                 continue;
             }
         }
@@ -1879,8 +1905,16 @@ function drawLaserBeams() {
         const endOffsetX = hasEndOffset ? beam.offsetEndX : hasOffset ? beam.offsetX : 0;
         const endOffsetY = hasEndOffset ? beam.offsetEndY : hasOffset ? beam.offsetY : 0;
         if (beam.followTargets && beam.attackerId && beam.targetId) {
-            const attacker = snapshotEntityById(beam.attackerId);
-            const target = snapshotEntityById(beam.targetId);
+            if (!attackerSnapshotReady) {
+                attackerSnapshot = snapshotEntityById(beam.attackerId);
+                attackerSnapshotReady = true;
+            }
+            if (!targetSnapshotReady) {
+                targetSnapshot = snapshotEntityById(beam.targetId);
+                targetSnapshotReady = true;
+            }
+            const attacker = attackerSnapshot;
+            const target = targetSnapshot;
             if (attacker && target) {
                 const origin = beam.absorber ? target : attacker;
                 const destination = beam.absorber ? attacker : target;
@@ -1927,7 +1961,11 @@ function drawLaserBeams() {
         }
         const isSabBeam = beam.spriteId === 4;
         if (isSabBeam && beam.targetId) {
-            const target = snapshotEntityById(beam.targetId);
+            if (!targetSnapshotReady) {
+                targetSnapshot = snapshotEntityById(beam.targetId);
+                targetSnapshotReady = true;
+            }
+            const target = targetSnapshot;
             if (target) {
                 const baseX = target.x;
                 const baseY = target.y;
@@ -1936,7 +1974,11 @@ function drawLaserBeams() {
             }
         }
         if (isSabBeam && beam.attackerId) {
-            const attacker = snapshotEntityById(beam.attackerId);
+            if (!attackerSnapshotReady) {
+                attackerSnapshot = snapshotEntityById(beam.attackerId);
+                attackerSnapshotReady = true;
+            }
+            const attacker = attackerSnapshot;
             if (attacker) {
                 const baseX = attacker.x;
                 const baseY = attacker.y;
@@ -2022,6 +2064,8 @@ function easeOutQuad(t) {
 }
 
 const ROCKET_SMOKE_OFFSET = 22;
+const ROCKET_SMOKE_PARTICLE_POOL_LIMIT = 512;
+const rocketSmokeParticlePool = [];
 const ROCKET_LAUNCHER_DURATION_MIN_MS = 750;
 const ROCKET_LAUNCHER_DURATION_MAX_MS = 2000;
 const ROCKET_LAUNCHER_TRACKING_GAP = 800;
@@ -2085,25 +2129,56 @@ function getRocketSmokeDefinition(rocketId, airstrike = false) {
     };
 }
 
+function resolveRocketSmokeDefinitionForBeam(beam) {
+    const airstrike = !!beam.airstrike;
+    const cached = beam._rocketSmokeDefInfo;
+    if (cached && cached.rocketId === beam.rocketId && cached.airstrike === airstrike) {
+        return cached.def ? cached : null;
+    }
+    const defInfo = getRocketSmokeDefinition(beam.rocketId, airstrike);
+    if (!defInfo) {
+        beam._rocketSmokeDefInfo = null;
+        return null;
+    }
+    const nextInfo = cached || {};
+    nextInfo.rocketId = beam.rocketId;
+    nextInfo.airstrike = airstrike;
+    nextInfo.key = defInfo.key;
+    nextInfo.def = defInfo.def;
+    beam._rocketSmokeDefInfo = nextInfo;
+    return nextInfo;
+}
+
+function recycleRocketSmokeParticle(particle) {
+    if (!particle || rocketSmokeParticlePool.length >= ROCKET_SMOKE_PARTICLE_POOL_LIMIT) return;
+    particle.key = null;
+    particle.x = 0;
+    particle.y = 0;
+    particle.angle = 0;
+    particle.createdAt = 0;
+    rocketSmokeParticlePool.push(particle);
+}
+
 function spawnRocketSmokeParticle(smokeKey, x, y, angle, now) {
     if (smokeKey == null || x == null || y == null) return;
-    rocketSmokeParticles.push({
-        key: smokeKey,
-        x: x,
-        y: y,
-        angle: angle,
-        createdAt: now || performance.now()
-    });
+    const particle = rocketSmokeParticlePool.pop() || {};
+    particle.key = smokeKey;
+    particle.x = x;
+    particle.y = y;
+    particle.angle = angle;
+    particle.createdAt = now || performance.now();
+    rocketSmokeParticles.push(particle);
 }
 
 function drawRocketSmokeParticles(now) {
     if (!rocketSmokeParticles.length || !ROCKET_SMOKE_DEFS) return;
     const time = now || performance.now();
+    let keepStart = rocketSmokeParticles.length;
     for (let i = rocketSmokeParticles.length - 1; i >= 0; i--) {
         const p = rocketSmokeParticles[i];
         const def = p ? ROCKET_SMOKE_DEFS[p.key] : null;
         if (!p || !def) {
-            rocketSmokeParticles.splice(i, 1);
+            recycleRocketSmokeParticle(p);
             continue;
         }
         const fps = def.fps || ROCKET_SMOKE_FPS || 25;
@@ -2113,21 +2188,32 @@ function drawRocketSmokeParticles(now) {
         const age = time - p.createdAt;
         const frame = Math.floor(age / frameDuration);
         if (frame < 0 || frame >= frameCount) {
-            rocketSmokeParticles.splice(i, 1);
+            recycleRocketSmokeParticle(p);
             continue;
         }
         const img = getRocketSmokeSpriteFrame(p.key, frame);
-        if (!img || !img.complete || img.width <= 0 || img.height <= 0) continue;
+        if (!img || !img.complete || img.width <= 0 || img.height <= 0) {
+            rocketSmokeParticles[--keepStart] = p;
+            continue;
+        }
         ctx.save();
         ctx.translate(mapToScreenX(p.x), mapToScreenY(p.y));
         ctx.rotate(p.angle || 0);
         ctx.drawImage(img, -img.width / 2, -img.height / 2, img.width, img.height);
         ctx.restore();
+        rocketSmokeParticles[--keepStart] = p;
+    }
+    if (keepStart > 0) {
+        const keepCount = rocketSmokeParticles.length - keepStart;
+        for (let i = 0; i < keepCount; i++) {
+            rocketSmokeParticles[i] = rocketSmokeParticles[keepStart + i];
+        }
+        rocketSmokeParticles.length = keepCount;
     }
 }
 
 function emitRocketSmoke(beam, projX, projY, travelAngle, spriteWidth, now) {
-    const defInfo = getRocketSmokeDefinition(beam.rocketId, !!beam.airstrike);
+    const defInfo = resolveRocketSmokeDefinitionForBeam(beam);
     if (!defInfo) return;
     if (beam.smokeKey == null) beam.smokeKey = defInfo.key;
     const def = defInfo.def;
@@ -2214,7 +2300,28 @@ function drawSabShots() {
     }
 }
 
-function snapshotEntityById(id) {
+const __entitySnapshotFrameCache = Object.create(null);
+const __entitySnapshotFrameCacheKeys = [];
+let __entitySnapshotFrameCacheActive = false;
+
+function clearEntitySnapshotFrameCache() {
+    for (let i = 0; i < __entitySnapshotFrameCacheKeys.length; i++) {
+        delete __entitySnapshotFrameCache[__entitySnapshotFrameCacheKeys[i]];
+    }
+    __entitySnapshotFrameCacheKeys.length = 0;
+}
+
+function beginEntitySnapshotFrame() {
+    clearEntitySnapshotFrameCache();
+    __entitySnapshotFrameCacheActive = true;
+}
+
+function endEntitySnapshotFrame() {
+    __entitySnapshotFrameCacheActive = false;
+    clearEntitySnapshotFrameCache();
+}
+
+function buildEntitySnapshotById(id) {
     if (heroId !== null && id === heroId) {
         return {
             id: heroId,
@@ -2245,6 +2352,20 @@ function snapshotEntityById(id) {
         };
     }
     return null;
+}
+
+function snapshotEntityById(id) {
+    if (!__entitySnapshotFrameCacheActive) return buildEntitySnapshotById(id);
+    const cacheKey = String(id);
+    if (Object.prototype.hasOwnProperty.call(__entitySnapshotFrameCache, cacheKey)) {
+        return __entitySnapshotFrameCache[cacheKey];
+    }
+    const snapshot = buildEntitySnapshotById(id);
+    if (snapshot) {
+        __entitySnapshotFrameCache[cacheKey] = snapshot;
+        __entitySnapshotFrameCacheKeys.push(cacheKey);
+    }
+    return snapshot;
 }
 
 function computeShieldImpactRadius(targetSnap) {

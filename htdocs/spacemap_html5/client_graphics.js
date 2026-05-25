@@ -932,6 +932,9 @@ function getAchievementIcon(achievementId) {
 const nameplateTextFieldBitmapCache = Object.create(null);
 const nameplateTextFieldBitmapCacheKeys = [];
 const NAMEPLATE_TEXT_FIELD_BITMAP_CACHE_LIMIT = 512;
+const nameplateCompositeBitmapCache = Object.create(null);
+const nameplateCompositeBitmapCacheKeys = [];
+const NAMEPLATE_COMPOSITE_BITMAP_CACHE_LIMIT = 512;
 const droneDisplayBitmapCache = Object.create(null);
 const _nameplateTextMeasureCanvas = document.createElement("canvas");
 const _nameplateTextMeasureCtx = _nameplateTextMeasureCanvas.getContext("2d", {
@@ -956,6 +959,26 @@ function clearNameplateTextFieldBitmapCache() {
         }
     }
     nameplateTextFieldBitmapCacheKeys.length = 0;
+    clearNameplateCompositeBitmapCache();
+}
+
+function clearNameplateCompositeBitmapCache() {
+    for (const key in nameplateCompositeBitmapCache) {
+        if (Object.prototype.hasOwnProperty.call(nameplateCompositeBitmapCache, key)) {
+            disposeNameplateTextFieldBitmap(nameplateCompositeBitmapCache[key]);
+            delete nameplateCompositeBitmapCache[key];
+        }
+    }
+    nameplateCompositeBitmapCacheKeys.length = 0;
+}
+
+function pruneNameplateCompositeBitmapCache() {
+    while (nameplateCompositeBitmapCacheKeys.length > NAMEPLATE_COMPOSITE_BITMAP_CACHE_LIMIT) {
+        const oldKey = nameplateCompositeBitmapCacheKeys.shift();
+        if (!oldKey) continue;
+        disposeNameplateTextFieldBitmap(nameplateCompositeBitmapCache[oldKey]);
+        delete nameplateCompositeBitmapCache[oldKey];
+    }
 }
 
 function touchNameplateTextFieldBitmapCacheKey(cacheKey) {
@@ -1094,29 +1117,34 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
     const bitmapHeight = Math.max(1, rankReady ? rankY + rankH : 0, factionReady ? factionY + factionH : 0, clanFieldBitmap ? clanFieldBitmap.height + textFieldY + 1 : 0, nameFieldBitmap ? nameFieldBitmap.height + textFieldY + 1 : 0);
     const startX = Math.round(centerX - totalWidth / 2) + drawOffsetX - rankVisualOverflowLeft - rank23LeftAlignShift;
     const startY = Math.round(baseY + drawOffsetY);
-    let scratch = drawNameplateWithIcons._scratchCanvas;
-    if (!scratch) {
-        scratch = document.createElement("canvas");
-        drawNameplateWithIcons._scratchCanvas = scratch;
-    }
-    scratch.width = visualWidth;
-    scratch.height = bitmapHeight;
-    const sctx = scratch.getContext("2d");
-    sctx.clearRect(0, 0, scratch.width, scratch.height);
-    sctx.imageSmoothingEnabled = true;
-    if (rankReady) {
-        sctx.drawImage(rankImg, rankDrawX, rankY);
-    }
-    if (factionReady) {
-        sctx.drawImage(factionImg, rankVisualOverflowLeft + totalWidth - factionW + rank23LeftAlignShift, factionY);
-    }
-    let cursorX = rankVisualOverflowLeft + rankLogicalW + rank23LeftAlignShift;
-    if (clanFieldBitmap) {
-        sctx.drawImage(clanFieldBitmap, cursorX, textFieldY);
-        cursorX += clanFieldWidth;
-    }
-    if (nameFieldBitmap) {
-        sctx.drawImage(nameFieldBitmap, cursorX, textFieldY);
+    const rankSignature = rankReady ? `${rankId}:${rankImg.width}x${rankImg.height}` : "none";
+    const factionSignature = factionReady ? `${factionId}:${factionImg.width}x${factionImg.height}` : "none";
+    const compositeCacheKey = "flashNPv1|" + flashNameplateFontCacheRevision + "|" + safeName + "|" + clanText + "|" + fillStyle + "|" + (clanTagColor || fillStyle) + "|" + rankSignature + "|" + factionSignature + "|" + clanFieldWidth + "|" + nameFieldWidth + "|" + totalWidth + "|" + visualWidth + "|" + bitmapHeight + "|" + rankVisualOverflowLeft + "|" + rankVisualOverflowRight + "|" + rank23LeftAlignShift;
+    let compositeCanvas = nameplateCompositeBitmapCache[compositeCacheKey];
+    if (!compositeCanvas) {
+        compositeCanvas = document.createElement("canvas");
+        compositeCanvas.width = visualWidth;
+        compositeCanvas.height = bitmapHeight;
+        const sctx = compositeCanvas.getContext("2d");
+        sctx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+        sctx.imageSmoothingEnabled = true;
+        if (rankReady) {
+            sctx.drawImage(rankImg, rankDrawX, rankY);
+        }
+        if (factionReady) {
+            sctx.drawImage(factionImg, rankVisualOverflowLeft + totalWidth - factionW + rank23LeftAlignShift, factionY);
+        }
+        let cursorX = rankVisualOverflowLeft + rankLogicalW + rank23LeftAlignShift;
+        if (clanFieldBitmap) {
+            sctx.drawImage(clanFieldBitmap, cursorX, textFieldY);
+            cursorX += clanFieldWidth;
+        }
+        if (nameFieldBitmap) {
+            sctx.drawImage(nameFieldBitmap, cursorX, textFieldY);
+        }
+        nameplateCompositeBitmapCache[compositeCacheKey] = compositeCanvas;
+        nameplateCompositeBitmapCacheKeys.push(compositeCacheKey);
+        pruneNameplateCompositeBitmapCache();
     }
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0)";
@@ -1126,7 +1154,7 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
     if (achievementReady) {
         ctx.drawImage(achievementImg, startX + rank23LeftAlignShift - 2, startY - 14);
     }
-    ctx.drawImage(scratch, startX, startY);
+    ctx.drawImage(compositeCanvas, startX, startY);
     ctx.restore();
     return {
         startX: startX,
@@ -1399,13 +1427,18 @@ function drawEngineSmokeTrail(key, thrusterX, thrusterY, angleRad, isMoving, scr
             createdAt: now
         });
     }
-    const frames = def.frames && def.frames.length > 0 ? def.frames : Array.from({
-        length: def.frameCount || 1
-    }, (_, idx) => idx + 1);
+    let frames = def.frames && def.frames.length > 0 ? def.frames : def._frameNumbers;
+    if (!frames || frames.length === 0) {
+        frames = [];
+        const fallbackFrameCount = def.frameCount || 1;
+        for (let i = 0; i < fallbackFrameCount; i++) frames.push(i + 1);
+        def._frameNumbers = frames;
+    }
     const frameCount = frames.length;
     const duration = def.duration || 750;
-    const remainingParticles = [];
-    for (const p of state.particles) {
+    let remainingParticleCount = 0;
+    for (let i = 0; i < state.particles.length; i++) {
+        const p = state.particles[i];
         const age = now - p.createdAt;
         if (age > duration) continue;
         const lifeRatio = age / duration;
@@ -1424,14 +1457,14 @@ function drawEngineSmokeTrail(key, thrusterX, thrusterY, angleRad, isMoving, scr
             ctx.drawImage(img, -drawW * ax, -drawH * ay, drawW, drawH);
             ctx.restore();
         }
-        remainingParticles.push(p);
+        state.particles[remainingParticleCount++] = p;
     }
-    if (remainingParticles.length === 0 && !isMoving) {
+    state.particles.length = remainingParticleCount;
+    if (remainingParticleCount === 0 && !isMoving) {
         delete engineSmokeState[key];
         syncChatSendButtonState();
         return;
     }
-    state.particles = remainingParticles;
     engineSmokeState[key] = state;
 }
 
@@ -1454,7 +1487,8 @@ function drawEngineTrail(key, shipId, worldX, worldY, frameIndex, angleRad, offs
     const rot = typeof angleRad === "number" && Number.isFinite(angleRad) ? angleRad : 0;
     const shiftWorldX = visualShift && Number.isFinite(visualShift.x) ? visualShift.x : 0;
     const shiftWorldY = visualShift && Number.isFinite(visualShift.y) ? visualShift.y : 0;
-    engineOffsets.forEach((engineOffset, index) => {
+    for (let index = 0; index < engineOffsets.length; index++) {
+        const engineOffset = engineOffsets[index];
         const thrusterX = worldX + engineOffset.x * offsetScale - shiftWorldX;
         const thrusterY = worldY + engineOffset.y * offsetScale - shiftWorldY;
         const smokeKey = `${key}_${index}`;
@@ -1466,12 +1500,16 @@ function drawEngineTrail(key, shipId, worldX, worldY, frameIndex, angleRad, offs
         ctx.rotate(rot);
         ctx.drawImage(img, -drawW * ax, -drawH * ay, drawW, drawH);
         ctx.restore();
-    });
+    }
 }
 
 const minimapStationIconCache = Object.create(null);
 
 const minimapThreatIndicatorCache = Object.create(null);
+const FLASH_MINIMAP_DYNAMIC_UPDATE_MS = 250;
+const minimapEntityRenderCache = [];
+let minimapEntityRenderCacheLastUpdate = -Infinity;
+let minimapEntityRenderCacheSignature = "";
 
 function getMinimapThreatIndicator(level, height) {
     const key = `${level}|${height}`;
@@ -1516,6 +1554,29 @@ function getMinimapThreatIndicator(level, height) {
     c.stroke();
     minimapThreatIndicatorCache[key] = canvas;
     return canvas;
+}
+
+function rebuildMinimapEntityRenderCache(miniScaleX, miniScaleY, nowMs) {
+    let writeIndex = 0;
+    for (const id in entities) {
+        const e = entities[id];
+        if (!e) continue;
+        if (e.id === heroId) continue;
+        if (e.kind === "unknown") continue;
+        const isSpaceball = e.shipId === 442 || e.shipId === 443;
+        if (e.kind === "box" && !isSpaceball) continue;
+        if (typeof isEntityInvisibleOnMinimap === "function" && isEntityInvisibleOnMinimap(e)) continue;
+        const item = minimapEntityRenderCache[writeIndex] || {};
+        item.localX = (e.x - MAP_MIN_X) * miniScaleX;
+        item.localY = (e.y - MAP_MIN_Y) * miniScaleY;
+        item.isSpaceball = isSpaceball;
+        item.warnIconOnMap = !!e.warnIconOnMap;
+        item.fadedUntil = e.fadedUntil || 0;
+        item.color = typeof getMinimapEntityColor === "function" ? getMinimapEntityColor(e) : getEntityColor(e);
+        minimapEntityRenderCache[writeIndex++] = item;
+    }
+    minimapEntityRenderCache.length = writeIndex;
+    minimapEntityRenderCacheLastUpdate = nowMs;
 }
 
 function drawMiniMap() {
@@ -1729,35 +1790,36 @@ function drawMiniMap() {
     drawMiniPixel(heroPx, heroPy, "#33cc00");
     const alertIcon = getUiImage(UI_SPRITES.minimapAlertIcon);
     const spaceballIcon = getUiImage(UI_SPRITES.minimapSpaceballIcon);
-    for (const id in entities) {
-        const e = entities[id];
-        if (!e) continue;
-        if (e.id === heroId) continue;
-        if (e.kind === "unknown") continue;
-        const isSpaceball = e.shipId === 442 || e.shipId === 443;
-        if (e.kind === "box" && !isSpaceball) continue;
-        if (typeof isEntityInvisibleOnMinimap === "function" && isEntityInvisibleOnMinimap(e)) continue;
-        const mx = toMiniX(e.x);
-        const my = toMiniY(e.y);
-        if (e.fadedUntil && e.fadedUntil > nowMs) {
-            const a = Math.max(0, Math.min(1, (e.fadedUntil - nowMs) / 600));
+    const alertReady = !!(alertIcon && alertIcon.complete && alertIcon.width > 0);
+    const spaceballReady = !!(spaceballIcon && spaceballIcon.complete && spaceballIcon.width > 0);
+    const entityCacheSignature = `${currentMapId}|${heroId}|${MAP_MIN_X}|${MAP_MIN_Y}|${miniScaleX}|${miniScaleY}|${alertReady}|${spaceballReady}`;
+    if (entityCacheSignature !== minimapEntityRenderCacheSignature || nowMs - minimapEntityRenderCacheLastUpdate >= FLASH_MINIMAP_DYNAMIC_UPDATE_MS) {
+        minimapEntityRenderCacheSignature = entityCacheSignature;
+        rebuildMinimapEntityRenderCache(miniScaleX, miniScaleY, nowMs);
+    }
+    for (let i = 0; i < minimapEntityRenderCache.length; i++) {
+        const item = minimapEntityRenderCache[i];
+        const mx = x + item.localX;
+        const my = mapY + item.localY;
+        if (item.fadedUntil && item.fadedUntil > nowMs) {
+            const a = Math.max(0, Math.min(1, (item.fadedUntil - nowMs) / 600));
             ctx.save();
             ctx.globalAlpha = a;
-            if (isSpaceball && spaceballIcon && spaceballIcon.complete && spaceballIcon.width > 0) {
+            if (item.isSpaceball && spaceballReady) {
                 ctx.drawImage(spaceballIcon, mx - spaceballIcon.width / 2, my - spaceballIcon.height / 2, spaceballIcon.width, spaceballIcon.height);
-            } else if (e.warnIconOnMap && alertIcon && alertIcon.complete && alertIcon.width > 0) {
+            } else if (item.warnIconOnMap && alertReady) {
                 ctx.drawImage(alertIcon, mx - alertIcon.width / 2, my - alertIcon.height / 2, alertIcon.width, alertIcon.height);
             } else {
-                drawMiniPixel(mx, my, typeof getMinimapEntityColor === "function" ? getMinimapEntityColor(e) : getEntityColor(e));
+                drawMiniPixel(mx, my, item.color);
             }
             ctx.restore();
         } else {
-            if (isSpaceball && spaceballIcon && spaceballIcon.complete && spaceballIcon.width > 0) {
+            if (item.isSpaceball && spaceballReady) {
                 ctx.drawImage(spaceballIcon, mx - spaceballIcon.width / 2, my - spaceballIcon.height / 2, spaceballIcon.width, spaceballIcon.height);
-            } else if (e.warnIconOnMap && alertIcon && alertIcon.complete && alertIcon.width > 0) {
+            } else if (item.warnIconOnMap && alertReady) {
                 ctx.drawImage(alertIcon, mx - alertIcon.width / 2, my - alertIcon.height / 2, alertIcon.width, alertIcon.height);
             } else {
-                drawMiniPixel(mx, my, typeof getMinimapEntityColor === "function" ? getMinimapEntityColor(e) : getEntityColor(e));
+                drawMiniPixel(mx, my, item.color);
             }
         }
     }
@@ -1780,22 +1842,23 @@ function drawMiniMap() {
     ctx.restore();
     if (typeof minimapGroupPings !== "undefined" && Array.isArray(minimapGroupPings) && minimapGroupPings.length > 0) {
         const def = MINIMAP_SPRITE_DEFS.groupPing;
-        const keep = [];
+        let keepCount = 0;
         const cycleMs = 500;
-        for (const ping of minimapGroupPings) {
+        for (let i = 0; i < minimapGroupPings.length; i++) {
+            const ping = minimapGroupPings[i];
             const age = nowMs - ping.t0;
             const life = cycleMs;
             if (ping.count === -1) {
-                keep.push(ping);
+                minimapGroupPings[keepCount++] = ping;
             } else if (age > life) {
                 ping.count--;
                 if (ping.count > 0) {
                     ping.t0 = nowMs;
-                    keep.push(ping);
+                    minimapGroupPings[keepCount++] = ping;
                 }
                 continue;
             } else {
-                keep.push(ping);
+                minimapGroupPings[keepCount++] = ping;
             }
             const frameFloat = age / cycleMs * def.frameCount;
             const frameIndex = Math.min(def.frameCount - 1, Math.floor(frameFloat));
@@ -1808,8 +1871,7 @@ function drawMiniMap() {
             ctx.drawImage(img, mx - img.width / 2, my - img.height / 2, img.width, img.height);
             ctx.restore();
         }
-        minimapGroupPings.length = 0;
-        for (const p of keep) minimapGroupPings.push(p);
+        minimapGroupPings.length = keepCount;
     }
     if (window.minimapServerMarkers instanceof Map && window.minimapServerMarkers.size > 0) {
         const def = MINIMAP_SPRITE_DEFS.groupPing;
@@ -2599,16 +2661,24 @@ function flashDrawShieldBackupBurst(centerX, centerY, startedAtMs, untilMs = 0) 
     ctx.restore();
 }
 
-function flashResolveTechVisualWorldPosition(targetId) {
+function flashResolveTechVisualWorldPosition(targetId, out = null) {
     const numericId = parseInt(targetId, 10);
     if (!Number.isFinite(numericId)) return null;
+    const pos = out || {
+        x: 0,
+        y: 0
+    };
     if (numericId === heroId) {
         if (typeof shipX !== "number" || typeof shipY !== "number") return null;
-        return { x: shipX, y: shipY };
+        pos.x = shipX;
+        pos.y = shipY;
+        return pos;
     }
     const ent = typeof entities === "object" && entities ? entities[numericId] || null : null;
     if (!ent || typeof ent.x !== "number" || typeof ent.y !== "number") return null;
-    return { x: ent.x, y: ent.y };
+    pos.x = ent.x;
+    pos.y = ent.y;
+    return pos;
 }
 
 function flashDrawChainImpulseBolt(fromX, fromY, toX, toY, alpha, seed, reveal = 1) {
@@ -2656,10 +2726,25 @@ function flashDrawChainImpulseBolt(fromX, fromY, toX, toY, alpha, seed, reveal =
 function drawChainImpulseTechEffects() {
     if (!Array.isArray(techChainImpulseEffects) || !techChainImpulseEffects.length) return;
     const now = performance.now();
-    techChainImpulseEffects = techChainImpulseEffects.filter(effect => effect && (!(Number(effect.endsAt) > 0) || now <= Number(effect.endsAt)));
+    let activeCount = 0;
+    for (let i = 0; i < techChainImpulseEffects.length; i++) {
+        const effect = techChainImpulseEffects[i];
+        if (effect && (!(Number(effect.endsAt) > 0) || now <= Number(effect.endsAt))) {
+            techChainImpulseEffects[activeCount++] = effect;
+        }
+    }
+    techChainImpulseEffects.length = activeCount;
     if (!techChainImpulseEffects.length) return;
+    const sourceScratch = drawChainImpulseTechEffects._sourceScratch || (drawChainImpulseTechEffects._sourceScratch = {
+        x: 0,
+        y: 0
+    });
+    const targetScratch = drawChainImpulseTechEffects._targetScratch || (drawChainImpulseTechEffects._targetScratch = {
+        x: 0,
+        y: 0
+    });
     for (const effect of techChainImpulseEffects) {
-        const sourcePos = flashResolveTechVisualWorldPosition(effect.attackerId);
+        const sourcePos = flashResolveTechVisualWorldPosition(effect.attackerId, sourceScratch);
         if (!sourcePos) continue;
         const targetCount = Array.isArray(effect.targetIds) ? effect.targetIds.length : 0;
         if (!(targetCount > 0)) continue;
@@ -2669,18 +2754,22 @@ function drawChainImpulseTechEffects() {
             fadeAlpha = Math.max(0, 1 - (now - chainBuildEndAt) / FLASH_CHAIN_IMPULSE_FADE_MS);
         }
         if (!(fadeAlpha > 0)) continue;
-        let lastPos = sourcePos;
+        let lastX = sourcePos.x;
+        let lastY = sourcePos.y;
         for (let idx = 0; idx < effect.targetIds.length; idx++) {
-            const targetPos = flashResolveTechVisualWorldPosition(effect.targetIds[idx]);
+            const targetPos = flashResolveTechVisualWorldPosition(effect.targetIds[idx], targetScratch);
             if (!targetPos) continue;
-            const fromX = typeof mapToScreenX === "function" ? mapToScreenX(lastPos.x) : lastPos.x;
-            const fromY = typeof mapToScreenY === "function" ? mapToScreenY(lastPos.y) : lastPos.y;
-            const toX = typeof mapToScreenX === "function" ? mapToScreenX(targetPos.x) : targetPos.x;
-            const toY = typeof mapToScreenY === "function" ? mapToScreenY(targetPos.y) : targetPos.y;
+            const targetX = targetPos.x;
+            const targetY = targetPos.y;
+            const fromX = typeof mapToScreenX === "function" ? mapToScreenX(lastX) : lastX;
+            const fromY = typeof mapToScreenY === "function" ? mapToScreenY(lastY) : lastY;
+            const toX = typeof mapToScreenX === "function" ? mapToScreenX(targetX) : targetX;
+            const toY = typeof mapToScreenY === "function" ? mapToScreenY(targetY) : targetY;
             const segmentStartedAt = Number(effect.startedAt) + idx * FLASH_CHAIN_IMPULSE_BUILD_MS;
             const segmentAge = now - segmentStartedAt;
             if (segmentAge < 0) {
-                lastPos = targetPos;
+                lastX = targetX;
+                lastY = targetY;
                 continue;
             }
             const reveal = Math.max(0, Math.min(1, segmentAge / FLASH_CHAIN_IMPULSE_BUILD_MS));
@@ -2688,7 +2777,8 @@ function drawChainImpulseTechEffects() {
                 const animatedSeed = (effect.seed || 0) + idx * 17 + now * 0.06;
                 flashDrawChainImpulseBolt(fromX, fromY, toX, toY, fadeAlpha, animatedSeed, reveal);
             }
-            lastPos = targetPos;
+            lastX = targetX;
+            lastY = targetY;
         }
     }
 }
@@ -3034,10 +3124,13 @@ function drawShip() {
                 ctx.drawImage(glowImg, shipScreenX - gw / 2 - shiftX, sy - gh / 2 - shiftY, gw, gh);
             }
         }
-        const heroEngineVisualShift = shouldApplyEngineVisualShift(shipId) ? {
-            x: shiftX,
-            y: shiftY
-        } : null;
+        const heroVisualShift = drawShip._visualShift || (drawShip._visualShift = {
+            x: 0,
+            y: 0
+        });
+        heroVisualShift.x = shiftX;
+        heroVisualShift.y = shiftY;
+        const heroEngineVisualShift = shouldApplyEngineVisualShift(shipId) ? heroVisualShift : null;
         drawEngineTrail("hero", shipId, shipX, shipY, frameIndex, heroAngle || 0, 0, false, heroEngineVisualShift);
         if (img && img.complete && img.width > 0 && img.height > 0) {
             const w = img.width * entityScale;
@@ -3045,10 +3138,7 @@ function drawShip() {
             shipDrawnHeight = h;
             ctx.drawImage(img, shipScreenX - w / 2 - shiftX, sy - h / 2 - shiftY, w, h);
         }
-        drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, sy, {
-            x: shiftX,
-            y: shiftY
-        });
+        drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, sy, heroVisualShift);
         drawShipSkillVisualEffectsForEntity(heroId, shipAnchorX, shipAnchorY, shipId, frameIndex, heroAngle || 0, shipDrawnHeight, "hero", shipX, shipY);
         drawHeroLevelUpEffects(shipAnchorX, shipAnchorY);
     } else {
@@ -3369,44 +3459,96 @@ function updateDroneConnectorAnimations(droneConnector, shipAngleRad, nowMs) {
     }
 }
 
+function isDroneGeometryCacheValid(cache, groups, baseRotationDeg, groupDimension) {
+    if (!cache || cache.baseRotationDeg !== baseRotationDeg || cache.groupDimension !== groupDimension) return false;
+    if (!cache.groups || cache.groups.length !== groups.length) return false;
+    let itemIndex = 0;
+    for (let gi = 0; gi < groups.length; gi++) {
+        const group = groups[gi];
+        const drones = group && Array.isArray(group.drones) ? group.drones : [];
+        const targetGroupAngleDeg = baseRotationDeg + positionOffsetDegrees(group && group.position);
+        const groupAngleDeg = group && group._anim && Number.isFinite(group._anim.currentRotationDeg) ? group._anim.currentRotationDeg : targetGroupAngleDeg;
+        const groupCache = cache.groups[gi];
+        if (!groupCache || groupCache.group !== group || groupCache.position !== (group && group.position) || groupCache.rotationDeg !== groupAngleDeg || groupCache.droneCount !== drones.length) return false;
+        for (let di = 0; di < drones.length; di++) {
+            const drone = drones[di];
+            const item = cache.items[itemIndex++];
+            if (!item || item.drone !== drone || item.position !== (drone && drone.position) || item.dimension !== (drone && drone.dimension)) return false;
+        }
+    }
+    return itemIndex === cache.items.length;
+}
+
+function rebuildDroneGeometryCache(droneConnector, groups, baseRotationDeg, groupDimension) {
+    const cache = droneConnector._geometryCache || {
+        groups: [],
+        items: []
+    };
+    cache.baseRotationDeg = baseRotationDeg;
+    cache.groupDimension = groupDimension;
+    let itemIndex = 0;
+    for (let gi = 0; gi < groups.length; gi++) {
+        const group = groups[gi];
+        const drones = group && Array.isArray(group.drones) ? group.drones : [];
+        const targetGroupAngleDeg = baseRotationDeg + positionOffsetDegrees(group && group.position);
+        const groupAngleDeg = group && group._anim && Number.isFinite(group._anim.currentRotationDeg) ? group._anim.currentRotationDeg : targetGroupAngleDeg;
+        const groupAngleRad = groupAngleDeg * DEG_TO_RAD;
+        const groupOffsetX = Math.cos(groupAngleRad) * groupDimension;
+        const groupOffsetY = Math.sin(groupAngleRad) * groupDimension;
+        const groupCache = cache.groups[gi] || {};
+        groupCache.group = group;
+        groupCache.position = group && group.position;
+        groupCache.rotationDeg = groupAngleDeg;
+        groupCache.droneCount = drones.length;
+        cache.groups[gi] = groupCache;
+        for (let di = 0; di < drones.length; di++) {
+            const drone = drones[di];
+            const droneAngleDeg = baseRotationDeg + positionOffsetDegrees(drone && drone.position);
+            const droneAngleRad = droneAngleDeg * DEG_TO_RAD;
+            const droneRadius = drone && drone.position === DRONE_POSITION_CENTER ? 1 : drone && drone.dimension || DRONE_DEFAULT_DIMENSION;
+            const item = cache.items[itemIndex] || {};
+            item.drone = drone;
+            item.position = drone && drone.position;
+            item.dimension = drone && drone.dimension;
+            item.offsetX = groupOffsetX + Math.cos(droneAngleRad) * droneRadius;
+            item.offsetY = groupOffsetY + Math.sin(droneAngleRad) * droneRadius;
+            cache.items[itemIndex++] = item;
+        }
+    }
+    cache.groups.length = groups.length;
+    cache.items.length = itemIndex;
+    droneConnector._geometryCache = cache;
+    return cache;
+}
+
 function drawDrones(worldX, worldY, droneConnector, shipAngle = 0, shipFrameIndex = null) {
     if (!droneConnector || !droneConnector.groups || !droneConnector.groups.length) return;
+    const groups = droneConnector.groups;
     const normalizedShipAngle = isFinite(shipAngle) ? shipAngle : 0;
     const entityScale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
     const shipRotationDegInt = normalizeDeg(Math.round(normalizedShipAngle * RAD_TO_DEG));
     const baseRotationDeg = shipRotationDegInt - 180;
     const directionIndex = typeof shipFrameIndex === "number" && Number.isFinite(shipFrameIndex) ? shipFrameIndex : getDirectionFrameIndex(normalizedShipAngle, DRONE_DIRECTION_FRAME_COUNT);
     const groupDimension = droneConnector.groupDimension || DRONE_GROUP_DIMENSION;
+    const geometryCache = isDroneGeometryCacheValid(droneConnector._geometryCache, groups, baseRotationDeg, groupDimension) ? droneConnector._geometryCache : rebuildDroneGeometryCache(droneConnector, groups, baseRotationDeg, groupDimension);
     ctx.save();
     ctx.globalCompositeOperation = "source-over";
-    for (const group of droneConnector.groups) {
-        const targetGroupAngleDeg = baseRotationDeg + positionOffsetDegrees(group.position);
-        const groupAngleDeg = group && group._anim && Number.isFinite(group._anim.currentRotationDeg) ? group._anim.currentRotationDeg : targetGroupAngleDeg;
-        const groupAngleRad = groupAngleDeg * DEG_TO_RAD;
-        const groupWorldX = worldX + Math.cos(groupAngleRad) * groupDimension;
-        const groupWorldY = worldY + Math.sin(groupAngleRad) * groupDimension;
-        const groupScreenX = mapToScreenX(groupWorldX);
-        const groupScreenY = mapToScreenY(groupWorldY);
-        for (const drone of group.drones || []) {
-            const kind = pickDroneKind(drone);
-            const frameDef = getDroneSpriteFrame(kind, directionIndex);
-            if (!frameDef || frameDef.pendingAtlas) continue;
-            const droneAngleDeg = baseRotationDeg + positionOffsetDegrees(drone.position);
-            const droneAngleRad = droneAngleDeg * DEG_TO_RAD;
-            const droneRadius = drone.position === DRONE_POSITION_CENTER ? 1 : drone.dimension || DRONE_DEFAULT_DIMENSION;
-            const droneWorldX = groupWorldX + Math.cos(droneAngleRad) * droneRadius;
-            const droneWorldY = groupWorldY + Math.sin(droneAngleRad) * droneRadius;
-            const droneScreenX = mapToScreenX(droneWorldX);
-            const droneScreenY = mapToScreenY(droneWorldY);
-            const drawW = frameDef.width * entityScale;
-            const drawH = frameDef.height * entityScale;
-            if (frameDef.atlas) {
-                ctx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, droneScreenX - drawW / 2, droneScreenY - drawH / 2, drawW, drawH);
-            } else {
-                const img = frameDef.img || frameDef;
-                if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
-                ctx.drawImage(img, droneScreenX - drawW / 2, droneScreenY - drawH / 2, drawW, drawH);
-            }
+    for (let i = 0; i < geometryCache.items.length; i++) {
+        const item = geometryCache.items[i];
+        const drone = item.drone;
+        const kind = pickDroneKind(drone);
+        const frameDef = getDroneSpriteFrame(kind, directionIndex);
+        if (!frameDef || frameDef.pendingAtlas) continue;
+        const droneScreenX = mapToScreenX(worldX + item.offsetX);
+        const droneScreenY = mapToScreenY(worldY + item.offsetY);
+        const drawW = frameDef.width * entityScale;
+        const drawH = frameDef.height * entityScale;
+        if (frameDef.atlas) {
+            ctx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, droneScreenX - drawW / 2, droneScreenY - drawH / 2, drawW, drawH);
+        } else {
+            const img = frameDef.img || frameDef;
+            if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
+            ctx.drawImage(img, droneScreenX - drawW / 2, droneScreenY - drawH / 2, drawW, drawH);
         }
     }
     ctx.restore();
@@ -3489,11 +3631,21 @@ function drawEntities() {
                 }
             }
             const forceEngineMoving = typeof e.speed === "number" && e.speed > 0;
-            const entityEngineVisualShift = shouldApplyEngineVisualShift(visualShipId) ? {
-                x: shiftX,
-                y: shiftY
-            } : null;
-            drawEngineTrail(`entity_${e.id}`, e.shipId, e.x, e.y, frameIndex, e.angle || 0, 0, forceEngineMoving, entityEngineVisualShift);
+            let entityEngineVisualShift = null;
+            if (shouldApplyEngineVisualShift(visualShipId)) {
+                entityEngineVisualShift = e._engineVisualShift || (e._engineVisualShift = {
+                    x: 0,
+                    y: 0
+                });
+                entityEngineVisualShift.x = shiftX;
+                entityEngineVisualShift.y = shiftY;
+            }
+            if (e._engineTrailKeyId !== e.id) {
+                e._engineTrailKeyId = e.id;
+                e._engineTrailKey = `entity_${e.id}`;
+            }
+            const entityEngineTrailKey = e._engineTrailKey;
+            drawEngineTrail(entityEngineTrailKey, e.shipId, e.x, e.y, frameIndex, e.angle || 0, 0, forceEngineMoving, entityEngineVisualShift);
             if (img && img.complete && img.width > 0 && img.height > 0) {
                 const w = img.width * entityScale;
                 const h = img.height * entityScale;
