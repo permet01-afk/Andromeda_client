@@ -2119,6 +2119,16 @@ let targetBarFadeTargetId = null;
 
 let targetBarFadeStartedAt = 0;
 
+const heroHpShieldBarOptions = {
+    referenceShipId: null,
+    alpha: 1
+};
+
+const selectedTargetHpShieldBarOptions = {
+    referenceShipId: null,
+    alpha: 1
+};
+
 function getShipBarReferenceHeight(shipId, fallbackHeight = null) {
     const parsedId = Number.isFinite(shipId) ? shipId : Number.parseInt(shipId, 10);
     const fallback = Number.isFinite(fallbackHeight) && fallbackHeight > 0 ? fallbackHeight : null;
@@ -3212,9 +3222,9 @@ function drawShip() {
             drawSimpleDroneDisplayUnderNameplate(ctx, heroNameplateLayout, heroDroneDisplayCounts);
         }
     }
-    drawHpShieldBars(shipScreenX, sy, shipDrawnHeight, heroHp, heroMaxHp, heroShield, heroMaxShield, heroShipId, entityScale, {
-        referenceShipId: heroShipId
-    });
+    heroHpShieldBarOptions.referenceShipId = heroShipId;
+    heroHpShieldBarOptions.alpha = 1;
+    drawHpShieldBars(shipScreenX, sy, shipDrawnHeight, heroHp, heroMaxHp, heroShield, heroMaxShield, heroShipId, entityScale, heroHpShieldBarOptions);
     ctx.restore();
 }
 
@@ -3717,10 +3727,9 @@ function drawEntities() {
             drawDrones(e.x, e.y, e.drones, eAngleForDrones, eDronesFrameIndex);
         }
         if (selectedTargetId !== null && e.id === selectedTargetId) {
-            drawHpShieldBars(entityScreenX, entityScreenY, spriteHeight, e.hp, e.maxHp, e.shield, e.maxShield, e.shipId, entityScale, {
-                referenceShipId: visualShipId,
-                alpha: getSelectedTargetBarFadeAlpha(e.id)
-            });
+            selectedTargetHpShieldBarOptions.referenceShipId = visualShipId;
+            selectedTargetHpShieldBarOptions.alpha = getSelectedTargetBarFadeAlpha(e.id);
+            drawHpShieldBars(entityScreenX, entityScreenY, spriteHeight, e.hp, e.maxHp, e.shield, e.maxShield, e.shipId, entityScale, selectedTargetHpShieldBarOptions);
         }
         if (e.id === selectedTargetId || e.id === currentLaserTargetId) {
             const useRedCircle = !e.targetRingGray;
@@ -9991,19 +10000,85 @@ function getLogicalPointerPosition(evt) {
 window.getLogicalPointerPosition = getLogicalPointerPosition;
 
 (function() {
+    const quickbarReusableBounds = {
+        x: 0,
+        y: 0,
+        w: 0,
+        h: 0
+    };
+    const quickbarReusableSlotRects = {};
+    const quickbarReusableZeroPoint = {
+        x: 0,
+        y: 0
+    };
+    const quickbarReusableFallbackPoints = [];
+    const quickbarReusableDraggerHitbox = {
+        x: 0,
+        y: 0,
+        w: 0,
+        h: 0
+    };
+    const quickbarReusableRotateHitbox = {
+        x: 0,
+        y: 0,
+        w: 0,
+        h: 0
+    };
+    const quickbarActionStateScratch = {
+        cpuInfo: null,
+        actionState: null
+    };
+    const flashQuickbarDigitPathCache = Object.create(null);
+    const flashQuickbarActionMenuImagePathCache = Object.create(null);
+
+    function flashQuickbarSetRect(rect, x, y, w, h) {
+        rect.x = x;
+        rect.y = y;
+        rect.w = w;
+        rect.h = h;
+        return rect;
+    }
+
+    function flashQuickbarGetReusableSlotRect(slot) {
+        let rect = quickbarReusableSlotRects[slot];
+        if (!rect) {
+            rect = {
+                x: 0,
+                y: 0,
+                w: 0,
+                h: 0
+            };
+            quickbarReusableSlotRects[slot] = rect;
+        }
+        return rect;
+    }
+
+    function flashQuickbarGetFallbackSlotPoints(slotWidth) {
+        for (let idx = 0; idx < 10; idx++) {
+            let point = quickbarReusableFallbackPoints[idx];
+            if (!point) {
+                point = {
+                    x: 0,
+                    y: 0
+                };
+                quickbarReusableFallbackPoints[idx] = point;
+            }
+            point.x = idx * (slotWidth + 3);
+            point.y = 0;
+        }
+        return quickbarReusableFallbackPoints;
+    }
+
     function flashQuickbarUnionRect(a, b) {
-        if (!a) return b ? { x: b.x, y: b.y, w: b.w, h: b.h } : null;
-        if (!b) return { x: a.x, y: a.y, w: a.w, h: a.h };
+        if (!b) return a || null;
+        if (!a) {
+            return flashQuickbarSetRect(quickbarReusableBounds, b.x, b.y, b.w, b.h);
+        }
         const minX = Math.min(a.x, b.x);
         const minY = Math.min(a.y, b.y);
         const maxX = Math.max(a.x + a.w, b.x + b.w);
         const maxY = Math.max(a.y + a.h, b.y + b.h);
-        return {
-            x: minX,
-            y: minY,
-            w: maxX - minX,
-            h: maxY - minY
-        };
+        return flashQuickbarSetRect(a, minX, minY, maxX - minX, maxY - minY);
     }
 
     function flashQuickbarDrawImage(path, x, y, width, height) {
@@ -10038,8 +10113,22 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
     }
 
     function flashQuickbarGetDigitPath(slot) {
-        const imageId = 355 + (slot - 1) * 2;
-        return `graphics/ui/actionMenu/images/${imageId}.png`;
+        let path = flashQuickbarDigitPathCache[slot];
+        if (!path) {
+            const imageId = 355 + (slot - 1) * 2;
+            path = `graphics/ui/actionMenu/images/${imageId}.png`;
+            flashQuickbarDigitPathCache[slot] = path;
+        }
+        return path;
+    }
+
+    function flashQuickbarGetActionMenuImagePath(imageNum) {
+        let path = flashQuickbarActionMenuImagePathCache[imageNum];
+        if (!path) {
+            path = `graphics/ui/actionMenu/images/${imageNum}.png`;
+            flashQuickbarActionMenuImagePathCache[imageNum] = path;
+        }
+        return path;
     }
 
     function flashQuickbarDrawDigit(slot, slotX, slotY, slotWidth, slotHeight) {
@@ -10102,7 +10191,7 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
         }
     }
 
-    function flashQuickbarGetActionState(item) {
+    function flashQuickbarGetActionState(item, out) {
         const cpuInfo = item && item.type === "cpu" && typeof flashGetActionCpuInfo === "function" ? flashGetActionCpuInfo(item.code || "") : null;
         const actionState = typeof flashGetActionRuntimeState === "function" ? flashGetActionRuntimeState(item, cpuInfo) : {
             enabled: true,
@@ -10111,10 +10200,9 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
             disabledAlpha: 0.5,
             cooldown: null
         };
-        return {
-            cpuInfo: cpuInfo,
-            actionState: actionState
-        };
+        out.cpuInfo = cpuInfo;
+        out.actionState = actionState;
+        return out;
     }
 
     drawQuickbar = function() {
@@ -10137,14 +10225,11 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
 
         const slotWidth = typeof FLASH_QUICKBAR_SLOT_WIDTH === "number" ? FLASH_QUICKBAR_SLOT_WIDTH : 32;
         const slotHeight = typeof FLASH_QUICKBAR_SLOT_HEIGHT === "number" ? FLASH_QUICKBAR_SLOT_HEIGHT : 35;
-        const points = typeof flashGetQuickbarSlotPoints === "function" ? flashGetQuickbarSlotPoints(quickbarLayoutMode) : Array.from({ length: 10 }, (_, idx) => ({
-            x: idx * (slotWidth + 3),
-            y: 0
-        }));
+        const points = typeof flashGetQuickbarSlotPoints === "function" ? flashGetQuickbarSlotPoints(quickbarLayoutMode) : flashQuickbarGetFallbackSlotPoints(slotWidth);
 
         ctx.save();
         for (let slot = 1; slot <= 10; slot++) {
-            const point = points[slot - 1] || { x: 0, y: 0 };
+            const point = points[slot - 1] || quickbarReusableZeroPoint;
             const slotX = Math.round(quickbarPosition.x + point.x);
             const slotY = Math.round(quickbarPosition.y + point.y);
             const rawItem = typeof flashResolveQuickbarItem === "function" ? flashResolveQuickbarItem(quickSlots[slot]) : quickSlots[slot];
@@ -10156,7 +10241,7 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
                 continue;
             }
 
-            const slotRect = { x: slotX, y: slotY, w: slotWidth, h: slotHeight };
+            const slotRect = flashQuickbarSetRect(flashQuickbarGetReusableSlotRect(slot), slotX, slotY, slotWidth, slotHeight);
             quickbarSlotRects[slot] = slotRect;
             quickbarSlotHitboxes[slot] = slotRect;
             quickbarBounds = flashQuickbarUnionRect(quickbarBounds, slotRect);
@@ -10166,7 +10251,9 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
             }
 
             if (item) {
-                const { cpuInfo, actionState } = flashQuickbarGetActionState(item);
+                const actionRuntime = flashQuickbarGetActionState(item, quickbarActionStateScratch);
+                const cpuInfo = actionRuntime.cpuInfo;
+                const actionState = actionRuntime.actionState;
                 const isActiveAmmo = item.type === "ammo" && Number(currentAmmoId) === Number(item.id);
                 const isActiveRocket = item.type === "rocket" && Number(currentRocketId) === Number(item.id);
                 const isActiveLauncherRocket = item.type === "launcherRocket" && typeof flashGetLauncherSelectedRocketId === "function" && Number(flashGetLauncherSelectedRocketId()) === Number(item.id);
@@ -10227,7 +10314,7 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
                         const ratio = maxValue > 0 ? clampedQty / maxValue : 0;
                         const frameIndex = Math.min(AMMO_BAR_FRAME_IDS.length - 1, Math.max(0, Math.floor(ratio * (AMMO_BAR_FRAME_IDS.length - 1))));
                         const imageNum = AMMO_BAR_FRAME_IDS[frameIndex];
-                        flashQuickbarDrawImage(`graphics/ui/actionMenu/images/${imageNum}.png`, slotX + (typeof FLASH_ACTION_MENU_V2_AMMOBAR_LEFT === "number" ? FLASH_ACTION_MENU_V2_AMMOBAR_LEFT : 3), slotY + (typeof FLASH_ACTION_MENU_V2_AMMOBAR_TOP === "number" ? FLASH_ACTION_MENU_V2_AMMOBAR_TOP : 9), typeof FLASH_ACTION_MENU_V2_AMMOBAR_WIDTH === "number" ? FLASH_ACTION_MENU_V2_AMMOBAR_WIDTH : 29, typeof FLASH_ACTION_MENU_V2_AMMOBAR_HEIGHT === "number" ? FLASH_ACTION_MENU_V2_AMMOBAR_HEIGHT : 6);
+                        flashQuickbarDrawImage(flashQuickbarGetActionMenuImagePath(imageNum), slotX + (typeof FLASH_ACTION_MENU_V2_AMMOBAR_LEFT === "number" ? FLASH_ACTION_MENU_V2_AMMOBAR_LEFT : 3), slotY + (typeof FLASH_ACTION_MENU_V2_AMMOBAR_TOP === "number" ? FLASH_ACTION_MENU_V2_AMMOBAR_TOP : 9), typeof FLASH_ACTION_MENU_V2_AMMOBAR_WIDTH === "number" ? FLASH_ACTION_MENU_V2_AMMOBAR_WIDTH : 29, typeof FLASH_ACTION_MENU_V2_AMMOBAR_HEIGHT === "number" ? FLASH_ACTION_MENU_V2_AMMOBAR_HEIGHT : 6);
                     } else if (item.counter) {
                         const canShowCounter = hasStock || (item.type === "cpu" && cpuInfo && cpuInfo.hasItem !== false);
                         if (canShowCounter) {
@@ -10257,23 +10344,13 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
         if (!quickbarLocked) {
             const draggerSize = 20;
             const draggerPath = quickbarDraggerHovered ? "graphics/ui/actionMenu/images/173.png" : "graphics/ui/actionMenu/images/171.png";
-            quickbarDraggerHitbox = {
-                x: Math.round(quickbarPosition.x - 7),
-                y: Math.round(quickbarPosition.y - 14),
-                w: draggerSize,
-                h: draggerSize
-            };
+            quickbarDraggerHitbox = flashQuickbarSetRect(quickbarReusableDraggerHitbox, Math.round(quickbarPosition.x - 7), Math.round(quickbarPosition.y - 14), draggerSize, draggerSize);
             flashQuickbarDrawImage(draggerPath, quickbarDraggerHitbox.x, quickbarDraggerHitbox.y, draggerSize, draggerSize);
             quickbarBounds = flashQuickbarUnionRect(quickbarBounds, quickbarDraggerHitbox);
 
             const verticalMode = Number(quickbarLayoutMode) === 2 || Number(quickbarLayoutMode) === 3;
             const rotatorSize = 20;
-            quickbarRotateHitbox = {
-                x: Math.round(quickbarPosition.x + (verticalMode ? 21 : -7)),
-                y: Math.round(quickbarPosition.y + (verticalMode ? -14 : 29)),
-                w: rotatorSize,
-                h: rotatorSize
-            };
+            quickbarRotateHitbox = flashQuickbarSetRect(quickbarReusableRotateHitbox, Math.round(quickbarPosition.x + (verticalMode ? 21 : -7)), Math.round(quickbarPosition.y + (verticalMode ? -14 : 29)), rotatorSize, rotatorSize);
             const rotatorPath = quickbarRotateHovered ? "graphics/ui/actionMenu/images/159.png" : "graphics/ui/actionMenu/images/157.png";
             flashQuickbarDrawImage(rotatorPath, quickbarRotateHitbox.x, quickbarRotateHitbox.y, rotatorSize, rotatorSize);
             quickbarBounds = flashQuickbarUnionRect(quickbarBounds, quickbarRotateHitbox);

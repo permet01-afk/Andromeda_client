@@ -4996,6 +4996,19 @@ const uiImageAtlasListenersBound = Object.create(null);
 
 const uiImageAtlasReadyNotified = Object.create(null);
 
+const UI_IMAGE_ATLAS_DATA_URL_WARMUP_PATHS = [
+    "graphics/ui/ui/images/empty_bar.png.png",
+    "graphics/ui/ui/images/hp_bar.png.png",
+    "graphics/ui/ui/images/shield_bar.png.png",
+    "graphics/ui/ui/images/iconShipNull.png",
+    "graphics/ui/ui/images/boss_icon.png.png",
+    "graphics/ui/ui/images/bg_standard.png.png",
+    "graphics/ui/ui/images/bg_active.png.png",
+    "graphics/ui/spacemap/images/marker_currentMap.png"
+];
+
+let uiImageAtlasDataUrlWarmupPathLookup = null;
+
 function andromedaGetConfiguredBasePath() {
     try {
         if (typeof window !== "undefined" && window.cfg && typeof window.cfg.basePath === "string") return window.cfg.basePath;
@@ -5053,11 +5066,42 @@ function isActionMenuUiAtlasPath(atlasPath) {
     return andromedaNormalizeUiAtlasKey(atlasPath) === andromedaNormalizeUiAtlasKey(actionAtlasPath);
 }
 
+function getUiImageAtlasDataUrlWarmupPathLookup() {
+    if (uiImageAtlasDataUrlWarmupPathLookup) return uiImageAtlasDataUrlWarmupPathLookup;
+    const lookup = Object.create(null);
+    for (const path of UI_IMAGE_ATLAS_DATA_URL_WARMUP_PATHS) {
+        const key = andromedaNormalizeUiAtlasKey(path);
+        if (key) lookup[key] = true;
+    }
+    uiImageAtlasDataUrlWarmupPathLookup = lookup;
+    return lookup;
+}
+
+function shouldWarmUiImageAtlasFrameDataUrl(key, entry) {
+    if (!entry) return false;
+    if (isActionMenuUiAtlasPath(entry.atlasPath)) return true;
+    return !!getUiImageAtlasDataUrlWarmupPathLookup()[key];
+}
+
+function shouldWarmUiImageAtlasPathDataUrls(atlasPath) {
+    if (isActionMenuUiAtlasPath(atlasPath)) return true;
+    const lookup = getUiImageAtlasDataUrlWarmupPathLookup();
+    for (const key in lookup) {
+        const entry = UI_IMAGE_ATLAS_MANIFEST && UI_IMAGE_ATLAS_MANIFEST.frames ? UI_IMAGE_ATLAS_MANIFEST.frames[key] : null;
+        if (entry && andromedaNormalizeUiAtlasKey(entry.atlasPath) === andromedaNormalizeUiAtlasKey(atlasPath)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function notifyUiImageAtlasReady(atlasPath) {
     if (!atlasPath || uiImageAtlasReadyNotified[atlasPath]) return;
     uiImageAtlasReadyNotified[atlasPath] = true;
-    if (isActionMenuUiAtlasPath(atlasPath)) {
+    if (shouldWarmUiImageAtlasPathDataUrls(atlasPath)) {
         scheduleActionMenuUiDataUrlWarmup("atlas-ready");
+    }
+    if (isActionMenuUiAtlasPath(atlasPath)) {
         scheduleActionDrawerAssetRefresh();
     }
 }
@@ -5210,26 +5254,37 @@ let actionMenuUiDataUrlWarmupScheduled = false;
 
 let actionMenuUiDataUrlWarmupQueue = null;
 
+let actionMenuUiDataUrlWarmupQueueIndex = 0;
+
 function buildActionMenuUiDataUrlWarmupQueue() {
     if (!UI_IMAGE_ATLAS_MANIFEST || !UI_IMAGE_ATLAS_MANIFEST.frames) return [];
-    return Object.keys(UI_IMAGE_ATLAS_MANIFEST.frames).filter(key => {
+    const actionMenuKeys = [];
+    const priorityUiKeys = [];
+    for (const key of Object.keys(UI_IMAGE_ATLAS_MANIFEST.frames)) {
         const entry = UI_IMAGE_ATLAS_MANIFEST.frames[key];
-        return entry && isActionMenuUiAtlasPath(entry.atlasPath) && !uiImageAtlasDataUrlCache[key];
-    });
+        if (!entry || uiImageAtlasDataUrlCache[key]) continue;
+        if (isActionMenuUiAtlasPath(entry.atlasPath)) {
+            actionMenuKeys.push(key);
+        } else if (getUiImageAtlasDataUrlWarmupPathLookup()[key]) {
+            priorityUiKeys.push(key);
+        }
+    }
+    return actionMenuKeys.concat(priorityUiKeys);
 }
 
 function scheduleActionMenuUiDataUrlWarmup(reason = "manual") {
     if (actionMenuUiDataUrlWarmupScheduled) return;
     if (!UI_IMAGE_ATLAS_MANIFEST || !UI_IMAGE_ATLAS_MANIFEST.frames) return;
     actionMenuUiDataUrlWarmupScheduled = true;
-    if (!Array.isArray(actionMenuUiDataUrlWarmupQueue) || actionMenuUiDataUrlWarmupQueue.length === 0) {
+    if (!Array.isArray(actionMenuUiDataUrlWarmupQueue) || actionMenuUiDataUrlWarmupQueueIndex >= actionMenuUiDataUrlWarmupQueue.length) {
         actionMenuUiDataUrlWarmupQueue = buildActionMenuUiDataUrlWarmupQueue();
+        actionMenuUiDataUrlWarmupQueueIndex = 0;
     }
     if (typeof window !== "undefined") {
         window.__ANDRO_ACTION_MENU_UI_WARMUP_STATUS = {
             state: "queued",
             reason: reason,
-            remaining: actionMenuUiDataUrlWarmupQueue.length
+            remaining: Math.max(0, actionMenuUiDataUrlWarmupQueue.length - actionMenuUiDataUrlWarmupQueueIndex)
         };
     }
     const run = deadline => processActionMenuUiDataUrlWarmup(deadline, reason);
@@ -5246,38 +5301,50 @@ function scheduleActionMenuUiDataUrlWarmup(reason = "manual") {
 
 function processActionMenuUiDataUrlWarmup(deadline = null, reason = "manual") {
     actionMenuUiDataUrlWarmupScheduled = false;
-    if (!Array.isArray(actionMenuUiDataUrlWarmupQueue)) {
+    if (!Array.isArray(actionMenuUiDataUrlWarmupQueue) || actionMenuUiDataUrlWarmupQueueIndex >= actionMenuUiDataUrlWarmupQueue.length) {
         actionMenuUiDataUrlWarmupQueue = buildActionMenuUiDataUrlWarmupQueue();
+        actionMenuUiDataUrlWarmupQueueIndex = 0;
     }
     const startedAt = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
     let processed = 0;
-    while (actionMenuUiDataUrlWarmupQueue.length > 0) {
+    while (actionMenuUiDataUrlWarmupQueueIndex < actionMenuUiDataUrlWarmupQueue.length) {
         const now = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
         const timeRemaining = deadline && typeof deadline.timeRemaining === "function" ? deadline.timeRemaining() : Math.max(0, 4 - (now - startedAt));
         if (processed > 0 && timeRemaining <= 1) break;
-        const key = actionMenuUiDataUrlWarmupQueue.shift();
-        if (!key || uiImageAtlasDataUrlCache[key]) continue;
+        const key = actionMenuUiDataUrlWarmupQueue[actionMenuUiDataUrlWarmupQueueIndex];
+        if (!key || uiImageAtlasDataUrlCache[key]) {
+            actionMenuUiDataUrlWarmupQueueIndex++;
+            continue;
+        }
         const entry = UI_IMAGE_ATLAS_MANIFEST && UI_IMAGE_ATLAS_MANIFEST.frames ? UI_IMAGE_ATLAS_MANIFEST.frames[key] : null;
-        if (!entry || !isActionMenuUiAtlasPath(entry.atlasPath)) continue;
+        if (!entry || !shouldWarmUiImageAtlasFrameDataUrl(key, entry)) {
+            actionMenuUiDataUrlWarmupQueueIndex++;
+            continue;
+        }
+        getUiImageAtlasFrameCanvas(key);
         if (uiImageAtlasStatusCache[entry.atlasPath] !== "ready") {
-            actionMenuUiDataUrlWarmupQueue.push(key);
             break;
         }
         try {
             getUiImageAtlasDataUrl(key);
         } catch (_) {}
         processed++;
+        actionMenuUiDataUrlWarmupQueueIndex++;
     }
+    const remaining = Math.max(0, actionMenuUiDataUrlWarmupQueue.length - actionMenuUiDataUrlWarmupQueueIndex);
     if (typeof window !== "undefined") {
         window.__ANDRO_ACTION_MENU_UI_WARMUP_STATUS = {
-            state: actionMenuUiDataUrlWarmupQueue.length > 0 ? "warming" : "ready",
+            state: remaining > 0 ? "warming" : "ready",
             reason: reason,
-            remaining: actionMenuUiDataUrlWarmupQueue.length,
+            remaining: remaining,
             cached: Object.keys(uiImageAtlasDataUrlCache).length
         };
     }
-    if (actionMenuUiDataUrlWarmupQueue.length > 0) {
+    if (remaining > 0) {
         scheduleActionMenuUiDataUrlWarmup(reason);
+    } else {
+        actionMenuUiDataUrlWarmupQueue = null;
+        actionMenuUiDataUrlWarmupQueueIndex = 0;
     }
 }
 
@@ -9744,6 +9811,7 @@ const FLASH_QUICKBAR_VERTICAL_COMPACT_POINTS = Object.freeze([
     Object.freeze({ x: 17, y: 145 }),
     Object.freeze({ x: 0, y: 174 })
 ]);
+const FLASH_QUICKBAR_SLOT_POINTS_CACHE = Object.create(null);
 const FLASH_QUICKBAR_BUTTON_ID_BY_ITEM = Object.freeze({
     ammo: Object.freeze({ 1: 3, 2: 4, 3: 5, 4: 6, 5: 7, 6: 39 }),
     rocket: Object.freeze({ 1: 11, 2: 12, 3: 13, 4: 57, 5: 44, 7: 43, 10: 72 }),
@@ -9799,36 +9867,49 @@ function flashEnsureQuickbarPositionInitialized(force = false) {
     }
 }
 
-function flashGetQuickbarSlotPoints(layoutMode) {
-    const mode = Number.isFinite(Number(layoutMode)) ? Number(layoutMode) : quickbarLayoutMode;
+function buildFlashQuickbarSlotPoints(mode) {
     const points = [];
     for (let idx = 0; idx < 10; idx++) {
+        let point;
         switch (mode) {
           case FLASH_QUICKBAR_HORIZONTAL_COMPACT_ORDER:
-            points.push({ ...FLASH_QUICKBAR_HORIZONTAL_COMPACT_POINTS[idx] });
+            point = FLASH_QUICKBAR_HORIZONTAL_COMPACT_POINTS[idx];
+            points.push(Object.freeze({ x: point.x, y: point.y }));
             break;
 
           case FLASH_QUICKBAR_VERTICAL_ORDER:
-            points.push({
+            points.push(Object.freeze({
                 x: 0,
                 y: idx * (FLASH_QUICKBAR_SLOT_HEIGHT + FLASH_QUICKBAR_GAP)
-            });
+            }));
             break;
 
           case FLASH_QUICKBAR_VERTICAL_COMPACT_ORDER:
-            points.push({ ...FLASH_QUICKBAR_VERTICAL_COMPACT_POINTS[idx] });
+            point = FLASH_QUICKBAR_VERTICAL_COMPACT_POINTS[idx];
+            points.push(Object.freeze({ x: point.x, y: point.y }));
             break;
 
           case FLASH_QUICKBAR_HORIZONTAL_ORDER:
           default:
-            points.push({
+            points.push(Object.freeze({
                 x: idx * (FLASH_QUICKBAR_SLOT_WIDTH + FLASH_QUICKBAR_GAP),
                 y: 0
-            });
+            }));
             break;
         }
     }
-    return points;
+    return Object.freeze(points);
+}
+
+function flashGetQuickbarSlotPoints(layoutMode) {
+    let mode = Number.isFinite(Number(layoutMode)) ? Number(layoutMode) : quickbarLayoutMode;
+    if (mode !== FLASH_QUICKBAR_HORIZONTAL_COMPACT_ORDER && mode !== FLASH_QUICKBAR_VERTICAL_ORDER && mode !== FLASH_QUICKBAR_VERTICAL_COMPACT_ORDER) {
+        mode = FLASH_QUICKBAR_HORIZONTAL_ORDER;
+    }
+    if (!FLASH_QUICKBAR_SLOT_POINTS_CACHE[mode]) {
+        FLASH_QUICKBAR_SLOT_POINTS_CACHE[mode] = buildFlashQuickbarSlotPoints(mode);
+    }
+    return FLASH_QUICKBAR_SLOT_POINTS_CACHE[mode];
 }
 
 function flashGetQuickbarLayoutBounds(layoutMode) {

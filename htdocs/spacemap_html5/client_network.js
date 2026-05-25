@@ -1256,12 +1256,46 @@ function assembleFlashLocalizedLogMessage(payloadParts) {
     return out;
 }
 
+const UNKNOWN_PACKET_LOG_THROTTLE_MS = 5e3;
+
+const UNKNOWN_PACKET_LOG_FIRST_SAMPLES = 3;
+
+const unknownPacketLogState = Object.create(null);
+
 function logUnknownPacket(opcode, parts) {
-    if (!unknownPacketStats[opcode]) {
-        unknownPacketStats[opcode] = 0;
+    const safeOpcode = opcode || "";
+    if (!unknownPacketStats[safeOpcode]) {
+        unknownPacketStats[safeOpcode] = 0;
     }
-    unknownPacketStats[opcode]++;
-    console.warn("[UNKNOWN PACKET] opcode =", opcode, "| total vus =", unknownPacketStats[opcode], "| contenu =", parts.join("|"));
+    unknownPacketStats[safeOpcode]++;
+    let state = unknownPacketLogState[safeOpcode];
+    if (!state) {
+        state = {
+            total: 0,
+            suppressed: 0,
+            lastLogAt: 0,
+            lastSignature: ""
+        };
+        unknownPacketLogState[safeOpcode] = state;
+    }
+    state.total++;
+    const now = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+    const signature = parts && parts.length > 0 ? String(parts[0] || "") + "|" + String(parts[1] || "") + "|" + String(parts[2] || "") : safeOpcode;
+    const shouldLogSample = state.total <= UNKNOWN_PACKET_LOG_FIRST_SAMPLES || signature !== state.lastSignature || now - state.lastLogAt >= UNKNOWN_PACKET_LOG_THROTTLE_MS;
+    if (!shouldLogSample) {
+        state.suppressed++;
+        return;
+    }
+    const suppressed = state.suppressed;
+    state.suppressed = 0;
+    state.lastLogAt = now;
+    state.lastSignature = signature;
+    const content = parts && parts.length > 0 ? parts.join("|") : "";
+    if (suppressed > 0) {
+        console.warn("[UNKNOWN PACKET] opcode =", safeOpcode, "| total vus =", unknownPacketStats[safeOpcode], "| repetes masques =", suppressed, "| contenu =", content);
+    } else {
+        console.warn("[UNKNOWN PACKET] opcode =", safeOpcode, "| total vus =", unknownPacketStats[safeOpcode], "| contenu =", content);
+    }
 }
 
 function handleServerLine(line) {
