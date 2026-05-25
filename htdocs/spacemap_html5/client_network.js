@@ -2237,6 +2237,7 @@ function resetMapState(newMapId) {
     groupPings.length = 0;
     if (typeof cancelRsbBurst === "function") cancelRsbBurst(null);
     if (typeof clearSabRingState === "function") clearSabRingState();
+    if (typeof clearSabLaserVisualJobs === "function") clearSabLaserVisualJobs();
     if (typeof clearRemovedEntitySnapshots === "function") clearRemovedEntitySnapshots();
     if (typeof clearNameplateTextFieldBitmapCache === "function") clearNameplateTextFieldBitmapCache();
     selectedTargetId = null;
@@ -4686,6 +4687,94 @@ const SAB_RING_STATE_TTL_MS = 1e4;
 const SAB_RING_STATE_MAX = 256;
 const SAB_RING_STATE_PRUNE_INTERVAL_MS = 1000;
 let sabRingStateLastPruneAt = 0;
+const SAB_LASER_VISUAL_JOBS = new Map;
+let sabLaserVisualJobSeq = 1;
+
+function getSabLaserVisualJobKey(attackerId, targetId, skilledLaser) {
+    return `${attackerId}|${targetId}|${skilledLaser ? 1 : 0}`;
+}
+
+function cancelSabLaserVisualJob(key) {
+    const job = SAB_LASER_VISUAL_JOBS.get(key);
+    if (job && Array.isArray(job.timeouts)) {
+        for (let i = 0; i < job.timeouts.length; i++) {
+            clearTimeout(job.timeouts[i]);
+        }
+        job.timeouts.length = 0;
+    }
+    SAB_LASER_VISUAL_JOBS.delete(key);
+}
+
+function clearSabLaserVisualJobs() {
+    for (const key of Array.from(SAB_LASER_VISUAL_JOBS.keys())) {
+        cancelSabLaserVisualJob(key);
+    }
+}
+
+function clearSabLaserVisualJobsForEntity(entityId) {
+    if (entityId == null || SAB_LASER_VISUAL_JOBS.size === 0) return;
+    for (const [key, job] of Array.from(SAB_LASER_VISUAL_JOBS.entries())) {
+        if (job && (job.attackerId === entityId || job.targetId === entityId)) {
+            cancelSabLaserVisualJob(key);
+        }
+    }
+}
+
+function clearSabLaserVisualJobsForAttacker(attackerId, exceptKey = null) {
+    if (attackerId == null || SAB_LASER_VISUAL_JOBS.size === 0) return;
+    for (const [key, job] of Array.from(SAB_LASER_VISUAL_JOBS.entries())) {
+        if (key !== exceptKey && job && job.attackerId === attackerId) {
+            cancelSabLaserVisualJob(key);
+        }
+    }
+}
+
+function isSabLaserVisualJobActive(job, now = performance.now()) {
+    if (!job) return false;
+    const attackLength = Number.isFinite(job.attackLengthMs) ? job.attackLengthMs : 1350;
+    const beamDuration = Number.isFinite(job.beamDurationMs) ? job.beamDurationMs : 500;
+    return now <= job.startedAt + attackLength + beamDuration;
+}
+
+function startSabLaserVisualJob(key, attackerId, targetId, skilledLaser, fireRateMs, attackLengthMs, beamDurationMs, spawnTick) {
+    cancelSabLaserVisualJob(key);
+    const now = performance.now();
+    const job = {
+        key: key,
+        attackerId: attackerId,
+        targetId: targetId,
+        skilledLaser: !!skilledLaser,
+        startedAt: now,
+        fireRateMs: fireRateMs,
+        attackLengthMs: attackLengthMs,
+        beamDurationMs: beamDurationMs,
+        seq: sabLaserVisualJobSeq++,
+        timeouts: []
+    };
+    SAB_LASER_VISUAL_JOBS.set(key, job);
+    for (let elapsed = fireRateMs; elapsed <= attackLengthMs; elapsed += fireRateMs) {
+        const timeoutId = setTimeout(() => {
+            const activeJob = SAB_LASER_VISUAL_JOBS.get(key);
+            if (!activeJob || activeJob.seq !== job.seq) return;
+            const attackerSnap = snapshotEntityById(attackerId);
+            const targetSnap = snapshotEntityById(targetId);
+            if (!attackerSnap || !targetSnap) {
+                cancelSabLaserVisualJob(key);
+                return;
+            }
+            spawnTick(performance.now(), false);
+        }, elapsed);
+        job.timeouts.push(timeoutId);
+    }
+    const cleanupDelay = attackLengthMs + beamDurationMs + fireRateMs;
+    const cleanupTimeoutId = setTimeout(() => {
+        const activeJob = SAB_LASER_VISUAL_JOBS.get(key);
+        if (activeJob && activeJob.seq === job.seq) {
+            cancelSabLaserVisualJob(key);
+        }
+    }, cleanupDelay);
+    job.timeouts.push(cleanupTimeoutId);
+}
 
 function pruneSabRingState(now = performance.now(), force = false) {
     if (!(SAB_RING_STATE instanceof Map) || SAB_RING_STATE.size === 0) return;
@@ -4907,6 +4996,7 @@ function handlePacket_laserAttack(parts, i) {
     const skilledLaser = !!parseInt(parts[i + 4], 10);
     if (isNaN(attackerId) || isNaN(targetId)) return;
     if (targetId === -1) {
+        clearSabLaserVisualJobsForAttacker(attackerId);
         const attackerLive = entities[attackerId];
         if (attackerLive) {
             clearAttackLockForEntity(attackerLive);
@@ -5057,12 +5147,14 @@ function handlePacket_laserAttack(parts, i) {
             }
         }
     }
-    const spawnBeamEntries = (createdAt, flagShowShield = showShieldDamage, playSound = true) => {
+    const spawnBeamEntries = (createdAt, flagShowShield = showShieldDamage, playSound = true, options = null) => {
         const flipX = visual.flipX === true;
         const entries = [];
         let showShield = flagShowShield;
         let fallbackSoundX = baseStartX;
         let fallbackSoundY = baseStartY;
+        const suppressImpactVisual = !!(options && options.suppressImpactVisual);
+        const localSabVisual = !!(options && options.localSabVisual);
         salvoOffsets.forEach((offset, slotIndex) => {
             const offsetX = Number.isFinite(offset?.x) ? offset.x : 0;
             const offsetY = Number.isFinite(offset?.y) ? offset.y : 0;
@@ -5103,7 +5195,8 @@ function handlePacket_laserAttack(parts, i) {
                     createdAt: createdAt,
                     playLoop: visual.playLoop,
                     followTargets: !visual.playLoop,
-                    hitHandled: false,
+                    hitHandled: suppressImpactVisual,
+                    localSabVisual: localSabVisual,
                     salvoSlot: `${slotIndex}-${shotIndex}`
                 });
             };
@@ -5173,27 +5266,27 @@ function handlePacket_laserAttack(parts, i) {
     const now = performance.now();
     if (patternId === 4 && visual.absorber && !visual.playLoop && visual.spriteId === 4) {
         const fireRate = typeof window !== "undefined" && Number.isFinite(window.SAB_LASER_FIRE_RATE_MS) && window.SAB_LASER_FIRE_RATE_MS > 0 ? window.SAB_LASER_FIRE_RATE_MS : 200;
-        const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 500;
-        const maxRings = Math.max(1, Math.ceil(safeDuration / fireRate));
-        pruneSabRingState(now);
-        const key = `${attackerId}|${targetId}|${skilledLaser ? 1 : 0}`;
-        const last = SAB_RING_STATE.get(key);
-        let count = 1;
-        if (Number.isFinite(last)) {
-            const dt = now - last;
-            if (dt > 0) {
-                count = Math.max(1, Math.min(maxRings, Math.ceil(dt / fireRate)));
-            }
+        const attackLength = Number.isFinite(visual.attackLengthMs) && visual.attackLengthMs > 0 ? visual.attackLengthMs : typeof LASER_ATTACK_LENGTH_MS !== "undefined" ? LASER_ATTACK_LENGTH_MS : 1350;
+        const beamDuration = Number.isFinite(duration) && duration > 0 ? duration : 500;
+        const key = getSabLaserVisualJobKey(attackerId, targetId, skilledLaser);
+        const activeSabJob = SAB_LASER_VISUAL_JOBS.get(key);
+        if (isSabLaserVisualJobActive(activeSabJob, now)) {
+            activeSabJob.lastPacketAt = now;
+            maybeSpawnEnergyLeechEcho(now);
+            return;
         }
-        rememberSabRingState(key, now);
-        for (let s = 0; s < count; s++) {
-            const createdAt = now - s * fireRate;
-            const isFirst = s === 0;
-            spawnBeamEntries(createdAt, isFirst ? showShieldDamage : false, isFirst);
-        }
+        clearSabLaserVisualJobsForAttacker(attackerId, key);
+        spawnBeamEntries(now, showShieldDamage, true);
+        startSabLaserVisualJob(key, attackerId, targetId, skilledLaser, fireRate, attackLength, beamDuration, (createdAt, playSound) => {
+            spawnBeamEntries(createdAt, false, playSound, {
+                suppressImpactVisual: true,
+                localSabVisual: true
+            });
+        });
         maybeSpawnEnergyLeechEcho(now);
         return;
     }
+    clearSabLaserVisualJobsForAttacker(attackerId);
     if (visual.spriteId === 6) {
         const cfg = window.RSB_VISUAL_BURST || {};
         const burstCount = Number.isFinite(cfg.count) ? cfg.count : 5;
@@ -5285,6 +5378,7 @@ function handlePacket_attackInfo(parts, i) {
     if (!isNaN(hp) && hp <= 0) {
         cancelRsbBurstsByTarget(targetId);
         clearSabRingStateForEntity(targetId);
+        clearSabLaserVisualJobsForEntity(targetId);
         removeLaserBeamsForEntity(targetId);
         releaseSabShotsForEntity(targetId);
     }
@@ -5350,6 +5444,7 @@ function handlePacket_remove(parts, i) {
     cancelRsbBurstsByTarget(e.id);
     cancelRsbBurst(e.id);
     clearSabRingStateForEntity(e.id);
+    clearSabLaserVisualJobsForEntity(e.id);
     removeLaserBeamsForEntity(e.id);
     releaseSabShotsForEntity(e.id);
     detachRocketAttacksForEntity(e.id);
@@ -5434,6 +5529,7 @@ function handlePacket_R(parts, i) {
     cancelRsbBurstsByTarget(ent.id);
     cancelRsbBurst(ent.id);
     clearSabRingStateForEntity(ent.id);
+    clearSabLaserVisualJobsForEntity(ent.id);
     removeLaserBeamsForEntity(ent.id);
     releaseSabShotsForEntity(ent.id);
     detachRocketAttacksForEntity(ent.id);
@@ -5665,6 +5761,7 @@ function forceUnlock(targetId, options = {}) {
     removeLaserBeamsForEntity(targetId);
     releaseSabShotsForEntity(targetId);
     clearSabRingStateForEntity(targetId);
+    clearSabLaserVisualJobsForEntity(targetId);
 }
 
 function clampExplosionType(v) {
@@ -5748,6 +5845,7 @@ function handlePacket_K(parts, i) {
         cancelRsbBurstsByTarget(heroId);
         cancelRsbBurst(heroId);
         clearSabRingStateForEntity(heroId);
+        clearSabLaserVisualJobsForEntity(heroId);
         removeLaserBeamsForEntity(heroId);
         releaseSabShotsForEntity(heroId);
         if (typeof activeLasers !== "undefined") activeLasers = [];
@@ -5766,6 +5864,7 @@ function handlePacket_K(parts, i) {
         cancelRsbBurstsByTarget(id);
         cancelRsbBurst(id);
         clearSabRingStateForEntity(id);
+        clearSabLaserVisualJobsForEntity(id);
         removeLaserBeamsForEntity(id);
         releaseSabShotsForEntity(id);
         if (typeof flashClearEntityShipSkillVisualEffects === "function") {
