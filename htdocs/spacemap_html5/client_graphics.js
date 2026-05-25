@@ -977,11 +977,9 @@ function getAchievementIcon(achievementId) {
     return path ? getUiImage(path) : null;
 }
 
-const nameplateTextFieldBitmapCache = Object.create(null);
-const nameplateTextFieldBitmapCacheKeys = [];
+const nameplateTextFieldBitmapCache = new Map();
 const NAMEPLATE_TEXT_FIELD_BITMAP_CACHE_LIMIT = 512;
-const nameplateCompositeBitmapCache = Object.create(null);
-const nameplateCompositeBitmapCacheKeys = [];
+const nameplateCompositeBitmapCache = new Map();
 const NAMEPLATE_COMPOSITE_BITMAP_CACHE_LIMIT = 512;
 const droneDisplayBitmapCache = Object.create(null);
 const _nameplateTextMeasureCanvas = document.createElement("canvas");
@@ -1000,48 +998,52 @@ function disposeNameplateTextFieldBitmap(canvas) {
 }
 
 function clearNameplateTextFieldBitmapCache() {
-    for (const key in nameplateTextFieldBitmapCache) {
-        if (Object.prototype.hasOwnProperty.call(nameplateTextFieldBitmapCache, key)) {
-            disposeNameplateTextFieldBitmap(nameplateTextFieldBitmapCache[key]);
-            delete nameplateTextFieldBitmapCache[key];
-        }
+    for (const canvas of nameplateTextFieldBitmapCache.values()) {
+        disposeNameplateTextFieldBitmap(canvas);
     }
-    nameplateTextFieldBitmapCacheKeys.length = 0;
+    nameplateTextFieldBitmapCache.clear();
     clearNameplateCompositeBitmapCache();
 }
 
 function clearNameplateCompositeBitmapCache() {
-    for (const key in nameplateCompositeBitmapCache) {
-        if (Object.prototype.hasOwnProperty.call(nameplateCompositeBitmapCache, key)) {
-            disposeNameplateTextFieldBitmap(nameplateCompositeBitmapCache[key]);
-            delete nameplateCompositeBitmapCache[key];
-        }
+    for (const canvas of nameplateCompositeBitmapCache.values()) {
+        disposeNameplateTextFieldBitmap(canvas);
     }
-    nameplateCompositeBitmapCacheKeys.length = 0;
+    nameplateCompositeBitmapCache.clear();
 }
 
 function pruneNameplateCompositeBitmapCache() {
-    while (nameplateCompositeBitmapCacheKeys.length > NAMEPLATE_COMPOSITE_BITMAP_CACHE_LIMIT) {
-        const oldKey = nameplateCompositeBitmapCacheKeys.shift();
-        if (!oldKey) continue;
-        disposeNameplateTextFieldBitmap(nameplateCompositeBitmapCache[oldKey]);
-        delete nameplateCompositeBitmapCache[oldKey];
+    while (nameplateCompositeBitmapCache.size > NAMEPLATE_COMPOSITE_BITMAP_CACHE_LIMIT) {
+        const oldKey = nameplateCompositeBitmapCache.keys().next().value;
+        if (oldKey === undefined) break;
+        disposeNameplateTextFieldBitmap(nameplateCompositeBitmapCache.get(oldKey));
+        nameplateCompositeBitmapCache.delete(oldKey);
     }
 }
 
-function touchNameplateTextFieldBitmapCacheKey(cacheKey) {
-    const idx = nameplateTextFieldBitmapCacheKeys.indexOf(cacheKey);
-    if (idx !== -1) nameplateTextFieldBitmapCacheKeys.splice(idx, 1);
-    nameplateTextFieldBitmapCacheKeys.push(cacheKey);
+function touchNameplateTextFieldBitmapCacheKey(cacheKey, canvas) {
+    const cached = canvas || nameplateTextFieldBitmapCache.get(cacheKey);
+    if (!cached) return null;
+    nameplateTextFieldBitmapCache.delete(cacheKey);
+    nameplateTextFieldBitmapCache.set(cacheKey, cached);
+    return cached;
 }
 
 function pruneNameplateTextFieldBitmapCache() {
-    while (nameplateTextFieldBitmapCacheKeys.length > NAMEPLATE_TEXT_FIELD_BITMAP_CACHE_LIMIT) {
-        const oldKey = nameplateTextFieldBitmapCacheKeys.shift();
-        if (!oldKey) continue;
-        disposeNameplateTextFieldBitmap(nameplateTextFieldBitmapCache[oldKey]);
-        delete nameplateTextFieldBitmapCache[oldKey];
+    while (nameplateTextFieldBitmapCache.size > NAMEPLATE_TEXT_FIELD_BITMAP_CACHE_LIMIT) {
+        const oldKey = nameplateTextFieldBitmapCache.keys().next().value;
+        if (oldKey === undefined) break;
+        disposeNameplateTextFieldBitmap(nameplateTextFieldBitmapCache.get(oldKey));
+        nameplateTextFieldBitmapCache.delete(oldKey);
     }
+}
+
+function touchNameplateCompositeBitmapCacheKey(cacheKey, canvas) {
+    const cached = canvas || nameplateCompositeBitmapCache.get(cacheKey);
+    if (!cached) return null;
+    nameplateCompositeBitmapCache.delete(cacheKey);
+    nameplateCompositeBitmapCache.set(cacheKey, cached);
+    return cached;
 }
 
 if (typeof window !== "undefined") {
@@ -1073,7 +1075,7 @@ function buildNameplateTextFieldBitmap(value, color, fontSpec, fontSizePx) {
     if (!value) return null;
     const safeValue = String(value);
     const cacheKey = `flashTFv5|${flashNameplateFontCacheRevision}|${fontSpec}|${color}|${safeValue}`;
-    const cached = nameplateTextFieldBitmapCache[cacheKey];
+    const cached = nameplateTextFieldBitmapCache.get(cacheKey);
     if (cached) {
         touchNameplateTextFieldBitmapCacheKey(cacheKey);
         return cached;
@@ -1117,8 +1119,8 @@ function buildNameplateTextFieldBitmap(value, color, fontSpec, fontSizePx) {
     }
     ctx.fillStyle = color;
     ctx.fillText(safeValue, drawX, baselineY);
-    nameplateTextFieldBitmapCache[cacheKey] = canvas;
-    touchNameplateTextFieldBitmapCacheKey(cacheKey);
+    nameplateTextFieldBitmapCache.set(cacheKey, canvas);
+    touchNameplateTextFieldBitmapCacheKey(cacheKey, canvas);
     pruneNameplateTextFieldBitmapCache();
     return canvas;
 }
@@ -1168,7 +1170,10 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
     const rankSignature = rankReady ? `${rankId}:${rankImg.width}x${rankImg.height}` : "none";
     const factionSignature = factionReady ? `${factionId}:${factionImg.width}x${factionImg.height}` : "none";
     const compositeCacheKey = "flashNPv1|" + flashNameplateFontCacheRevision + "|" + safeName + "|" + clanText + "|" + fillStyle + "|" + (clanTagColor || fillStyle) + "|" + rankSignature + "|" + factionSignature + "|" + clanFieldWidth + "|" + nameFieldWidth + "|" + totalWidth + "|" + visualWidth + "|" + bitmapHeight + "|" + rankVisualOverflowLeft + "|" + rankVisualOverflowRight + "|" + rank23LeftAlignShift;
-    let compositeCanvas = nameplateCompositeBitmapCache[compositeCacheKey];
+    let compositeCanvas = nameplateCompositeBitmapCache.get(compositeCacheKey);
+    if (compositeCanvas) {
+        touchNameplateCompositeBitmapCacheKey(compositeCacheKey, compositeCanvas);
+    }
     if (!compositeCanvas) {
         compositeCanvas = document.createElement("canvas");
         compositeCanvas.width = visualWidth;
@@ -1190,8 +1195,7 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
         if (nameFieldBitmap) {
             sctx.drawImage(nameFieldBitmap, cursorX, textFieldY);
         }
-        nameplateCompositeBitmapCache[compositeCacheKey] = compositeCanvas;
-        nameplateCompositeBitmapCacheKeys.push(compositeCacheKey);
+        nameplateCompositeBitmapCache.set(compositeCacheKey, compositeCanvas);
         pruneNameplateCompositeBitmapCache();
     }
     ctx.save();
