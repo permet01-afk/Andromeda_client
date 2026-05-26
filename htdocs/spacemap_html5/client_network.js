@@ -6111,12 +6111,15 @@ function setLabSafeState(level, stored, capacity) {
     const safeLevel = Math.max(0, Math.min(3, parseInt(level, 10) || 0));
     const safeStored = Math.max(0, parseInt(stored, 10) || 0);
     const safeCapacity = Math.max(0, parseInt(capacity, 10) || getSepromSafeCapacityForLevel(safeLevel));
+    const prev = window.labSafeState || {};
+    const changed = prev.loaded !== true || (parseInt(prev.level, 10) || 0) !== safeLevel || (parseInt(prev.stored, 10) || 0) !== safeStored || (parseInt(prev.capacity, 10) || 0) !== safeCapacity;
     window.labSafeState = {
         loaded: true,
         level: safeLevel,
         stored: safeStored,
         capacity: safeCapacity
     };
+    return changed;
 }
 
 function handlePacket_LAB(parts, i) {
@@ -6128,9 +6131,9 @@ function handlePacket_LAB(parts, i) {
             const level = parseInt(parts[i + 2], 10) || 0;
             const stored = parseInt(parts[i + 3], 10) || 0;
             const capacity = parseInt(parts[i + 4], 10) || getSepromSafeCapacityForLevel(level);
-            setLabSafeState(level, stored, capacity);
-            if (typeof refreshRefiningWindow === "function") {
-                refreshRefiningWindow(true);
+            const changed = setLabSafeState(level, stored, capacity);
+            if (changed && typeof refreshRefiningWindow === "function") {
+                refreshRefiningWindow(true, "safe");
             }
         }
         return;
@@ -6154,17 +6157,18 @@ function handlePacket_LAB(parts, i) {
                 });
             }
         }
+        let changed = false;
         if (updates.length && typeof setUpgradeState === "function") {
             updates.forEach(({targetId: targetId, oreKey: oreKey, amount: amount}) => {
                 const payload = {
                     amount: amount,
                     oreKey: oreKey || null
                 };
-                setUpgradeState(targetId, payload);
+                changed = setUpgradeState(targetId, payload) || changed;
             });
         }
-        if (updates.length && typeof refreshRefiningWindow === "function") {
-            refreshRefiningWindow(true);
+        if (changed && typeof refreshRefiningWindow === "function") {
+            refreshRefiningWindow(true, "upgrade");
         }
     }
 }

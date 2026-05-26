@@ -5870,6 +5870,12 @@ let refiningPollTimer = null;
 
 let refiningPollTicks = 0;
 
+let refiningRefreshPendingAfterDrag = false;
+
+let refiningPendingRefreshForce = false;
+
+let refiningPendingRefreshScope = "all";
+
 function startRefiningPoll() {
     stopRefiningPoll();
     refiningPollTicks = 0;
@@ -5904,6 +5910,42 @@ function stopRefiningPoll() {
 }
 
 let currentUpgradeDrag = null;
+
+function isRefiningUpgradeDragActive() {
+    return currentUpgradeDrag !== null;
+}
+
+function mergeRefiningRefreshScope(a, b) {
+    if (a === "all" || b === "all") return "all";
+    if (a === b) return a;
+    return "all";
+}
+
+function scheduleRefiningRefreshAfterDrag(force = false, scope = "all") {
+    refiningRefreshPendingAfterDrag = true;
+    refiningPendingRefreshForce = refiningPendingRefreshForce || !!force;
+    refiningPendingRefreshScope = mergeRefiningRefreshScope(refiningPendingRefreshScope, scope || "all");
+}
+
+function flushPendingRefiningRefreshAfterDrag() {
+    if (!refiningRefreshPendingAfterDrag) return;
+    const force = refiningPendingRefreshForce;
+    const scope = refiningPendingRefreshScope;
+    refiningRefreshPendingAfterDrag = false;
+    refiningPendingRefreshForce = false;
+    refiningPendingRefreshScope = "all";
+    refreshRefiningWindow(force, scope);
+}
+
+function beginUpgradeDrag(oreKey) {
+    currentUpgradeDrag = oreKey || null;
+}
+
+function endUpgradeDrag() {
+    if (currentUpgradeDrag === null) return;
+    currentUpgradeDrag = null;
+    flushPendingRefiningRefreshAfterDrag();
+}
 
 function getOreCargoSnapshot() {
     return {
@@ -6237,13 +6279,20 @@ function setUpgradeState(id, data) {
     const amount = Math.max(0, parseInt(merged.amount, 10) || 0);
     const oreKey = merged.oreKey || null;
     if (!oreKey || amount <= 0) {
-        refiningUpgradeCards.delete(id);
-        return;
+        const hadEntry = refiningUpgradeCards.has(id);
+        if (hadEntry) {
+            refiningUpgradeCards.delete(id);
+        }
+        return hadEntry;
+    }
+    if (prev.oreKey === oreKey && Math.max(0, parseInt(prev.amount, 10) || 0) === amount) {
+        return false;
     }
     refiningUpgradeCards.set(id, {
         oreKey: oreKey,
         amount: amount
     });
+    return true;
 }
 
 function getUpgradeOreDef(key) {
@@ -6472,11 +6521,9 @@ function buildUpgradeOreSlot(ore, cargo) {
                 if (dragImg) {
                     e.dataTransfer.setDragImage(dragImg, dragImg.width / 2, dragImg.height / 2);
                 }
-                currentUpgradeDrag = ore.key;
+                beginUpgradeDrag(ore.key);
             });
-            slot.addEventListener("dragend", () => {
-                currentUpgradeDrag = null;
-            });
+            slot.addEventListener("dragend", endUpgradeDrag);
         }
     }
     return slot;
@@ -6543,6 +6590,7 @@ function buildUpgradeTarget(target, cargo) {
         e.preventDefault();
         const oreKey = dragKeyFromEvent(e);
         handleUpgradeDrop(target, oreKey, cargo, state);
+        setTimeout(endUpgradeDrag, 0);
     });
     card.appendChild(slot);
     card.appendChild(createRefinementLabelEl(formatTargetStatus(target.id, state), true));
@@ -7056,16 +7104,40 @@ function setRefiningTab(tab) {
     }
 }
 
-function refreshRefiningWindow(force = false) {
-    const sig = JSON.stringify({
+function isRefiningRefreshScopeVisible(scope) {
+    if (scope === "safe") return refiningActiveTab === "safe";
+    if (scope === "upgrade") return refiningActiveTab === "upgrade";
+    return true;
+}
+
+function getRefiningActiveTabSignature() {
+    if (refiningActiveTab === "safe") {
+        return JSON.stringify({
+            cargo: getOreCargoSnapshot(),
+            safe: window.labSafeState || null,
+            trade: hasSafeTradeAccess() ? 1 : 0,
+            uridium: Number.isFinite(window.heroUridium) ? window.heroUridium : null
+        });
+    }
+    return JSON.stringify({
         cargo: getOreCargoSnapshot(),
-        safe: window.labSafeState || null,
-        trade: hasSafeTradeAccess() ? 1 : 0,
-        uridium: Number.isFinite(window.heroUridium) ? window.heroUridium : null
+        tab: refiningActiveTab
+    });
+}
+
+function refreshRefiningWindow(force = false, scope = "all") {
+    if (!refiningWindowElement || !windowStates || !windowStates.refinement) return;
+    if (!isRefiningRefreshScopeVisible(scope)) return;
+    if (refiningActiveTab === "upgrade" && isRefiningUpgradeDragActive()) {
+        scheduleRefiningRefreshAfterDrag(force, scope);
+        return;
+    }
+    const sig = JSON.stringify({
+        active: refiningActiveTab,
+        state: getRefiningActiveTabSignature()
     });
     if (!force && sig === refiningLastCargoSig) return;
     refiningLastCargoSig = sig;
-    if (!refiningWindowElement || !windowStates.refinement) return;
     setRefiningTab(refiningActiveTab);
 }
 
@@ -8938,7 +9010,7 @@ function handleTradeZoneStateFromServer(isInTradeZone) {
     }
     setTradeWindowAccess();
     if (windowStates && windowStates.refinement && typeof refreshRefiningWindow === "function") {
-        refreshRefiningWindow(true);
+        refreshRefiningWindow(true, "safe");
     }
 }
 
