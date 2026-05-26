@@ -75,6 +75,10 @@ let currentBackgroundLayers = [];
 
 let backgroundLayersEnabled = true;
 
+const backgroundLayerObjectCache = new Map();
+
+const BACKGROUND_LAYER_OBJECT_CACHE_LIMIT = 32;
+
 let mapBackgroundLayersById = {};
 
 let mapStarfieldSettingsById = {};
@@ -1507,8 +1511,30 @@ function loadBackgroundLayer(layer) {
     }
 }
 
-function setBackgroundLayers(mapId, layers) {
+function getBackgroundLayerObjectCacheKey(mapId, layers, shift) {
+    const parts = [ mapId, MAP_WIDTH, MAP_HEIGHT, shift.x || 0, shift.y || 0 ];
+    for (let i = 0; i < layers.length; i++) {
+        const layer = layers[i];
+        parts.push(layer.typeId, layer.layer ?? 0, layer.parallax || getBackgroundParallaxForMap(mapId), layer.shiftX || 0, layer.shiftY || 0);
+    }
+    return parts.join("|");
+}
+
+function pruneBackgroundLayerObjectCache() {
+    while (backgroundLayerObjectCache.size > BACKGROUND_LAYER_OBJECT_CACHE_LIMIT) {
+        const oldKey = backgroundLayerObjectCache.keys().next().value;
+        if (oldKey === undefined) break;
+        backgroundLayerObjectCache.delete(oldKey);
+    }
+}
+
+function setBackgroundLayers(mapId, layers, options = {}) {
     const shift = getBackgroundShiftForMap(mapId);
+    const cacheKey = getBackgroundLayerObjectCacheKey(mapId, layers, shift);
+    if (!options.force && backgroundLayerObjectCache.has(cacheKey)) {
+        currentBackgroundLayers = backgroundLayerObjectCache.get(cacheKey);
+        return;
+    }
     currentBackgroundLayers = layers.map(layer => ({
         typeId: layer.typeId,
         layer: layer.layer ?? 0,
@@ -1522,6 +1548,8 @@ function setBackgroundLayers(mapId, layers) {
         image: null
     })).sort((a, b) => (a.layer || 0) - (b.layer || 0));
     currentBackgroundLayers.forEach(loadBackgroundLayer);
+    backgroundLayerObjectCache.set(cacheKey, currentBackgroundLayers);
+    pruneBackgroundLayerObjectCache();
 }
 
 function getBackgroundLayersForMap(mapId) {
@@ -1561,7 +1589,7 @@ function applyMapBackground(mapId, options = {}) {
     currentMapId = mapId;
     updateMapDimensions(getMapScaleFactor(mapId));
     const layers = getBackgroundLayersForMap(mapId);
-    setBackgroundLayers(mapId, layers);
+    setBackgroundLayers(mapId, layers, options);
     applyMapStarfield(mapId);
     if (!options.skipLoadXml) {
         ensureMapsXmlLoaded();

@@ -2283,7 +2283,6 @@ function resetMapState(newMapId) {
     if (typeof clearSabRingState === "function") clearSabRingState();
     if (typeof clearSabLaserVisualJobs === "function") clearSabLaserVisualJobs();
     if (typeof clearRemovedEntitySnapshots === "function") clearRemovedEntitySnapshots();
-    if (typeof clearNameplateTextFieldBitmapCache === "function") clearNameplateTextFieldBitmapCache();
     selectedTargetId = null;
     currentLaserTargetId = null;
     attackIntentTargetId = null;

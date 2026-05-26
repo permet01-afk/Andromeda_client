@@ -13,38 +13,46 @@ function getStarfieldAnchor(cameraXValue, cameraYValue, out = null) {
     return anchor;
 }
 
-function ensureStarfieldInitialized() {
+function resetStarfieldStars(stars, width, height, count) {
+    stars.length = count;
+    for (let i = 0; i < count; i++) {
+        const star = stars[i] || {
+            x: 0,
+            y: 0,
+            speed: 0
+        };
+        star.x = Math.random() * width;
+        star.y = Math.random() * height;
+        star.speed = Math.random() * (STARFIELD_SPEED_MAX - STARFIELD_SPEED_MIN) + STARFIELD_SPEED_MIN;
+        stars[i] = star;
+    }
+}
+
+function ensureStarfieldInitialized(forceReset = false) {
     if (!starfieldEnabled) return;
     const width = canvas ? canvas.width : 0;
     const height = canvas ? canvas.height : 0;
     if (!width || !height) return;
-    const needsReinit = !starfieldState || starfieldState.width !== width || starfieldState.height !== height;
+    const needsReinit = forceReset || !starfieldState || starfieldState.width !== width || starfieldState.height !== height || !Array.isArray(starfieldState.stars) || starfieldState.stars.length !== STARFIELD_DEFAULT_COUNT;
     if (!needsReinit) return;
     const starCount = STARFIELD_DEFAULT_COUNT;
-    const stars = [];
-    for (let i = 0; i < starCount; i++) {
-        stars.push({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            speed: Math.random() * (STARFIELD_SPEED_MAX - STARFIELD_SPEED_MIN) + STARFIELD_SPEED_MIN
-        });
-    }
-    starfieldState = {
-        width: width,
-        height: height,
-        stars: stars,
-        velocityX: 0,
-        velocityY: 0,
-        lastTick: performance.now(),
-        timeAccumulator: 0
+    const state = starfieldState && Array.isArray(starfieldState.stars) ? starfieldState : {
+        stars: []
     };
+    resetStarfieldStars(state.stars, width, height, starCount);
+    state.width = width;
+    state.height = height;
+    state.velocityX = 0;
+    state.velocityY = 0;
+    state.lastTick = performance.now();
+    state.timeAccumulator = 0;
+    starfieldState = state;
     getStarfieldAnchor(cameraX, cameraY, lastStarfieldAnchor);
 }
 
 function resetStarfieldState() {
-    starfieldState = null;
     getStarfieldAnchor(cameraX, cameraY, lastStarfieldAnchor);
-    ensureStarfieldInitialized();
+    ensureStarfieldInitialized(true);
 }
 
 function setStarfieldEnabled(enabled, color = STARFIELD_DEFAULT_COLOR) {
