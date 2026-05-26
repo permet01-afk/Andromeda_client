@@ -951,15 +951,26 @@ function updateTemporaryStatuses(now) {
         heroTargetFadeUntil = 0;
         heroTargetFaded = false;
     }
-    for (const id in entities) {
+    if (typeof activeTemporaryStatusEntityIds === "undefined" || activeTemporaryStatusEntityIds.size === 0) return;
+    for (const id of activeTemporaryStatusEntityIds) {
         const ent = entities[id];
-        if (!ent) continue;
+        if (!ent) {
+            activeTemporaryStatusEntityIds.delete(id);
+            continue;
+        }
+        if (ent.id === heroId) {
+            activeTemporaryStatusEntityIds.delete(id);
+            continue;
+        }
         if (ent.empImmunityUntil && now >= ent.empImmunityUntil) {
             ent.empImmunityUntil = 0;
         }
         if (ent.targetFadeUntil && now >= ent.targetFadeUntil) {
             ent.targetFadeUntil = 0;
             ent.targetFaded = false;
+        }
+        if (!ent.empImmunityUntil && !ent.targetFadeUntil) {
+            activeTemporaryStatusEntityIds.delete(id);
         }
     }
 }
@@ -2941,13 +2952,21 @@ function updateShieldEffects(now) {
     if (heroInvincible && heroInvUntil && now >= heroInvUntil) {
         setHeroShieldEffect("INVINCIBILITY", false, 0);
     }
-    for (const id in entities) {
+    if (typeof activeShieldEffectEntityIds === "undefined" || activeShieldEffectEntityIds.size === 0) return;
+    for (const id of activeShieldEffectEntityIds) {
         const e = entities[id];
+        if (!e || e.kind !== "player") {
+            activeShieldEffectEntityIds.delete(id);
+            continue;
+        }
         if (e.ishActive && e.ishUntil && now >= e.ishUntil) {
             setEntityShieldEffect(e, "ISH", false, 0);
         }
         if (e.invincible && e.invUntil && now >= e.invUntil) {
             setEntityShieldEffect(e, "INVINCIBILITY", false, 0);
+        }
+        if (!(e.ishActive && e.ishUntil) && !(e.invincible && e.invUntil)) {
+            activeShieldEffectEntityIds.delete(id);
         }
     }
 }

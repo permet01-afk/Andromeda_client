@@ -2258,6 +2258,7 @@ function resetMapState(newMapId) {
     }
     applyMapBackground(currentMapId);
     for (const id in entities) delete entities[id];
+    if (typeof clearEntityRuntimeActiveLists === "function") clearEntityRuntimeActiveLists();
     for (const id in portals) delete portals[id];
     if (pendingAttackLocksByAttackerId instanceof Map) pendingAttackLocksByAttackerId.clear();
     if (typeof clearAllCollectableAnimationStates === "function") clearAllCollectableAnimationStates();
@@ -2402,6 +2403,7 @@ function handlePacket_n(parts, i) {
                 ent.empImmunityUntil = now + empDurationMs;
                 ent.targetFaded = true;
                 ent.targetFadeUntil = now + empDurationMs;
+                refreshEntityTemporaryStatusRegistration(ent);
                 fxX = typeof ent.x === "number" ? ent.x : shipX;
                 fxY = typeof ent.y === "number" ? ent.y : shipY;
             }
@@ -2793,6 +2795,7 @@ function handlePacket_S(parts, i) {
                 targetEnt.empImmunityUntil = now + empDurationMs;
                 targetEnt.targetFaded = true;
                 targetEnt.targetFadeUntil = now + empDurationMs;
+                refreshEntityTemporaryStatusRegistration(targetEnt);
             }
             break;
         }
@@ -5565,6 +5568,7 @@ function handlePacket_remove(parts, i) {
             }
         }
     } catch (err) {}
+    unregisterEntityRuntimeActiveState(e.id);
     delete entities[key];
     if (loggedEntities.has(e.id)) loggedEntities.delete(e.id);
     if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(e.id);
@@ -5652,6 +5656,7 @@ function handlePacket_R(parts, i) {
             clearAttackLockForEntity(other);
         }
     }
+    unregisterEntityRuntimeActiveState(ent.id);
     if (entities[key] === ent) delete entities[key];
     if (entities[rawId] === ent) delete entities[rawId];
     if (ent.id != null && entities[ent.id] === ent) delete entities[ent.id];
@@ -5982,6 +5987,7 @@ function handlePacket_K(parts, i) {
         if (typeof flashClearEntityShipSkillVisualEffects === "function") {
             flashClearEntityShipSkillVisualEffects(id);
         }
+        unregisterEntityRuntimeActiveState(id);
         delete entities[id];
         if (loggedEntities.has(id)) loggedEntities.delete(id);
     }

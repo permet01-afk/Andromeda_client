@@ -4,6 +4,10 @@ const loggedEntities = new Set;
 
 const loggedObjectTypes = new Set;
 
+const activeTemporaryStatusEntityIds = new Set;
+
+const activeShieldEffectEntityIds = new Set;
+
 const portals = {};
 
 const laserBeams = [];
@@ -47,6 +51,35 @@ function pruneRemovedEntitySnapshots(now = performance.now(), force = false) {
 function clearRemovedEntitySnapshots() {
     removedEntitySnapshots.clear();
     removedEntitySnapshotsLastPruneAt = 0;
+}
+
+function refreshEntityTemporaryStatusRegistration(ent) {
+    if (!ent || ent.id == null) return;
+    if (ent.empImmunityUntil || ent.targetFadeUntil) {
+        activeTemporaryStatusEntityIds.add(ent.id);
+    } else {
+        activeTemporaryStatusEntityIds.delete(ent.id);
+    }
+}
+
+function refreshEntityShieldEffectRegistration(ent) {
+    if (!ent || ent.id == null) return;
+    if ((ent.ishActive && ent.ishUntil) || (ent.invincible && ent.invUntil)) {
+        activeShieldEffectEntityIds.add(ent.id);
+    } else {
+        activeShieldEffectEntityIds.delete(ent.id);
+    }
+}
+
+function unregisterEntityRuntimeActiveState(entityId) {
+    if (entityId == null) return;
+    activeTemporaryStatusEntityIds.delete(entityId);
+    activeShieldEffectEntityIds.delete(entityId);
+}
+
+function clearEntityRuntimeActiveLists() {
+    activeTemporaryStatusEntityIds.clear();
+    activeShieldEffectEntityIds.clear();
 }
 
 if (typeof window !== "undefined") {
@@ -657,6 +690,7 @@ function setEntityShieldEffect(ent, effect, active, durationMs) {
         ent.invUntil = active ? now + duration : 0;
         ent.invSince = active ? now : 0;
     }
+    refreshEntityShieldEffectRegistration(ent);
 }
 
 function isPointInRect(px, py, rect) {
