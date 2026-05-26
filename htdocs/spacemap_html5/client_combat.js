@@ -3161,6 +3161,16 @@ function warmFrameDefOnContext(warmCtx, frameDef, options = {}) {
         } else {
             warmCtx.drawImage(source, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
         }
+    } else if (frameDef.preparedPortalFrame && frameDef.img) {
+        const trim = frameDef.trim;
+        const preparedSource = frameDef.img;
+        if (trim && trim.sw > 0 && trim.sh > 0) {
+            const scaleX = drawWidth / (frameDef.sw || frameDef.width || 1);
+            const scaleY = drawHeight / (frameDef.sh || frameDef.height || 1);
+            warmCtx.drawImage(preparedSource, trim.sx || 0, trim.sy || 0, trim.sw, trim.sh, x + trim.x * scaleX, y + trim.y * scaleY, trim.sw * scaleX, trim.sh * scaleY);
+        } else {
+            warmCtx.drawImage(preparedSource, x, y, drawWidth, drawHeight);
+        }
     } else if (frameDef.atlas) {
         const trim = frameDef.trim;
         if (trim && trim.sw > 0 && trim.sh > 0) {
@@ -3320,9 +3330,16 @@ function buildPortalRuntimeWarmupTasks(warmCtx) {
     const tasks = [];
     const addWarmTask = (label, frameFactory, options = {}) => {
         if (typeof frameFactory !== "function") return;
+        const requirePreparedPortalFrame = !!options.requirePreparedPortalFrame;
+        const warmOptions = requirePreparedPortalFrame ? Object.assign({}, options) : options;
+        if (requirePreparedPortalFrame) delete warmOptions.requirePreparedPortalFrame;
         tasks.push({
             label: label,
-            run: () => warmFrameDefOnContext(warmCtx, frameFactory(), options)
+            run: () => {
+                const frameDef = frameFactory();
+                if (requirePreparedPortalFrame && (!frameDef || !frameDef.preparedPortalFrame)) return false;
+                return warmFrameDefOnContext(warmCtx, frameDef, warmOptions);
+            }
         });
     };
     if (typeof PORTAL_JUMP_ANIM !== "undefined" && PORTAL_JUMP_ANIM) {
@@ -3342,7 +3359,10 @@ function buildPortalRuntimeWarmupTasks(warmCtx) {
                 if (!animDef) return;
                 const frameCount = Math.max(0, Number(animDef.frameCount) || 0);
                 for (let frame = 0; frame < frameCount; frame++) {
-                    addWarmTask("portalGate:" + portalKey + ":" + animationName + ":" + frame, () => getPortalSpriteFrame(portalKey, animationName, frame));
+                    const prepareGalaxyGateFrame = typeof shouldPreparePortalSpriteFrame === "function" && shouldPreparePortalSpriteFrame(portalKey) && typeof preparePortalSpriteFrame === "function";
+                    addWarmTask("portalGate:" + portalKey + ":" + animationName + ":" + frame, () => prepareGalaxyGateFrame ? preparePortalSpriteFrame(portalKey, animationName, frame) : getPortalSpriteFrame(portalKey, animationName, frame), {
+                        requirePreparedPortalFrame: prepareGalaxyGateFrame
+                    });
                 }
             });
         });

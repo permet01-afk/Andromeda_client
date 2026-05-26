@@ -4040,8 +4040,43 @@ function drawEntities() {
     drawActiveCollectableBoxBeams(now);
 }
 
+const portalFrameViewportScratch = {
+    left: 0,
+    top: 0,
+    right: LOGICAL_WIDTH,
+    bottom: LOGICAL_HEIGHT
+};
+
+function isPortalDrawRectOutsideViewport(destX, destY, destW, destH) {
+    const viewport = getCurrentLogicalViewportRect(portalFrameViewportScratch);
+    return destX + destW <= viewport.left || destY + destH <= viewport.top || destX >= viewport.right || destY >= viewport.bottom;
+}
+
 function drawPortalFrame(frameDef, portalScreenX, portalScreenY, entityScale) {
     if (!frameDef || frameDef.pendingAtlas) return false;
+    if (frameDef.preparedPortalFrame && frameDef.img) {
+        const source = frameDef.img;
+        if (source.width <= 0 || source.height <= 0 || frameDef.width <= 0 || frameDef.height <= 0) return false;
+        const w = frameDef.width * entityScale;
+        const h = frameDef.height * entityScale;
+        const baseX = portalScreenX - w / 2;
+        const baseY = portalScreenY - h / 2;
+        const trim = frameDef.trim;
+        if (trim && trim.sw > 0 && trim.sh > 0) {
+            const scaleX = w / (frameDef.sw || frameDef.width || 1);
+            const scaleY = h / (frameDef.sh || frameDef.height || 1);
+            const destX = baseX + trim.x * scaleX;
+            const destY = baseY + trim.y * scaleY;
+            const destW = trim.sw * scaleX;
+            const destH = trim.sh * scaleY;
+            if (isPortalDrawRectOutsideViewport(destX, destY, destW, destH)) return true;
+            ctx.drawImage(source, trim.sx || 0, trim.sy || 0, trim.sw, trim.sh, destX, destY, destW, destH);
+        } else {
+            if (isPortalDrawRectOutsideViewport(baseX, baseY, w, h)) return true;
+            ctx.drawImage(source, baseX, baseY, w, h);
+        }
+        return true;
+    }
     if (frameDef.atlas) {
         const w = frameDef.width * entityScale;
         const h = frameDef.height * entityScale;
@@ -4051,8 +4086,14 @@ function drawPortalFrame(frameDef, portalScreenX, portalScreenY, entityScale) {
         if (trim && trim.sw > 0 && trim.sh > 0) {
             const scaleX = w / (frameDef.sw || frameDef.width || 1);
             const scaleY = h / (frameDef.sh || frameDef.height || 1);
-            ctx.drawImage(frameDef.atlas, trim.sx, trim.sy, trim.sw, trim.sh, baseX + trim.x * scaleX, baseY + trim.y * scaleY, trim.sw * scaleX, trim.sh * scaleY);
+            const destX = baseX + trim.x * scaleX;
+            const destY = baseY + trim.y * scaleY;
+            const destW = trim.sw * scaleX;
+            const destH = trim.sh * scaleY;
+            if (isPortalDrawRectOutsideViewport(destX, destY, destW, destH)) return true;
+            ctx.drawImage(frameDef.atlas, trim.sx, trim.sy, trim.sw, trim.sh, destX, destY, destW, destH);
         } else {
+            if (isPortalDrawRectOutsideViewport(baseX, baseY, w, h)) return true;
             ctx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, baseX, baseY, w, h);
         }
         return true;
@@ -4060,7 +4101,10 @@ function drawPortalFrame(frameDef, portalScreenX, portalScreenY, entityScale) {
     if (!frameDef.complete || frameDef.width <= 0 || frameDef.height <= 0) return false;
     const w = frameDef.width * entityScale;
     const h = frameDef.height * entityScale;
-    ctx.drawImage(frameDef, portalScreenX - w / 2, portalScreenY - h / 2, w, h);
+    const destX = portalScreenX - w / 2;
+    const destY = portalScreenY - h / 2;
+    if (isPortalDrawRectOutsideViewport(destX, destY, w, h)) return true;
+    ctx.drawImage(frameDef, destX, destY, w, h);
     return true;
 }
 

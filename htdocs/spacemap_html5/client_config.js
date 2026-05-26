@@ -4332,6 +4332,13 @@ const PORTAL_TYPE_TO_SPRITE_KEY = Object.freeze({
 
 window.PORTAL_TYPE_TO_SPRITE_KEY = PORTAL_TYPE_TO_SPRITE_KEY;
 
+const PREPARED_GALAXY_GATE_SPRITE_KEYS = Object.freeze({
+    galaxyGate1: true,
+    galaxyGate2: true,
+    galaxyGate3: true,
+    galaxyGate4: true
+});
+
 const PORTAL_JUMP_ANIM = {
     frameCount: 70,
     atlasPath: "graphics/atlas/portal_jump_v1.png",
@@ -4794,6 +4801,8 @@ const rocketDamageSpriteCache = {};
 
 const portalSpriteCache = {};
 
+const preparedPortalSpriteCache = {};
+
 const portalJumpSpriteCache = {};
 
 let portalJumpAtlasImage = null;
@@ -5130,6 +5139,72 @@ function getPortalAtlasFrame(animDef, frameIndex) {
         height: sh,
         trim: trim
     };
+}
+
+function shouldPreparePortalSpriteFrame(portalType) {
+    return !!(PREPARED_GALAXY_GATE_SPRITE_KEYS && PREPARED_GALAXY_GATE_SPRITE_KEYS[portalType]);
+}
+
+function getPortalSpriteFrameCacheKey(portalType, animation, frameIndex) {
+    return `${portalType}_${animation}_${frameIndex}`;
+}
+
+function preparePortalSpriteFrame(portalType, animation, frameIndex) {
+    const portalDef = PORTAL_SPRITE_DEFS[portalType];
+    if (!portalDef) return null;
+    const animDef = portalDef[animation];
+    if (!animDef) return null;
+    const frameCount = animDef.frameCount || 1;
+    let idx = frameIndex % frameCount;
+    if (idx < 0) idx += frameCount;
+    const key = getPortalSpriteFrameCacheKey(portalType, animation, idx);
+    if (preparedPortalSpriteCache[key]) return preparedPortalSpriteCache[key];
+    if (!shouldPreparePortalSpriteFrame(portalType)) {
+        return getPortalSpriteFrame(portalType, animation, idx);
+    }
+    if (!(animDef.atlasPath || animDef.atlasParts && animDef.atlasParts.length)) {
+        return getPortalSpriteFrame(portalType, animation, idx);
+    }
+    const atlasFrame = getPortalAtlasFrame(animDef, idx);
+    if (!atlasFrame || atlasFrame.pendingAtlas || !atlasFrame.atlas) return atlasFrame;
+    const trim = atlasFrame.trim || {
+        x: 0,
+        y: 0,
+        sx: atlasFrame.sx,
+        sy: atlasFrame.sy,
+        sw: atlasFrame.sw,
+        sh: atlasFrame.sh
+    };
+    if (!trim || trim.sw <= 0 || trim.sh <= 0 || typeof document === "undefined") return atlasFrame;
+    const canvasFrame = document.createElement("canvas");
+    canvasFrame.width = Math.max(1, trim.sw | 0);
+    canvasFrame.height = Math.max(1, trim.sh | 0);
+    const frameCtx = canvasFrame.getContext("2d", {
+        alpha: true,
+        willReadFrequently: false
+    });
+    if (!frameCtx) return atlasFrame;
+    frameCtx.clearRect(0, 0, canvasFrame.width, canvasFrame.height);
+    frameCtx.drawImage(atlasFrame.atlas, trim.sx, trim.sy, trim.sw, trim.sh, 0, 0, canvasFrame.width, canvasFrame.height);
+    const preparedFrame = {
+        preparedPortalFrame: true,
+        img: canvasFrame,
+        width: atlasFrame.width,
+        height: atlasFrame.height,
+        sw: atlasFrame.sw || atlasFrame.width,
+        sh: atlasFrame.sh || atlasFrame.height,
+        trim: {
+            x: trim.x || 0,
+            y: trim.y || 0,
+            sx: 0,
+            sy: 0,
+            sw: canvasFrame.width,
+            sh: canvasFrame.height
+        }
+    };
+    preparedPortalSpriteCache[key] = preparedFrame;
+    portalSpriteCache[key] = preparedFrame;
+    return preparedFrame;
 }
 
 function markPortalJumpAtlasReadyIfDecoded(img) {
@@ -6262,7 +6337,8 @@ function getPortalSpriteFrame(portalType, animation, frameIndex) {
     const frameCount = animDef.frameCount || 1;
     let idx = frameIndex % frameCount;
     if (idx < 0) idx += frameCount;
-    const key = `${portalType}_${animation}_${idx}`;
+    const key = getPortalSpriteFrameCacheKey(portalType, animation, idx);
+    if (preparedPortalSpriteCache[key]) return preparedPortalSpriteCache[key];
     if (portalSpriteCache[key]) return portalSpriteCache[key];
     if (animDef.atlasPath || animDef.atlasParts && animDef.atlasParts.length) {
         const atlasFrame = getPortalAtlasFrame(animDef, idx);
