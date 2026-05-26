@@ -64,6 +64,8 @@ const DRAW_SMARTBOMB_EXCLUDE_HERO_OPTIONS = {
     excludeHero: true
 };
 
+const stationRenderMetaCache = Object.create(null);
+
 function getStationImageTrim(type, img) {
     if (typeof STATION_SPRITE_DEFS === "undefined" || !type || !img) return null;
     const def = STATION_SPRITE_DEFS[type];
@@ -74,25 +76,56 @@ function getStationImageTrim(type, img) {
     return trim;
 }
 
-function drawStationImageClipped(img, drawX, drawY, viewLeft, viewTop, viewRight, viewBottom, trim = null) {
-    const baseDestX = drawX - img.width / 2;
-    const baseDestY = drawY - img.height / 2;
+function getStationRenderMeta(type, img) {
+    if (!img) return null;
+    const cacheKey = type || "";
+    let meta = stationRenderMetaCache[cacheKey];
+    if (meta && meta.image === img && meta.imageWidth === img.width && meta.imageHeight === img.height) {
+        return meta;
+    }
+    const trim = getStationImageTrim(type, img);
     const trimX = trim ? trim.x : 0;
     const trimY = trim ? trim.y : 0;
     const trimW = trim ? trim.w : img.width;
     const trimH = trim ? trim.h : img.height;
+    meta = {
+        image: img,
+        imageWidth: img.width,
+        imageHeight: img.height,
+        halfWidth: img.width / 2,
+        halfHeight: img.height / 2,
+        hasTrim: !!trim,
+        trimX: trimX,
+        trimY: trimY,
+        trimW: trimW,
+        trimH: trimH,
+        sourceBaseX: trimX,
+        sourceBaseY: trimY
+    };
+    stationRenderMetaCache[cacheKey] = meta;
+    return meta;
+}
+
+function drawStationImageClipped(meta, drawX, drawY, viewport) {
+    const img = meta.image;
+    const baseDestX = drawX - meta.halfWidth;
+    const baseDestY = drawY - meta.halfHeight;
+    const trimX = meta.trimX;
+    const trimY = meta.trimY;
+    const trimW = meta.trimW;
+    const trimH = meta.trimH;
     const destX = baseDestX + trimX;
     const destY = baseDestY + trimY;
-    const sourceBaseX = trimX;
-    const sourceBaseY = trimY;
+    const sourceBaseX = meta.sourceBaseX;
+    const sourceBaseY = meta.sourceBaseY;
     const destRight = destX + img.width;
     const destBottom = destY + trimH;
-    const clipLeft = Math.max(destX, viewLeft);
-    const clipTop = Math.max(destY, viewTop);
-    const clipRight = Math.min(destX + trimW, viewRight);
-    const clipBottom = Math.min(destBottom, viewBottom);
+    const clipLeft = Math.max(destX, viewport.left);
+    const clipTop = Math.max(destY, viewport.top);
+    const clipRight = Math.min(destX + trimW, viewport.right);
+    const clipBottom = Math.min(destBottom, viewport.bottom);
     if (clipRight <= clipLeft || clipBottom <= clipTop) return;
-    if (!trim && clipLeft === destX && clipTop === destY && clipRight === destRight && clipBottom === destBottom) {
+    if (!meta.hasTrim && clipLeft === destX && clipTop === destY && clipRight === destRight && clipBottom === destBottom) {
         ctx.drawImage(img, destX, destY);
         return;
     }
@@ -114,10 +147,16 @@ function render(now) {
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
         const canClipStations = Number.isFinite(totalScale) && totalScale > 0;
-        const stationViewLeft = canClipStations ? LOGICAL_WIDTH / 2 - centerX / totalScale : 0;
-        const stationViewTop = canClipStations ? LOGICAL_HEIGHT / 2 - centerY / totalScale : 0;
-        const stationViewRight = canClipStations ? LOGICAL_WIDTH / 2 + centerX / totalScale : LOGICAL_WIDTH;
-        const stationViewBottom = canClipStations ? LOGICAL_HEIGHT / 2 + centerY / totalScale : LOGICAL_HEIGHT;
+        const stationViewport = render._stationViewport || (render._stationViewport = {
+            left: 0,
+            top: 0,
+            right: LOGICAL_WIDTH,
+            bottom: LOGICAL_HEIGHT
+        });
+        stationViewport.left = canClipStations ? LOGICAL_WIDTH / 2 - centerX / totalScale : 0;
+        stationViewport.top = canClipStations ? LOGICAL_HEIGHT / 2 - centerY / totalScale : 0;
+        stationViewport.right = canClipStations ? LOGICAL_WIDTH / 2 + centerX / totalScale : LOGICAL_WIDTH;
+        stationViewport.bottom = canClipStations ? LOGICAL_HEIGHT / 2 + centerY / totalScale : LOGICAL_HEIGHT;
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.scale(totalScale, totalScale);
@@ -127,12 +166,14 @@ function render(now) {
             for (let s of stations) {
                 let img = stationImages[s.type];
                 if (img && img.complete) {
+                    const stationMeta = getStationRenderMeta(s.type, img);
+                    if (!stationMeta) continue;
                     let drawX = mapToScreenX(s.x);
                     let drawY = mapToScreenY(s.y);
                     if (canClipStations) {
-                        drawStationImageClipped(img, drawX, drawY, stationViewLeft, stationViewTop, stationViewRight, stationViewBottom, getStationImageTrim(s.type, img));
+                        drawStationImageClipped(stationMeta, drawX, drawY, stationViewport);
                     } else {
-                        ctx.drawImage(img, drawX - img.width / 2, drawY - img.height / 2);
+                        ctx.drawImage(stationMeta.image, drawX - stationMeta.halfWidth, drawY - stationMeta.halfHeight);
                     }
                 }
             }

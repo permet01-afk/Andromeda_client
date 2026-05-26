@@ -144,26 +144,30 @@ function getRocketSprite(rocketId) {
     return rocketSpriteCache[cacheKey];
 }
 
-function getCurrentLogicalViewportRect() {
+function getCurrentLogicalViewportRect(out = null) {
+    const viewport = out || {
+        left: 0,
+        top: 0,
+        right: LOGICAL_WIDTH,
+        bottom: LOGICAL_HEIGHT
+    };
     const worldScale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
     const mapScale = typeof getMapViewScaleValue === "function" ? getMapViewScaleValue() : 1;
     const totalScale = worldScale * mapScale;
     if (!Number.isFinite(totalScale) || totalScale <= 0 || typeof canvas === "undefined" || !canvas) {
-        return {
-            left: 0,
-            top: 0,
-            right: LOGICAL_WIDTH,
-            bottom: LOGICAL_HEIGHT
-        };
+        viewport.left = 0;
+        viewport.top = 0;
+        viewport.right = LOGICAL_WIDTH;
+        viewport.bottom = LOGICAL_HEIGHT;
+        return viewport;
     }
     const halfW = canvas.width / 2 / totalScale;
     const halfH = canvas.height / 2 / totalScale;
-    return {
-        left: LOGICAL_WIDTH / 2 - halfW,
-        top: LOGICAL_HEIGHT / 2 - halfH,
-        right: LOGICAL_WIDTH / 2 + halfW,
-        bottom: LOGICAL_HEIGHT / 2 + halfH
-    };
+    viewport.left = LOGICAL_WIDTH / 2 - halfW;
+    viewport.top = LOGICAL_HEIGHT / 2 - halfH;
+    viewport.right = LOGICAL_WIDTH / 2 + halfW;
+    viewport.bottom = LOGICAL_HEIGHT / 2 + halfH;
+    return viewport;
 }
 
 function drawImageClippedToLogicalViewport(img, destX, destY, destW, destH, viewport) {
@@ -188,6 +192,28 @@ function drawImageClippedToLogicalViewport(img, destX, destY, destW, destH, view
     return true;
 }
 
+function getBackgroundLayerRenderMeta(layer, bg) {
+    const offsets = layer.offsets;
+    const offsetX = offsets ? offsets.x || 0 : layer.shiftX || 0;
+    const offsetY = offsets ? offsets.y || 0 : layer.shiftY || 0;
+    const parallax = layer.parallax || DEFAULT_BACKGROUND_PARALLAX;
+    let meta = layer._renderMeta;
+    if (!meta) {
+        meta = layer._renderMeta = {};
+    }
+    if (meta.image !== bg || meta.imageWidth !== bg.width || meta.imageHeight !== bg.height || meta.parallax !== parallax || meta.offsetX !== offsetX || meta.offsetY !== offsetY) {
+        meta.image = bg;
+        meta.imageWidth = bg.width;
+        meta.imageHeight = bg.height;
+        meta.drawWidth = bg.width;
+        meta.drawHeight = bg.height;
+        meta.parallax = parallax;
+        meta.offsetX = offsetX;
+        meta.offsetY = offsetY;
+    }
+    return meta;
+}
+
 function drawMapBackground() {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -196,21 +222,22 @@ function drawMapBackground() {
     ctx.restore();
     updateStarfield(cameraX, cameraY);
     if (backgroundLayersEnabled && currentBackgroundLayers && currentBackgroundLayers.length) {
-        const scale = 1;
-        const viewport = getCurrentLogicalViewportRect();
+        const viewport = getCurrentLogicalViewportRect(drawMapBackground._viewport || (drawMapBackground._viewport = {
+            left: 0,
+            top: 0,
+            right: LOGICAL_WIDTH,
+            bottom: LOGICAL_HEIGHT
+        }));
         for (let i = 0; i < currentBackgroundLayers.length; i++) {
             const layer = currentBackgroundLayers[i];
             const bg = layer.image;
             if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) continue;
-            const parallax = layer.parallax || DEFAULT_BACKGROUND_PARALLAX;
-            const drawWidth = bg.width * scale;
-            const drawHeight = bg.height * scale;
+            const meta = getBackgroundLayerRenderMeta(layer, bg);
+            const drawWidth = meta.drawWidth;
+            const drawHeight = meta.drawHeight;
             if (drawWidth < 1 || drawHeight < 1) continue;
-            const offsets = layer.offsets;
-            const offsetX = offsets ? offsets.x || 0 : layer.shiftX || 0;
-            const offsetY = offsets ? offsets.y || 0 : layer.shiftY || 0;
-            const screenX = LOGICAL_WIDTH / 2 - cameraX / parallax * scale + offsetX * scale;
-            const screenY = LOGICAL_HEIGHT / 2 - cameraY / parallax * scale + offsetY * scale;
+            const screenX = LOGICAL_WIDTH / 2 - cameraX / meta.parallax + meta.offsetX;
+            const screenY = LOGICAL_HEIGHT / 2 - cameraY / meta.parallax + meta.offsetY;
             const previousSmoothing = ctx.imageSmoothingEnabled;
             ctx.imageSmoothingEnabled = false;
             drawImageClippedToLogicalViewport(bg, screenX, screenY, drawWidth, drawHeight, viewport);
