@@ -3068,7 +3068,14 @@ let criticalBootRuntimeVisualWarmupStatus = {
 function publishCriticalBootRuntimeVisualWarmupStatus(partial) {
     criticalBootRuntimeVisualWarmupStatus = Object.assign({}, criticalBootRuntimeVisualWarmupStatus, partial || {});
     if (typeof window !== "undefined") {
-        window.__ANDRO_VISUAL_RUNTIME_WARMUP_STATUS = Object.assign({}, criticalBootRuntimeVisualWarmupStatus);
+        const status = Object.assign({}, criticalBootRuntimeVisualWarmupStatus);
+        window.__ANDRO_VISUAL_RUNTIME_WARMUP_STATUS = status;
+        window.__ANDRO_VISUAL_RUNTIME_WARMUP_READY = !!status.ready;
+        try {
+            window.dispatchEvent(new CustomEvent("andromeda:visual-runtime-warmup-status", {
+                detail: Object.assign({}, status)
+            }));
+        } catch (_) {}
     }
     return criticalBootRuntimeVisualWarmupStatus;
 }
@@ -3458,6 +3465,7 @@ if (typeof window !== "undefined") {
 
 function collectShipRuntimeWarmupJobs() {
     const jobs = [];
+    const seen = new Set();
     const defs = typeof SHIP_SPRITE_DEFS === "object" && SHIP_SPRITE_DEFS ? SHIP_SPRITE_DEFS : null;
     if (!defs) return jobs;
     for (const rawShipId in defs) {
@@ -3468,6 +3476,9 @@ function collectShipRuntimeWarmupJobs() {
         const shipId = Number.isFinite(numericShipId) ? numericShipId : rawShipId;
         const frameCount = Math.max(1, Number(def.frameCount) || 1);
         for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+            const cacheKey = typeof getShipSpriteFrameCacheKey === "function" ? getShipSpriteFrameCacheKey(shipId, frameIndex) : `${shipId}_${frameIndex}`;
+            if (cacheKey && seen.has(cacheKey)) continue;
+            if (cacheKey) seen.add(cacheKey);
             jobs.push({
                 shipId: shipId,
                 frameIndex: frameIndex
@@ -3488,6 +3499,7 @@ function warmShipRuntimeFrame(job) {
 
 function collectShipExpansionRuntimeWarmupJobs() {
     const jobs = [];
+    const seen = new Set();
     const defs = typeof SHIP_EXPANSION_DEFS === "object" && SHIP_EXPANSION_DEFS ? SHIP_EXPANSION_DEFS : null;
     if (!defs) return jobs;
     for (const rawShipId in defs) {
@@ -3499,6 +3511,9 @@ function collectShipExpansionRuntimeWarmupJobs() {
         const frames = typeof getFrameNumbersForDef === "function" ? getFrameNumbersForDef(def, 1) : null;
         const frameCount = Array.isArray(frames) && frames.length ? frames.length : Math.max(1, Number(def.frameCount) || 1);
         for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+            const cacheKey = typeof getShipExpansionFrameCacheKey === "function" ? getShipExpansionFrameCacheKey(shipId, frameIndex) : `${shipId}_${frameIndex}`;
+            if (cacheKey && seen.has(cacheKey)) continue;
+            if (cacheKey) seen.add(cacheKey);
             jobs.push({
                 shipId: shipId,
                 frameIndex: frameIndex
@@ -3543,13 +3558,15 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             if (typeof frameFactory !== "function") return;
             tasks.push({
                 label: label,
+                group: "visual",
                 run: () => warmFrameDefOnContext(warmCtx, frameFactory(), options)
             });
         };
-        const addRuntimeWarmTask = (label, runner) => {
+        const addRuntimeWarmTask = (label, runner, group = "runtime") => {
             if (typeof runner !== "function") return;
             tasks.push({
                 label: label,
+                group: group,
                 run: runner
             });
         };
@@ -3659,16 +3676,18 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
 
         const shipWarmupJobs = collectShipRuntimeWarmupJobs();
         for (const job of shipWarmupJobs) {
-            addRuntimeWarmTask("ship:" + job.shipId + ":" + job.frameIndex, () => warmShipRuntimeFrame(job));
+            addRuntimeWarmTask("ship:" + job.shipId + ":" + job.frameIndex, () => warmShipRuntimeFrame(job), "ship");
         }
         const shipExpansionWarmupJobs = collectShipExpansionRuntimeWarmupJobs();
         for (const job of shipExpansionWarmupJobs) {
-            addRuntimeWarmTask("shipExpansion:" + job.shipId + ":" + job.frameIndex, () => warmShipExpansionRuntimeFrame(job, warmCtx));
+            addRuntimeWarmTask("shipExpansion:" + job.shipId + ":" + job.frameIndex, () => warmShipExpansionRuntimeFrame(job, warmCtx), "shipExpansion");
         }
 
         let warmed = 0;
         let failed = 0;
         let retryTasks = [];
+        let shipFramesCompleted = 0;
+        let shipExpansionFramesCompleted = 0;
         const startedAt = Date.now();
         publishCriticalBootRuntimeVisualWarmupStatus({
             state: "warming",
@@ -3677,6 +3696,8 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             total: tasks.length,
             shipFramesTotal: shipWarmupJobs.length,
             shipExpansionFramesTotal: shipExpansionWarmupJobs.length,
+            shipFramesCompleted: 0,
+            shipExpansionFramesCompleted: 0,
             completed: 0,
             warmed: 0,
             failed: 0,
@@ -3686,15 +3707,20 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
 
         const batchSize = 12;
         for (let idx = 0; idx < tasks.length; idx++) {
+            const task = tasks[idx];
             try {
-                if (tasks[idx].run()) warmed++; else retryTasks.push(tasks[idx]);
+                if (task.run()) warmed++; else retryTasks.push(task);
             } catch (_) {
-                retryTasks.push(tasks[idx]);
+                retryTasks.push(task);
             }
+            if (task.group === "ship") shipFramesCompleted++;
+            if (task.group === "shipExpansion") shipExpansionFramesCompleted++;
             failed = retryTasks.length;
             if ((idx + 1) % batchSize === 0 && idx + 1 < tasks.length) {
                 publishCriticalBootRuntimeVisualWarmupStatus({
                     completed: idx + 1,
+                    shipFramesCompleted: shipFramesCompleted,
+                    shipExpansionFramesCompleted: shipExpansionFramesCompleted,
                     warmed: warmed,
                     failed: failed
                 });
@@ -3719,6 +3745,8 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
                     failed = nextRetryTasks.length + (retryTasks.length - idx - 1);
                     publishCriticalBootRuntimeVisualWarmupStatus({
                         state: "retrying",
+                        shipFramesCompleted: shipFramesCompleted,
+                        shipExpansionFramesCompleted: shipExpansionFramesCompleted,
                         warmed: warmed,
                         failed: failed,
                         retryRound: round + 1
@@ -3730,6 +3758,8 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             failed = retryTasks.length;
             publishCriticalBootRuntimeVisualWarmupStatus({
                 state: retryTasks.length > 0 ? "retrying" : "warming",
+                shipFramesCompleted: shipFramesCompleted,
+                shipExpansionFramesCompleted: shipExpansionFramesCompleted,
                 warmed: warmed,
                 failed: failed,
                 retryRound: round + 1
@@ -3743,6 +3773,8 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             total: tasks.length,
             shipFramesTotal: shipWarmupJobs.length,
             shipExpansionFramesTotal: shipExpansionWarmupJobs.length,
+            shipFramesCompleted: shipWarmupJobs.length,
+            shipExpansionFramesCompleted: shipExpansionWarmupJobs.length,
             completed: tasks.length,
             warmed: warmed,
             failed: failed,

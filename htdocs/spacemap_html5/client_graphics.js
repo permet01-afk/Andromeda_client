@@ -2489,7 +2489,8 @@ function getVisualShiftFromCenter(img) {
 }
 
 function getShipExpansionVisualShiftCached(shipId, frameIndex, img) {
-    const key = `${shipId}:${frameIndex}:${img && (img.currentSrc || img.src) || ""}:${img && img.width || 0}x${img && img.height || 0}`;
+    const assetKey = typeof getShipExpansionFrameCacheKey === "function" ? getShipExpansionFrameCacheKey(shipId, frameIndex) : "";
+    const key = assetKey || `${shipId}:${frameIndex}:${img && (img.currentSrc || img.src) || ""}:${img && img.width || 0}x${img && img.height || 0}`;
     if (expansionOffsetCache[key]) return expansionOffsetCache[key];
     const shift = getVisualShiftFromCenter(img);
     expansionOffsetCache[key] = shift;
@@ -2587,7 +2588,8 @@ function getShipVisualBoundsCached(shipId, frameIndex = 0, alphaThreshold = 20) 
     const idx = normalizeShipVisualFrameIndex(shipId, frameIndex);
     const numericThreshold = Number(alphaThreshold);
     const threshold = Number.isFinite(numericThreshold) ? numericThreshold : 20;
-    const key = `${shipId}_${idx}_${threshold}`;
+    const assetKey = typeof getShipSpriteFrameCacheKey === "function" ? getShipSpriteFrameCacheKey(shipId, idx) : "";
+    const key = `${assetKey || `${shipId}_${idx}`}_${threshold}`;
     if (shipVisualBoundsCache[key]) return shipVisualBoundsCache[key];
     const img = getShipSpriteFrame(shipId, idx);
     if (!img || !img.complete || img.width === 0 || img.height === 0) return null;
@@ -2598,7 +2600,8 @@ function getShipVisualBoundsCached(shipId, frameIndex = 0, alphaThreshold = 20) 
 
 function getShipVisualRadiusCached(shipId, frameIndex = 0) {
     const idx = normalizeShipVisualFrameIndex(shipId, frameIndex);
-    const key = `${shipId}_${idx}`;
+    const assetKey = typeof getShipSpriteFrameCacheKey === "function" ? getShipSpriteFrameCacheKey(shipId, idx) : "";
+    const key = assetKey || `${shipId}_${idx}`;
     if (shipVisualRadiusCache[key] != null) return shipVisualRadiusCache[key];
     const img = getShipSpriteFrame(shipId, idx);
     if (!img || !img.complete || img.width === 0 || img.height === 0) return null;
@@ -2638,7 +2641,9 @@ function getShipVisualShiftCached(shipId, frameIndex, img) {
     if (fixedOffset) {
         return fixedOffset;
     }
-    const key = `${shipId}_${frameIndex}`;
+    const idx = normalizeShipVisualFrameIndex(shipId, frameIndex);
+    const assetKey = typeof getShipSpriteFrameCacheKey === "function" ? getShipSpriteFrameCacheKey(shipId, idx) : "";
+    const key = assetKey || `${shipId}_${idx}`;
     if (shipVisualShiftCache[key]) return shipVisualShiftCache[key];
     const shift = getVisualShiftFromCenter(img);
     shipVisualShiftCache[key] = shift;

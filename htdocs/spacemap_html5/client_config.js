@@ -5740,13 +5740,33 @@ function getDirectionFrameIndex(angle, frameCount) {
     return Math.floor(sector) % frameCount;
 }
 
+function getShipSpriteFrameCacheKey(shipId, frameIndex) {
+    const def = SHIP_SPRITE_DEFS[shipId];
+    if (!def) return "";
+    const frameCount = Math.max(1, Number(def.frameCount) || 1);
+    const numericFrame = Number(frameIndex);
+    let idx = Number.isFinite(numericFrame) ? numericFrame % frameCount : 0;
+    if (idx < 0) idx += frameCount;
+    if (def.atlasPath) {
+        const manifestFrames = Array.isArray(def.atlasFrames) ? def.atlasFrames : null;
+        if (manifestFrames && manifestFrames.length) {
+            const entry = manifestFrames[idx];
+            if (entry) return `ship-atlas:${def.atlasPath}:${entry.x}:${entry.y}:${entry.w}:${entry.h}`;
+        }
+        const atlasIndex = (def.atlasStartIndex || 0) + idx;
+        return `ship-atlas:${def.atlasPath}:${atlasIndex}:${def.frameWidth || 0}:${def.frameHeight || 0}:${def.atlasCellWidth || 0}:${def.atlasCellHeight || 0}:${def.atlasPadding || 0}`;
+    }
+    return `ship-image:${def.basePath}${idx + 1}.png`;
+}
+
 function getShipSpriteFrame(shipId, frameIndex) {
     const def = SHIP_SPRITE_DEFS[shipId];
     if (!def) return null;
-    const frameCount = def.frameCount;
-    let idx = frameIndex % frameCount;
+    const frameCount = Math.max(1, Number(def.frameCount) || 1);
+    const numericFrame = Number(frameIndex);
+    let idx = Number.isFinite(numericFrame) ? numericFrame % frameCount : 0;
     if (idx < 0) idx += frameCount;
-    const key = shipId + "_" + idx;
+    const key = getShipSpriteFrameCacheKey(shipId, idx);
     if (shipSpriteCache[key]) return shipSpriteCache[key];
     if (def.atlasPath) {
         const atlasFrame = buildShipAtlasFrameCanvas(def, idx);
@@ -5763,13 +5783,31 @@ function getShipSpriteFrame(shipId, frameIndex) {
     return img;
 }
 
+function getShipExpansionFrameCacheKey(shipId, frameIndex) {
+    const def = SHIP_EXPANSION_DEFS[shipId];
+    if (!def) return "";
+    const frames = getFrameNumbersForDef(def, 1);
+    const numericFrame = Number(frameIndex);
+    let idx = Number.isFinite(numericFrame) ? numericFrame % frames.length : 0;
+    if (idx < 0) idx += frames.length;
+    const fileNumber = Number(frames[idx]) || idx + 1;
+    if (def.atlasPath) {
+        const manifestFrames = Array.isArray(def.atlasFrames) ? def.atlasFrames : null;
+        const entry = manifestFrames && manifestFrames.length ? manifestFrames[fileNumber - 1] : null;
+        if (entry) return `ship-expansion-atlas:${def.atlasPath}:${entry.x}:${entry.y}:${entry.w}:${entry.h}`;
+        return `ship-expansion-atlas:${def.atlasPath}:${fileNumber}:${def.frameWidth || 0}:${def.frameHeight || 0}:${def.atlasCellWidth || 0}:${def.atlasCellHeight || 0}:${def.atlasPadding || 0}`;
+    }
+    return `ship-expansion-image:${def.basePath}${fileNumber}.png`;
+}
+
 function getShipExpansionFrame(shipId, frameIndex) {
     const def = SHIP_EXPANSION_DEFS[shipId];
     if (!def) return null;
     const frames = getFrameNumbersForDef(def, 1);
-    let idx = frameIndex % frames.length;
+    const numericFrame = Number(frameIndex);
+    let idx = Number.isFinite(numericFrame) ? numericFrame % frames.length : 0;
     if (idx < 0) idx += frames.length;
-    const cacheKey = `${shipId}_${idx}`;
+    const cacheKey = getShipExpansionFrameCacheKey(shipId, idx);
     if (shipExpansionSpriteCache[cacheKey]) return shipExpansionSpriteCache[cacheKey];
     if (def.atlasPath) {
         const atlasFrame = getShipExpansionAtlasFrame(def, idx);

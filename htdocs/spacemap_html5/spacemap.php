@@ -232,6 +232,9 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
             let portalVisualReady = !!window.__ANDRO_PORTAL_RUNTIME_WARMUP_READY;
             let portalVisualStarted = false;
             let portalVisualStatus = window.__ANDRO_PORTAL_RUNTIME_WARMUP_STATUS || null;
+            let visualRuntimeReady = !!window.__ANDRO_VISUAL_RUNTIME_WARMUP_READY;
+            let visualRuntimeStarted = false;
+            let visualRuntimeStatus = window.__ANDRO_VISUAL_RUNTIME_WARMUP_STATUS || null;
 
             let startClicked = false;
 
@@ -243,6 +246,9 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
             if (typeof window.__ANDRO_PORTAL_RUNTIME_WARMUP_READY !== 'boolean') {
                 window.__ANDRO_PORTAL_RUNTIME_WARMUP_READY = false;
             }
+            if (typeof window.__ANDRO_VISUAL_RUNTIME_WARMUP_READY !== 'boolean') {
+                window.__ANDRO_VISUAL_RUNTIME_WARMUP_READY = false;
+            }
 
             function getBootAudioStatus() {
                 const status = window.__ANDRO_AUDIO_BOOT_STATUS;
@@ -251,6 +257,11 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 
             function getPortalVisualStatus() {
                 const status = portalVisualStatus || window.__ANDRO_PORTAL_RUNTIME_WARMUP_STATUS;
+                return status && typeof status === 'object' ? status : null;
+            }
+
+            function getVisualRuntimeStatus() {
+                const status = visualRuntimeStatus || window.__ANDRO_VISUAL_RUNTIME_WARMUP_STATUS;
                 return status && typeof status === 'object' ? status : null;
             }
 
@@ -269,8 +280,32 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
                 txt.innerText = portalVisualStarted ? "Preparing portal visuals..." : "Waiting for portal visual warmup...";
             }
 
+            function updateVisualRuntimeMessage() {
+                const status = getVisualRuntimeStatus();
+                if (status && status.total > 0) {
+                    const completed = Math.max(0, Number(status.completed) || 0);
+                    const total = Math.max(1, Number(status.total) || 1);
+                    const percent = Math.max(0, Math.min(100, Math.floor((completed / total) * 100)));
+                    const shipTotal = Math.max(0, Number(status.shipFramesTotal) || 0);
+                    const shipCompleted = Math.max(0, Math.min(shipTotal, Number(status.shipFramesCompleted) || 0));
+                    const expansionTotal = Math.max(0, Number(status.shipExpansionFramesTotal) || 0);
+                    const expansionCompleted = Math.max(0, Math.min(expansionTotal, Number(status.shipExpansionFramesCompleted) || 0));
+                    bar.style.width = percent + "%";
+                    if (shipTotal > 0 && shipCompleted < shipTotal) {
+                        txt.innerText = `Preparing ship visuals: ${shipCompleted}/${shipTotal} (${percent}%)`;
+                    } else if (expansionTotal > 0 && expansionCompleted < expansionTotal) {
+                        txt.innerText = `Preparing ship expansions: ${expansionCompleted}/${expansionTotal} (${percent}%)`;
+                    } else {
+                        txt.innerText = `Preparing game visuals: ${completed}/${total} (${percent}%)`;
+                    }
+                    return;
+                }
+                bar.style.width = "100%";
+                txt.innerText = visualRuntimeStarted ? "Preparing game visuals..." : "Waiting for game visual warmup...";
+            }
+
             function updateStartState() {
-                const ready = assetsReady && bootXmlReady && audioReady && portalVisualReady;
+                const ready = assetsReady && bootXmlReady && audioReady && portalVisualReady && visualRuntimeReady;
                 const ok = ready && !startClicked;
                 btn.disabled = !ok;
                 btn.style.opacity = ok ? "1" : "0.6";
@@ -287,6 +322,10 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
                     updatePortalVisualMessage();
                     return;
                 }
+                if (!visualRuntimeReady) {
+                    updateVisualRuntimeMessage();
+                    return;
+                }
                 const audioStatus = getBootAudioStatus();
                 if (!bootXmlReady || !audioReady) {
                     if (audioStatus && audioStatus.state === 'loading' && audioStatus.total > 0) {
@@ -300,7 +339,7 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
                     return;
                 }
                 bar.style.width = "100%";
-                txt.innerText = "Assets, audio and portal visuals ready. Click Start.";
+                txt.innerText = "Assets, audio and visuals ready. Click Start.";
             }
 
             function startBootXmlPreload() {
@@ -359,6 +398,13 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
             window.addEventListener('andromeda:portal-runtime-warmup-status', function(event) {
                 portalVisualStatus = event && event.detail ? event.detail : getPortalVisualStatus();
                 portalVisualReady = !!(portalVisualStatus && portalVisualStatus.ready);
+                refreshStartMessage();
+                updateStartState();
+            });
+
+            window.addEventListener('andromeda:visual-runtime-warmup-status', function(event) {
+                visualRuntimeStatus = event && event.detail ? event.detail : getVisualRuntimeStatus();
+                visualRuntimeReady = !!(visualRuntimeStatus && visualRuntimeStatus.ready);
                 refreshStartMessage();
                 updateStartState();
             });
@@ -438,6 +484,19 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
                 });
             }
 
+            function waitForVisualRuntimeWarmupFunction() {
+                return new Promise((resolve) => {
+                    const tryResolve = () => {
+                        if (typeof window.warmCriticalBootRuntimeVisuals === 'function' && typeof window.warmShipSpriteVisualMetrics === 'function') {
+                            resolve(window.warmCriticalBootRuntimeVisuals);
+                            return;
+                        }
+                        setTimeout(tryResolve, 50);
+                    };
+                    tryResolve();
+                });
+            }
+
             async function warmupPortalRuntimeVisuals() {
                 portalVisualStarted = true;
                 portalVisualReady = !!window.__ANDRO_PORTAL_RUNTIME_WARMUP_READY;
@@ -457,6 +516,30 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
                     const failed = portalVisualStatus && Number.isFinite(Number(portalVisualStatus.failed)) ? Number(portalVisualStatus.failed) : 0;
                     bar.style.width = "100%";
                     txt.innerText = failed > 0 ? `Portal visual warmup failed: ${failed} item(s).` : "Portal visual warmup failed.";
+                    return false;
+                }
+                return true;
+            }
+
+            async function warmupVisualRuntimeVisuals() {
+                visualRuntimeStarted = true;
+                visualRuntimeReady = !!window.__ANDRO_VISUAL_RUNTIME_WARMUP_READY;
+                if (visualRuntimeReady) return true;
+
+                bar.style.width = "0%";
+                txt.innerText = "Preparing game visuals...";
+                updateStartState();
+
+                const warmFn = await waitForVisualRuntimeWarmupFunction();
+                const status = await Promise.resolve(warmFn('loader-before-start'));
+                visualRuntimeStatus = status || getVisualRuntimeStatus();
+                visualRuntimeReady = !!(visualRuntimeStatus && visualRuntimeStatus.ready);
+                window.__ANDRO_VISUAL_RUNTIME_WARMUP_READY = visualRuntimeReady;
+
+                if (!visualRuntimeReady) {
+                    const failed = visualRuntimeStatus && Number.isFinite(Number(visualRuntimeStatus.failed)) ? Number(visualRuntimeStatus.failed) : 0;
+                    bar.style.width = "100%";
+                    txt.innerText = failed > 0 ? `Game visual warmup failed: ${failed} item(s).` : "Game visual warmup failed.";
                     return false;
                 }
                 return true;
@@ -482,6 +565,16 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
                     portalVisualReady = false;
                     bar.style.width = "100%";
                     txt.innerText = "Portal visual warmup failed.";
+                }
+
+                if (portalVisualReady) {
+                    try {
+                        await warmupVisualRuntimeVisuals();
+                    } catch (e) {
+                        visualRuntimeReady = false;
+                        bar.style.width = "100%";
+                        txt.innerText = "Game visual warmup failed.";
+                    }
                 }
 
                 refreshStartMessage();
@@ -561,9 +654,18 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
                     updateStartState();
                     return;
                 }
+                if (!visualRuntimeReady || window.__ANDRO_VISUAL_RUNTIME_WARMUP_READY !== true) {
+                    txt.innerText = 'Unable to start: game visuals are not ready.';
+                    updateStartState();
+                    return;
+                }
 
                 startClicked = true;
                 updateStartState();
+                btn.style.display = 'none';
+                box.style.display = 'block';
+                bar.style.width = "100%";
+                txt.innerText = 'Issuing secure ticket...';
 
                 try {
                     const ticketResponse = await fetch('spacemap.php?issue_ticket=1', {
@@ -594,13 +696,14 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
                     return;
                 }
 
+                txt.innerText = 'Starting connection...';
+
                 try {
                     if (typeof window.hideConnectionLostWindow === "function") {
                         window.hideConnectionLostWindow();
                     }
                 } catch (e) {}
 
-                document.getElementById('loaderOverlay').style.display = 'none';
                 document.getElementById('gameContainer').style.display = 'block';
 
                 try {
@@ -613,21 +716,19 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
                     console.error('[START] initGame is missing.');
                     startClicked = false;
                     txt.innerText = 'Unable to start: game initialization failed.';
+                    document.getElementById('gameContainer').style.display = 'none';
                     updateStartState();
                     return;
                 }
 
                 try {
-                    Promise.resolve(initGame()).catch((err) => {
-                        console.error('[START] initGame failed:', err);
-                        startClicked = false;
-                        txt.innerText = 'Unable to start: game initialization failed.';
-                        updateStartState();
-                    });
+                    await Promise.resolve(initGame());
+                    document.getElementById('loaderOverlay').style.display = 'none';
                 } catch (err) {
                     console.error('[START] initGame failed:', err);
                     startClicked = false;
                     txt.innerText = 'Unable to start: game initialization failed.';
+                    document.getElementById('gameContainer').style.display = 'none';
                     updateStartState();
                 }
             });
