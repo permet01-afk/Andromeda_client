@@ -3907,7 +3907,13 @@ const PORTAL_SPRITE_DEFS = {
             atlasPadding: 1,
             frameWidth: 410,
             frameHeight: 353,
-            atlasStartIndex: 0
+            atlasStartIndex: 0,
+            trim: {
+                x: 7,
+                y: 5,
+                w: 403,
+                h: 345
+            }
         },
         active: {
             frameCount: 1,
@@ -3921,7 +3927,13 @@ const PORTAL_SPRITE_DEFS = {
             atlasPadding: 1,
             frameWidth: 410,
             frameHeight: 353,
-            atlasStartIndex: 90
+            atlasStartIndex: 90,
+            trim: {
+                x: 6,
+                y: 5,
+                w: 404,
+                h: 347
+            }
         }
     },
     galaxyGate2: {
@@ -3937,7 +3949,13 @@ const PORTAL_SPRITE_DEFS = {
             atlasPadding: 1,
             frameWidth: 410,
             frameHeight: 353,
-            atlasStartIndex: 0
+            atlasStartIndex: 0,
+            trim: {
+                x: 42,
+                y: 2,
+                w: 340,
+                h: 350
+            }
         },
         active: {
             frameCount: 1,
@@ -3951,7 +3969,13 @@ const PORTAL_SPRITE_DEFS = {
             atlasPadding: 1,
             frameWidth: 410,
             frameHeight: 353,
-            atlasStartIndex: 90
+            atlasStartIndex: 90,
+            trim: {
+                x: 42,
+                y: 3,
+                w: 340,
+                h: 350
+            }
         }
     },
     galaxyGate3: {
@@ -3967,7 +3991,13 @@ const PORTAL_SPRITE_DEFS = {
             atlasPadding: 1,
             frameWidth: 410,
             frameHeight: 353,
-            atlasStartIndex: 0
+            atlasStartIndex: 0,
+            trim: {
+                x: 47,
+                y: 2,
+                w: 323,
+                h: 346
+            }
         },
         active: {
             frameCount: 1,
@@ -3981,7 +4011,13 @@ const PORTAL_SPRITE_DEFS = {
             atlasPadding: 1,
             frameWidth: 410,
             frameHeight: 353,
-            atlasStartIndex: 90
+            atlasStartIndex: 90,
+            trim: {
+                x: 46,
+                y: 2,
+                w: 324,
+                h: 346
+            }
         }
     },
     galaxyGate4: {
@@ -4000,7 +4036,13 @@ const PORTAL_SPRITE_DEFS = {
                 atlasPadding: 1,
                 frameWidth: 423,
                 frameHeight: 454,
-                atlasStartIndex: 0
+                atlasStartIndex: 0,
+                trim: {
+                    x: 62,
+                    y: 1,
+                    w: 284,
+                    h: 451
+                }
             }, {
                 startFrame: 45,
                 frameCount: 45,
@@ -4011,7 +4053,13 @@ const PORTAL_SPRITE_DEFS = {
                 atlasPadding: 1,
                 frameWidth: 423,
                 frameHeight: 454,
-                atlasStartIndex: 0
+                atlasStartIndex: 0,
+                trim: {
+                    x: 62,
+                    y: 1,
+                    w: 284,
+                    h: 451
+                }
             } ]
         },
         active: {
@@ -4026,7 +4074,13 @@ const PORTAL_SPRITE_DEFS = {
             atlasPadding: 1,
             frameWidth: 423,
             frameHeight: 454,
-            atlasStartIndex: 45
+            atlasStartIndex: 45,
+            trim: {
+                x: 62,
+                y: 1,
+                w: 284,
+                h: 451
+            }
         }
     }
 };
@@ -4052,7 +4106,13 @@ const PORTAL_JUMP_ANIM = {
     atlasPadding: 1,
     frameDuration: 40,
     offsetX: 0,
-    offsetY: 0
+    offsetY: 0,
+    trim: {
+        x: 174,
+        y: 104,
+        w: 200,
+        h: 200
+    }
 };
 
 const SMARTBOMB_ANIM = {
@@ -4741,6 +4801,24 @@ function getPortalAtlasImage(atlasPath) {
     return atlasImage;
 }
 
+function getTrimmedAtlasFrameRect(frameDef, sx, sy, sw, sh) {
+    const trim = frameDef && frameDef.trim;
+    if (!trim) return null;
+    const x = Math.max(0, Math.min(sw, Number(trim.x) || 0));
+    const y = Math.max(0, Math.min(sh, Number(trim.y) || 0));
+    const w = Math.max(0, Math.min(sw - x, Number(trim.w) || 0));
+    const h = Math.max(0, Math.min(sh - y, Number(trim.h) || 0));
+    if (w <= 0 || h <= 0 || (x === 0 && y === 0 && w === sw && h === sh)) return null;
+    return {
+        x: x,
+        y: y,
+        sx: sx + x,
+        sy: sy + y,
+        sw: w,
+        sh: h
+    };
+}
+
 function getPortalAtlasFrame(animDef, frameIndex) {
     if (!animDef || !animDef.atlasPath && !(animDef.atlasParts && animDef.atlasParts.length)) return null;
     let effectiveDef = animDef;
@@ -4766,7 +4844,8 @@ function getPortalAtlasFrame(animDef, frameIndex) {
                     frameWidth: part.frameWidth || animDef.frameWidth,
                     frameHeight: part.frameHeight || animDef.frameHeight,
                     frameCount: part.frameCount || animDef.frameCount,
-                    atlasStartIndex: part.atlasStartIndex || 0
+                    atlasStartIndex: part.atlasStartIndex || 0,
+                    trim: part.trim || animDef.trim || null
                 };
                 break;
             }
@@ -4803,6 +4882,7 @@ function getPortalAtlasFrame(animDef, frameIndex) {
         portalAtlasStatusCache[effectiveDef.atlasPath] = "error";
         return null;
     }
+    const trim = getTrimmedAtlasFrameRect(effectiveDef, sx, sy, sw, sh);
     return {
         atlas: atlas,
         sx: sx,
@@ -4810,7 +4890,8 @@ function getPortalAtlasFrame(animDef, frameIndex) {
         sw: sw,
         sh: sh,
         width: sw,
-        height: sh
+        height: sh,
+        trim: trim
     };
 }
 
@@ -5967,6 +6048,7 @@ function getPortalJumpFrame(frameIndex) {
         portalJumpAtlasStatus = "error";
         return null;
     }
+    const trim = getTrimmedAtlasFrameRect(PORTAL_JUMP_ANIM, sx, sy, sw, sh);
     const frameDef = {
         atlas: atlas,
         sx: sx,
@@ -5974,7 +6056,8 @@ function getPortalJumpFrame(frameIndex) {
         sw: sw,
         sh: sh,
         width: sw,
-        height: sh
+        height: sh,
+        trim: trim
     };
     portalJumpSpriteCache[idx] = frameDef;
     return frameDef;

@@ -3964,7 +3964,16 @@ function drawPortalFrame(frameDef, portalScreenX, portalScreenY, entityScale) {
     if (frameDef.atlas) {
         const w = frameDef.width * entityScale;
         const h = frameDef.height * entityScale;
-        ctx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, portalScreenX - w / 2, portalScreenY - h / 2, w, h);
+        const baseX = portalScreenX - w / 2;
+        const baseY = portalScreenY - h / 2;
+        const trim = frameDef.trim;
+        if (trim && trim.sw > 0 && trim.sh > 0) {
+            const scaleX = w / (frameDef.sw || frameDef.width || 1);
+            const scaleY = h / (frameDef.sh || frameDef.height || 1);
+            ctx.drawImage(frameDef.atlas, trim.sx, trim.sy, trim.sw, trim.sh, baseX + trim.x * scaleX, baseY + trim.y * scaleY, trim.sw * scaleX, trim.sh * scaleY);
+        } else {
+            ctx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, baseX, baseY, w, h);
+        }
         return true;
     }
     if (!frameDef.complete || frameDef.width <= 0 || frameDef.height <= 0) return false;

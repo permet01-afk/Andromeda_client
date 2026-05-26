@@ -3143,7 +3143,14 @@ function warmFrameDefOnContext(warmCtx, frameDef, options = {}) {
             warmCtx.drawImage(source, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
         }
     } else if (frameDef.atlas) {
-        warmCtx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, x, y, drawWidth, drawHeight);
+        const trim = frameDef.trim;
+        if (trim && trim.sw > 0 && trim.sh > 0) {
+            const scaleX = drawWidth / (frameDef.sw || frameDef.width || 1);
+            const scaleY = drawHeight / (frameDef.sh || frameDef.height || 1);
+            warmCtx.drawImage(frameDef.atlas, trim.sx, trim.sy, trim.sw, trim.sh, x + trim.x * scaleX, y + trim.y * scaleY, trim.sw * scaleX, trim.sh * scaleY);
+        } else {
+            warmCtx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, x, y, drawWidth, drawHeight);
+        }
     } else {
         warmCtx.drawImage(source, x, y, drawWidth, drawHeight);
     }
@@ -3814,7 +3821,16 @@ function drawPortalJumpEffects() {
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
         if (frameDef.atlas) {
-            ctx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, sx - frameDef.width / 2 + OFFSET_X, sy - frameDef.height / 2, frameDef.width, frameDef.height);
+            const baseX = sx - frameDef.width / 2 + OFFSET_X;
+            const baseY = sy - frameDef.height / 2;
+            const trim = frameDef.trim;
+            if (trim && trim.sw > 0 && trim.sh > 0) {
+                const scaleX = frameDef.width / (frameDef.sw || frameDef.width || 1);
+                const scaleY = frameDef.height / (frameDef.sh || frameDef.height || 1);
+                ctx.drawImage(frameDef.atlas, trim.sx, trim.sy, trim.sw, trim.sh, baseX + trim.x * scaleX, baseY + trim.y * scaleY, trim.sw * scaleX, trim.sh * scaleY);
+            } else {
+                ctx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, baseX, baseY, frameDef.width, frameDef.height);
+            }
         } else {
             const img = frameDef.img || frameDef;
             if (img && img.complete && img.width > 0 && img.height > 0) {
