@@ -4155,16 +4155,17 @@ function handlePacket_D(parts, i) {
     const repairZone = looksLikeYourServer ? !!raw4 : !!raw3;
     const radiation = !!raw5;
     const jumpArea = !!raw6;
+    const tradeAreaChanged = tradeArea !== lastTradeZoneState;
     if (demilitarized !== lastDemilitarizedState) {
         lastDemilitarizedState = demilitarized;
     }
-    if (tradeArea !== lastTradeZoneState) {
+    if (tradeAreaChanged) {
         lastTradeZoneState = tradeArea;
     }
     inDemilitarizedZone = demilitarized;
     inTradeZone = tradeArea;
     inJumpZone = jumpArea;
-    if (typeof window.handleTradeZoneStateFromServer === "function") {
+    if (tradeAreaChanged && typeof window.handleTradeZoneStateFromServer === "function") {
         window.handleTradeZoneStateFromServer(inTradeZone);
     }
     setRadiationWarning(radiation);

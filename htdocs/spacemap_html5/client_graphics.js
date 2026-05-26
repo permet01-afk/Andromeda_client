@@ -8876,7 +8876,9 @@ function setTradeWindowAccess() {
 }
 
 function handleTradeZoneStateFromServer(isInTradeZone) {
-    tradeWindowAllowedByZone = !!isInTradeZone;
+    const nextAllowed = !!isInTradeZone;
+    if (tradeWindowAllowedByZone === nextAllowed) return;
+    tradeWindowAllowedByZone = nextAllowed;
     if (!tradeWindowAllowedByZone) {
         closeSafePrompt();
     }

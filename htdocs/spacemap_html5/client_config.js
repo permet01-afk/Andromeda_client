@@ -5113,7 +5113,29 @@ const UI_IMAGE_ATLAS_DATA_URL_WARMUP_PATHS = [
     "graphics/ui/ui/images/boss_icon.png.png",
     "graphics/ui/ui/images/bg_standard.png.png",
     "graphics/ui/ui/images/bg_active.png.png",
-    "graphics/ui/spacemap/images/marker_currentMap.png"
+    "graphics/ui/spacemap/images/marker_currentMap.png",
+    "graphics/ui/ui/images/45_ore_1.png",
+    "graphics/ui/ui/images/41_ore_2.png",
+    "graphics/ui/ui/images/40_ore_3.png",
+    "graphics/ui/ui/images/44_ore_11.png",
+    "graphics/ui/ui/images/43_ore_12.png",
+    "graphics/ui/ui/images/42_ore_13.png",
+    "graphics/ui/refinement/images/11_ore_1.png",
+    "graphics/ui/refinement/images/6_ore_2.png",
+    "graphics/ui/refinement/images/5_ore_3.png",
+    "graphics/ui/refinement/images/10_ore_11.png",
+    "graphics/ui/refinement/images/9_ore_12.png",
+    "graphics/ui/refinement/images/8_ore_13.png",
+    "graphics/ui/refinement/images/4_ore_4.png",
+    "graphics/ui/refinement/images/13_ore_14.png",
+    "graphics/ui/refinement/images/17_item_1.png",
+    "graphics/ui/refinement/images/16_item_2.png",
+    "graphics/ui/refinement/images/15_item_3.png",
+    "graphics/ui/refinement/images/14_item_4.png",
+    "graphics/ui/refinement/images/18_icon_14.png",
+    "graphics/ui/refinement/images/19_icon_13.png",
+    "graphics/ui/refinement/images/20_icon_12.png",
+    "graphics/ui/refinement/images/21_icon_11.png"
 ];
 
 let uiImageAtlasDataUrlWarmupPathLookup = null;

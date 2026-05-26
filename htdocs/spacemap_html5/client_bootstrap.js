@@ -61,6 +61,27 @@ const DRAW_SMARTBOMB_EXCLUDE_HERO_OPTIONS = {
     excludeHero: true
 };
 
+function drawStationImageClipped(img, drawX, drawY, viewLeft, viewTop, viewRight, viewBottom) {
+    const destX = drawX - img.width / 2;
+    const destY = drawY - img.height / 2;
+    const destRight = destX + img.width;
+    const destBottom = destY + img.height;
+    const clipLeft = Math.max(destX, viewLeft);
+    const clipTop = Math.max(destY, viewTop);
+    const clipRight = Math.min(destRight, viewRight);
+    const clipBottom = Math.min(destBottom, viewBottom);
+    if (clipRight <= clipLeft || clipBottom <= clipTop) return;
+    if (clipLeft === destX && clipTop === destY && clipRight === destRight && clipBottom === destBottom) {
+        ctx.drawImage(img, destX, destY);
+        return;
+    }
+    const sourceX = clipLeft - destX;
+    const sourceY = clipTop - destY;
+    const sourceW = clipRight - clipLeft;
+    const sourceH = clipBottom - clipTop;
+    ctx.drawImage(img, sourceX, sourceY, sourceW, sourceH, clipLeft, clipTop, sourceW, sourceH);
+}
+
 function render(now) {
     if (typeof beginEntitySnapshotFrame === "function") beginEntitySnapshotFrame();
     try {
@@ -70,6 +91,11 @@ function render(now) {
         const totalScale = worldScale * mapScale;
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
+        const canClipStations = Number.isFinite(totalScale) && totalScale > 0;
+        const stationViewLeft = canClipStations ? LOGICAL_WIDTH / 2 - centerX / totalScale : 0;
+        const stationViewTop = canClipStations ? LOGICAL_HEIGHT / 2 - centerY / totalScale : 0;
+        const stationViewRight = canClipStations ? LOGICAL_WIDTH / 2 + centerX / totalScale : LOGICAL_WIDTH;
+        const stationViewBottom = canClipStations ? LOGICAL_HEIGHT / 2 + centerY / totalScale : LOGICAL_HEIGHT;
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.scale(totalScale, totalScale);
@@ -81,7 +107,11 @@ function render(now) {
                 if (img && img.complete) {
                     let drawX = mapToScreenX(s.x);
                     let drawY = mapToScreenY(s.y);
-                    ctx.drawImage(img, drawX - img.width / 2, drawY - img.height / 2);
+                    if (canClipStations) {
+                        drawStationImageClipped(img, drawX, drawY, stationViewLeft, stationViewTop, stationViewRight, stationViewBottom);
+                    } else {
+                        ctx.drawImage(img, drawX - img.width / 2, drawY - img.height / 2);
+                    }
                 }
             }
         }
