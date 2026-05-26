@@ -5593,10 +5593,16 @@ function handlePacket_s(parts, i) {
         const idx = stations.findIndex(s => s && s.id === nextStation.id);
         if (idx !== -1) {
             stations[idx] = Object.assign({}, stations[idx], nextStation);
+            if (typeof window.warmStationMinimapIcon === "function") {
+                window.warmStationMinimapIcon(stations[idx]);
+            }
             return;
         }
     }
     stations.push(nextStation);
+    if (typeof window.warmStationMinimapIcon === "function") {
+        window.warmStationMinimapIcon(nextStation);
+    }
 }
 
 function handlePacket_R(parts, i) {

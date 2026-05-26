@@ -61,22 +61,40 @@ const DRAW_SMARTBOMB_EXCLUDE_HERO_OPTIONS = {
     excludeHero: true
 };
 
-function drawStationImageClipped(img, drawX, drawY, viewLeft, viewTop, viewRight, viewBottom) {
-    const destX = drawX - img.width / 2;
-    const destY = drawY - img.height / 2;
+function getStationImageTrim(type, img) {
+    if (typeof STATION_SPRITE_DEFS === "undefined" || !type || !img) return null;
+    const def = STATION_SPRITE_DEFS[type];
+    const trim = def && def.trim;
+    if (!trim || !Number.isFinite(trim.x) || !Number.isFinite(trim.y) || !Number.isFinite(trim.w) || !Number.isFinite(trim.h)) return null;
+    if (trim.x <= 0 && trim.y <= 0 && trim.w >= img.width && trim.h >= img.height) return null;
+    if (trim.x < 0 || trim.y < 0 || trim.w <= 0 || trim.h <= 0 || trim.x + trim.w > img.width || trim.y + trim.h > img.height) return null;
+    return trim;
+}
+
+function drawStationImageClipped(img, drawX, drawY, viewLeft, viewTop, viewRight, viewBottom, trim = null) {
+    const baseDestX = drawX - img.width / 2;
+    const baseDestY = drawY - img.height / 2;
+    const trimX = trim ? trim.x : 0;
+    const trimY = trim ? trim.y : 0;
+    const trimW = trim ? trim.w : img.width;
+    const trimH = trim ? trim.h : img.height;
+    const destX = baseDestX + trimX;
+    const destY = baseDestY + trimY;
+    const sourceBaseX = trimX;
+    const sourceBaseY = trimY;
     const destRight = destX + img.width;
-    const destBottom = destY + img.height;
+    const destBottom = destY + trimH;
     const clipLeft = Math.max(destX, viewLeft);
     const clipTop = Math.max(destY, viewTop);
-    const clipRight = Math.min(destRight, viewRight);
+    const clipRight = Math.min(destX + trimW, viewRight);
     const clipBottom = Math.min(destBottom, viewBottom);
     if (clipRight <= clipLeft || clipBottom <= clipTop) return;
-    if (clipLeft === destX && clipTop === destY && clipRight === destRight && clipBottom === destBottom) {
+    if (!trim && clipLeft === destX && clipTop === destY && clipRight === destRight && clipBottom === destBottom) {
         ctx.drawImage(img, destX, destY);
         return;
     }
-    const sourceX = clipLeft - destX;
-    const sourceY = clipTop - destY;
+    const sourceX = sourceBaseX + clipLeft - destX;
+    const sourceY = sourceBaseY + clipTop - destY;
     const sourceW = clipRight - clipLeft;
     const sourceH = clipBottom - clipTop;
     ctx.drawImage(img, sourceX, sourceY, sourceW, sourceH, clipLeft, clipTop, sourceW, sourceH);
@@ -108,7 +126,7 @@ function render(now) {
                     let drawX = mapToScreenX(s.x);
                     let drawY = mapToScreenY(s.y);
                     if (canClipStations) {
-                        drawStationImageClipped(img, drawX, drawY, stationViewLeft, stationViewTop, stationViewRight, stationViewBottom);
+                        drawStationImageClipped(img, drawX, drawY, stationViewLeft, stationViewTop, stationViewRight, stationViewBottom, getStationImageTrim(s.type, img));
                     } else {
                         ctx.drawImage(img, drawX - img.width / 2, drawY - img.height / 2);
                     }

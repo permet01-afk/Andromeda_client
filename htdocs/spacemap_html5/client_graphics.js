@@ -144,6 +144,50 @@ function getRocketSprite(rocketId) {
     return rocketSpriteCache[cacheKey];
 }
 
+function getCurrentLogicalViewportRect() {
+    const worldScale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
+    const mapScale = typeof getMapViewScaleValue === "function" ? getMapViewScaleValue() : 1;
+    const totalScale = worldScale * mapScale;
+    if (!Number.isFinite(totalScale) || totalScale <= 0 || typeof canvas === "undefined" || !canvas) {
+        return {
+            left: 0,
+            top: 0,
+            right: LOGICAL_WIDTH,
+            bottom: LOGICAL_HEIGHT
+        };
+    }
+    const halfW = canvas.width / 2 / totalScale;
+    const halfH = canvas.height / 2 / totalScale;
+    return {
+        left: LOGICAL_WIDTH / 2 - halfW,
+        top: LOGICAL_HEIGHT / 2 - halfH,
+        right: LOGICAL_WIDTH / 2 + halfW,
+        bottom: LOGICAL_HEIGHT / 2 + halfH
+    };
+}
+
+function drawImageClippedToLogicalViewport(img, destX, destY, destW, destH, viewport) {
+    const destRight = destX + destW;
+    const destBottom = destY + destH;
+    const clipLeft = Math.max(destX, viewport.left);
+    const clipTop = Math.max(destY, viewport.top);
+    const clipRight = Math.min(destRight, viewport.right);
+    const clipBottom = Math.min(destBottom, viewport.bottom);
+    if (clipRight <= clipLeft || clipBottom <= clipTop) return false;
+    if (clipLeft === destX && clipTop === destY && clipRight === destRight && clipBottom === destBottom) {
+        ctx.drawImage(img, destX, destY, destW, destH);
+        return true;
+    }
+    const sourceScaleX = img.width / destW;
+    const sourceScaleY = img.height / destH;
+    const sourceX = (clipLeft - destX) * sourceScaleX;
+    const sourceY = (clipTop - destY) * sourceScaleY;
+    const sourceW = (clipRight - clipLeft) * sourceScaleX;
+    const sourceH = (clipBottom - clipTop) * sourceScaleY;
+    ctx.drawImage(img, sourceX, sourceY, sourceW, sourceH, clipLeft, clipTop, clipRight - clipLeft, clipBottom - clipTop);
+    return true;
+}
+
 function drawMapBackground() {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -153,6 +197,7 @@ function drawMapBackground() {
     updateStarfield(cameraX, cameraY);
     if (backgroundLayersEnabled && currentBackgroundLayers && currentBackgroundLayers.length) {
         const scale = 1;
+        const viewport = getCurrentLogicalViewportRect();
         for (let i = 0; i < currentBackgroundLayers.length; i++) {
             const layer = currentBackgroundLayers[i];
             const bg = layer.image;
@@ -168,7 +213,7 @@ function drawMapBackground() {
             const screenY = LOGICAL_HEIGHT / 2 - cameraY / parallax * scale + offsetY * scale;
             const previousSmoothing = ctx.imageSmoothingEnabled;
             ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(bg, screenX, screenY, drawWidth, drawHeight);
+            drawImageClippedToLogicalViewport(bg, screenX, screenY, drawWidth, drawHeight, viewport);
             ctx.imageSmoothingEnabled = previousSmoothing;
         }
     }
@@ -1747,6 +1792,15 @@ function getStationMinimapIcon(station, scaleFactor, mapScale) {
     minimapStationIconCache[key] = result;
     return result;
 }
+
+function warmStationMinimapIcon(station) {
+    if (!station) return;
+    const scaleFactor = typeof minimapScaleFactor === "number" && Number.isFinite(minimapScaleFactor) ? minimapScaleFactor : 1;
+    const mapScale = typeof mapScaleFactor === "number" && Number.isFinite(mapScaleFactor) && mapScaleFactor > 0 ? mapScaleFactor : 1;
+    getStationMinimapIcon(station, scaleFactor, mapScale);
+}
+
+window.warmStationMinimapIcon = warmStationMinimapIcon;
 
 function formatMinimapMapId(mapId) {
     switch (mapId) {
