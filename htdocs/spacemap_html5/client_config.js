@@ -180,6 +180,8 @@ let flashNoaZones = [];
 
 let flashNoaGrid = null;
 
+let flashPoiZonesRevision = 0;
+
 const flashPoiCollisionCache = {
     valid: false,
     fromX: 0,
@@ -190,6 +192,7 @@ const flashPoiCollisionCache = {
     mapMinY: 0,
     mapWidth: 0,
     mapHeight: 0,
+    zonesRevision: 0,
     hasResult: false,
     x: 0,
     y: 0
@@ -220,42 +223,72 @@ const flashPoiLineIntersectScratch = {
     y: 0
 };
 
+const flashPoiLineHitScratch = {
+    x: 0,
+    y: 0
+};
+
+const flashPoiCollisionPointScratch = {
+    x: 0,
+    y: 0
+};
+
 function clearFlashPoiCollisionCache() {
     flashPoiCollisionCache.valid = false;
 }
 
-function hasCachedFlashPoiCollision(fromPoint, toPoint) {
-    return flashPoiCollisionCache.valid && flashPoiCollisionCache.fromX === fromPoint.x && flashPoiCollisionCache.fromY === fromPoint.y && flashPoiCollisionCache.toX === toPoint.x && flashPoiCollisionCache.toY === toPoint.y && flashPoiCollisionCache.mapMinX === MAP_MIN_X && flashPoiCollisionCache.mapMinY === MAP_MIN_Y && flashPoiCollisionCache.mapWidth === MAP_WIDTH && flashPoiCollisionCache.mapHeight === MAP_HEIGHT;
+function hasCachedFlashPoiCollisionValues(fromX, fromY, toX, toY) {
+    return flashPoiCollisionCache.valid && flashPoiCollisionCache.fromX === fromX && flashPoiCollisionCache.fromY === fromY && flashPoiCollisionCache.toX === toX && flashPoiCollisionCache.toY === toY && flashPoiCollisionCache.mapMinX === MAP_MIN_X && flashPoiCollisionCache.mapMinY === MAP_MIN_Y && flashPoiCollisionCache.mapWidth === MAP_WIDTH && flashPoiCollisionCache.mapHeight === MAP_HEIGHT && flashPoiCollisionCache.zonesRevision === flashPoiZonesRevision;
 }
 
-function cloneCachedFlashPoiCollision() {
-    return flashPoiCollisionCache.hasResult ? {
+function hasCachedFlashPoiCollision(fromPoint, toPoint) {
+    return hasCachedFlashPoiCollisionValues(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
+}
+
+function cloneCachedFlashPoiCollision(out = null) {
+    if (!flashPoiCollisionCache.hasResult) return null;
+    if (out) {
+        out.x = flashPoiCollisionCache.x;
+        out.y = flashPoiCollisionCache.y;
+        return out;
+    }
+    return {
         x: flashPoiCollisionCache.x,
         y: flashPoiCollisionCache.y
-    } : null;
+    };
 }
 
-function rememberFlashPoiCollision(fromPoint, toPoint, result) {
+function rememberFlashPoiCollisionValues(fromX, fromY, toX, toY, resultX, resultY, hasResult, out = null) {
     flashPoiCollisionCache.valid = true;
-    flashPoiCollisionCache.fromX = fromPoint.x;
-    flashPoiCollisionCache.fromY = fromPoint.y;
-    flashPoiCollisionCache.toX = toPoint.x;
-    flashPoiCollisionCache.toY = toPoint.y;
+    flashPoiCollisionCache.fromX = fromX;
+    flashPoiCollisionCache.fromY = fromY;
+    flashPoiCollisionCache.toX = toX;
+    flashPoiCollisionCache.toY = toY;
     flashPoiCollisionCache.mapMinX = MAP_MIN_X;
     flashPoiCollisionCache.mapMinY = MAP_MIN_Y;
     flashPoiCollisionCache.mapWidth = MAP_WIDTH;
     flashPoiCollisionCache.mapHeight = MAP_HEIGHT;
-    if (!result) {
+    flashPoiCollisionCache.zonesRevision = flashPoiZonesRevision;
+    if (!hasResult) {
         flashPoiCollisionCache.hasResult = false;
         return null;
     }
     flashPoiCollisionCache.hasResult = true;
-    flashPoiCollisionCache.x = result.x;
-    flashPoiCollisionCache.y = result.y;
+    flashPoiCollisionCache.x = resultX;
+    flashPoiCollisionCache.y = resultY;
+    if (out) {
+        out.x = resultX;
+        out.y = resultY;
+        return out;
+    }
     return {
-        x: result.x,
-        y: result.y
+        x: resultX,
+        y: resultY
     };
+}
+
+function rememberFlashPoiCollision(fromPoint, toPoint, result) {
+    return rememberFlashPoiCollisionValues(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y, result ? result.x : 0, result ? result.y : 0, !!result);
 }
 
 function flashNoaScaleFactor() {
@@ -267,6 +300,7 @@ function clearFlashPoiZones() {
     flashPoiZones = [];
     flashNoaZones = [];
     flashNoaGrid = null;
+    flashPoiZonesRevision++;
     clearFlashPoiCollisionCache();
 }
 
@@ -305,6 +339,7 @@ function addFlashPoiZone(zoneType, zoneId, shape, designId, points) {
         zone.y2 = zone.points[3];
     }
     flashPoiZones.push(zone);
+    flashPoiZonesRevision++;
     clearFlashPoiCollisionCache();
     if (zone.zoneType !== "NOA") return;
     flashNoaZones.push(zone);
@@ -397,7 +432,7 @@ function getMiddlePoint(p1, p2) {
     };
 }
 
-function getCollisionPointScaled(fromPoint, toPoint) {
+function getCollisionPointScaled(fromPoint, toPoint, out = null) {
     let p1x = fromPoint.x;
     let p1y = fromPoint.y;
     let p2x = toPoint.x;
@@ -415,22 +450,41 @@ function getCollisionPointScaled(fromPoint, toPoint) {
         }
         d = Math.hypot(p1x - p2x, p1y - p2y);
     }
-    if (!isNoaCell(p1x, p1y)) return {
-        x: p1x,
-        y: p1y
-    };
-    if (!isNoaCell(p2x, p2y)) return {
-        x: p2x,
-        y: p2y
-    };
+    if (!isNoaCell(p1x, p1y)) {
+        if (out) {
+            out.x = p1x;
+            out.y = p1y;
+            return out;
+        }
+        return {
+            x: p1x,
+            y: p1y
+        };
+    }
+    if (!isNoaCell(p2x, p2y)) {
+        if (out) {
+            out.x = p2x;
+            out.y = p2y;
+            return out;
+        }
+        return {
+            x: p2x,
+            y: p2y
+        };
+    }
     return null;
 }
 
-function getOnePixelLessIntersectPoint(intersection, fromPoint) {
+function getOnePixelLessIntersectPoint(intersection, fromPoint, out = null) {
     let x = fromPoint.x;
     let y = fromPoint.y;
     if (fromPoint.x < intersection.x) x = intersection.x - 5; else if (fromPoint.x > intersection.x) x = intersection.x + 5; else x = intersection.x;
     if (fromPoint.y < intersection.y) y = intersection.y - 5; else if (fromPoint.y > intersection.y) y = intersection.y + 5; else y = intersection.y;
+    if (out) {
+        out.x = x;
+        out.y = y;
+        return out;
+    }
     return {
         x: x,
         y: y
@@ -476,7 +530,7 @@ function lineIntersectValues(ax, ay, bx, by, cx, cy, dx, dy, out) {
     return true;
 }
 
-function checkPOIZoneCollisionsByLines(fromPoint, toPoint) {
+function checkPOIZoneCollisionsByLines(fromPoint, toPoint, out = null) {
     let hitCount = 0;
     let firstX = 0;
     let firstY = 0;
@@ -555,42 +609,44 @@ function checkPOIZoneCollisionsByLines(fromPoint, toPoint) {
     if (hitCount === 1) {
         flashPoiLineIntersectScratch.x = firstX;
         flashPoiLineIntersectScratch.y = firstY;
-        const candidate = getOnePixelLessIntersectPoint(flashPoiLineIntersectScratch, fromPoint);
+        const candidate = getOnePixelLessIntersectPoint(flashPoiLineIntersectScratch, fromPoint, out || flashPoiLineHitScratch);
         if (candidate.x === fromPoint.x && candidate.y === fromPoint.y) {
+            if (out) {
+                out.x = firstX;
+                out.y = firstY;
+                return out;
+            }
             return {
                 x: firstX,
                 y: firstY
             };
         }
         const dist = Math.hypot(candidate.x - fromPoint.x, candidate.y - fromPoint.y);
-        if (dist > 0) return getOnePixelLessIntersectPoint(flashPoiLineIntersectScratch, fromPoint);
+        if (dist > 0) return getOnePixelLessIntersectPoint(flashPoiLineIntersectScratch, fromPoint, out);
         return null;
     }
     flashPoiLineIntersectScratch.x = bestX;
     flashPoiLineIntersectScratch.y = bestY;
-    return getOnePixelLessIntersectPoint(flashPoiLineIntersectScratch, fromPoint);
+    return getOnePixelLessIntersectPoint(flashPoiLineIntersectScratch, fromPoint, out);
 }
 
-function checkFlashPoiZoneCollisions(fromPoint, toPoint) {
+function checkFlashPoiZoneCollisionsValues(fromX, fromY, toX, toY, out = null) {
     if (!flashNoaZones.length) return null;
-    if (hasCachedFlashPoiCollision(fromPoint, toPoint)) {
-        return cloneCachedFlashPoiCollision();
+    if (hasCachedFlashPoiCollisionValues(fromX, fromY, toX, toY)) {
+        return cloneCachedFlashPoiCollision(out);
     }
     const from = flashPoiScratchFrom;
     const to = flashPoiScratchTo;
-    from.x = fromPoint.x - MAP_MIN_X;
-    from.y = fromPoint.y - MAP_MIN_Y;
-    to.x = toPoint.x - MAP_MIN_X;
-    to.y = toPoint.y - MAP_MIN_Y;
+    from.x = fromX - MAP_MIN_X;
+    from.y = fromY - MAP_MIN_Y;
+    to.x = toX - MAP_MIN_X;
+    to.y = toY - MAP_MIN_Y;
     let outOfBounds = false;
     if (from.x < 0 || from.x > MAP_WIDTH || from.y < 0 || from.y > MAP_HEIGHT) outOfBounds = true;
     if (to.x < 0 || to.x > MAP_WIDTH || to.y < 0 || to.y > MAP_HEIGHT) outOfBounds = true;
     if (outOfBounds) {
-        const lineHit = checkPOIZoneCollisionsByLines(from, to);
-        return rememberFlashPoiCollision(fromPoint, toPoint, lineHit ? {
-            x: lineHit.x + MAP_MIN_X,
-            y: lineHit.y + MAP_MIN_Y
-        } : null);
+        const lineHit = checkPOIZoneCollisionsByLines(from, to, flashPoiLineHitScratch);
+        return rememberFlashPoiCollisionValues(fromX, fromY, toX, toY, lineHit ? lineHit.x + MAP_MIN_X : 0, lineHit ? lineHit.y + MAP_MIN_Y : 0, !!lineHit, out);
     }
     const scale = flashNoaScaleFactor();
     const fromScaled = flashPoiScratchFromScaled;
@@ -599,43 +655,40 @@ function checkFlashPoiZoneCollisions(fromPoint, toPoint) {
     fromScaled.y = Math.round(from.y / scale);
     toScaled.x = Math.round(to.x / scale);
     toScaled.y = Math.round(to.y / scale);
-    const xIncreasing = toPoint.x > fromPoint.x;
+    const xIncreasing = toX > fromX;
     const xDecreasing = !xIncreasing;
-    const yIncreasing = toPoint.y > fromPoint.y;
+    const yIncreasing = toY > fromY;
     const yDecreasing = !yIncreasing;
     if (isCollidingWithNoaScaled(fromScaled, fromScaled)) {
-        const lineHit = checkPOIZoneCollisionsByLines(from, to);
-        return rememberFlashPoiCollision(fromPoint, toPoint, lineHit ? {
-            x: lineHit.x + MAP_MIN_X,
-            y: lineHit.y + MAP_MIN_Y
-        } : null);
+        const lineHit = checkPOIZoneCollisionsByLines(from, to, flashPoiLineHitScratch);
+        return rememberFlashPoiCollisionValues(fromX, fromY, toX, toY, lineHit ? lineHit.x + MAP_MIN_X : 0, lineHit ? lineHit.y + MAP_MIN_Y : 0, !!lineHit, out);
     }
     if (isCollidingWithNoaScaled(fromScaled, toScaled)) {
-        const collision = getCollisionPointScaled(fromScaled, toScaled);
+        const collision = getCollisionPointScaled(fromScaled, toScaled, flashPoiCollisionPointScratch);
         if (!collision) {
-            const lineHit = checkPOIZoneCollisionsByLines(from, to);
-            return rememberFlashPoiCollision(fromPoint, toPoint, lineHit ? {
-                x: lineHit.x + MAP_MIN_X,
-                y: lineHit.y + MAP_MIN_Y
-            } : null);
+            const lineHit = checkPOIZoneCollisionsByLines(from, to, flashPoiLineHitScratch);
+            return rememberFlashPoiCollisionValues(fromX, fromY, toX, toY, lineHit ? lineHit.x + MAP_MIN_X : 0, lineHit ? lineHit.y + MAP_MIN_Y : 0, !!lineHit, out);
         }
-        const result = {
-            x: Math.round(collision.x * scale),
-            y: Math.round(collision.y * scale)
-        };
-        if (result.x > from.x && xDecreasing) result.x = Math.floor(from.x);
-        if (result.x < from.x && xIncreasing) result.x = Math.ceil(from.x);
-        if (result.y > from.y && yDecreasing) result.y = Math.floor(from.y);
-        if (result.y < from.y && yIncreasing) result.y = Math.ceil(from.y);
-        return rememberFlashPoiCollision(fromPoint, toPoint, {
-            x: result.x + MAP_MIN_X,
-            y: result.y + MAP_MIN_Y
-        });
+        let resultX = Math.round(collision.x * scale);
+        let resultY = Math.round(collision.y * scale);
+        if (resultX > from.x && xDecreasing) resultX = Math.floor(from.x);
+        if (resultX < from.x && xIncreasing) resultX = Math.ceil(from.x);
+        if (resultY > from.y && yDecreasing) resultY = Math.floor(from.y);
+        if (resultY < from.y && yIncreasing) resultY = Math.ceil(from.y);
+        return rememberFlashPoiCollisionValues(fromX, fromY, toX, toY, resultX + MAP_MIN_X, resultY + MAP_MIN_Y, true, out);
     }
-    return rememberFlashPoiCollision(fromPoint, toPoint, null);
+    return rememberFlashPoiCollisionValues(fromX, fromY, toX, toY, 0, 0, false, out);
+}
+
+function checkFlashPoiZoneCollisions(fromPoint, toPoint) {
+    return checkFlashPoiZoneCollisionsValues(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
 }
 
 window.checkFlashPoiZoneCollisions = checkFlashPoiZoneCollisions;
+window.checkFlashPoiZoneCollisionsValues = checkFlashPoiZoneCollisionsValues;
+window.getFlashPoiZonesRevision = function() {
+    return flashPoiZonesRevision;
+};
 
 const MINIMAP_HEADER_HEIGHT = 25;
 

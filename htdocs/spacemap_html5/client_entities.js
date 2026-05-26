@@ -301,6 +301,73 @@ let lastMouseScreenX = 0;
 
 let lastMouseScreenY = 0;
 
+const flashMoveWorldScratch = {
+    x: 0,
+    y: 0
+};
+
+const flashMovePoiScratch = {
+    x: 0,
+    y: 0
+};
+
+const flashMoveFromScratch = {
+    x: 0,
+    y: 0
+};
+
+const flashMoveToScratch = {
+    x: 0,
+    y: 0
+};
+
+const flashMoveSendTargetScratch = {
+    x: 0,
+    y: 0
+};
+
+const flashMoveLiveTargetScratch = {
+    x: 0,
+    y: 0
+};
+
+const flashMoveTargetCache = {
+    valid: false,
+    screenX: 0,
+    screenY: 0,
+    shipX: 0,
+    shipY: 0,
+    cameraX: 0,
+    cameraY: 0,
+    canvasWidth: 0,
+    canvasHeight: 0,
+    viewportScale: 0,
+    moveRadiusSq: 0,
+    mapMinX: 0,
+    mapMinY: 0,
+    mapWidth: 0,
+    mapHeight: 0,
+    poiRevision: 0,
+    hasTarget: false,
+    x: 0,
+    y: 0
+};
+
+const hoverEntityScanCache = {
+    valid: false,
+    screenX: 0,
+    screenY: 0,
+    cameraX: 0,
+    cameraY: 0,
+    canvasWidth: 0,
+    canvasHeight: 0,
+    viewportScale: 0,
+    entityId: null,
+    entity: null,
+    entityX: 0,
+    entityY: 0
+};
+
 const COLLECTABLE_Y_OFFSET = 120;
 
 let pendingCollectBoxId = null;
@@ -782,6 +849,50 @@ function refreshEntityInteractionAfterVisibilityChange(targetId) {
 
 window.__flashRefreshEntityInteractionAfterInv = refreshEntityInteractionAfterVisibilityChange;
 
+function isShipOrNpcEntity(ent) {
+    return ent && (ent.kind === "player" || ent.kind === "npc");
+}
+
+function isBoxEntity(ent) {
+    return ent && ent.kind === "box";
+}
+
+function isCanvasHoverEntity(ent) {
+    return ent && (ent.kind === "player" || ent.kind === "npc" || ent.kind === "box");
+}
+
+function getHoverEntityViewportScale() {
+    return typeof getWorldViewportScale === "function" ? getWorldViewportScale() : 1;
+}
+
+function isCachedHoverEntityValid(screenX, screenY, viewportScale) {
+    if (!hoverEntityScanCache.valid || hoverEntityScanCache.entityId == null) return false;
+    if (entities[hoverEntityScanCache.entityId] !== hoverEntityScanCache.entity) return false;
+    if (!hoverEntityScanCache.entity || hoverEntityScanCache.entity.x !== hoverEntityScanCache.entityX || hoverEntityScanCache.entity.y !== hoverEntityScanCache.entityY) return false;
+    return hoverEntityScanCache.screenX === screenX && hoverEntityScanCache.screenY === screenY && hoverEntityScanCache.cameraX === cameraX && hoverEntityScanCache.cameraY === cameraY && hoverEntityScanCache.canvasWidth === (canvas && canvas.width || 0) && hoverEntityScanCache.canvasHeight === (canvas && canvas.height || 0) && hoverEntityScanCache.viewportScale === viewportScale;
+}
+
+function getHoverEntityAtScreenPos(screenX, screenY) {
+    const viewportScale = getHoverEntityViewportScale();
+    if (isCachedHoverEntityValid(screenX, screenY, viewportScale)) {
+        return hoverEntityScanCache.entity;
+    }
+    const hoverEntity = findEntityAtScreenPos(screenX, screenY, isCanvasHoverEntity, 60, true);
+    hoverEntityScanCache.valid = !!hoverEntity;
+    hoverEntityScanCache.screenX = screenX;
+    hoverEntityScanCache.screenY = screenY;
+    hoverEntityScanCache.cameraX = cameraX;
+    hoverEntityScanCache.cameraY = cameraY;
+    hoverEntityScanCache.canvasWidth = canvas && canvas.width || 0;
+    hoverEntityScanCache.canvasHeight = canvas && canvas.height || 0;
+    hoverEntityScanCache.viewportScale = viewportScale;
+    hoverEntityScanCache.entityId = hoverEntity && hoverEntity.id != null ? hoverEntity.id : null;
+    hoverEntityScanCache.entity = hoverEntity || null;
+    hoverEntityScanCache.entityX = hoverEntity ? hoverEntity.x : 0;
+    hoverEntityScanCache.entityY = hoverEntity ? hoverEntity.y : 0;
+    return hoverEntity;
+}
+
 function findEntityAtScreenPos(screenX, screenY, predicate, radius, includeInvisible = false) {
     let best = null;
     let bestScore = Infinity;
@@ -832,31 +943,88 @@ function isMouseInHeroFlashMoveableArea(screenX, screenY) {
     return dx * dx + dy * dy >= getHeroFlashMoveRadiusSquared();
 }
 
-function getFlashMoveTargetFromScreen(screenX, screenY) {
+function getFlashPoiZonesRevisionForMoveCache() {
+    return typeof window.getFlashPoiZonesRevision === "function" ? window.getFlashPoiZonesRevision() : 0;
+}
+
+function copyFlashMoveTargetCache(out = null) {
+    if (!flashMoveTargetCache.hasTarget) return null;
+    if (out) {
+        out.x = flashMoveTargetCache.x;
+        out.y = flashMoveTargetCache.y;
+        return out;
+    }
+    return {
+        x: flashMoveTargetCache.x,
+        y: flashMoveTargetCache.y
+    };
+}
+
+function rememberFlashMoveTargetCache(screenX, screenY, viewportScale, moveRadiusSq, poiRevision, hasTarget, targetX, targetY, out = null) {
+    flashMoveTargetCache.valid = true;
+    flashMoveTargetCache.screenX = screenX;
+    flashMoveTargetCache.screenY = screenY;
+    flashMoveTargetCache.shipX = shipX;
+    flashMoveTargetCache.shipY = shipY;
+    flashMoveTargetCache.cameraX = cameraX;
+    flashMoveTargetCache.cameraY = cameraY;
+    flashMoveTargetCache.canvasWidth = canvas && canvas.width || 0;
+    flashMoveTargetCache.canvasHeight = canvas && canvas.height || 0;
+    flashMoveTargetCache.viewportScale = viewportScale;
+    flashMoveTargetCache.moveRadiusSq = moveRadiusSq;
+    flashMoveTargetCache.mapMinX = MAP_MIN_X;
+    flashMoveTargetCache.mapMinY = MAP_MIN_Y;
+    flashMoveTargetCache.mapWidth = MAP_WIDTH;
+    flashMoveTargetCache.mapHeight = MAP_HEIGHT;
+    flashMoveTargetCache.poiRevision = poiRevision;
+    flashMoveTargetCache.hasTarget = !!hasTarget;
+    flashMoveTargetCache.x = hasTarget ? targetX : 0;
+    flashMoveTargetCache.y = hasTarget ? targetY : 0;
+    return copyFlashMoveTargetCache(out);
+}
+
+function hasCachedFlashMoveTarget(screenX, screenY, viewportScale, moveRadiusSq, poiRevision) {
+    return flashMoveTargetCache.valid && flashMoveTargetCache.screenX === screenX && flashMoveTargetCache.screenY === screenY && flashMoveTargetCache.shipX === shipX && flashMoveTargetCache.shipY === shipY && flashMoveTargetCache.cameraX === cameraX && flashMoveTargetCache.cameraY === cameraY && flashMoveTargetCache.canvasWidth === (canvas && canvas.width || 0) && flashMoveTargetCache.canvasHeight === (canvas && canvas.height || 0) && flashMoveTargetCache.viewportScale === viewportScale && flashMoveTargetCache.moveRadiusSq === moveRadiusSq && flashMoveTargetCache.mapMinX === MAP_MIN_X && flashMoveTargetCache.mapMinY === MAP_MIN_Y && flashMoveTargetCache.mapWidth === MAP_WIDTH && flashMoveTargetCache.mapHeight === MAP_HEIGHT && flashMoveTargetCache.poiRevision === poiRevision;
+}
+
+function getFlashMoveTargetFromScreen(screenX, screenY, out = null) {
     if (!Number.isFinite(screenX) || !Number.isFinite(screenY)) return null;
-    if (!isMouseInHeroFlashMoveableArea(screenX, screenY)) return null;
-    const worldPos = screenToMap(screenX, screenY);
+    if (!canvas) return null;
+    const viewportScale = getWorldViewportScale();
+    const centerX = canvas.width ? canvas.width / 2 : LOGICAL_WIDTH / 2;
+    const centerY = canvas.height ? canvas.height / 2 : LOGICAL_HEIGHT / 2;
+    const dx = screenX - centerX;
+    const dy = screenY - centerY;
+    const moveRadiusSq = getHeroFlashMoveRadiusSquared();
+    const poiRevision = getFlashPoiZonesRevisionForMoveCache();
+    if (hasCachedFlashMoveTarget(screenX, screenY, viewportScale, moveRadiusSq, poiRevision)) {
+        return copyFlashMoveTargetCache(out);
+    }
+    if (dx * dx + dy * dy < moveRadiusSq) {
+        return rememberFlashMoveTargetCache(screenX, screenY, viewportScale, moveRadiusSq, poiRevision, false, 0, 0, out);
+    }
+    const worldPos = screenToMapInto(screenX, screenY, flashMoveWorldScratch, viewportScale);
     let targetX = worldPos.x;
     let targetY = worldPos.y;
-    const corrected = typeof checkFlashPoiZoneCollisions === "function" ? checkFlashPoiZoneCollisions({
-        x: shipX,
-        y: shipY
-    }, {
-        x: targetX,
-        y: targetY
-    }) : null;
+    let corrected = null;
+    if (typeof checkFlashPoiZoneCollisionsValues === "function") {
+        corrected = checkFlashPoiZoneCollisionsValues(shipX, shipY, targetX, targetY, flashMovePoiScratch);
+    } else if (typeof checkFlashPoiZoneCollisions === "function") {
+        flashMoveFromScratch.x = shipX;
+        flashMoveFromScratch.y = shipY;
+        flashMoveToScratch.x = targetX;
+        flashMoveToScratch.y = targetY;
+        corrected = checkFlashPoiZoneCollisions(flashMoveFromScratch, flashMoveToScratch);
+    }
     if (corrected && Number.isFinite(corrected.x) && Number.isFinite(corrected.y)) {
         targetX = corrected.x;
         targetY = corrected.y;
     }
-    return {
-        x: targetX,
-        y: targetY
-    };
+    return rememberFlashMoveTargetCache(screenX, screenY, viewportScale, moveRadiusSq, poiRevision, true, targetX, targetY, out);
 }
 
 function sendHeroMoveFromScreenLikeFlash(screenX, screenY) {
-    const target = getFlashMoveTargetFromScreen(screenX, screenY);
+    const target = getFlashMoveTargetFromScreen(screenX, screenY, flashMoveSendTargetScratch);
     if (!target) return false;
     moveTargetX = target.x;
     moveTargetY = target.y;
@@ -900,7 +1068,7 @@ function handleFlashDoubleClickAttackFromMouseDown(screenX, screenY) {
     if (selectedTargetId == null) return false;
     const selectedShip = entities[selectedTargetId];
     if (!selectedShip || (selectedShip.kind !== "player" && selectedShip.kind !== "npc")) return false;
-    const hitShip = findEntityAtScreenPos(screenX, screenY, ent => ent.kind === "player" || ent.kind === "npc", 60, true);
+    const hitShip = findEntityAtScreenPos(screenX, screenY, isShipOrNpcEntity, 60, true);
     if (!hitShip) return false;
     toggleLaserOnSelectedTarget();
     return true;
@@ -1112,7 +1280,7 @@ canvas.addEventListener("mousedown", e => {
         return;
     }
     handleFlashDoubleClickAttackFromMouseDown(screenX, screenY);
-    const clickedShip = findEntityAtScreenPos(screenX, screenY, ent => ent.kind === "player" || ent.kind === "npc", 60, true);
+    const clickedShip = findEntityAtScreenPos(screenX, screenY, isShipOrNpcEntity, 60, true);
     if (clickedShip) {
         if (selectedTargetId !== null && selectedTargetId !== clickedShip.id) {
             if (currentLaserTargetId !== null || attackIntentTargetId !== null) {
@@ -1136,7 +1304,7 @@ canvas.addEventListener("mousedown", e => {
         }
         return;
     }
-    const clickedBox = findEntityAtScreenPos(screenX, screenY, ent => ent.kind === "box", 50);
+    const clickedBox = findEntityAtScreenPos(screenX, screenY, isBoxEntity, 50);
     if (clickedBox) {
         const collectTarget = computeCollectApproach(clickedBox);
         if (collectTarget) {
@@ -1231,7 +1399,7 @@ canvas.addEventListener("mousemove", e => {
     if (isMouseDownOnMap && (e.buttons & 1) === 1) {
         lastMouseScreenX = screenX;
         lastMouseScreenY = screenY;
-        const liveMoveTarget = getFlashMoveTargetFromScreen(screenX, screenY);
+        const liveMoveTarget = getFlashMoveTargetFromScreen(screenX, screenY, flashMoveLiveTargetScratch);
         if (liveMoveTarget) {
             moveTargetX = liveMoveTarget.x;
             moveTargetY = liveMoveTarget.y;
@@ -1239,7 +1407,7 @@ canvas.addEventListener("mousemove", e => {
             isChasingTarget = false;
         }
     }
-    const hoverEntity = findEntityAtScreenPos(screenX, screenY, ent => ent.kind === "player" || ent.kind === "npc" || ent.kind === "box", 60, true);
+    const hoverEntity = getHoverEntityAtScreenPos(screenX, screenY);
     const isMinimapOpen = window.showMinimap !== false;
     const layout = typeof getMinimapLayout === "function" ? getMinimapLayout(isMinimapOpen) : null;
     if (isMinimapOpen && layout && hoverState) {
@@ -1525,16 +1693,19 @@ function mapToScreenY(y) {
     return LOGICAL_HEIGHT / 2 + dy;
 }
 
-function screenToMap(screenX, screenY) {
-    const scale = getWorldViewportScale();
+function screenToMapInto(screenX, screenY, out, scale = getWorldViewportScale()) {
     const centerX = canvas && canvas.width ? canvas.width / 2 : LOGICAL_WIDTH / 2;
     const centerY = canvas && canvas.height ? canvas.height / 2 : LOGICAL_HEIGHT / 2;
     const dx = (screenX - centerX) / scale;
     const dy = (screenY - centerY) / scale;
-    const worldX = cameraX + dx;
-    const worldY = cameraY + dy;
-    return {
-        x: worldX,
-        y: worldY
-    };
+    out.x = cameraX + dx;
+    out.y = cameraY + dy;
+    return out;
+}
+
+function screenToMap(screenX, screenY) {
+    return screenToMapInto(screenX, screenY, {
+        x: 0,
+        y: 0
+    });
 }
