@@ -3456,6 +3456,70 @@ if (typeof window !== "undefined") {
     window.warmPortalRuntimeVisualsBeforeStart = warmPortalRuntimeVisualsBeforeStart;
 }
 
+function collectShipRuntimeWarmupJobs() {
+    const jobs = [];
+    const defs = typeof SHIP_SPRITE_DEFS === "object" && SHIP_SPRITE_DEFS ? SHIP_SPRITE_DEFS : null;
+    if (!defs) return jobs;
+    for (const rawShipId in defs) {
+        if (!Object.prototype.hasOwnProperty.call(defs, rawShipId)) continue;
+        const def = defs[rawShipId];
+        if (!def) continue;
+        const numericShipId = Number(rawShipId);
+        const shipId = Number.isFinite(numericShipId) ? numericShipId : rawShipId;
+        const frameCount = Math.max(1, Number(def.frameCount) || 1);
+        for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+            jobs.push({
+                shipId: shipId,
+                frameIndex: frameIndex
+            });
+        }
+    }
+    return jobs;
+}
+
+function warmShipRuntimeFrame(job) {
+    if (!job) return false;
+    if (typeof warmShipSpriteVisualMetrics === "function") {
+        return warmShipSpriteVisualMetrics(job.shipId, job.frameIndex, 1);
+    }
+    const img = typeof getShipSpriteFrame === "function" ? getShipSpriteFrame(job.shipId, job.frameIndex) : null;
+    return !!(img && img.complete && img.width > 0 && img.height > 0);
+}
+
+function collectShipExpansionRuntimeWarmupJobs() {
+    const jobs = [];
+    const defs = typeof SHIP_EXPANSION_DEFS === "object" && SHIP_EXPANSION_DEFS ? SHIP_EXPANSION_DEFS : null;
+    if (!defs) return jobs;
+    for (const rawShipId in defs) {
+        if (!Object.prototype.hasOwnProperty.call(defs, rawShipId)) continue;
+        const def = defs[rawShipId];
+        if (!def) continue;
+        const numericShipId = Number(rawShipId);
+        const shipId = Number.isFinite(numericShipId) ? numericShipId : rawShipId;
+        const frames = typeof getFrameNumbersForDef === "function" ? getFrameNumbersForDef(def, 1) : null;
+        const frameCount = Array.isArray(frames) && frames.length ? frames.length : Math.max(1, Number(def.frameCount) || 1);
+        for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
+            jobs.push({
+                shipId: shipId,
+                frameIndex: frameIndex
+            });
+        }
+    }
+    return jobs;
+}
+
+function warmShipExpansionRuntimeFrame(job, warmCtx) {
+    if (!job || typeof getShipExpansionFrame !== "function") return false;
+    const frameDef = getShipExpansionFrame(job.shipId, job.frameIndex);
+    if (!frameDef || frameDef.pendingAtlas) return false;
+    const warmed = warmFrameDefOnContext(warmCtx, frameDef, {});
+    const source = frameDef.atlas ? null : frameDef.img || frameDef;
+    if (source && source.complete && source.width > 0 && source.height > 0 && typeof getResolvedShipExpansionVisualShift === "function") {
+        getResolvedShipExpansionVisualShift(job.shipId, job.frameIndex, source, 1);
+    }
+    return warmed;
+}
+
 async function warmCriticalBootRuntimeVisuals(reason = "manual") {
     if (criticalBootRuntimeVisualWarmupPromise) return criticalBootRuntimeVisualWarmupPromise;
     criticalBootRuntimeVisualWarmupPromise = (async () => {
@@ -3480,6 +3544,13 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             tasks.push({
                 label: label,
                 run: () => warmFrameDefOnContext(warmCtx, frameFactory(), options)
+            });
+        };
+        const addRuntimeWarmTask = (label, runner) => {
+            if (typeof runner !== "function") return;
+            tasks.push({
+                label: label,
+                run: runner
             });
         };
 
@@ -3586,6 +3657,15 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             composite: "lighter"
         });
 
+        const shipWarmupJobs = collectShipRuntimeWarmupJobs();
+        for (const job of shipWarmupJobs) {
+            addRuntimeWarmTask("ship:" + job.shipId + ":" + job.frameIndex, () => warmShipRuntimeFrame(job));
+        }
+        const shipExpansionWarmupJobs = collectShipExpansionRuntimeWarmupJobs();
+        for (const job of shipExpansionWarmupJobs) {
+            addRuntimeWarmTask("shipExpansion:" + job.shipId + ":" + job.frameIndex, () => warmShipExpansionRuntimeFrame(job, warmCtx));
+        }
+
         let warmed = 0;
         let failed = 0;
         let retryTasks = [];
@@ -3595,6 +3675,8 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             ready: false,
             reason: reason,
             total: tasks.length,
+            shipFramesTotal: shipWarmupJobs.length,
+            shipExpansionFramesTotal: shipExpansionWarmupJobs.length,
             completed: 0,
             warmed: 0,
             failed: 0,
@@ -3659,6 +3741,8 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             ready: true,
             reason: reason,
             total: tasks.length,
+            shipFramesTotal: shipWarmupJobs.length,
+            shipExpansionFramesTotal: shipExpansionWarmupJobs.length,
             completed: tasks.length,
             warmed: warmed,
             failed: failed,

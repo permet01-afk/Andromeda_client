@@ -2572,12 +2572,38 @@ function getImageVisualRadius(img, alphaThreshold = 20) {
 
 const shipVisualRadiusCache = Object.create(null);
 
-function getShipVisualRadiusCached(shipId, frameIndex = 0) {
-    const key = `${shipId}_${frameIndex}`;
-    if (shipVisualRadiusCache[key] != null) return shipVisualRadiusCache[key];
-    const img = getShipSpriteFrame(shipId, frameIndex);
+const shipVisualBoundsCache = Object.create(null);
+
+function normalizeShipVisualFrameIndex(shipId, frameIndex = 0) {
+    const def = typeof SHIP_SPRITE_DEFS === "object" && SHIP_SPRITE_DEFS ? SHIP_SPRITE_DEFS[shipId] : null;
+    const frameCount = Math.max(1, Number(def && def.frameCount) || 1);
+    const numericFrame = Number(frameIndex);
+    let idx = Number.isFinite(numericFrame) ? numericFrame % frameCount : 0;
+    if (idx < 0) idx += frameCount;
+    return idx;
+}
+
+function getShipVisualBoundsCached(shipId, frameIndex = 0, alphaThreshold = 20) {
+    const idx = normalizeShipVisualFrameIndex(shipId, frameIndex);
+    const numericThreshold = Number(alphaThreshold);
+    const threshold = Number.isFinite(numericThreshold) ? numericThreshold : 20;
+    const key = `${shipId}_${idx}_${threshold}`;
+    if (shipVisualBoundsCache[key]) return shipVisualBoundsCache[key];
+    const img = getShipSpriteFrame(shipId, idx);
     if (!img || !img.complete || img.width === 0 || img.height === 0) return null;
-    const r = getImageVisualRadius(img, 20);
+    const bounds = getImageVisualBounds(img, threshold);
+    if (bounds) shipVisualBoundsCache[key] = bounds;
+    return bounds;
+}
+
+function getShipVisualRadiusCached(shipId, frameIndex = 0) {
+    const idx = normalizeShipVisualFrameIndex(shipId, frameIndex);
+    const key = `${shipId}_${idx}`;
+    if (shipVisualRadiusCache[key] != null) return shipVisualRadiusCache[key];
+    const img = getShipSpriteFrame(shipId, idx);
+    if (!img || !img.complete || img.width === 0 || img.height === 0) return null;
+    const bounds = getShipVisualBoundsCached(shipId, idx, 20);
+    const r = bounds && bounds.width > 0 && bounds.height > 0 ? Math.max(bounds.width, bounds.height) / 2 : Math.max(img.width, img.height) / 2;
     shipVisualRadiusCache[key] = r;
     return r;
 }
@@ -2640,6 +2666,16 @@ function getResolvedShipVisualShift(shipId, frameIndex, img, entityScale = 1) {
         x: shiftX,
         y: shiftY
     };
+}
+
+function warmShipSpriteVisualMetrics(shipId, frameIndex = 0, entityScale = 1) {
+    const idx = normalizeShipVisualFrameIndex(shipId, frameIndex);
+    const img = typeof getShipSpriteFrame === "function" ? getShipSpriteFrame(shipId, idx) : null;
+    if (!img || !img.complete || img.width <= 0 || img.height <= 0) return false;
+    getResolvedShipVisualShift(shipId, idx, img, entityScale);
+    const bounds = getShipVisualBoundsCached(shipId, idx, 20);
+    const radius = getShipVisualRadiusCached(shipId, idx);
+    return !!bounds && radius != null;
 }
 
 function flashShipSkillNowMs() {
@@ -3041,7 +3077,12 @@ function getShipReferenceVisualHeight(shipId) {
     if (typeof getShipSpriteFrame === "function") {
         const img = getShipSpriteFrame(resolvedId, 0);
         if (img && img.complete && img.width > 0 && img.height > 0) {
-            const bounds = typeof getImageVisualBounds === "function" ? getImageVisualBounds(img, 20) : null;
+            let bounds = null;
+            if (typeof getShipVisualBoundsCached === "function") {
+                bounds = getShipVisualBoundsCached(resolvedId, 0, 20);
+            } else if (typeof getImageVisualBounds === "function") {
+                bounds = getImageVisualBounds(img, 20);
+            }
             if (bounds && Number.isFinite(bounds.height) && bounds.height > 0) {
                 visualHeight = bounds.height;
             } else {
