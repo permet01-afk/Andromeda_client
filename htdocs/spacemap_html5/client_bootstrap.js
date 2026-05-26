@@ -27,18 +27,9 @@ function updateGameLogic(now) {
         updateActionCooldowns();
         updateShieldEffects(t);
         updateTemporaryStatuses(t);
-        updatePortalJumpEffects(t);
-        updateSmartbombEffects(t);
-        updateEmpEffects(t);
         updateLaserBeams(t);
         updateRocketAttacks(t);
-        updateSabShots(t);
-        updateDamageBubbles(t);
         updateShieldBursts(t);
-        if (typeof updateShieldTwinkles === "function") updateShieldTwinkles(t);
-        updateHullDamageEffects(t);
-        updateRocketDamageEffects(t);
-        updateExplosions(t);
         remainingMs -= step;
     }
     if (typeof stepMapViewScaleAnimation === "function") {
@@ -47,6 +38,18 @@ function updateGameLogic(now) {
     lastTime = now;
     cameraX = shipX;
     cameraY = shipY;
+}
+
+function updateVisualEffectsOncePerFrame(now) {
+    updatePortalJumpEffects(now);
+    updateSmartbombEffects(now);
+    updateEmpEffects(now);
+    updateSabShots(now);
+    updateDamageBubbles(now);
+    if (typeof updateShieldTwinkles === "function") updateShieldTwinkles(now);
+    updateHullDamageEffects(now);
+    updateRocketDamageEffects(now);
+    updateExplosions(now);
 }
 
 const HTML_WINDOWS_UPDATE_INTERVAL_MS = 100;
@@ -104,6 +107,7 @@ function render(now) {
     if (typeof beginEntitySnapshotFrame === "function") beginEntitySnapshotFrame();
     try {
         updateGameLogic(now);
+        updateVisualEffectsOncePerFrame(now);
         const worldScale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
         const mapScale = typeof getMapViewScaleValue === "function" ? getMapViewScaleValue() : 1;
         const totalScale = worldScale * mapScale;
