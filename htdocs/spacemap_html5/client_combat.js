@@ -3161,7 +3161,7 @@ function warmFrameDefOnContext(warmCtx, frameDef, options = {}) {
         } else {
             warmCtx.drawImage(source, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
         }
-    } else if (frameDef.preparedPortalFrame && frameDef.img) {
+    } else if ((frameDef.preparedPortalFrame || frameDef.preparedPortalJumpFrame) && frameDef.img) {
         const trim = frameDef.trim;
         const preparedSource = frameDef.img;
         if (trim && trim.sw > 0 && trim.sh > 0) {
@@ -3331,13 +3331,16 @@ function buildPortalRuntimeWarmupTasks(warmCtx) {
     const addWarmTask = (label, frameFactory, options = {}) => {
         if (typeof frameFactory !== "function") return;
         const requirePreparedPortalFrame = !!options.requirePreparedPortalFrame;
-        const warmOptions = requirePreparedPortalFrame ? Object.assign({}, options) : options;
+        const requirePreparedPortalJumpFrame = !!options.requirePreparedPortalJumpFrame;
+        const warmOptions = requirePreparedPortalFrame || requirePreparedPortalJumpFrame ? Object.assign({}, options) : options;
         if (requirePreparedPortalFrame) delete warmOptions.requirePreparedPortalFrame;
+        if (requirePreparedPortalJumpFrame) delete warmOptions.requirePreparedPortalJumpFrame;
         tasks.push({
             label: label,
             run: () => {
                 const frameDef = frameFactory();
                 if (requirePreparedPortalFrame && (!frameDef || !frameDef.preparedPortalFrame)) return false;
+                if (requirePreparedPortalJumpFrame && (!frameDef || !frameDef.preparedPortalJumpFrame)) return false;
                 return warmFrameDefOnContext(warmCtx, frameDef, warmOptions);
             }
         });
@@ -3345,8 +3348,10 @@ function buildPortalRuntimeWarmupTasks(warmCtx) {
     if (typeof PORTAL_JUMP_ANIM !== "undefined" && PORTAL_JUMP_ANIM) {
         const jumpFrames = Math.max(0, Number(PORTAL_JUMP_ANIM.frameCount) || 0);
         for (let frame = 0; frame < jumpFrames; frame++) {
-            addWarmTask("portalJump:" + frame, () => getPortalJumpFrame(frame), {
-                composite: "lighter"
+            const prepareJumpFrame = typeof preparePortalJumpFrame === "function";
+            addWarmTask("portalJump:" + frame, () => prepareJumpFrame ? preparePortalJumpFrame(frame) : getPortalJumpFrame(frame), {
+                composite: "lighter",
+                requirePreparedPortalJumpFrame: prepareJumpFrame
             });
         }
     }
@@ -3859,7 +3864,18 @@ function drawPortalJumpEffects() {
         const OFFSET_X = -12;
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
-        if (frameDef.atlas) {
+        if (frameDef.preparedPortalJumpFrame && frameDef.img) {
+            const baseX = sx - frameDef.width / 2 + OFFSET_X;
+            const baseY = sy - frameDef.height / 2;
+            const trim = frameDef.trim;
+            if (trim && trim.sw > 0 && trim.sh > 0) {
+                const scaleX = frameDef.width / (frameDef.sw || frameDef.width || 1);
+                const scaleY = frameDef.height / (frameDef.sh || frameDef.height || 1);
+                ctx.drawImage(frameDef.img, trim.sx || 0, trim.sy || 0, trim.sw, trim.sh, baseX + trim.x * scaleX, baseY + trim.y * scaleY, trim.sw * scaleX, trim.sh * scaleY);
+            } else {
+                ctx.drawImage(frameDef.img, baseX, baseY, frameDef.width, frameDef.height);
+            }
+        } else if (frameDef.atlas) {
             const baseX = sx - frameDef.width / 2 + OFFSET_X;
             const baseY = sy - frameDef.height / 2;
             const trim = frameDef.trim;

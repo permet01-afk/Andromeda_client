@@ -6399,6 +6399,55 @@ function getPortalJumpFrame(frameIndex) {
     return frameDef;
 }
 
+function preparePortalJumpFrame(frameIndex) {
+    if (!PORTAL_JUMP_ANIM) return null;
+    const frameCount = PORTAL_JUMP_ANIM.frameCount || 1;
+    let idx = frameIndex % frameCount;
+    if (idx < 0) idx += frameCount;
+    if (portalJumpSpriteCache[idx] && portalJumpSpriteCache[idx].preparedPortalJumpFrame) {
+        return portalJumpSpriteCache[idx];
+    }
+    const atlasFrame = getPortalJumpFrame(idx);
+    if (!atlasFrame || atlasFrame.pendingAtlas || !atlasFrame.atlas) return atlasFrame;
+    const trim = atlasFrame.trim || {
+        x: 0,
+        y: 0,
+        sx: atlasFrame.sx,
+        sy: atlasFrame.sy,
+        sw: atlasFrame.sw,
+        sh: atlasFrame.sh
+    };
+    if (!trim || trim.sw <= 0 || trim.sh <= 0 || typeof document === "undefined") return atlasFrame;
+    const canvasFrame = document.createElement("canvas");
+    canvasFrame.width = Math.max(1, trim.sw | 0);
+    canvasFrame.height = Math.max(1, trim.sh | 0);
+    const frameCtx = canvasFrame.getContext("2d", {
+        alpha: true,
+        willReadFrequently: false
+    });
+    if (!frameCtx) return atlasFrame;
+    frameCtx.clearRect(0, 0, canvasFrame.width, canvasFrame.height);
+    frameCtx.drawImage(atlasFrame.atlas, trim.sx, trim.sy, trim.sw, trim.sh, 0, 0, canvasFrame.width, canvasFrame.height);
+    const preparedFrame = {
+        preparedPortalJumpFrame: true,
+        img: canvasFrame,
+        width: atlasFrame.width,
+        height: atlasFrame.height,
+        sw: atlasFrame.sw || atlasFrame.width,
+        sh: atlasFrame.sh || atlasFrame.height,
+        trim: {
+            x: trim.x || 0,
+            y: trim.y || 0,
+            sx: 0,
+            sy: 0,
+            sw: canvasFrame.width,
+            sh: canvasFrame.height
+        }
+    };
+    portalJumpSpriteCache[idx] = preparedFrame;
+    return preparedFrame;
+}
+
 function buildSmartbombPreparedFrameCanvas(idx) {
     const frameDef = getPyroAtlasFrame(SMARTBOMB_ANIM, idx);
     if (!frameDef || frameDef.pendingAtlas || !frameDef.atlas) return frameDef;
