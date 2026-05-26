@@ -4332,7 +4332,8 @@ const PORTAL_TYPE_TO_SPRITE_KEY = Object.freeze({
 
 window.PORTAL_TYPE_TO_SPRITE_KEY = PORTAL_TYPE_TO_SPRITE_KEY;
 
-const PREPARED_GALAXY_GATE_SPRITE_KEYS = Object.freeze({
+const PREPARED_PORTAL_SPRITE_KEYS = Object.freeze({
+    standard: true,
     galaxyGate1: true,
     galaxyGate2: true,
     galaxyGate3: true,
@@ -5142,7 +5143,7 @@ function getPortalAtlasFrame(animDef, frameIndex) {
 }
 
 function shouldPreparePortalSpriteFrame(portalType) {
-    return !!(PREPARED_GALAXY_GATE_SPRITE_KEYS && PREPARED_GALAXY_GATE_SPRITE_KEYS[portalType]);
+    return !!(PREPARED_PORTAL_SPRITE_KEYS && PREPARED_PORTAL_SPRITE_KEYS[portalType]);
 }
 
 function getPortalSpriteFrameCacheKey(portalType, animation, frameIndex) {

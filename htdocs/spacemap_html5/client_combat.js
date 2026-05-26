@@ -3359,9 +3359,9 @@ function buildPortalRuntimeWarmupTasks(warmCtx) {
                 if (!animDef) return;
                 const frameCount = Math.max(0, Number(animDef.frameCount) || 0);
                 for (let frame = 0; frame < frameCount; frame++) {
-                    const prepareGalaxyGateFrame = typeof shouldPreparePortalSpriteFrame === "function" && shouldPreparePortalSpriteFrame(portalKey) && typeof preparePortalSpriteFrame === "function";
-                    addWarmTask("portalGate:" + portalKey + ":" + animationName + ":" + frame, () => prepareGalaxyGateFrame ? preparePortalSpriteFrame(portalKey, animationName, frame) : getPortalSpriteFrame(portalKey, animationName, frame), {
-                        requirePreparedPortalFrame: prepareGalaxyGateFrame
+                    const preparePortalFrame = typeof shouldPreparePortalSpriteFrame === "function" && shouldPreparePortalSpriteFrame(portalKey) && typeof preparePortalSpriteFrame === "function";
+                    addWarmTask("portalGate:" + portalKey + ":" + animationName + ":" + frame, () => preparePortalFrame ? preparePortalSpriteFrame(portalKey, animationName, frame) : getPortalSpriteFrame(portalKey, animationName, frame), {
+                        requirePreparedPortalFrame: preparePortalFrame
                     });
                 }
             });
