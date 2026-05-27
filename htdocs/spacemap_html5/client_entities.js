@@ -20,6 +20,12 @@ const labPrices = {};
 
 const damageBubbles = [];
 
+const DAMAGE_BUBBLE_STACK_WINDOW_MS = 120;
+
+const DAMAGE_BUBBLE_STACK_STEP_PX = 12;
+
+const DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX = 36;
+
 let entityVisualLifeSeq = 1;
 const removedEntitySnapshots = new Map();
 const REMOVED_ENTITY_SNAPSHOT_TTL_MS = 3500;
@@ -199,6 +205,15 @@ function pushDamageBubble(entityId, delta, isHealHint = false, colorId = null, s
     if (entityId == null) return;
     const signed = parseInt(delta, 10);
     if (isNaN(signed) || signed === 0) return;
+    const now = performance.now();
+    let stackOffsetY = 0;
+    for (let i = damageBubbles.length - 1; i >= 0; i--) {
+        const bubble = damageBubbles[i];
+        if (!bubble || now - bubble.createdAt > DAMAGE_BUBBLE_STACK_WINDOW_MS) break;
+        if (bubble.entityId === entityId) {
+            stackOffsetY = Math.min(DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX, stackOffsetY + DAMAGE_BUBBLE_STACK_STEP_PX);
+        }
+    }
     const isHeal = isHealHint || signed > 0;
     const cid = colorId !== null && colorId !== undefined ? colorId : isHeal ? 2 : 0;
     const plus = showPlus !== null && showPlus !== undefined ? showPlus : false;
@@ -213,7 +228,8 @@ function pushDamageBubble(entityId, delta, isHealHint = false, colorId = null, s
         isHeal: isHeal,
         colorId: cid,
         showPlus: plus,
-        createdAt: performance.now()
+        stackOffsetY: stackOffsetY,
+        createdAt: now
     });
 }
 

@@ -2429,6 +2429,8 @@ function getRecentBeamAngleForTarget(targetId) {
     return null;
 }
 
+const DAMAGE_BUBBLE_FLASH_CLEARANCE_PX = 30;
+
 function updateDamageBubbles(now) {
     let keepCount = 0;
     for (let i = 0; i < damageBubbles.length; i++) {
@@ -2515,7 +2517,7 @@ function computeDamageBubbleScreenLift(position) {
         }
     }
     const safeVisualHeight = Math.max(18, visualHeight);
-    return (safeVisualHeight / 2 + energyOffset + 14) * viewportScale;
+    return (safeVisualHeight / 2 + energyOffset + DAMAGE_BUBBLE_FLASH_CLEARANCE_PX) * viewportScale;
 }
 
 function resolveDamageBubbleScreenPosition(b, out = null) {
@@ -2570,7 +2572,8 @@ function drawDamageBubbles() {
         const text = (plus ? "+" : "") + String(b.value);
         ctx.save();
         ctx.globalAlpha = alpha;
-        ctx.translate(bubbleScreenX, bubbleScreenY + offsetY);
+        const stackOffsetY = Number.isFinite(b.stackOffsetY) ? b.stackOffsetY : 0;
+        ctx.translate(bubbleScreenX, bubbleScreenY + offsetY - stackOffsetY);
         ctx.scale(scale, scale);
         ctx.font = "bold 12px Tahoma, sans-serif";
         ctx.textAlign = "center";

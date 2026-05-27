@@ -6120,7 +6120,7 @@ function showOreTooltip(e, oreKey, recipe) {
     if (typeof initActionDrawerTooltips === "function") {
         initActionDrawerTooltips();
     }
-    const tt = document.getElementById("adTooltip");
+    const tt = document.getElementById("amTooltip");
     if (!tt) return;
     tt.innerHTML = "";
     const header = document.createElement("div");
