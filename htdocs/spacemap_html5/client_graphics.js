@@ -562,8 +562,6 @@ const COLLECTOR_BEAM_ATLAS_SECTION = "loopingCollectorBeam";
 
 const FLASH_BOX_BEAM_FRAME_COUNT = 20;
 
-const FLASH_BOX_BEAM_FPS = 20;
-
 const FLASH_BOX_BEAM_DEFAULT_DURATION_MS = 1e3;
 
 const FLASH_BOX_BEAM_FRAME_BASE_PATH = "graphics/pyroEffects/beam1/frame_";
@@ -2650,14 +2648,6 @@ function getImageVisualBounds(img, alphaThreshold = 20) {
         width: maxX - minX + 1,
         height: maxY - minY + 1
     };
-}
-
-function getImageVisualRadius(img, alphaThreshold = 20) {
-    const bounds = getImageVisualBounds(img, alphaThreshold);
-    if (bounds && bounds.width > 0 && bounds.height > 0) {
-        return Math.max(bounds.width, bounds.height) / 2;
-    }
-    return Math.max(img.width, img.height) / 2;
 }
 
 const shipVisualRadiusCache = Object.create(null);
@@ -4856,10 +4846,6 @@ function getFlashPersistedWindowSetting(key) {
     return normalizeFlashWindowPersistenceEntry(key, __flashPersistedWindowSettingsByKey[key]);
 }
 
-function hasFlashPersistedWindowSetting(key) {
-    return !!getFlashPersistedWindowSetting(key);
-}
-
 function persistFlashWindowPersistenceFallback() {
     const store = readFlashWindowPersistenceStore();
     store.resolution = getFlashCurrentResolutionId();
@@ -6420,7 +6406,6 @@ function openUpgradeAmountPrompt(targetId, oreKey, maxAmount, previousAmount = 0
     const card = document.createElement("div");
     card.id = "refinePrompt";
     const title = document.createElement("h4");
-    const targetDef = getUpgradeTargetDef(targetId);
     title.textContent = flashLocaleText("lab_btn_update", "");
     card.appendChild(title);
     const question = document.createElement("p");

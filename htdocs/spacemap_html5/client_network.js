@@ -1191,10 +1191,6 @@ function hasActiveHeroMoveTarget() {
     return Number.isFinite(moveTargetX) && Number.isFinite(moveTargetY);
 }
 
-function hasActiveHeroMinimapMoveTarget() {
-    return moveTargetFromMinimap === true && hasActiveHeroMoveTarget();
-}
-
 function clearHeroAttackRuntimeState(options = {}) {
     const clearSelection = options.clearSelection === true;
     const preserveMoveTarget = options.preserveMoveTarget === true || options.preserveMinimapMove === true;
@@ -4152,10 +4148,8 @@ function handlePacket_D(parts, i) {
     const raw4 = parseInt(parts[i + 4] || "0", 10);
     const raw5 = parseInt(parts[i + 5] || "0", 10);
     const raw6 = parseInt(parts[i + 6] || "0", 10);
-    const raw7 = parseInt(parts[i + 7] || "0", 10);
     const looksLikeYourServer = raw4 === 1 && (raw3 === 0 || raw3 === 1);
     const tradeArea = looksLikeYourServer ? !!raw3 : !!raw4;
-    const repairZone = looksLikeYourServer ? !!raw4 : !!raw3;
     const radiation = !!raw5;
     const jumpArea = !!raw6;
     const tradeAreaChanged = tradeArea !== lastTradeZoneState;
@@ -4707,10 +4701,6 @@ function resolveLaserSalvoOffsets(attackerId, attackerSnap, visual) {
             salvosLength: salvos.length,
             salvoIndex: normalizedIndex
         };
-    };
-    const hasMeaningfulOffsets = offsets => {
-        if (!offsets || offsets.length === 0) return false;
-        return offsets.some(offset => Number.isFinite(offset?.x) && Number.isFinite(offset?.y) && (offset.x !== 0 || offset.y !== 0));
     };
     const pattern = typeof getExpansionPattern === "function" ? getExpansionPattern(expansionClassId, expansionTypeId) : null;
     const selected = buildOffsetsForPattern(pattern, currentIndex);

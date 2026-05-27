@@ -241,10 +241,6 @@ function hasCachedFlashPoiCollisionValues(fromX, fromY, toX, toY) {
     return flashPoiCollisionCache.valid && flashPoiCollisionCache.fromX === fromX && flashPoiCollisionCache.fromY === fromY && flashPoiCollisionCache.toX === toX && flashPoiCollisionCache.toY === toY && flashPoiCollisionCache.mapMinX === MAP_MIN_X && flashPoiCollisionCache.mapMinY === MAP_MIN_Y && flashPoiCollisionCache.mapWidth === MAP_WIDTH && flashPoiCollisionCache.mapHeight === MAP_HEIGHT && flashPoiCollisionCache.zonesRevision === flashPoiZonesRevision;
 }
 
-function hasCachedFlashPoiCollision(fromPoint, toPoint) {
-    return hasCachedFlashPoiCollisionValues(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y);
-}
-
 function cloneCachedFlashPoiCollision(out = null) {
     if (!flashPoiCollisionCache.hasResult) return null;
     if (out) {
@@ -285,10 +281,6 @@ function rememberFlashPoiCollisionValues(fromX, fromY, toX, toY, resultX, result
         x: resultX,
         y: resultY
     };
-}
-
-function rememberFlashPoiCollision(fromPoint, toPoint, result) {
-    return rememberFlashPoiCollisionValues(fromPoint.x, fromPoint.y, toPoint.x, toPoint.y, result ? result.x : 0, result ? result.y : 0, !!result);
 }
 
 function flashNoaScaleFactor() {
@@ -425,13 +417,6 @@ function isCollidingWithNoaScaled(p1, p2 = null) {
     return isCollidingWithNoaScaledCoords(p1.x, p1.y, p2.x, p2.y);
 }
 
-function getMiddlePoint(p1, p2) {
-    return {
-        x: Math.floor((p1.x - p2.x) * .5) + p2.x,
-        y: Math.floor((p1.y - p2.y) * .5) + p2.y
-    };
-}
-
 function getCollisionPointScaled(fromPoint, toPoint, out = null) {
     let p1x = fromPoint.x;
     let p1y = fromPoint.y;
@@ -488,28 +473,6 @@ function getOnePixelLessIntersectPoint(intersection, fromPoint, out = null) {
     return {
         x: x,
         y: y
-    };
-}
-
-function lineIntersect(a, b, c, d) {
-    const r = {
-        x: b.x - a.x,
-        y: b.y - a.y
-    };
-    const s = {
-        x: d.x - c.x,
-        y: d.y - c.y
-    };
-    const denom = r.x * s.y - r.y * s.x;
-    if (denom === 0) return null;
-    const uNum = (c.x - a.x) * r.y - (c.y - a.y) * r.x;
-    const tNum = (c.x - a.x) * s.y - (c.y - a.y) * s.x;
-    const t = tNum / denom;
-    const u = uNum / denom;
-    if (t < 0 || t > 1 || u < 0 || u > 1) return null;
-    return {
-        x: a.x + t * r.x,
-        y: a.y + t * r.y
     };
 }
 
@@ -8205,9 +8168,6 @@ function flashResolveActionMenuImagePath(resKeyOrPath) {
 }
 const FLASH_ACTION_MENU_SLOT_BG = flashResolveActionMenuImagePath("slot.png");
 const FLASH_ACTION_MENU_DISABLED_BG = flashResolveActionMenuImagePath("comb00_deactivated.png");
-const FLASH_ACTION_MENU_TAB_BG_DEFAULT = flashResolveActionMenuImagePath("comb01_std.png");
-const FLASH_ACTION_MENU_TAB_BG_HOVER = flashResolveActionMenuImagePath("comb01_hover.png");
-const FLASH_ACTION_MENU_TAB_BG_SELECTED = flashResolveActionMenuImagePath("comb01_selected.png");
 const FLASH_ACTION_MENU_ITEM_BG_DEFAULT = flashResolveActionMenuImagePath("comb02_std.png");
 const FLASH_ACTION_MENU_ITEM_BG_SELECTED = flashResolveActionMenuImagePath("comb02_selected.png");
 const FLASH_ACTION_MENU_FASTBUY_BG_DEFAULT = flashResolveActionMenuImagePath("comb04_std.png");

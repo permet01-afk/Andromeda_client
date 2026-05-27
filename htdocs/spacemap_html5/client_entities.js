@@ -968,15 +968,6 @@ function getHeroFlashMoveRadiusSquared() {
     return 100;
 }
 
-function isMouseInHeroFlashMoveableArea(screenX, screenY) {
-    if (!canvas) return false;
-    const centerX = canvas.width ? canvas.width / 2 : LOGICAL_WIDTH / 2;
-    const centerY = canvas.height ? canvas.height / 2 : LOGICAL_HEIGHT / 2;
-    const dx = screenX - centerX;
-    const dy = screenY - centerY;
-    return dx * dx + dy * dy >= getHeroFlashMoveRadiusSquared();
-}
-
 function getFlashPoiZonesRevisionForMoveCache() {
     return typeof window.getFlashPoiZonesRevision === "function" ? window.getFlashPoiZonesRevision() : 0;
 }
