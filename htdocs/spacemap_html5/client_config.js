@@ -4324,18 +4324,39 @@ const PORTAL_JUMP_ANIM = {
 };
 
 const SMARTBOMB_ANIM = {
-    // Lighter Smartbomb visual rebuilt from smartbomb1.swf: 28 frames, one compact atlas.
-    // The gameplay packet, cooldown, damage, range and item consumption stay unchanged.
-    frameCount: 28,
+    frameCount: 213,
     frameWidth: 320,
     frameHeight: 320,
-    atlasPath: "graphics/atlas/pyro_smartbomb1_v1_a.png",
-    atlasColumns: 7,
+    atlasColumns: 8,
     atlasCellWidth: 320,
     atlasCellHeight: 320,
     atlasPadding: 0,
-    // SWF source runs at 12 fps: 28 frames * ~83 ms = ~2.3 s, shorter than the old 213-frame effect.
-    frameDuration: 83,
+    atlasParts: [ {
+        startFrame: 0,
+        frameCount: 72,
+        atlasPath: "graphics/atlas/pyro_smartbomb1_flash_v1_a.png",
+        atlasColumns: 8,
+        atlasCellWidth: 320,
+        atlasCellHeight: 320,
+        atlasPadding: 0
+    }, {
+        startFrame: 72,
+        frameCount: 72,
+        atlasPath: "graphics/atlas/pyro_smartbomb1_flash_v1_b.png",
+        atlasColumns: 8,
+        atlasCellWidth: 320,
+        atlasCellHeight: 320,
+        atlasPadding: 0
+    }, {
+        startFrame: 144,
+        frameCount: 69,
+        atlasPath: "graphics/atlas/pyro_smartbomb1_flash_v1_c.png",
+        atlasColumns: 8,
+        atlasCellWidth: 320,
+        atlasCellHeight: 320,
+        atlasPadding: 0
+    } ],
+    frameDuration: 20,
     offsetX: 0,
     offsetY: 0
 };
@@ -4512,7 +4533,7 @@ const EMP_ANIM = {
 
 const SHIELD_ANIM_FPS = 30;
 const INSTA_SHIELD_ANIM_FPS = 50;
-const INSTA_SHIELD_FRAME_COUNT = 22;
+const INSTA_SHIELD_FRAME_COUNT = 134;
 const INSTA_SHIELD_VISUAL_DURATION_MS = INSTA_SHIELD_FRAME_COUNT / INSTA_SHIELD_ANIM_FPS * 1e3;
 
 const SHIELD_SPRITE_DEFS = {
@@ -4569,13 +4590,30 @@ const SHIELD_SPRITE_DEFS = {
         fps: INSTA_SHIELD_ANIM_FPS,
         loop: false,
         durationMs: INSTA_SHIELD_VISUAL_DURATION_MS,
-        atlasPath: "graphics/atlas/insta_shield_v2_light.png",
+        prepareFrames: true,
         frameWidth: 320,
         frameHeight: 320,
-        atlasColumns: 6,
-        atlasCellWidth: 322,
-        atlasCellHeight: 322,
-        atlasPadding: 1
+        atlasColumns: 8,
+        atlasCellWidth: 320,
+        atlasCellHeight: 320,
+        atlasPadding: 0,
+        atlasParts: [ {
+            startFrame: 0,
+            frameCount: 72,
+            atlasPath: "graphics/atlas/insta_shield_flash_v1_a.png",
+            atlasColumns: 8,
+            atlasCellWidth: 320,
+            atlasCellHeight: 320,
+            atlasPadding: 0
+        }, {
+            startFrame: 72,
+            frameCount: 62,
+            atlasPath: "graphics/atlas/insta_shield_flash_v1_b.png",
+            atlasColumns: 8,
+            atlasCellWidth: 320,
+            atlasCellHeight: 320,
+            atlasPadding: 0
+        } ]
     },
     invincibility: {
         frameCount: 31,
@@ -6411,12 +6449,11 @@ function preparePortalJumpFrame(frameIndex) {
     return preparedFrame;
 }
 
-function buildSmartbombPreparedFrameCanvas(idx) {
-    const frameDef = getPyroAtlasFrame(SMARTBOMB_ANIM, idx);
+function buildPreparedPyroFrameCanvas(frameDef, markerName, frameIndex) {
     if (!frameDef || frameDef.pendingAtlas || !frameDef.atlas) return frameDef;
-    const sw = frameDef.sw || frameDef.width || SMARTBOMB_ANIM.frameWidth || 0;
-    const sh = frameDef.sh || frameDef.height || SMARTBOMB_ANIM.frameHeight || 0;
-    if (sw <= 0 || sh <= 0) return frameDef;
+    const sw = frameDef.sw || frameDef.width || 0;
+    const sh = frameDef.sh || frameDef.height || 0;
+    if (sw <= 0 || sh <= 0 || typeof document === "undefined") return frameDef;
     try {
         const frameCanvas = document.createElement("canvas");
         frameCanvas.width = sw;
@@ -6431,12 +6468,16 @@ function buildSmartbombPreparedFrameCanvas(idx) {
         frameCanvas.complete = true;
         frameCanvas.naturalWidth = sw;
         frameCanvas.naturalHeight = sh;
-        frameCanvas.__andromedaPreparedSmartbombFrame = true;
-        frameCanvas.__andromedaSmartbombFrameIndex = idx;
+        frameCanvas[markerName] = true;
+        frameCanvas.__andromedaPreparedFrameIndex = frameIndex;
         return frameCanvas;
     } catch (_) {
         return frameDef;
     }
+}
+
+function buildSmartbombPreparedFrameCanvas(idx) {
+    return buildPreparedPyroFrameCanvas(getPyroAtlasFrame(SMARTBOMB_ANIM, idx), "__andromedaPreparedSmartbombFrame", idx);
 }
 
 function getSmartbombFrame(frameIndex) {
@@ -6446,7 +6487,7 @@ function getSmartbombFrame(frameIndex) {
     if (idx < 0) idx += frameCount;
     if (smartbombSpriteCache[idx]) return smartbombSpriteCache[idx];
     const frameDef = buildSmartbombPreparedFrameCanvas(idx);
-    if (frameDef && !frameDef.pendingAtlas) {
+    if (frameDef && !frameDef.pendingAtlas && !frameDef.atlas) {
         smartbombSpriteCache[idx] = frameDef;
     }
     return frameDef;
@@ -6488,6 +6529,22 @@ function getEmpBlitzFrame(frame) {
     return frameDef;
 }
 
+function prepareShieldSpriteFrame(name, frameIndex) {
+    const def = SHIELD_SPRITE_DEFS[name];
+    if (!def) return null;
+    const frameCount = def.frameCount || 1;
+    let idx = frameIndex % frameCount;
+    if (idx < 0) idx += frameCount;
+    const key = name + "_" + idx;
+    const cached = shieldSpriteCache[key];
+    if (cached) return cached;
+    const prepared = buildPreparedPyroFrameCanvas(getPyroAtlasFrame(def, idx), "__andromedaPreparedShieldFrame", idx);
+    if (prepared && !prepared.pendingAtlas && !prepared.atlas) {
+        shieldSpriteCache[key] = prepared;
+    }
+    return prepared;
+}
+
 function getShieldSpriteFrame(name, frameIndex) {
     const def = SHIELD_SPRITE_DEFS[name];
     if (!def) return null;
@@ -6496,6 +6553,7 @@ function getShieldSpriteFrame(name, frameIndex) {
     if (idx < 0) idx += frameCount;
     const key = name + "_" + idx;
     if (shieldSpriteCache[key]) return shieldSpriteCache[key];
+    if (def.prepareFrames) return prepareShieldSpriteFrame(name, idx);
     const frameDef = getPyroAtlasFrame(def, idx);
     if (frameDef && !frameDef.pendingAtlas) {
         shieldSpriteCache[key] = frameDef;

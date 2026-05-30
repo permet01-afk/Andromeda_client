@@ -2225,6 +2225,7 @@ function drawShieldAura(sx, sy, currentShield, maxShield, ish, invincible, ishSi
     }
     const frameDef = getShieldSpriteFrame(spriteKey, frame);
     if (!frameDef || frameDef.pendingAtlas) return;
+    if (spriteKey === "insta" && frameDef.atlas && !frameDef.__andromedaPreparedShieldFrame) return;
     const pulse = (1 + Math.sin(shieldAnimTime * 4) * .05) * entityScale;
     const alpha = .35 + .25 * Math.min(1, currentShield / effectiveMax);
     ctx.save();

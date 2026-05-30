@@ -3644,8 +3644,9 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
         }
         const instaDef = SHIELD_SPRITE_DEFS && SHIELD_SPRITE_DEFS.insta ? SHIELD_SPRITE_DEFS.insta : null;
         if (instaDef) {
-            for (const frame of buildRuntimeWarmupFrameSequence(instaDef.frameCount || 1, 2)) {
-                addWarmTask("ish:" + frame, () => getShieldSpriteFrame("insta", frame), {
+            const prepareIshFrame = typeof prepareShieldSpriteFrame === "function";
+            for (const frame of buildRuntimeWarmupFrameSequence(instaDef.frameCount || 1, 1)) {
+                addWarmTask("ish:" + frame, () => prepareIshFrame ? prepareShieldSpriteFrame("insta", frame) : getShieldSpriteFrame("insta", frame), {
                     composite: "lighter"
                 });
             }
@@ -3962,9 +3963,6 @@ function drawSmartbombEffects(options = null) {
         if (frame < 0 || frame >= SMARTBOMB_ANIM.frameCount) continue;
         const frameDef = getSmartbombFrame(frame);
         if (!frameDef || frameDef.pendingAtlas) continue;
-        // Anti-freeze guard: do not fall back to drawing directly from the big atlas in gameplay.
-        // The prepared frame cache is built during warmCriticalBootRuntimeVisuals(). If a frame is
-        // not ready yet, skipping one visual frame is better than blocking the main thread.
         if (frameDef.atlas && !frameDef.__andromedaPreparedSmartbombFrame) continue;
         const sx = mapToScreenX(fx.x) + (SMARTBOMB_ANIM.offsetX || 0);
         const sy = mapToScreenY(fx.y) + (SMARTBOMB_ANIM.offsetY || 0);
