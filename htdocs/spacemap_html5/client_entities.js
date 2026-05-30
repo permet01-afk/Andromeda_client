@@ -1324,13 +1324,22 @@ canvas.addEventListener("mousedown", e => {
     const clickedShip = findEntityAtScreenPos(screenX, screenY, isShipOrNpcEntity, 60, true);
     if (clickedShip) {
         if (selectedTargetId !== null && selectedTargetId !== clickedShip.id) {
-            if (currentLaserTargetId !== null || attackIntentTargetId !== null) {
+            const logActiveTargetId = typeof heroCombatLogActiveTargetId !== "undefined" ? heroCombatLogActiveTargetId : null;
+            const hasConfirmedAttackOnSelected = currentLaserTargetId === selectedTargetId || confirmedAttackTargetId === selectedTargetId || logActiveTargetId === selectedTargetId;
+            const hasAttackStateOnSelected = hasConfirmedAttackOnSelected || attackIntentTargetId === selectedTargetId || pendingAttackAckTargetId === selectedTargetId;
+            if (hasAttackStateOnSelected) {
                 if (typeof logFlashCombatLocaleMessage === "function") {
-                    logFlashCombatLocaleMessage("attstop", selectedTargetId, targetName => `Attack on ${targetName} was cancelled.`, "CLIENT");
+                    if (hasConfirmedAttackOnSelected) {
+                        logFlashCombatLocaleMessage("attstop", selectedTargetId, targetName => `Attack on ${targetName} was cancelled.`, "CLIENT");
+                    }
                 }
                 sendLaserStop(selectedTargetId, true);
                 currentLaserTargetId = null;
                 attackIntentTargetId = null;
+                confirmedAttackTargetId = null;
+                pendingAttackAckTargetId = null;
+                pendingAttackAckStartMs = 0;
+                if (typeof clearHeroCombatLogActiveTarget === "function") clearHeroCombatLogActiveTarget(selectedTargetId);
                 isChasingTarget = false;
             }
         }
@@ -1540,7 +1549,10 @@ function toggleLaserOnSelectedTarget() {
         isChasingTarget = false;
         return;
     }
-    const isAttackingSelected = attackIntentTargetId === selectedTargetId || confirmedAttackTargetId === selectedTargetId || pendingAttackAckTargetId === selectedTargetId || currentLaserTargetId === selectedTargetId;
+    const logActiveTargetId = typeof heroCombatLogActiveTargetId !== "undefined" ? heroCombatLogActiveTargetId : null;
+    const isConfirmedAttackingSelected = confirmedAttackTargetId === selectedTargetId || currentLaserTargetId === selectedTargetId || logActiveTargetId === selectedTargetId;
+    const isPendingAttackSelected = attackIntentTargetId === selectedTargetId || pendingAttackAckTargetId === selectedTargetId;
+    const isAttackingSelected = isConfirmedAttackingSelected || isPendingAttackSelected;
     if (typeof isHeroGroupMemberTarget === "function" && isHeroGroupMemberTarget(selectedTargetId)) {
         if (isAttackingSelected && typeof sendLaserStop === "function") {
             sendLaserStop(selectedTargetId, true);
@@ -1553,7 +1565,7 @@ function toggleLaserOnSelectedTarget() {
         return;
     }
     if (isAttackingSelected) {
-        if (typeof logFlashCombatLocaleMessage === "function") {
+        if (isConfirmedAttackingSelected && typeof logFlashCombatLocaleMessage === "function") {
             logFlashCombatLocaleMessage("attstop", selectedTargetId, targetName => `Attack on ${targetName} was cancelled.`, "CLIENT");
         }
         sendLaserStop(selectedTargetId, true);
@@ -1711,17 +1723,15 @@ document.addEventListener("visibilitychange", () => {
     if (document.hidden) resetFlashGameplayKeys();
 });
 
-function addInfoMessage(text) {
+function addInfoMessage(text, durationMs) {
     if (!text) return;
+    const safeDuration = Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 2500;
     infoMessages.unshift({
         text: String(text),
         createdAt: performance.now(),
-        duration: 2500
+        duration: safeDuration
     });
     if (infoMessages.length > 6) infoMessages.pop();
-    if (typeof addLogEntry === "function") {
-        addLogEntry(text);
-    }
 }
 
 function mapToScreenX(x) {

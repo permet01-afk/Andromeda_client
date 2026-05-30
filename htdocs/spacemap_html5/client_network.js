@@ -985,6 +985,7 @@ const PACKET_HANDLERS = {
     i: handlePacket_i,
     1: handlePacket_move,
     A: handlePacket_A,
+    MSG: handlePacket_displayMessage,
     d: handlePacket_d,
     RDY: handlePacket_RDY,
     c: handlePacket_c,
@@ -1082,10 +1083,48 @@ function pushFlashLogMessageFromServer(text, sourceOpcode) {
 function addServerInfoLogMessage(text, sourceOpcode) {
     const msg = String(text == null ? "" : text);
     if (!msg) return;
-    if (typeof addInfoMessage === "function") {
-        addInfoMessage(msg);
-    }
     pushFlashLogMessageFromServer(msg, sourceOpcode || "INFO");
+}
+
+function addFlashScreenMessage(text, durationMs) {
+    const msg = String(text == null ? "" : text);
+    if (!msg) return;
+    if (typeof addInfoMessage === "function") {
+        addInfoMessage(msg, durationMs);
+    }
+}
+
+function resolveFlashDisplayMessage(payloadParts) {
+    const payload = Array.isArray(payloadParts) ? payloadParts.map(part => String(part == null ? "" : part)) : [];
+    if (payload.length === 0) return "";
+    let localeKey = "";
+    let replacementParts = [];
+    if (payload.length >= 3 && /^-?\d+$/.test(payload[1])) {
+        localeKey = payload[2];
+        replacementParts = payload.slice(3);
+    } else {
+        localeKey = payload[0];
+        replacementParts = payload.slice(1);
+    }
+    if (!localeKey) return "";
+    if (replacementParts.length === 0) {
+        return flashLocaleGetTextRaw(localeKey) || localeKey;
+    }
+    const localized = flashLocaleGetTextRaw(localeKey);
+    if (localized) {
+        return assembleFlashLocalizedLogMessage([ localeKey ].concat(replacementParts)) || localized;
+    }
+    return [ localeKey ].concat(replacementParts).filter(Boolean).join(" ");
+}
+
+function getFlashDisplayMessageDurationMs(payloadParts) {
+    return 5000;
+}
+
+function handleFlashDisplayMessagePayload(payloadParts) {
+    const msg = resolveFlashDisplayMessage(payloadParts);
+    if (!msg) return;
+    addFlashScreenMessage(msg, getFlashDisplayMessageDurationMs(payloadParts));
 }
 
 const FLASH_SHIP_SKILL_HERO_LOG_MESSAGES = Object.freeze({
@@ -3243,6 +3282,13 @@ function handlePacket_A(parts, i) {
             break;
         }
 
+      case "MSG":
+      case "DISPLAY_MESSAGE":
+        {
+            handleFlashDisplayMessagePayload(parts.slice(i + 1));
+            break;
+        }
+
       case "LUP":
         {
             const newLevel = parseInt(parts[i + 1], 10);
@@ -3551,6 +3597,10 @@ function handlePacket_A(parts, i) {
       default:
         break;
     }
+}
+
+function handlePacket_displayMessage(parts, i) {
+    handleFlashDisplayMessagePayload(parts.slice(i));
 }
 
 function handlePacket_B(parts, i) {
