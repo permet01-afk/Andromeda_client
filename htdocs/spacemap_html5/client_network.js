@@ -1084,6 +1084,28 @@ function addServerInfoLogMessage(text, sourceOpcode) {
     const msg = String(text == null ? "" : text);
     if (!msg) return;
     pushFlashLogMessageFromServer(msg, sourceOpcode || "INFO");
+    addInstantLogMessage(msg, sourceOpcode);
+}
+
+function isFlashInstantLogEnabled() {
+    const explicitWindowValue = typeof window !== "undefined" ? window.showInstantLog : undefined;
+    if (explicitWindowValue !== undefined) return explicitWindowValue !== false && explicitWindowValue !== 0 && explicitWindowValue !== "0";
+    const configValue = cfg && (cfg.instantLogEnabled ?? cfg.instantlogEnabled ?? cfg.showInstantLog);
+    if (configValue !== undefined) return configValue !== false && configValue !== 0 && configValue !== "0";
+    return true;
+}
+
+function getInstantLogDurationMs(sourceOpcode) {
+    return sourceOpcode === "HP" ? 1e4 : 4e3;
+}
+
+function addInstantLogMessage(text, sourceOpcode) {
+    if (!isFlashInstantLogEnabled()) return;
+    const msg = String(text == null ? "" : text);
+    if (!msg) return;
+    if (typeof addInfoMessage === "function") {
+        addInfoMessage(msg, getInstantLogDurationMs(sourceOpcode));
+    }
 }
 
 function addFlashScreenMessage(text, durationMs) {
@@ -3253,7 +3275,7 @@ function handlePacket_A(parts, i) {
         {
             const msg = String(parts[i + 1] || "");
             if (msg) {
-                pushFlashLogMessageFromServer(msg, "STD");
+                addServerInfoLogMessage(msg, "STD");
             }
             break;
         }
@@ -3267,7 +3289,7 @@ function handlePacket_A(parts, i) {
             const localeKey = String(payload[0] || "");
             const localized = assembleFlashLocalizedLogMessage(payload);
             if (localized) {
-                pushFlashLogMessageFromServer(localized, "STM");
+                addServerInfoLogMessage(localized, "STM");
             }
             if (localeKey) {
                 const denyKeys = new Set([ "jump_cpu_failed_attack", "jump_cpu_failed_attack2", "jump_cpu_failed_ontarget", "jump_cpu_failed_map", "jump_cpu_malfunction", "jump_cpu_failed_time", "jumpgate_failed_pvp_map", "jumpgate_failed_no_gate" ]);
