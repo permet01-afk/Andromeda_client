@@ -1,0 +1,8 @@
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\bin\Debug\Andromeda Emulator.exe
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\bin\Debug\Andromeda Emulator.pdb
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\bin\Debug\MySql.Data.dll
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\obj\Debug\Andromeda Emulator.csprojAssemblyReference.cache
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\obj\Debug\Andromeda Emulator.csproj.CoreCompileInputs.cache
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\obj\Debug\Andromeda Emulator.csproj.CopyComplete
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\obj\Debug\Andromeda Emulator.exe
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\obj\Debug\Andromeda Emulator.pdb

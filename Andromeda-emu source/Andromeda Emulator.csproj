@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--Project was exported from assembly: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe-->
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{FF1A2832-6C91-4013-9E43-FAF76040FC29}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Andromeda Emulator</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <RootNamespace>OrbitReborn_Emulator</RootNamespace>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.0</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="MySql.Data">
+      <HintPath>lib\MySql.Data.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Communication\Outgoing\MapHeroInitComposer.cs" />
+    <Compile Include="Game\Characters\ExperienceSystem.cs" />
+    <Compile Include="Game\Chat\ChatAction.cs" />
+    <Compile Include="Game\Event\1v1.cs" />
+    <Compile Include="Game\GalaxyGates\GalaxyGatePortalService.cs" />
+    <Compile Include="Game\GalaxyGates\GalaxyGateRewardService.cs" />
+    <Compile Include="Game\GalaxyGates\GalaxyGateWaveService.cs" />
+    <Compile Include="Game\Handlers\AutoEvent.cs" />
+    <Compile Include="Game\Handlers\GroupManager.cs" />
+    <Compile Include="Game\Handlers\Groupsystem.cs" />
+    <Compile Include="Game\Maps\Collectables\ApocalypseBox.cs" />
+    <Compile Include="Game\Maps\Collectables\SilverBootyKey.cs" />
+    <Compile Include="Game\Maps\Collectables\GoldBootyBox.cs" />
+    <Compile Include="Game\Maps\Collectables\RedBootyBox.cs" />
+    <Compile Include="Game\Maps\MapAccessService.cs" />
+    <Compile Include="ScreenShotDemo\ScreenCapture.cs" />
+    <Compile Include="Input.cs" />
+    <Compile Include="OutputLevel.cs" />
+    <Compile Include="Output.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="UnixTimestamp.cs" />
+    <Compile Include="Communication\ClientMessage.cs" />
+    <Compile Include="Communication\OpcodesIn.cs" />
+    <Compile Include="Communication\OpcodesOut.cs" />
+    <Compile Include="Communication\ServerMessage.cs" />
+    <Compile Include="Communication\Incoming\ProcessRequestCallback.cs" />
+    <Compile Include="Communication\Incoming\DataRouter.cs" />
+    <Compile Include="Communication\Outgoing\FightSelectPlayerComposer.cs" />
+    <Compile Include="Communication\Outgoing\MapPortalsComposer.cs" />
+    <Compile Include="Communication\Outgoing\MapUserLeaveComposer.cs" />
+    <Compile Include="Communication\Outgoing\MapShipMovementComposer.cs" />
+    <Compile Include="Communication\Outgoing\MapUserEnterComposer.cs" />
+    <Compile Include="Communication\Outgoing\MapUserMovementListComposer.cs" />
+    <Compile Include="Communication\Outgoing\MapUserObjectListComposer.cs" />
+    <Compile Include="Communication\Outgoing\PacketComposer.cs" />
+    <Compile Include="Communication\Outgoing\UserDataComposer.cs" />
+    <Compile Include="Config\ConfigElementType.cs" />
+    <Compile Include="Config\ConfigElement.cs" />
+    <Compile Include="Config\ConfigManager.cs" />
+    <Compile Include="Config\Constants.cs" />
+    <Compile Include="Config\Localization.cs" />
+    <Compile Include="Game\Characters\CharacterConfig.cs" />
+    <Compile Include="Game\Characters\CharacterInfo.cs" />
+    <Compile Include="Game\Characters\CharacterInfoLoader.cs" />
+    <Compile Include="Game\Characters\Settings.cs" />
+    <Compile Include="Game\Chat\ChatManager.cs" />
+    <Compile Include="Game\Event\PvPFarming.cs" />
+    <Compile Include="Game\Event\Invasion.cs" />
+    <Compile Include="Game\Event\Survivor.cs" />
+    <Compile Include="Game\Event\Spaceball.cs" />
+    <Compile Include="Game\Event\TeamDeathMatch.cs" />
+    <Compile Include="Game\Handlers\Chat.cs" />
+    <Compile Include="Game\Handlers\Fight.cs" />
+    <Compile Include="Game\Handlers\Handshake.cs" />
+    <Compile Include="Game\Handlers\Laboratory.cs" />
+    <Compile Include="Game\Handlers\Others.cs" />
+    <Compile Include="Game\Handlers\SelectAction.cs" />
+    <Compile Include="Game\Handlers\SettingsHandlers.cs" />
+    <Compile Include="Game\Handlers\ShipMovement.cs" />
+    <Compile Include="Game\Laboratory\LabInfos.cs" />
+    <Compile Include="Game\Maps\MapActorType.cs" />
+    <Compile Include="Game\Maps\MapActor.cs" />
+    <Compile Include="Game\Maps\MapInfo.cs" />
+    <Compile Include="Game\Maps\MapInfoLoader.cs" />
+    <Compile Include="Game\Maps\MapInstance.cs" />
+    <Compile Include="Game\Maps\MapHandler.cs" />
+    <Compile Include="Game\Maps\MapManager.cs" />
+    <Compile Include="Game\Maps\Collectables\Collectable.cs" />
+    <Compile Include="Game\Maps\Collectables\BonusBox.cs" />
+    <Compile Include="Game\Maps\Collectables\ShieldBox.cs" />
+    <Compile Include="Game\Maps\Collectables\LifeBox.cs" />
+    <Compile Include="Game\Maps\Collectables\CargoBox.cs" />
+    <Compile Include="Game\Maps\Collectables\SpaceballBox.cs" />
+    <Compile Include="Game\Maps\Collectables\BootyBox.cs" />
+    <Compile Include="Game\Misc\CrossdomainPolicy.cs" />
+    <Compile Include="Game\Misc\HappyHour.cs" />
+    <Compile Include="Game\Misc\PvpManager.cs" />
+    <Compile Include="Game\Moderation\ModerationBanManager.cs" />
+    <Compile Include="Game\Quests\QuestOreProgress.cs" />
+    <Compile Include="Game\Quests\QuestObjectiveProgress.cs" />
+    <Compile Include="Game\Npcs\Npc.cs" />
+    <Compile Include="Game\Npcs\NpcAI.cs" />
+    <Compile Include="Game\Npcs\NpcManager.cs" />
+    <Compile Include="Game\Portal\PortalInfo.cs" />
+    <Compile Include="Game\Portal\PortalManager.cs" />
+    <Compile Include="Game\Sessions\Session.cs" />
+    <Compile Include="Game\Sessions\SessionManager.cs" />
+    <Compile Include="Game\Sessions\SingleSignOnAuthenticator.cs" />
+    <Compile Include="Util\CharacterResolverCache.cs" />
+    <Compile Include="Util\DistanceUtil.cs" />
+    <Compile Include="Util\RandomProvider.cs" />
+    <Compile Include="Util\ByteUtil.cs" />
+    <Compile Include="Util\GeneralFunctions.cs" />
+    <Compile Include="Util\StatisticsSyncUtil.cs" />
+    <Compile Include="Libs\CDictionnary`2.cs" />
+    <Compile Include="Libs\CList`1.cs" />
+    <Compile Include="Network\OnNewConnectionCallback.cs" />
+    <Compile Include="Network\SocketListener.cs" />
+    <Compile Include="Specialized\TimerManager.cs" />
+    <Compile Include="Specialized\Vector2.cs" />
+    <Compile Include="Storage\SqlDatabaseClient.cs" />
+    <Compile Include="Storage\SqlDatabaseManager.cs" />
+    <Compile Include="AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

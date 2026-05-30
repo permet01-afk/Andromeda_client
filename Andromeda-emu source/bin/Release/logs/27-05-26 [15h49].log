@@ -1,0 +1,108 @@
+## OrbitReborn## Server output log file## mercredi, 27 mai 2026 15:49:52[15h49s52m76]Initializing Andromeda's Emulator...[15h49s52m77]Configuration value 'debug.sso' missing; using default value.[15h49s52m77]Initializing MySQL manager...[15h49s54m13]Setting up server listener on port 8080...[15h49s54m13]Resetting database counters and statistics...[15h49s54m14]Intializing game components and workers...[15h49s54m26][MapMgr] Map instance 1 has been loaded for Map 1.[15h49s54m27][MapMgr] Map instance 2 has been loaded for Map 5.[15h49s54m27][MapMgr] Map instance 3 has been loaded for Map 9.[15h49s54m28][MapMgr] Map instance 4 has been loaded for Map 2.[15h49s54m28][MapMgr] Map instance 5 has been loaded for Map 6.[15h49s54m28][MapMgr] Map instance 6 has been loaded for Map 10.[15h49s54m29][MapMgr] Map instance 7 has been loaded for Map 3.[15h49s54m29][MapMgr] Map instance 8 has been loaded for Map 7.[15h49s54m29][MapMgr] Map instance 9 has been loaded for Map 11.[15h49s54m30][MapMgr] Map instance 10 has been loaded for Map 4.[15h49s54m30][MapMgr] Map instance 11 has been loaded for Map 8.[15h49s54m30][MapMgr] Map instance 12 has been loaded for Map 12.[15h49s54m31][MapMgr] Map instance 13 has been loaded for Map 17.[15h49s54m31][MapMgr] Map instance 14 has been loaded for Map 21.[15h49s54m31][MapMgr] Map instance 15 has been loaded for Map 25.[15h49s54m32][MapMgr] Map instance 16 has been loaded for Map 18.[15h49s54m32][MapMgr] Map instance 17 has been loaded for Map 22.[15h49s54m32][MapMgr] Map instance 18 has been loaded for Map 26.[15h49s54m33][MapMgr] Map instance 19 has been loaded for Map 19.[15h49s54m33][MapMgr] Map instance 20 has been loaded for Map 23.[15h49s54m33][MapMgr] Map instance 21 has been loaded for Map 27.[15h49s54m34][MapMgr] Map instance 22 has been loaded for Map 20.[15h49s54m34][MapMgr] Map instance 23 has been loaded for Map 24.[15h49s54m34][MapMgr] Map instance 24 has been loaded for Map 28.[15h49s54m39]Orbit Reborn has initialized successfully (1,64 seconds). Ready for connections.[15h49s54m39]Press the ENTER key for command input. Shut down server with 'STOP' command.[15h50s14m25][MapMgr] Unloaded map instance 1.[15h50s14m25][MapMgr] Unloaded map instance 2.[15h50s14m25][MapMgr] Unloaded map instance 3.[15h50s14m25][MapMgr] Unloaded map instance 4.[15h50s14m26][MapMgr] Unloaded map instance 5.[15h50s14m26][MapMgr] Unloaded map instance 6.[15h50s14m27][MapMgr] Unloaded map instance 7.[15h50s14m27][MapMgr] Unloaded map instance 8.[15h50s14m27][MapMgr] Unloaded map instance 9.[15h50s14m27][MapMgr] Unloaded map instance 10.[15h50s14m27][MapMgr] Unloaded map instance 11.[15h50s14m27][MapMgr] Unloaded map instance 12.[15h50s14m27][MapMgr] Unloaded map instance 13.[15h50s14m27][MapMgr] Unloaded map instance 14.[15h50s14m27][MapMgr] Unloaded map instance 15.[15h50s14m27][MapMgr] Unloaded map instance 16.[15h50s14m28][MapMgr] Unloaded map instance 17.[15h50s14m28][MapMgr] Unloaded map instance 18.[15h50s14m28][MapMgr] Unloaded map instance 19.[15h50s14m28][MapMgr] Unloaded map instance 20.[15h50s14m28][MapMgr] Unloaded map instance 21.[15h50s14m28][MapMgr] Unloaded map instance 22.[15h50s14m28][MapMgr] Unloaded map instance 23.[15h50s14m28][MapMgr] Unloaded map instance 24.[15h50s17m05]Accepted incoming connection from 127.0.0.1.[15h50s17m06][SESSION] Creating new session id=1 from 127.0.0.1[15h50s17m08][AUTH] TryAuthenticate sessionId=1 remote=127.0.0.1[15h50s17m09]sso : '5fc7e95d0b2042118e3de3bea010ccc9'[15h50s17m10]User lefaucheur (ID 1) has logged in from 127.0.0.1.[15h50s17m15][AUTH] OK sessionId=1 charId=1[15h50s17m15]LOGIN OK for ticket 5fc7e95d0b2042118e3de3bea010ccc9 from 127.0.0.1[15h50s17m15][LOGIN_FLOW] Begin post-login data refresh for 1[15h50s17m31][LOGIN_FLOW] DB refresh completed for 1[15h50s17m31][LOGIN_FLOW] Sending settings/init packets for 1[15h50s17m32][LOGIN_FLOW] Preparing map 1 for 1[15h50s17m32][MapMgr] Map instance 25 has been loaded for Map 1.[15h50s17m40][LOGIN_FLOW] Post-login sequence completed for 1[15h50s17m52]Accepted incoming connection from 127.0.0.1.[15h50s17m52][SESSION] Creating new session id=2 from 127.0.0.1[15h50s29m32][Handshake] Primary ammo flush failed for charId=1: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 115
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5387
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 293[15h50s30m31]RefreshEquippedExtras() error: Unable to connect to any of the specified MySQL hosts.[15h50s30m35][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 115
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5852
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 293[15h50s33m45][Handshake] Primary ammo flush failed for charId=1: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 115
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5387
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 293[15h50s34m24][MapMgr] Disposed of map instance 1 and associated resources.[15h50s34m24][MapMgr] Disposed of map instance 2 and associated resources.[15h50s34m24][MapMgr] Disposed of map instance 3 and associated resources.[15h50s34m24][MapMgr] Disposed of map instance 4 and associated resources.[15h50s34m25][MapMgr] Disposed of map instance 5 and associated resources.[15h50s34m25][MapMgr] Disposed of map instance 6 and associated resources.[15h50s34m26][MapMgr] Disposed of map instance 7 and associated resources.[15h50s34m26][MapMgr] Disposed of map instance 8 and associated resources.[15h50s34m26][MapMgr] Disposed of map instance 9 and associated resources.[15h50s34m26][MapMgr] Disposed of map instance 10 and associated resources.[15h50s34m27][MapMgr] Disposed of map instance 11 and associated resources.[15h50s34m27][MapMgr] Disposed of map instance 12 and associated resources.[15h50s34m27][MapMgr] Disposed of map instance 13 and associated resources.[15h50s34m27][MapMgr] Disposed of map instance 14 and associated resources.[15h50s34m27][MapMgr] Disposed of map instance 15 and associated resources.[15h50s34m27][MapMgr] Disposed of map instance 16 and associated resources.[15h50s34m27][MapMgr] Disposed of map instance 17 and associated resources.[15h50s34m28][MapMgr] Disposed of map instance 18 and associated resources.[15h50s34m28][MapMgr] Disposed of map instance 19 and associated resources.[15h50s34m28][MapMgr] Disposed of map instance 20 and associated resources.[15h50s34m28][MapMgr] Disposed of map instance 21 and associated resources.[15h50s34m28][MapMgr] Disposed of map instance 22 and associated resources.[15h50s34m28][MapMgr] Disposed of map instance 23 and associated resources.[15h50s34m28][MapMgr] Disposed of map instance 24 and associated resources.[15h50s34m50][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 115
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5852
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 293[15h50s38m46][Handshake] Primary ammo flush failed for charId=1: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 115
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5387
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 293[15h50s39m48][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 115
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5852
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 293[15h50s43m49][Handshake] Primary ammo flush failed for charId=1: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 115
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5387
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 293[15h50s44m50][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 115
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5852
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 293[15h52s08m32]Accepted incoming connection from 127.0.0.1.[15h52s08m33][SESSION] Creating new session id=3 from 127.0.0.1[15h52s08m35][AUTH] TryAuthenticate sessionId=3 remote=127.0.0.1[15h52s08m36]sso : 'f1e85f0ab55a298d3eac5bc73aa22d7f'[15h52s08m36]SSO existing gameplay session found; keeping ship on map for reconnect handoff.[15h52s08m36]User lefaucheur (ID 1) has logged in from 127.0.0.1.[15h52s08m36][AUTH] Reconnect handoff sessionId=3 -> sessionId=1 charId=1[15h52s08m36]LOGIN OK for ticket f1e85f0ab55a298d3eac5bc73aa22d7f from 127.0.0.1[15h52s08m36][LOGIN_FLOW] Begin post-login data refresh for 1[15h52s08m38][LOGIN_FLOW] DB refresh completed for 1[15h52s08m38][LOGIN_FLOW] Sending settings/init packets for 1[15h52s08m38][LOGIN_FLOW] Preparing map 1 for 1[15h52s08m39][LOGIN_FLOW] Post-login sequence completed for 1[15h52s08m83]Accepted incoming connection from 127.0.0.1.[15h52s08m83][SESSION] Creating new session id=4 from 127.0.0.1[15h53s59m85][SND] Socket send failed!
+
+   à System.Net.Sockets.Socket.BeginSend(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, AsyncCallback callback, Object state)
+   à OrbitReborn_Emulator.Game.Sessions.Session.SendData(Byte[] Data) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Game\Sessions\Session.cs:ligne 335[15h54s44m41][MapMgr] Unloaded map instance 25.[15h54s51m06]Accepted incoming connection from 127.0.0.1.[15h54s51m06][SESSION] Creating new session id=5 from 127.0.0.1[15h54s51m10][AUTH] TryAuthenticate sessionId=5 remote=127.0.0.1[15h54s51m11]sso : 'd2671f110922b27e7acb055c4d3fb2c6'[15h54s51m11]User lefaucheur (ID 1) has logged in from 127.0.0.1.[15h54s51m11][AUTH] OK sessionId=5 charId=1[15h54s51m11]LOGIN OK for ticket d2671f110922b27e7acb055c4d3fb2c6 from 127.0.0.1[15h54s51m12][LOGIN_FLOW] Begin post-login data refresh for 1[15h54s51m13][LOGIN_FLOW] DB refresh completed for 1[15h54s51m13][LOGIN_FLOW] Sending settings/init packets for 1[15h54s51m14][LOGIN_FLOW] Preparing map 1 for 1[15h54s51m14][MapMgr] Map instance 26 has been loaded for Map 1.[15h54s51m15][LOGIN_FLOW] Post-login sequence completed for 1[15h54s51m58]Accepted incoming connection from 127.0.0.1.[15h54s51m58][SESSION] Creating new session id=6 from 127.0.0.1

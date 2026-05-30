@@ -1,0 +1,5 @@
+## OrbitReborn## Server output log file## samedi, 8 novembre 2025 16:24:13[16h24s13m40]Initializing Andomeda's Emulator...[16h24s13m41]Configuration value 'debug.sso' missing; using default value.[16h24s13m41]Initializing MySQL manager...[16h24s13m84]Setting up server listener on port 8080...[16h24s13m84]Could not initialize Orbit Reborn: Une seule utilisation de chaque adresse de socket (protocole/adresse réseau/port) est habituellement autorisée
+   à System.Net.Sockets.Socket.DoBind(EndPoint endPointSnapshot, SocketAddress socketAddress)
+   à System.Net.Sockets.Socket.Bind(EndPoint localEP)
+   à OrbitReborn_Emulator.Network.SocketListener..ctor(IPEndPoint LocalEndpoint, Int32 Backlog, OnNewConnectionCallback Callback) dans F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\Network\SocketListener.cs:ligne 22
+   à OrbitReborn_Emulator.Program.Main(String[] args) dans F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Andromeda Emulator\Program.cs:ligne 72[16h24s13m84]Cannot proceed; press any key to stop the server.

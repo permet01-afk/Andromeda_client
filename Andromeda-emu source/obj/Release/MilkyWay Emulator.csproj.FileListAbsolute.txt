@@ -1,0 +1,5 @@
+C:\Users\Wawixs\Desktop\MilkyWay Emulator\bin\Release\MilkyWay Emulator.exe
+C:\Users\Wawixs\Desktop\MilkyWay Emulator\bin\Release\MilkyWay Emulator.pdb
+C:\Users\Wawixs\Desktop\MilkyWay Emulator\bin\Release\MySql.Data.dll
+C:\Users\Wawixs\Desktop\MilkyWay Emulator\obj\Release\MilkyWay Emulator.exe
+C:\Users\Wawixs\Desktop\MilkyWay Emulator\obj\Release\MilkyWay Emulator.pdb

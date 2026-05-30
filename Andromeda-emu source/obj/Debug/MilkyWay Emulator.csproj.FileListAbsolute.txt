@@ -1,0 +1,47 @@
+C:\Users\Wawixs\Desktop\MilkyWay Emulator\obj\Debug\MilkyWay Emulator.csprojResolveAssemblyReference.cache
+C:\Users\timo8\Desktop\emulator andromeda shiro\Milkyway Emulator\bin\Debug\MilkyWay Emulator.exe
+C:\Users\timo8\Desktop\emulator andromeda shiro\Milkyway Emulator\bin\Debug\MilkyWay Emulator.pdb
+C:\Users\timo8\Desktop\emulator andromeda shiro\Milkyway Emulator\bin\Debug\MySql.Data.dll
+C:\Users\timo8\Desktop\emulator andromeda shiro\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csprojResolveAssemblyReference.cache
+C:\Users\timo8\Desktop\emulator andromeda shiro\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CoreCompileInputs.cache
+C:\Users\timo8\Desktop\emulator andromeda shiro\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CopyComplete
+C:\Users\timo8\Desktop\emulator andromeda shiro\Milkyway Emulator\obj\Debug\MilkyWay Emulator.exe
+C:\Users\timo8\Desktop\emulator andromeda shiro\Milkyway Emulator\obj\Debug\MilkyWay Emulator.pdb
+F:\Bibliotheques\Bureau\Milkyway Emulator\bin\Debug\MilkyWay Emulator.exe
+F:\Bibliotheques\Bureau\Milkyway Emulator\bin\Debug\MilkyWay Emulator.pdb
+F:\Bibliotheques\Bureau\Milkyway Emulator\bin\Debug\MySql.Data.dll
+F:\Bibliotheques\Bureau\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csprojAssemblyReference.cache
+F:\Bibliotheques\Bureau\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CoreCompileInputs.cache
+F:\Bibliotheques\Bureau\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CopyComplete
+F:\Bibliotheques\Bureau\Milkyway Emulator\obj\Debug\MilkyWay Emulator.exe
+F:\Bibliotheques\Bureau\Milkyway Emulator\obj\Debug\MilkyWay Emulator.pdb
+F:\Andromeda Serveur\Emulateurs\Milkyway Emulator\bin\Debug\MilkyWay Emulator.exe
+F:\Andromeda Serveur\Emulateurs\Milkyway Emulator\bin\Debug\MilkyWay Emulator.pdb
+F:\Andromeda Serveur\Emulateurs\Milkyway Emulator\bin\Debug\MySql.Data.dll
+F:\Andromeda Serveur\Emulateurs\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CoreCompileInputs.cache
+F:\Andromeda Serveur\Emulateurs\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CopyComplete
+F:\Andromeda Serveur\Emulateurs\Milkyway Emulator\obj\Debug\MilkyWay Emulator.exe
+F:\Andromeda Serveur\Emulateurs\Milkyway Emulator\obj\Debug\MilkyWay Emulator.pdb
+C:\Users\timo8\Desktop\soukyone\Milkyway Emulator\bin\Debug\MilkyWay Emulator.exe
+C:\Users\timo8\Desktop\soukyone\Milkyway Emulator\bin\Debug\MilkyWay Emulator.pdb
+C:\Users\timo8\Desktop\soukyone\Milkyway Emulator\bin\Debug\MySql.Data.dll
+C:\Users\timo8\Desktop\soukyone\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csprojResolveAssemblyReference.cache
+C:\Users\timo8\Desktop\soukyone\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CoreCompileInputs.cache
+C:\Users\timo8\Desktop\soukyone\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CopyComplete
+C:\Users\timo8\Desktop\soukyone\Milkyway Emulator\obj\Debug\MilkyWay Emulator.exe
+C:\Users\timo8\Desktop\soukyone\Milkyway Emulator\obj\Debug\MilkyWay Emulator.pdb
+F:\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\bin\Debug\MilkyWay Emulator.exe
+F:\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\bin\Debug\MilkyWay Emulator.pdb
+F:\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\bin\Debug\MySql.Data.dll
+F:\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csprojAssemblyReference.cache
+F:\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CoreCompileInputs.cache
+F:\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CopyComplete
+F:\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\obj\Debug\MilkyWay Emulator.exe
+F:\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\obj\Debug\MilkyWay Emulator.pdb
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\bin\Debug\MilkyWay Emulator.exe
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\bin\Debug\MilkyWay Emulator.pdb
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\bin\Debug\MySql.Data.dll
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CoreCompileInputs.cache
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\obj\Debug\MilkyWay Emulator.csproj.CopyComplete
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\obj\Debug\MilkyWay Emulator.exe
+F:\Private Serveur\Andromeda Serveur\Emulateurs\Emulateurs_code\Milkyway Emulator\obj\Debug\MilkyWay Emulator.pdb

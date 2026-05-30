@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2042
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Andromeda Emulator", "Andromeda Emulator.csproj", "{FF1A2832-6C91-4013-9E43-FAF76040FC29}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FF1A2832-6C91-4013-9E43-FAF76040FC29}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FF1A2832-6C91-4013-9E43-FAF76040FC29}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FF1A2832-6C91-4013-9E43-FAF76040FC29}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FF1A2832-6C91-4013-9E43-FAF76040FC29}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1643BCA5-CA36-4658-B37C-3AD43D134368}
+	EndGlobalSection
+EndGlobal
