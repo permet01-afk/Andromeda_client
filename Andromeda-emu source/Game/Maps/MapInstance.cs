@@ -36,6 +36,9 @@ namespace OrbitReborn_Emulator.Game.Maps
         private double mUnloadedTimestamp;
         private int mMarkedEmptyMap;
         private Timer mUpdater;
+        private MapActor[] mActorSnapshotCache;
+        private MapActor[] mUserActorSnapshotCache;
+        private MapActor[] mNpcActorSnapshotCache;
 
         public int ActorCount
         {
@@ -85,7 +88,9 @@ namespace OrbitReborn_Emulator.Game.Maps
         {
             lock (this.mActors)
             {
-                return this.mActors.Values.ToArray();
+                if (this.mActorSnapshotCache == null)
+                    this.mActorSnapshotCache = this.mActors.Values.ToArray();
+                return this.mActorSnapshotCache;
             }
         }
 
@@ -93,7 +98,9 @@ namespace OrbitReborn_Emulator.Game.Maps
         {
             lock (this.mActors)
             {
-                return this.mUserActorsByReferenceId.Values.ToArray();
+                if (this.mUserActorSnapshotCache == null)
+                    this.mUserActorSnapshotCache = this.mUserActorsByReferenceId.Values.ToArray();
+                return this.mUserActorSnapshotCache;
             }
         }
 
@@ -101,7 +108,9 @@ namespace OrbitReborn_Emulator.Game.Maps
         {
             lock (this.mActors)
             {
-                return this.mNpcActorsByReferenceId.Values.ToArray();
+                if (this.mNpcActorSnapshotCache == null)
+                    this.mNpcActorSnapshotCache = this.mNpcActorsByReferenceId.Values.ToArray();
+                return this.mNpcActorSnapshotCache;
             }
         }
 
@@ -237,6 +246,13 @@ namespace OrbitReborn_Emulator.Game.Maps
                 this.mNpcActorsByReferenceId.Add(Actor.ReferenceId, Actor);
         }
 
+        private void InvalidateActorSnapshots()
+        {
+            this.mActorSnapshotCache = null;
+            this.mUserActorSnapshotCache = null;
+            this.mNpcActorSnapshotCache = null;
+        }
+
         private void RemoveActorFromReferenceIndex(MapActor Actor)
         {
             if (Actor == null)
@@ -271,6 +287,7 @@ namespace OrbitReborn_Emulator.Game.Maps
                     return false;
 
                 this.AddActorToReferenceIndex(Actor);
+                this.InvalidateActorSnapshots();
             }
             if (Actor.Type == MapActorType.AiBot)
             {
@@ -365,6 +382,7 @@ namespace OrbitReborn_Emulator.Game.Maps
 
                     this.mActors.Remove(ActorId);
                     this.RemoveActorFromReferenceIndex(actor);
+                    this.InvalidateActorSnapshots();
                     return true;
                 }
             }
@@ -653,6 +671,7 @@ namespace OrbitReborn_Emulator.Game.Maps
                     this.mActors.Clear();
                     this.mUserActorsByReferenceId.Clear();
                     this.mNpcActorsByReferenceId.Clear();
+                    this.InvalidateActorSnapshots();
                 }
             }
             this.mUnloadedTimestamp = UnixTimestamp.GetCurrent();
