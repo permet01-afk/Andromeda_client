@@ -3882,7 +3882,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (message == null)
                 return;
 
-            foreach (MapActor actor in instance.GetActorSnapshot())
+            byte[] data = message.ToDeltas();
+            foreach (MapActor actor in instance.GetUserActorSnapshot())
             {
                 if (actor == null || actor.Type != MapActorType.UserCharacter)
                     continue;
@@ -3891,7 +3892,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (!Fight.ShouldReceiveLockIntent(observer, attacker))
                     continue;
 
-                observer.SendData(message);
+                observer.SendData(data);
             }
         }
 
@@ -3904,7 +3905,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (message == null)
                 return;
 
-            foreach (MapActor actor in instance.GetActorSnapshot())
+            byte[] data = message.ToDeltas();
+            foreach (MapActor actor in instance.GetUserActorSnapshot())
             {
                 if (actor == null || actor.Type != MapActorType.UserCharacter)
                     continue;
@@ -3913,7 +3915,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (!Fight.ShouldReceiveLockIntent(observer, attacker))
                     continue;
 
-                observer.SendData(message);
+                observer.SendData(data);
             }
         }
 
@@ -3922,7 +3924,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (instance == null || !Fight.IsValidLockIntentTargetId(targetId))
                 return;
 
-            foreach (MapActor actor in instance.GetActorSnapshot())
+            foreach (MapActor actor in instance.GetUserActorSnapshot())
             {
                 if (actor == null || actor.Type != MapActorType.UserCharacter)
                     continue;
@@ -3943,7 +3945,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (instance == null || !Fight.IsValidLockIntentTargetId(targetId))
                 return;
 
-            foreach (MapActor actor in instance.GetActorSnapshot())
+            foreach (MapActor actor in instance.GetUserActorSnapshot())
             {
                 if (actor == null || actor.Type != MapActorType.UserCharacter)
                     continue;
