@@ -72,7 +72,7 @@ namespace OrbitReborn_Emulator.Game.Maps
 
             ShipMovement.CheckWarningZone(Session);
             ShipMovement.CheckPeaceZone(Session);
-            ShipMovement.CheckPortalZone(Session);
+            ShipMovement.CheckPortalZone(Session, true);
 
             if (Session.CharacterInfo.UpdateMovementTimer != null)
                 Session.CharacterInfo.UpdateMovementTimer.Dispose();
@@ -279,7 +279,7 @@ namespace OrbitReborn_Emulator.Game.Maps
                 Session.CharacterInfo.UpdateMovementTimer = new Timer(new TimerCallback(ShipMovement.UpdateMovement), (object)Session, 300, 300);
 
                 ShipMovement.CheckPeaceZone(Session);
-                ShipMovement.CheckPortalZone(Session);
+                ShipMovement.CheckPortalZone(Session, true);
             }
 
             if (Session.CharacterInfo.KillStrek >= 10)

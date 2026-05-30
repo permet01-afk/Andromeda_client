@@ -37,6 +37,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private static readonly Dictionary<int, int> LastEnemyWarningRefreshTick = new Dictionary<int, int>();
         private const int EnemyWarningMinimumRefreshMs = 1000;
 
+        private static readonly object PeacePortalInfoLock = new object();
+        private static readonly Dictionary<int, string> LastPeacePortalInfoPayload = new Dictionary<int, string>();
+
         private static readonly object MovementUpdateLock = new object();
         private static readonly Dictionary<int, bool> MovementUpdateRunning = new Dictionary<int, bool>();
 
@@ -132,6 +135,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     LastEnemyWarningLevel.Remove(characterId);
                 if (LastEnemyWarningRefreshTick.ContainsKey(characterId))
                     LastEnemyWarningRefreshTick.Remove(characterId);
+            }
+
+            lock (PeacePortalInfoLock)
+            {
+                if (LastPeacePortalInfoPayload.ContainsKey(characterId))
+                    LastPeacePortalInfoPayload.Remove(characterId);
             }
         }
 
@@ -927,16 +936,35 @@ namespace OrbitReborn_Emulator.Game.Handlers
         }
 
 
-        public static void SendPeacePortalInfos(Session Session)
+        private static bool ShouldSendPeacePortalInfos(int characterId, string payload, bool force)
+        {
+            if (characterId <= 0 || string.IsNullOrEmpty(payload))
+                return true;
+
+            lock (PeacePortalInfoLock)
+            {
+                string lastPayload;
+                if (!force && LastPeacePortalInfoPayload.TryGetValue(characterId, out lastPayload) && lastPayload == payload)
+                    return false;
+
+                LastPeacePortalInfoPayload[characterId] = payload;
+                return true;
+            }
+        }
+
+        public static void SendPeacePortalInfos(Session Session, bool force = false)
         {
             int peace = Session.CharacterInfo.PeaceZone ? 1 : 0;
             int trade = Session.CharacterInfo.TradeZone ? 1 : 0;   // <-- AJOUT
             int portal = Session.CharacterInfo.PortalZone ? 1 : 0;
             int radiation = Session.CharacterInfo.WarningZone ? 1 : 0;
+            string payload = Session.CharacterInfo.LocX + "|" + Session.CharacterInfo.LocY + "|" +
+                peace + "|" + trade + "|1|" + radiation + "|" + portal + "|0";
 
-            Session.SendData(PacketComposer.Compose("D",
-                Session.CharacterInfo.LocX + "|" + Session.CharacterInfo.LocY + "|" +
-                peace + "|" + trade + "|1|" + radiation + "|" + portal + "|0"));
+            if (!ShouldSendPeacePortalInfos(Session.CharacterId, payload, force))
+                return;
+
+            Session.SendData(PacketComposer.Compose("D", payload));
         }
 
         // OPTIONNEL : à appeler juste après un jump / TP (après avoir posé MapId/LocX/LocY)
@@ -947,7 +975,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
 
             ShipMovement.CheckWarningZone(Session);
-            ShipMovement.CheckPortalZone(Session); // CheckPortalZone recalcule aussi la PeaceZone maintenant
+            ShipMovement.CheckPortalZone(Session, true); // CheckPortalZone recalcule aussi la PeaceZone maintenant
         }
 
         private static bool IsPortalPeaceMap(int factionId, int mapId)
@@ -1075,13 +1103,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
         }
 
 
-        public static void CheckPeaceZone(Session Session)
+        public static void CheckPeaceZone(Session Session, bool force = false)
         {
             ComputePeaceZone(Session);
-            ShipMovement.SendPeacePortalInfos(Session);
+            ShipMovement.SendPeacePortalInfos(Session, force);
         }
 
-        public static void CheckPortalZone(Session Session)
+        public static void CheckPortalZone(Session Session, bool force = false)
         {
             if (Session.CharacterInfo.IsJumping)
                 return;
@@ -1132,7 +1160,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             // ✅ IMPORTANT : on recalcule la PeaceZone maintenant, pour être safe immédiatement à l'arrivée sur le portail.
             ComputePeaceZone(Session);
 
-            ShipMovement.SendPeacePortalInfos(Session);
+            ShipMovement.SendPeacePortalInfos(Session, force);
         }
 
         private static void WarningZone(object state)
