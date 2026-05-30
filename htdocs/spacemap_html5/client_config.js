@@ -6480,7 +6480,7 @@ function buildSmartbombPreparedFrameCanvas(idx) {
     return buildPreparedPyroFrameCanvas(getPyroAtlasFrame(SMARTBOMB_ANIM, idx), "__andromedaPreparedSmartbombFrame", idx);
 }
 
-function getSmartbombFrame(frameIndex) {
+function prepareSmartbombFrame(frameIndex) {
     if (!SMARTBOMB_ANIM) return null;
     const frameCount = SMARTBOMB_ANIM.frameCount || 1;
     let idx = frameIndex % frameCount;
@@ -6491,6 +6491,14 @@ function getSmartbombFrame(frameIndex) {
         smartbombSpriteCache[idx] = frameDef;
     }
     return frameDef;
+}
+
+function getSmartbombFrame(frameIndex) {
+    if (!SMARTBOMB_ANIM) return null;
+    const frameCount = SMARTBOMB_ANIM.frameCount || 1;
+    let idx = frameIndex % frameCount;
+    if (idx < 0) idx += frameCount;
+    return smartbombSpriteCache[idx] || null;
 }
 
 function getExplosionFrame(type, frameIndex) {
@@ -6553,7 +6561,7 @@ function getShieldSpriteFrame(name, frameIndex) {
     if (idx < 0) idx += frameCount;
     const key = name + "_" + idx;
     if (shieldSpriteCache[key]) return shieldSpriteCache[key];
-    if (def.prepareFrames) return prepareShieldSpriteFrame(name, idx);
+    if (def.prepareFrames) return null;
     const frameDef = getPyroAtlasFrame(def, idx);
     if (frameDef && !frameDef.pendingAtlas) {
         shieldSpriteCache[key] = frameDef;

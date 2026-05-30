@@ -3140,6 +3140,33 @@ function getCriticalRuntimeWarmupContext() {
     }
 }
 
+function validateCriticalRuntimePreparedFrames() {
+    const missing = [];
+    if (typeof SMARTBOMB_ANIM !== "undefined" && SMARTBOMB_ANIM) {
+        const frameCount = SMARTBOMB_ANIM.frameCount || 1;
+        for (let frame = 0; frame < frameCount; frame++) {
+            const frameDef = typeof getSmartbombFrame === "function" ? getSmartbombFrame(frame) : null;
+            if (!frameDef || !frameDef.__andromedaPreparedSmartbombFrame) {
+                missing.push("smartbomb:" + frame);
+            }
+        }
+    }
+    const instaDef = typeof SHIELD_SPRITE_DEFS === "object" && SHIELD_SPRITE_DEFS ? SHIELD_SPRITE_DEFS.insta : null;
+    if (instaDef) {
+        const frameCount = instaDef.frameCount || 1;
+        for (let frame = 0; frame < frameCount; frame++) {
+            const frameDef = typeof getShieldSpriteFrame === "function" ? getShieldSpriteFrame("insta", frame) : null;
+            if (!frameDef || !frameDef.__andromedaPreparedShieldFrame) {
+                missing.push("ish:" + frame);
+            }
+        }
+    }
+    return {
+        missingCount: missing.length,
+        missingFrames: missing
+    };
+}
+
 function warmFrameDefOnContext(warmCtx, frameDef, options = {}) {
     if (!warmCtx || !frameDef || frameDef.pendingAtlas) return false;
     const source = frameDef.atlas || frameDef.img || frameDef;
@@ -3633,10 +3660,8 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             }
         }
         if (SMARTBOMB_ANIM) {
-            // Smartbomb is the only visual that was measured causing 60-70ms canvas stalls.
-            // Warm every frame so getSmartbombFrame() builds the small prepared-frame cache before gameplay.
             for (const frame of buildRuntimeWarmupFrameSequence(SMARTBOMB_ANIM.frameCount || 1, 1)) {
-                addWarmTask("smartbomb:" + frame, () => getSmartbombFrame(frame), {
+                addWarmTask("smartbomb:" + frame, () => typeof prepareSmartbombFrame === "function" ? prepareSmartbombFrame(frame) : null, {
                     composite: "lighter",
                     rotation: Math.PI / 8
                 });
@@ -3644,9 +3669,8 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
         }
         const instaDef = SHIELD_SPRITE_DEFS && SHIELD_SPRITE_DEFS.insta ? SHIELD_SPRITE_DEFS.insta : null;
         if (instaDef) {
-            const prepareIshFrame = typeof prepareShieldSpriteFrame === "function";
             for (const frame of buildRuntimeWarmupFrameSequence(instaDef.frameCount || 1, 1)) {
-                addWarmTask("ish:" + frame, () => prepareIshFrame ? prepareShieldSpriteFrame("insta", frame) : getShieldSpriteFrame("insta", frame), {
+                addWarmTask("ish:" + frame, () => typeof prepareShieldSpriteFrame === "function" ? prepareShieldSpriteFrame("insta", frame) : null, {
                     composite: "lighter"
                 });
             }
@@ -3821,9 +3845,14 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             });
         }
 
+        const criticalPreparedFrames = validateCriticalRuntimePreparedFrames();
+        const failedLabels = new Set(retryTasks.map(task => task.label));
+        criticalPreparedFrames.missingFrames.forEach(label => failedLabels.add(label));
+        failed = failedLabels.size;
+        const ready = failed === 0;
         return publishCriticalBootRuntimeVisualWarmupStatus({
-            state: "ready",
-            ready: true,
+            state: ready ? "ready" : "error",
+            ready: ready,
             reason: reason,
             total: tasks.length,
             shipFramesTotal: shipWarmupJobs.length,
@@ -3833,6 +3862,9 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
             completed: tasks.length,
             warmed: warmed,
             failed: failed,
+            warmupFailed: retryTasks.length,
+            criticalFramesMissing: criticalPreparedFrames.missingCount,
+            criticalFrameFailures: criticalPreparedFrames.missingFrames.slice(0, 32),
             startedAt: startedAt,
             finishedAt: Date.now()
         });
