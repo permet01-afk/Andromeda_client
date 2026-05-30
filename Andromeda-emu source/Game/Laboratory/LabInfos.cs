@@ -1,8 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: OrbitReborn_Emulator.Game.Laboratory.LabInfos
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
+﻿
 
 namespace OrbitReborn_Emulator.Game.Laboratory
 {
@@ -17,7 +13,6 @@ namespace OrbitReborn_Emulator.Game.Laboratory
         private int m_iDuranium;
         private int m_iPromerium;
 
-        // ✅ AJOUT: Seprom (resId 14)
         private int m_iSeprom;
 
         private int[] m_Laser;
@@ -122,7 +117,6 @@ namespace OrbitReborn_Emulator.Game.Laboratory
             }
         }
 
-        // ✅ AJOUT: propriété Seprom
         public int Seprom
         {
             get
@@ -206,7 +200,6 @@ namespace OrbitReborn_Emulator.Game.Laboratory
             this.m_iDuranium = 0;
             this.m_iPromerium = 0;
 
-            // ✅ AJOUT
             this.m_iSeprom = 0;
 
             this.m_Laser = new int[2];
@@ -243,7 +236,6 @@ namespace OrbitReborn_Emulator.Game.Laboratory
             if (iResId == 13L)
                 return this.m_iPromerium;
 
-            // ✅ AJOUT: Seprom (14)
             if (iResId == 14L)
                 return this.m_iSeprom;
 
@@ -272,7 +264,6 @@ namespace OrbitReborn_Emulator.Game.Laboratory
             {
                 this.m_iPromerium += iAmount;
             }
-            // ✅ AJOUT: Seprom (14)
             else if (iResId == 14L)
             {
                 this.m_iSeprom += iAmount;
@@ -301,7 +292,6 @@ namespace OrbitReborn_Emulator.Game.Laboratory
             {
                 this.m_iPromerium -= iAmount;
             }
-            // ✅ AJOUT: Seprom (14)
             else if (iResId == 14L)
             {
                 this.m_iSeprom -= iAmount;

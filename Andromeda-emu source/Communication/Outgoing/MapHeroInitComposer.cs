@@ -8,7 +8,6 @@ namespace OrbitReborn_Emulator.Communication.Outgoing
         {
             var serverMessage = new ServerMessage();
 
-            // Paquet : 0|H|x|y
             serverMessage.AppendShort("0|H");
             serverMessage.Append(info.LocX);
             serverMessage.Append(info.LocY);

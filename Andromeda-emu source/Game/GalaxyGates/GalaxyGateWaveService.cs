@@ -14,24 +14,19 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 {
     public static class GalaxyGateWaveService
     {
-        // High IDs to avoid collisions with SQL portals
         private const int INTERNAL_PORTAL_ID_BASE = 92000000;
 
-        // Spacing to keep unique IDs per player & per gate (avoid int overflow, but still unique enough)
         private const int INTERNAL_PORTAL_USER_MULT = 50;
         private const int INTERNAL_PORTAL_GATE_MULT = 10;
 
         private const int INTERNAL_PORTAL_KIND_CONTINUE = 1;
         private const int INTERNAL_PORTAL_KIND_EXIT = 2;
 
-        // Gate map center (same values used elsewhere in your gate system)
         private const int CENTER_X = 10500;
         private const int CENTER_Y = 6500;
 
-        // Two portals after each wave (avoid stacking on the exact same pixel)
         private const int PORTAL_OFFSET_X = 900;
 
-        // NPC spawn: further away + staged spawns
         private const int SPAWN_MIN_DISTANCE = 4500;
         private const int SPAWN_MAX_DISTANCE = 6500;
 
@@ -41,13 +36,10 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
         private static readonly object SyncRoot = new object();
 
-        // npcId -> characterId (owner)
         private static CDictionnary<int, int> NpcOwners = new CDictionnary<int, int>();
 
-        // characterId -> run
         private static CDictionnary<int, GateRun> Runs = new CDictionnary<int, GateRun>();
 
-        // FIX: protection to avoid losing multiple lives from the same death sequence
         private static CDictionnary<int, DateTime> LastDeathTime = new CDictionnary<int, DateTime>();
 
         private class GateRun
@@ -57,12 +49,11 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             public int GateId;
             public int MapId;
 
-            public int CurrentWave; // wave currently running (1..10)
+            public int CurrentWave;
             public int Lives;
 
             public HashSet<int> AliveNpcIds = new HashSet<int>();
 
-            // Staged spawn
             public Queue<string> PendingNpcSpawns = new Queue<string>();
             public int SpawnBatchSize;
             public Timer SpawnBatchTimer;
@@ -82,16 +73,10 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             return mapId == 51 || mapId == 52 || mapId == 53 || mapId == 55;
         }
 
-        /// <summary>
-        /// Returns true if this NPC belongs to the given character's Galaxy Gate run.
-        /// Used to make Galaxy Gates private per account (no cross-visibility).
-        /// </summary>
         public static bool IsNpcOwnedBy(int npcId, int characterId)
         {
             if (npcId == 0 || characterId <= 0) return false;
 
-            // NpcOwners is a ConcurrentDictionary but we still keep the same SyncRoot discipline
-            // as the rest of this service.
             lock (SyncRoot)
             {
                 if (NpcOwners == null) return false;
@@ -100,10 +85,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             }
         }
 
-        /// <summary>
-        /// Returns a snapshot of the alive NPC ids for one player's current Galaxy Gate run.
-        /// This avoids scanning every NPC on shared technical gate maps.
-        /// </summary>
         public static List<int> GetAliveNpcIdsForOwner(int characterId, int mapId)
         {
             List<int> result = new List<int>();
@@ -125,9 +106,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             return result;
         }
 
-        /// <summary>
-        /// Try to get the owner CharacterId of a Galaxy Gate NPC (if any).
-        /// </summary>
         public static bool TryGetNpcOwner(int npcId, out int ownerCharacterId)
         {
             ownerCharacterId = 0;
@@ -144,10 +122,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
         }
 
 
-        /// <summary>
-        /// Strict per-player isolation for Galaxy Gate NPC interactions.
-        /// Outside gate maps, legacy behaviour is preserved.
-        /// </summary>
         public static bool CanSessionInteractWithNpc(Session session, Npc npc)
         {
             if (session == null || session.CharacterInfo == null || npc == null) return false;
@@ -159,18 +133,11 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             return ownerCharacterId == session.CharacterId;
         }
 
-        /// <summary>
-        /// Strict guard before a Galaxy Gate NPC can damage a player.
-        /// A gate NPC may only attack the owner of its own run.
-        /// </summary>
         public static bool CanNpcAttackSession(Npc npc, Session session)
         {
             return CanSessionInteractWithNpc(session, npc);
         }
 
-        /// <summary>
-        /// Returns the online owner session of a Galaxy Gate NPC, if known.
-        /// </summary>
         public static Session GetNpcOwnerSession(Npc npc)
         {
             if (npc == null || !IsGateMap(npc.MapId)) return null;
@@ -184,10 +151,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             return ownerSession;
         }
 
-        /// <summary>
-        /// Used when a gate map is reloaded/reused. Keeps only NPCs that still
-        /// belong to an active run whose owner is still on that gate map.
-        /// </summary>
         public static bool IsNpcOwnedByCurrentRunOwner(Npc npc)
         {
             if (npc == null || !IsGateMap(npc.MapId)) return true;
@@ -211,10 +174,10 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
         public static int GateIdFromMap(int mapId)
         {
-            if (mapId == 51) return 1; // Alpha
-            if (mapId == 52) return 2; // Beta
-            if (mapId == 53) return 3; // Gamma
-            if (mapId == 55) return 4; // Delta
+            if (mapId == 51) return 1;
+            if (mapId == 52) return 2;
+            if (mapId == 53) return 3;
+            if (mapId == 55) return 4;
             return 0;
         }
 
@@ -227,7 +190,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
         {
             int faction = session.CharacterInfo.RealFaction > 0 ? session.CharacterInfo.RealFaction : session.CharacterInfo.FactionId;
 
-            // EIC
             if (faction == 2)
             {
                 homeMapId = 5;
@@ -236,7 +198,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 return;
             }
 
-            // VRU
             if (faction == 3)
             {
                 homeMapId = 9;
@@ -245,7 +206,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 return;
             }
 
-            // MMO default
             homeMapId = 1;
             x = 2000;
             y = 1100;
@@ -305,9 +265,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             }
         }
 
-        // =====================================================================
-        // 1) Called when the player enters a map
-        // =====================================================================
         public static void OnPlayerEnteredMap(Session session)
         {
             if (session == null || session.CharacterInfo == null)
@@ -315,7 +272,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             int mapId = session.CharacterInfo.MapId;
 
-            // If we are NOT in a gate map: do nothing here
             if (!IsGateMap(mapId))
                 return;
 
@@ -407,7 +363,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 }
             }
 
-            // If gate is already completed: show ONLY the exit portal (reward is given when leaving)
             if (completed == 1)
             {
                 lock (SyncRoot)
@@ -421,7 +376,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 return;
             }
 
-            // If a wave is already in progress (reconnect): do not respawn it.
             bool waveAlreadyRunning;
             bool shouldResumeSpawns;
             int resumeBatchSize;
@@ -435,19 +389,15 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             if (waveAlreadyRunning)
             {
-                // During a wave, there should be no internal portals.
                 ClearInternalPortals(session);
                 SendAliveGateNpcsToOwner(session, run);
 
-                // If we still have pending spawns (staged wave) and no timer is running, resume it.
                 if (shouldResumeSpawns)
                 {
                     if (resumeBatchSize <= 0) resumeBatchSize = SPAWN_BATCH_MIN;
 
-                    // Spawn a batch right away so it doesn't feel "stuck"
                     SpawnNpcBatch(session, run, resumeBatchSize);
 
-                    // And keep spawning the remaining batches over time
                     StartSpawnBatchTimerIfNeeded(run);
                 }
                 return;
@@ -457,9 +407,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             SpawnWave(session, run, waveToSpawn);
         }
 
-        // =====================================================================
-        // 2) Spawn a wave (staged spawns + no boxes + portals appear after wave)
-        // =====================================================================
         private static void SpawnWave(Session session, GateRun run, int waveNumber)
         {
             if (session == null || session.CharacterInfo == null)
@@ -484,10 +431,8 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             if (instance == null)
                 return;
 
-            // Remove any internal portals (between waves) when a new wave starts
             ClearInternalPortals(session);
 
-            // DB update: current wave (in progress)
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
                 client.ClearParameters();
@@ -497,7 +442,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 client.ExecuteNonQuery("UPDATE player_galaxy_gates SET current_wave=@w, completed=0 WHERE user_id=@uid AND gate_id=@gid");
             }
 
-            // Build spawn list
             List<string> spawnList = new List<string>();
             foreach (WaveNpc w in wave)
             {
@@ -505,7 +449,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     spawnList.Add(w.Name);
             }
 
-            // Shuffle (so mixed waves feel more natural)
             for (int i = spawnList.Count - 1; i > 0; i--)
             {
                 int j = NpcAI.RandomPos.Next(0, i + 1);
@@ -516,7 +459,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             int total = spawnList.Count;
 
-            // Dynamic batch size: 5..20, roughly ~1/3 of the wave
             int batchSize = total / 3;
             if (batchSize < SPAWN_BATCH_MIN) batchSize = SPAWN_BATCH_MIN;
             if (batchSize > SPAWN_BATCH_MAX) batchSize = SPAWN_BATCH_MAX;
@@ -542,10 +484,8 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 }
             }
 
-            // Spawn first batch immediately
             SpawnNpcBatch(session, run, batchSize);
 
-            // Schedule next batches
             StartSpawnBatchTimerIfNeeded(run);
 
             session.SendData(PacketComposer.Compose("A", "STD|Galaxy Gate: Wave " + waveNumber + "/" + totalWaves + " started."));
@@ -583,14 +523,12 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             Session s = SessionManager.GetSessionByCharacterId(run.CharacterId);
             if (s == null || s.CharacterInfo == null)
             {
-                // Player disconnected: stop timer (we will resume on reconnect if needed)
                 StopSpawnBatchTimer(run);
                 return;
             }
 
             if (s.CharacterInfo.MapId != run.MapId)
             {
-                // Player is not on the gate map anymore: stop timer
                 StopSpawnBatchTimer(run);
                 return;
             }
@@ -601,7 +539,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             SpawnNpcBatch(s, run, batch);
 
-            // Stop timer when no more pending spawns
             bool hasMore;
             lock (SyncRoot) { hasMore = run.PendingNpcSpawns.Count > 0; }
             if (!hasMore)
@@ -637,40 +574,38 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 if (tpl == null || tpl.Count < 22)
                     continue;
 
-                // Spawn in a circle, further away than normal maps
                 double angle = NpcAI.RandomPos.NextDouble() * Math.PI * 2;
                 int distance = NpcAI.RandomPos.Next(SPAWN_MIN_DISTANCE, SPAWN_MAX_DISTANCE);
 
                 int x = CENTER_X + (int)(Math.Cos(angle) * distance);
                 int y = CENTER_Y + (int)(Math.Sin(angle) * distance);
 
-                // Clamp to map bounds
                 if (x < 300) x = 300;
                 if (x > 20700) x = 20700;
                 if (y < 300) y = 300;
                 if (y > 12600) y = 12600;
 
                 Npc npc = NpcManager.CreateNewInstance(
-                    tpl[0],                    // Name
-                    session.CharacterInfo.MapId, x, y,               // MapId, LocX, LocY
-                    Convert.ToInt32(tpl[4]),   // ShipId
-                    Convert.ToInt32(tpl[5]),   // ShipHp
-                    Convert.ToInt32(tpl[6]),   // ShipMaxHp
-                    Convert.ToInt32(tpl[7]),   // ShipShield
-                    Convert.ToInt32(tpl[8]),   // ShipMaxShield
-                    Convert.ToInt32(tpl[9]),   // ShipSpeed
-                    Convert.ToInt32(tpl[10]),  // Credits
-                    Convert.ToInt32(tpl[11]),  // Uridium
-                    Convert.ToInt32(tpl[12]),  // FactionId
-                    Convert.ToInt32(tpl[13]),  // FatLasers
-                    Convert.ToInt32(tpl[14]),  // ShieldMechanics
-                    tpl[15],                   // ClanTag
-                    Convert.ToInt32(tpl[16]),  // IsClanMember
-                    Convert.ToInt32(tpl[17]),  // Rank
-                    Convert.ToInt32(tpl[18]),  // GalaxyGatesRings
-                    Convert.ToInt32(tpl[19]),  // Drones
-                    Convert.ToInt32(tpl[20]),  // NpcPoints
-                    Convert.ToInt32(tpl[21])   // Damages
+                    tpl[0],
+                    session.CharacterInfo.MapId, x, y,
+                    Convert.ToInt32(tpl[4]),
+                    Convert.ToInt32(tpl[5]),
+                    Convert.ToInt32(tpl[6]),
+                    Convert.ToInt32(tpl[7]),
+                    Convert.ToInt32(tpl[8]),
+                    Convert.ToInt32(tpl[9]),
+                    Convert.ToInt32(tpl[10]),
+                    Convert.ToInt32(tpl[11]),
+                    Convert.ToInt32(tpl[12]),
+                    Convert.ToInt32(tpl[13]),
+                    Convert.ToInt32(tpl[14]),
+                    tpl[15],
+                    Convert.ToInt32(tpl[16]),
+                    Convert.ToInt32(tpl[17]),
+                    Convert.ToInt32(tpl[18]),
+                    Convert.ToInt32(tpl[19]),
+                    Convert.ToInt32(tpl[20]),
+                    Convert.ToInt32(tpl[21])
                 );
 
                 npc.Respawn = false;
@@ -679,7 +614,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 instance.AddNpcToMap(npc);
                 NpcAI.NpcToAdd.Add(npc);
 
-                // Gate NPCs acquire the owner immediately, but the attack timer starts only once AI wakes it in range.
                 npc.SetTargetWithoutAttackTimer(run.CharacterId);
 
                 lock (SyncRoot)
@@ -691,9 +625,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             }
         }
 
-        // =====================================================================
-        // 3) Called when a gate NPC dies
-        // =====================================================================
         public static void OnNpcDestroyed(int mapId, int npcId)
         {
             if (!IsGateMap(mapId)) return;
@@ -737,7 +668,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             Session ownerSession = SessionManager.GetSessionByCharacterId(ownerCharacterId);
             if (ownerSession == null || ownerSession.CharacterInfo == null) return;
 
-            // Gate finished (last wave done)
             if (completedNow)
             {
                 using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
@@ -754,11 +684,9 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 return;
             }
 
-            // Wave finished (but not the last one)
             if (!waveFinishedNow)
                 return;
 
-            // Between waves: progress is saved as "next wave"
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
                 client.ClearParameters();
@@ -790,7 +718,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             int continuePortalId = baseId + INTERNAL_PORTAL_KIND_CONTINUE;
             int exitPortalId = baseId + INTERNAL_PORTAL_KIND_EXIT;
 
-            int continueType = gateId + 1; // 2..5 = galaxy gate types (client)
+            int continueType = gateId + 1;
             if (continueType < 2 || continueType > 5)
                 continueType = 2;
 
@@ -799,11 +727,9 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 session.CharacterInfo.GalaxyGateInternalPortals = new CList<PortalInfo>();
                 session.CharacterInfo.GalaxyGateInternalPortalDestinations = new CDictionnary<int, PortalInfo>();
 
-                // Continue portal (Galaxy Gate portal) -> same map (re-enter triggers next wave spawn)
                 PortalInfo continuePortal = new PortalInfo(client, continuePortalId, CENTER_X - PORTAL_OFFSET_X, CENTER_Y, mapId, 0, continueType);
                 PortalInfo continueDest = new PortalInfo(client, continuePortalId, CENTER_X, CENTER_Y, mapId, 0, continueType);
 
-                // Exit portal (standard) -> home base (X-1)
                 PortalInfo exitPortal = new PortalInfo(client, exitPortalId, CENTER_X + PORTAL_OFFSET_X, CENTER_Y, mapId, 0, 1);
                 PortalInfo exitDest = new PortalInfo(client, exitPortalId, homeX, homeY, homeMapId, 0, 1);
 
@@ -855,9 +781,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             return destination != null;
         }
 
-        // =====================================================================
-        // 4) Player killed inside a gate
-        // =====================================================================
         public static void OnPlayerKilled(Session session)
         {
             if (session == null || session.CharacterInfo == null) return;
@@ -867,7 +790,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             int gateId = GateIdFromMap(mapId);
             if (gateId == 0) return;
 
-            // FIX: anti double-death (atomic under SyncRoot)
             DateTime now = DateTime.UtcNow;
             lock (SyncRoot)
             {
@@ -912,7 +834,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 client.ExecuteNonQuery("UPDATE player_galaxy_gates SET lives=@l WHERE user_id=@uid AND gate_id=@gid");
             }
 
-            // Cleanup NPCs + spawn timers
             if (Runs.ContainsKey(session.CharacterId))
             {
                 GateRun run = Runs[session.CharacterId];
@@ -936,11 +857,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             }
         }
 
-        /// <summary>
-        /// Public cleanup entry point used when a player leaves, changes map or disconnects
-        /// while being on a Galaxy Gate map. This prevents orphan gate NPCs from leaking into
-        /// another player's run on the same shared MapId.
-        /// </summary>
         public static void CleanupRunForSession(Session session)
         {
             if (session == null || session.CharacterInfo == null) return;
@@ -1047,7 +963,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
         private static List<WaveNpc> GetWave(int gateId, int wave)
         {
-            // Alpha (1) / Beta (2) / Gamma (3)
             if (gateId == 1 || gateId == 2 || gateId == 3)
             {
                 if (wave == 1) return new List<WaveNpc>() { new WaveNpc("-=[ Streuner ]=-", 40) };
@@ -1063,7 +978,6 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 return null;
             }
 
-            // Delta (4)
             if (gateId == 4)
             {
                 if (wave == 1) return new List<WaveNpc>() { new WaveNpc("-=[ Lordakia ]=-", 5), new WaveNpc("-=[ Mordon ]=-", 10), new WaveNpc("-=[ Saimon ]=-", 15) };

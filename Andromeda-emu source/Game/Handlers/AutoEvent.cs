@@ -34,7 +34,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private List<Timer> createTimersList(List<Event> events)
         {
             List<Timer> timers = new List<Timer>();
-            return null; //TODO
+            return null;
         }
 
         private Timer createTimerbyEvent(Event e)

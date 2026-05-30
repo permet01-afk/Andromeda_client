@@ -23,22 +23,19 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private static object mSyncRoot;
         private static CDictionnary<string, List<string>> RegisteredNpc;
 
-        // --- CONSTANTES ---
-        private const int ORBIT_RADIUS = 380;       // Distance du cercle autour du joueur
-        private const int CHASE_DISTANCE = 550;     // Distance pour passer en mode "Sprint"
-        private const int STOP_SHOOT_RANGE = 450;  // Distance d'arrêt (Kiting)
-        private const int AI_TICK_RATE = 800;       // Vitesse de réflexion (ms)
-        private const int NPC_MOVEMENT_TICK_RATE = 550; // Fréquence de mise à jour du mouvement NPC (ms)
-        private const double ORBIT_SLOT_ANGLE_STEP_DEG = 12.0; // Espace angulaire entre NPCs sur le cercle
-        private const double ORBIT_SLOT_MAX_OFFSET_DEG = 120.0; // Evite des offsets trop extrêmes
-        private const int NPC_STACK_DISTANCE = 95; // Distance mini entre NPCs visant la même cible
-        private const int STACK_RESOLVE_COOLDOWN_MS = 900; // Evite les repositionnements en boucle
-        private const int NPC_VISUAL_STOP_SMOOTH_MS = 120; // Lissage visuel court pour éviter les snaps 0 ms côté client
+        private const int ORBIT_RADIUS = 380;
+        private const int CHASE_DISTANCE = 550;
+        private const int STOP_SHOOT_RANGE = 450;
+        private const int AI_TICK_RATE = 800;
+        private const int NPC_MOVEMENT_TICK_RATE = 550;
+        private const double ORBIT_SLOT_ANGLE_STEP_DEG = 12.0;
+        private const double ORBIT_SLOT_MAX_OFFSET_DEG = 120.0;
+        private const int NPC_STACK_DISTANCE = 95;
+        private const int STACK_RESOLVE_COOLDOWN_MS = 900;
+        private const int NPC_VISUAL_STOP_SMOOTH_MS = 120;
 
-        // ✅ Tir immédiat au retour de portée (sans attendre le repositionnement)
-        private const int INSTANT_SHOOT_RANGE = STOP_SHOOT_RANGE; // même valeur que Npc.Attack()
+        private const int INSTANT_SHOOT_RANGE = STOP_SHOOT_RANGE;
 
-        // Dimensions map (utilisées pour clamp)
         private const int NPC_MIN_COORD = 5;
         private const int PORTAL_SPAWN_EXCLUSION_RADIUS = 1400;
         private const int PORTAL_MOVEMENT_EXCLUSION_RADIUS = 800;
@@ -46,8 +43,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private const int PORTAL_MOVEMENT_REDIRECT_DISTANCE = 650;
         private const int PORTAL_MOVEMENT_EXIT_PADDING = 120;
 
-        // ✅ Cubikon Protegit leash: Protegits may chase attackers but must not go further than this from the Cubikon.
-        // Flash (2010-like) behaviour: Protegits follow targets until ~900 distance from the Cubikon, then return.
         private const double CUBIKON_PROTEGIT_LEASH_DISTANCE = 900.0;
 
         private const int AGGRESSIVE_DETECT_RANGE = 600;
@@ -72,10 +67,9 @@ namespace OrbitReborn_Emulator.Game.Npcs
             "-=[ Protegit ]=-"
         };
 
-        // ✅ Mémoire “hors portée -> retour en portée” pour trigger un tir instantané
-        private static readonly Dictionary<int, bool> WasOutOfRange = new Dictionary<int, bool>();     // npcId -> bool
-        private static readonly Dictionary<int, int> LastInstantShootTick = new Dictionary<int, int>(); // npcId -> tick
-        private static readonly Dictionary<int, int> LastStackResolveTick = new Dictionary<int, int>(); // npcId -> tick
+        private static readonly Dictionary<int, bool> WasOutOfRange = new Dictionary<int, bool>();
+        private static readonly Dictionary<int, int> LastInstantShootTick = new Dictionary<int, int>();
+        private static readonly Dictionary<int, int> LastStackResolveTick = new Dictionary<int, int>();
 
         private static readonly MapActor[] EmptyMapActorArray = new MapActor[0];
         private const double CHASE_DISTANCE_SQUARED = CHASE_DISTANCE * CHASE_DISTANCE;
@@ -85,19 +79,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private const double CUBIKON_PROTEGIT_LEASH_DISTANCE_SQUARED = CUBIKON_PROTEGIT_LEASH_DISTANCE * CUBIKON_PROTEGIT_LEASH_DISTANCE;
 
 
-        // =========================================================
-        //  ✅ REGEN (stable even if AI_TICK_RATE changes)
-        //  - REGEN_DELAY_SECONDS: time without taking damage before regen starts
-        //  - HP_REGEN_PERCENT_PER_SECOND / SHIELD_REGEN_PERCENT_PER_SECOND: % of max per second
-        //
-        //  DarkOrbit 2010 tip:
-        //    - If you want "no HP passive regen", set HP_REGEN_PERCENT_PER_SECOND = 0.0
-        // =========================================================
         private const double REGEN_DELAY_SECONDS = 15.0;
         private const double HP_REGEN_PERCENT_PER_SECOND = 0.01;
         private const double SHIELD_REGEN_PERCENT_PER_SECOND = 0.01;
 
-        // Fractional carry so small NPCs don't regen faster when AI ticks faster
         private static readonly Dictionary<int, double> HpRegenCarry = new Dictionary<int, double>();
         private static readonly Dictionary<int, double> ShieldRegenCarry = new Dictionary<int, double>();
 
@@ -315,8 +300,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             double dist = Math.Sqrt(distSquared);
             double desiredDistance = radius + PORTAL_MOVEMENT_EXIT_PADDING;
 
-            // Si le NPC est déjà dans la zone, on le sort au plus court.
-            // Sinon, on lui donne un vrai demi-tour visible.
             double startDistanceFromPortal = Math.Sqrt(distSquared);
             if (startDistanceFromPortal >= radius)
                 desiredDistance = startDistanceFromPortal + PORTAL_MOVEMENT_REDIRECT_DISTANCE;
@@ -354,8 +337,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             x = Math.Max(minX, Math.Min(maxX, x));
             y = Math.Max(minY, Math.Min(maxY, y));
 
-            // Hors combat : le portail agit comme un mur invisible.
-            // Si le NPC sort d'un combat près du portail, il doit d'abord sortir de la zone interdite.
             PortalInfo blockingPortal;
             if (TryFindPortalContainingPoint(mapId, currentX, currentY, PORTAL_MOVEMENT_EXCLUSION_RADIUS, out blockingPortal))
             {
@@ -363,10 +344,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 return;
             }
 
-            // Destination finale interdite.
             PushOutOfPortalRadius(mapId, ref x, ref y, PORTAL_MOVEMENT_EXCLUSION_RADIUS, minX, maxX, minY, maxY);
 
-            // Trajet interdit : même si la destination est bonne, on refuse un segment qui traverse la zone portail.
             for (int attempt = 0; attempt < 3; ++attempt)
             {
                 if (!TryFindPortalBlockingPatrolSegment(mapId, currentX, currentY, x, y, PORTAL_MOVEMENT_EXCLUSION_RADIUS, out blockingPortal))
@@ -441,11 +420,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
         {
             NpcAI.RegisteredNpc = new CDictionnary<string, List<string>>();
 
-            // --- CONFIGURATION DES NPCS (Identique) ---
             NpcAI.RegisteredNpc.Add("-=[ Streuner ]=-", new List<string>() { "-=[ Streuner ]=-", "1", "0", "0", "2", "800", "800", "400", "400", "280", "400", "1", "0", "0", "0", "", "0", "0", "0", "0", "1", "18" });
-            // Boss Streuner (petite map) doit afficher la même image que Streuner.
-            // Dans le client Flash (source de vérité), Boss Streuner utilise le même vaisseau que Streuner.
-            // Fix: shipId=23 (bossStreuner dans game.xml) et côté client HTML5 on mappe 23 -> sprite de Streuner.
             NpcAI.RegisteredNpc.Add("-=[ Boss Streuner ]=-", new List<string>() { "-=[ Boss Streuner ]=-", "1", "0", "0", "23", "3200", "3200", "1600", "1600", "250", "1600", "4", "0", "0", "0", "", "0", "0", "0", "0", "2", "80" });
             NpcAI.RegisteredNpc.Add("-=[ Lordakia ]=-", new List<string>() { "-=[ Lordakia ]=-", "1", "0", "0", "71", "2000", "2000", "2000", "2000", "320", "800", "2", "0", "0", "0", "", "0", "0", "0", "0", "2", "70" });
             NpcAI.RegisteredNpc.Add("-=[ Boss Lordakia ]=-", new List<string>() { "-=[ Boss Lordakia ]=-", "1", "0", "0", "36", "8000", "8000", "8000", "8000", "320", "3200", "8", "0", "0", "0", "", "0", "0", "0", "0", "4", "313" });
@@ -481,7 +456,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             NpcAI.NpcToRemove = new CList<Npc>();
             NpcAI.NpcToAdd = new CList<Npc>();
 
-            // SPAWNS (X-1 à X-8)
             foreach (int map in new int[] { 1, 5, 9 }) NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Streuner ]=-"], map, 21, true);
             foreach (int map in new int[] { 2, 6, 10 })
             {
@@ -538,7 +512,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Boss StreuneR ]=-"], map, 3, true);
             }
 
-            // Timer AI (compat client : on n'a pas touché au protocole)
             NpcAI.mPerformUpdate = new Timer(new TimerCallback(NpcAI.PerformUpdate), (object)null, 0, AI_TICK_RATE);
             ++TimerManager.TimerRunning;
         }
@@ -585,13 +558,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 instanceByMapId.AddNpcToMap(newInstance);
                 NpcAI.NpcToAdd.Add(newInstance);
 
-                // ✅ init mémoire out-of-range
                 WasOutOfRange[newInstance.Id] = true;
                 LastInstantShootTick[newInstance.Id] = 0;
                 LastStackResolveTick[newInstance.Id] = 0;
 
 
-                // ✅ init regen carry
                 HpRegenCarry[newInstance.Id] = 0;
                 ShieldRegenCarry[newInstance.Id] = 0;
             }
@@ -679,7 +650,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             }
         }
 
-        // ✅ Helper : tir instantané au retour de portée (sans attendre reposition)
         private static int GetInstantShootCooldownMs(Npc npc)
         {
             if (npc == null)
@@ -693,25 +663,20 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (npc == null || targetSession == null || targetSession.CharacterInfo == null)
                 return;
 
-            // On considère "retour en portée" quand on repasse sous INSTANT_SHOOT_RANGE
             bool outOfRange = (distanceSquared > INSTANT_SHOOT_RANGE_SQUARED);
 
             bool wasOut;
             if (!WasOutOfRange.TryGetValue(npc.Id, out wasOut))
                 wasOut = true;
 
-            // Mise à jour état
             WasOutOfRange[npc.Id] = outOfRange;
 
-            // Si on n'était pas "hors portée" avant => pas un retour en portée
             if (!wasOut)
                 return;
 
-            // Si pas vraiment revenu en portée
             if (outOfRange)
                 return;
 
-            // Cooldown AI (en plus des garde-fous Npc.cs)
             int nowTick = Environment.TickCount;
             int lastTick = 0;
             int instantShootCooldownMs = GetInstantShootCooldownMs(npc);
@@ -722,7 +687,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             LastInstantShootTick[npc.Id] = nowTick;
 
-            // ✅ Tir immédiat (ne dépend pas du positionnement/orbite)
             npc.StopMovementBeforeAttack();
             npc.Attack(npc);
         }
@@ -1011,9 +975,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
         }
 
 
-        // =========================================================
-        // ✅ Cubikon defense target selection (Protegits)
-        // =========================================================
         private static bool IsValidCubikonTarget(int targetId, int mapId, int cubikonX, int cubikonY)
         {
             if (targetId <= 0)
@@ -1162,7 +1123,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                         if (item_1 == null || item_1.Name == "Spaceball")
                             continue;
 
-                        // NPC en délai de respawn visuel : ne pas le retraiter par l'IA.
                         if (item_1.IsDestroying)
                             continue;
 
@@ -1175,9 +1135,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             continue;
                         }
 
-                        // =========================================================
-                        // ✅ Cubikon Protegits (leash / retarget / despawn)
-                        // =========================================================
                         bool isCubikonMinion = (item_1.ParentNpcId != 0 && item_1.ShipId == 81);
                         Npc parentNpc = null;
                         int parentX = 0;
@@ -1196,7 +1153,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 }
                             }
 
-                            // Parent missing/dead -> despawn after 3s
                             if (parentNpc == null || parentNpc.IsDestroying || parentNpc.ShipHp <= 0)
                             {
                                 if (item_1.DespawnAt <= 0.0)
@@ -1208,7 +1164,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             {
                                 parentNpc.RefreshOwnerClaimState();
 
-                                // Cubikon idle -> despawn Protegits after short delay
                                 const double CUBIKON_IDLE_SECONDS = 10.0;
                                 if (now - parentNpc.LastAttackReceived >= CUBIKON_IDLE_SECONDS)
                                 {
@@ -1239,9 +1194,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             }
                         }
 
-                        // =========================================================
-                        // ✅ Despawn timer (Protegits, etc.)
-                        // =========================================================
                         if (item_1.DespawnAt > 0.0 && now >= item_1.DespawnAt)
                         {
                             MapInstance despawnMap = GetCachedMapInstance(item_1.MapId, mapInstanceCache);
@@ -1251,7 +1203,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 if (despawnActor != null)
                                     despawnMap.KickNpc(despawnActor.Id);
 
-                                // Clean Cubikon list
                                 if (item_1.ParentNpcId != 0)
                                 {
                                     MapActor parentActor = despawnMap.GetActorByReferenceId(item_1.ParentNpcId, MapActorType.AiBot);
@@ -1268,9 +1219,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             continue;
                         }
 
-                        // =========================================================
-                        // 1. GESTION CIBLAGE ET ATTAQUE
-                        // =========================================================
                         int local_2 = item_1.LocX;
                         int local_3 = item_1.LocY;
                         bool shouldMove = false;
@@ -1298,9 +1246,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             }
                         }
 
-                        // EMP/IEM : après la fenêtre de 2s, un NPC qui était en combat peut tenter
-                        // de reprendre la même cible uniquement si elle est encore visible et valide.
-                        // Si le joueur s'est cloak pendant l'EMP, le relock en attente est simplement annulé.
                         if (item_1.TargetId == 0 && item_1.EmpInterruptedTargetId > 0)
                         {
                             int empTargetId = item_1.EmpInterruptedTargetId;
@@ -1329,7 +1274,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             Session local_4 = SessionManager.GetSessionByCharacterId(item_1.TargetId);
                             bool droppedForCombatIdle = false;
 
-                            // Galaxy Gate NPCs may only keep the owner as their target.
                             if (GalaxyGateWaveService.IsGateMap(item_1.MapId))
                             {
                                 int gateOwnerCharacterId;
@@ -1365,8 +1309,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 local_4 = null;
                             }
 
-                            // Le NPC lâche seulement après 10s sans dégâts reçus ET sans dégâts infligés.
-                            // Le simple relock / mouvement / chase ne prolonge pas l'aggro.
                             if (local_4 != null && item_1.ShouldDropNpcTargetForCombatIdle(now))
                             {
                                 item_1.StopNpcAttack();
@@ -1386,11 +1328,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 double diffY = item_1.LocY - local_4.CharacterInfo.LocY;
                                 double distSquared = (diffX * diffX) + (diffY * diffY);
 
-                                // ✅ Tir immédiat quand on revient en portée (même si pas repositionné)
                                 TryInstantShoot(item_1, local_4, distSquared);
 
-                                // --- FIX "MITRAILLETTE" ---
-                                // LockTarget UNIQUEMENT si AttackTimer est NULL.
                                 if (distSquared < NPC_ATTACK_WAKE_RANGE_SQUARED)
                                 {
                                     if (item_1.AttackTimer == null)
@@ -1403,18 +1342,13 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                     item_1.IsAttacking = false;
                                 }
 
-                                // =========================================================
-                                // 2. GESTION DU MOUVEMENT (INTELLIGENCE ORBITALE)
-                                // =========================================================
 
-                                // Si > 550 : POURSUITE DIRECTE (Sprint)
                                 if (distSquared > CHASE_DISTANCE_SQUARED)
                                 {
                                     local_2 = local_4.CharacterInfo.LocX + GetStableNpcOffset(item_1, 11, -50, 50);
                                     local_3 = local_4.CharacterInfo.LocY + GetStableNpcOffset(item_1, 17, -50, 50);
                                     shouldMove = true;
                                 }
-                                // Si <= 450 : ARRÊT (Tir stationnaire / Kiting)
                                 else if (distSquared <= STOP_SHOOT_RANGE_SQUARED)
                                 {
                                     if (ShouldResolveNpcStackConflict(item_1, npcTargetGroups))
@@ -1433,7 +1367,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                         shouldMove = false;
                                     }
                                 }
-                                // Si ENTRE 450 et 550 : ORBITE (Se place autour)
                                 else
                                 {
                                     double angle = Math.Atan2(diffY, diffX) + GetOrbitAngleOffset(item_1, npcTargetGroups);
@@ -1448,15 +1381,13 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             {
                                 item_1.StopNpcAttack();
                                 StopCurrentMovement(item_1);
-                                WasOutOfRange[item_1.Id] = true; // reset
+                                WasOutOfRange[item_1.Id] = true;
                             }
                         }
                         else
                         {
-                            // MODE PATROUILLE
                             if (isCubikonMinion && parentNpc == null)
                             {
-                                // Parent missing: stay still until despawn
                                 local_2 = item_1.LocX;
                                 local_3 = item_1.LocY;
                                 shouldMove = false;
@@ -1465,7 +1396,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             {
                                 if (isCubikonMinion && parentNpc != null)
                                 {
-                                    // Protegits restent près du Cubikon
                                     local_2 = parentX + random.Next(-200, 200);
                                     local_3 = parentY + random.Next(-200, 200);
                                 }
@@ -1490,12 +1420,9 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 }
                             }
 
-                            WasOutOfRange[item_1.Id] = true; // pas de cible => reset
+                            WasOutOfRange[item_1.Id] = true;
                         }
 
-                        // =========================================================
-                        // ✅ LEASH Protegit -> Cubikon (max 900)
-                        // =========================================================
                         if (isCubikonMinion && parentNpc != null)
                         {
                             double dxP = local_2 - parentX;
@@ -1512,15 +1439,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             }
                         }
 
-                        // Clamp coords
                         if (item_1.TargetId != 0)
                             ClampNpcDestinationToMapBounds(item_1.MapId, ref local_2, ref local_3);
                         else
                             NormalizeNpcPatrolDestination(item_1.MapId, item_1.LocX, item_1.LocY, ref local_2, ref local_3);
 
-                        // =========================================================
-                        // 3. EXÉCUTION DU MOUVEMENT
-                        // =========================================================
                         if (shouldMove)
                         {
                             double destDx = (double)(item_1.NewLocX - local_2);
@@ -1561,20 +1484,14 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             }
                         }
 
-                        // =========================================================
-                        // 4. REGEN PV/BOUCLIER (Si pas attaqué depuis 15s)
-                        // =========================================================
                         if (UnixTimestamp.GetCurrent() - item_1.LastAttackReceived >= REGEN_DELAY_SECONDS)
                         {
                             double tickScale = AI_TICK_RATE / 1000.0;
                             bool needsUpdate = false;
 
-                            // ✅ Important: we keep regen stable even if AI_TICK_RATE is changed.
-                            // No more "minimum 1 per tick" (which makes regen faster when AI ticks faster).
                             MapInstance inst = GetCachedMapInstance(item_1.MapId, mapInstanceCache);
                             if (inst != null)
                             {
-                                // HP regen
                                 if (HP_REGEN_PERCENT_PER_SECOND > 0 && item_1.ShipHp < item_1.ShipMaxHp)
                                 {
                                     double carry = 0;
@@ -1593,11 +1510,9 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 }
                                 else
                                 {
-                                    // Full or disabled => reset carry
                                     HpRegenCarry[item_1.Id] = 0;
                                 }
 
-                                // Shield regen
                                 if (SHIELD_REGEN_PERCENT_PER_SECOND > 0 && item_1.ShipShield < item_1.ShipMaxShield)
                                 {
                                     double carry = 0;

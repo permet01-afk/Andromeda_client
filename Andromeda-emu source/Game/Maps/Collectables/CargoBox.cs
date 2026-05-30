@@ -1,9 +1,3 @@
-// Decompiled with JetBrains decompiler
-// Type: OrbitReborn_Emulator.Game.Maps.Collectables.CargoBox
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
-
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Sessions;
@@ -30,7 +24,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
 
         public long SpawnSequence { get; private set; }
 
-        // CharacterId du joueur propriétaire du drop (sert à limiter le nombre de cargos affichés)
         public int OwnerCharacterId { get; set; }
 
         public int Prometium
@@ -93,9 +86,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
             this.SpawnSequence = Interlocked.Increment(ref mSpawnSeqGen);
         }
 
-        /// <summary>
-        /// Retire jusqu'à maxToTake de la ressource contenue dans la box.
-        /// </summary>
         private static int TakeFromBox(ref int boxAmount, int maxToTake)
         {
             if (boxAmount <= 0 || maxToTake <= 0)
@@ -106,11 +96,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
             return taken;
         }
 
-        /// <summary>
-        /// Total (en unités cargo) des ressources qui comptent pour la soute.
-        /// IMPORTANT: on garde la même logique que CharacterInfo.GetCurrentCargoTotal()
-        /// (Xenomit n'est pas compté dans le total cargo actuel dans ce codebase).
-        /// </summary>
         private long GetCargoUnitsInBox()
         {
             return (long)this.Prometium

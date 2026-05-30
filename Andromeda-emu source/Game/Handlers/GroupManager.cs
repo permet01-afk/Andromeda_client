@@ -950,7 +950,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                                         foreach (int index in sessiongroup.CharacterInfo.Members.Keys)
                                         {
                                             Session sessionByIndex = SessionManager.GetSessionByCharacterId(index);
-                                            sessionByIndex.SendData(PacketComposer.Compose("ps", "nl|" + sessionNewleader.CharacterInfo.Id)); // send the player that hes now the leader
+                                            sessionByIndex.SendData(PacketComposer.Compose("ps", "nl|" + sessionNewleader.CharacterInfo.Id));
                                         }
                                         break;
                                     }

@@ -1,7 +1,4 @@
-﻿// Type: OrbitReborn_Emulator.Game.Handlers.Chat
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
+﻿
 
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
@@ -548,7 +545,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     foreach (int num in Session.CharacterInfo.Members.Keys)
                     {
                         Session sessionMembers1 = SessionManager.GetSessionByCharacterId(num);
-                        Session.SendData(PacketComposer.ComposeChat("dq%Your Members are :" + sessionMembers1.CharacterInfo.Id + "  #")); // sending the new member who joined the group the leader if he got invited from somone without leader
+                        Session.SendData(PacketComposer.ComposeChat("dq%Your Members are :" + sessionMembers1.CharacterInfo.Id + "  #"));
 
                     }
                     return;

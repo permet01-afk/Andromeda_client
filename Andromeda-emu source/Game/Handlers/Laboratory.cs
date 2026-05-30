@@ -1,8 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: OrbitReborn_Emulator.Game.Handlers.Laboratory
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
+﻿
 
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
@@ -21,10 +17,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             DataRouter.RegisterHandler("b", new ProcessRequestCallback(Laboratory.GetOrePrices), false);
         }
 
-        // ------------------------------------------------------------------------------------
-        // ORE PRODUCTION (PROMETID / DURANIUM / PROMERIUM)
-        // Requested behavior: FREE (no credits / no uridium cost), only ore conversion.
-        // ------------------------------------------------------------------------------------
         private static void ProdReff(Session Session, ClientMessage Message)
         {
             long resId = (long)Message.GetNextInt(3);
@@ -39,7 +31,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // 11 = Prometid  (20 Prometium + 10 Endurium -> 1 Prometid)
             if (resId == 11L)
             {
                 if (Session.CharacterInfo.LabInfos.GetCargo(1L) < 20 * amount) return;
@@ -52,7 +43,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // 12 = Duranium  (20 Terbium + 10 Endurium -> 1 Duranium)
             if (resId == 12L)
             {
                 if (Session.CharacterInfo.LabInfos.GetCargo(3L) < 20 * amount) return;
@@ -65,7 +55,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // 13 = Promerium (10 Prometid + 10 Duranium + 1 Xenomit -> 1 Promerium)
             if (resId == 13L)
             {
                 if (Session.CharacterInfo.LabInfos.GetCargo(11L) < 10 * amount) return;
@@ -266,14 +255,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         }
 
-        // ------------------------------------------------------------------------------------
-        // APPLY ORE TO REFINERIES (LASER / ROCKET / SHIELD / DRIVING)
-        // Flash-like upgrade matrix:
-        // - Laser  : Prometid (11), Promerium (13), Seprom (14)
-        // - Rocket : Prometid (11), Promerium (13), Seprom (14)
-        // - Shield : Duranium (12), Promerium (13), Seprom (14)
-        // - Driving: Duranium (12), Promerium (13)
-        // ------------------------------------------------------------------------------------
         private static void AddReff(Session Session, ClientMessage Message)
         {
             int oreId = Message.GetNextInt(4);
@@ -363,17 +344,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
         }
 
 
-        // Andromeda ore sell prices (Credits per unit).
-        // These values are the classic Trade prices multiplied by x3:
-        // Prometium  (1)  = 30
-        // Endurium   (2)  = 45
-        // Terbium    (3)  = 75
-        // Prometid   (11) = 600
-        // Duranium   (12) = 600
-        // Promerium  (13) = 1500
-        //
-        // The existing Honor bonus is still applied on top of these base prices:
-        // price = basePrice * (1 + Honor / 500000), capped at x2 (>= 500,000 honor).
         private static int GetBasePrice(int iResId)
         {
             switch (iResId)
@@ -394,20 +364,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (basePrice <= 0)
                 return 0;
 
-            // If session/character is missing, return base price.
             long honor = 0;
             if (Session != null && Session.CharacterInfo != null)
                 honor = Session.CharacterInfo.Honor;
 
-            // Classic integer implementation (matches the official "X honor = +1 credit" values):
-            // bonus = Honor / (500000 / basePrice), capped so total price <= basePrice*2.
             int divisor = 500000 / basePrice;
             if (divisor <= 0) divisor = 1;
 
             long bonusLong = honor / divisor;
             int price = basePrice;
 
-            // Clamp bonus so we never exceed x2.
             int maxPrice = basePrice * 2;
             long maxBonus = maxPrice - basePrice;
 
@@ -421,15 +387,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void SellOre(Session Session, ClientMessage Message)
         {
-            // Allowed only inside TradeZone (near station)
             if (!Session.CharacterInfo.TradeZone)
             {
                 Session.SendData(PacketComposer.Compose("A", "STD|You must be inside the trade zone (station) to sell ores."));
                 return;
             }
 
-            // Flash client sends:    T|<oreId>|<amount>
-            // Some HTML5 clients send: T|sell|<oreId>|<amount>
             string arg1 = Message.GetNextString(1);
 
             int oreId;

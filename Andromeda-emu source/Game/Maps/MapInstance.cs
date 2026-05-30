@@ -1,8 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: OrbitReborn_Emulator.Game.Maps.MapInstance
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
+﻿
 
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
@@ -432,8 +428,6 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         public void BroadcastMessageForOtherOnly(ServerMessage Message, Session session)
         {
-            // Galaxy Gate maps are private per player: never send other-only packets
-            // to everyone sharing the same technical MapId.
             if (GalaxyGateWaveService.IsGateMap(this.MapId))
                 return;
 
@@ -481,7 +475,6 @@ namespace OrbitReborn_Emulator.Game.Maps
             if (message == null)
                 return;
 
-            // Galaxy Gate selected-target broadcasts are scoped to the NPC owner only.
             if (GalaxyGateWaveService.IsGateMap(this.MapId))
             {
                 MapActor npcActor = this.GetActorByReferenceId(targetId, MapActorType.AiBot);
@@ -514,7 +507,6 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         public void BroadcastMessageUserEnter(CharacterInfo User)
         {
-            // Do not announce player entries to the other players sharing the same gate MapId.
             if (GalaxyGateWaveService.IsGateMap(this.MapId))
                 return;
 
@@ -583,28 +575,24 @@ namespace OrbitReborn_Emulator.Game.Maps
                     Fight.SendLockIntentToObserver(Session, observedSession, this);
             }
 
-            // 🔥 Envoie au client la position actuelle du héros (0|H|x|y)
             Session.SendData(MapHeroInitComposer.Compose(Session.CharacterInfo));
             int mapId = Session.CharacterInfo.MapId;
 
-            // Home bases (X-1) + X-8 bases (custom)
-            if (mapId == 1 || mapId == 20) // 1-1 and 1-8
+            if (mapId == 1 || mapId == 20)
                 Session.SendData(PacketComposer.Compose("s", "0|1|redStation|1|0|2000|1200"));
-            if (mapId == 5 || mapId == 24) // 2-1 and 2-8
+            if (mapId == 5 || mapId == 24)
                 Session.SendData(PacketComposer.Compose("s", "0|1|blueStation|2|0|19000|1200"));
-            if (mapId == 9 || mapId == 28) // 3-1 and 3-8
+            if (mapId == 9 || mapId == 28)
                 Session.SendData(PacketComposer.Compose("s", "0|1|greenStation|3|0|19200|11500"));
 
         }
 
         public void SendPortals(Session Session)
         {
-            // 1) Portails SQL
             CList<PortalInfo> portalForMap = PortalManager.GetPortalForMap(this.MapId);
             if (portalForMap == null)
                 portalForMap = new CList<PortalInfo>();
 
-            // 2) Portails GG dynamiques
             GalaxyGatePortalService.RefreshForSession(Session);
 
             if (Session.CharacterInfo.GalaxyGatePortals != null && Session.CharacterInfo.GalaxyGatePortals.Count > 0)
@@ -617,14 +605,12 @@ namespace OrbitReborn_Emulator.Game.Maps
                     if (p.MapId == this.MapId)
                         portalForMap.Add(p);
 
-            // ✅ 3) Diff : remove + add (le Flash attend remove via 0|n|p|REM|id)
             HashSet<int> newIds = new HashSet<int>();
             foreach (PortalInfo p in portalForMap.Keys)
                 newIds.Add(p.Id);
 
             HashSet<int> oldIds = Session.CharacterInfo.ClientPortalIds;
 
-            // Premier envoi : snapshot complet
             if (oldIds == null)
             {
                 Session.SendData(MapPortalsComposer.Compose(portalForMap, Session));
@@ -632,12 +618,10 @@ namespace OrbitReborn_Emulator.Game.Maps
                 return;
             }
 
-            // Remove ceux qui ont disparu
             foreach (int oldId in oldIds)
                 if (!newIds.Contains(oldId))
                     Session.SendData(PacketComposer.Compose("n", "p|REM|" + oldId));
 
-            // Add ceux qui sont nouveaux
             CList<PortalInfo> added = new CList<PortalInfo>();
             foreach (PortalInfo p in portalForMap.Keys)
                 if (!oldIds.Contains(p.Id))

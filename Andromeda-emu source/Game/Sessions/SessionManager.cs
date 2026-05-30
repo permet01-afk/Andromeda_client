@@ -23,9 +23,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
         private static Timer mNoFightThread;
         private static object mSyncRoot;
 
-        // Fermeture d'onglet / socket perdue : le vaisseau reste vivant, mais pas à vie.
-        // S'il ne reçoit aucune attaque pendant cette fenêtre, on transforme l'état
-        // en vrai logout serveur et on nettoie la session.
         private const double STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS = 30.0;
 
         public static CDictionnary<int, Session> Sessions
@@ -85,8 +82,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
             SessionManager.mSessions = new ConcurrentDictionary<int, Session>();
             SessionManager.mSessionsToStop = new CList<int>();
             SessionManager.mCharacterSessionIndex = new ConcurrentDictionary<int, int>();
-            // Start at 1 so the first real player session always has a positive SessionId.
-            // This keeps behavior consistent with CharacterInfo.HasLinkedSession (SessionId > 0).
             SessionManager.mCounter = 1;
             SessionManager.mMonitorThread = new Timer(new TimerCallback(SessionManager.ExecuteMonitor), (object)null, TimeSpan.FromMilliseconds(300.0), TimeSpan.FromMilliseconds(300.0));
             SessionManager.mNoFightThread = new Timer(new TimerCallback(SessionManager.ExecuteNoFightMonitor), (object)null, TimeSpan.FromMilliseconds(1000.0), TimeSpan.FromMilliseconds(1000.0));
@@ -164,10 +159,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
         }
 
 
-        // --- CORRECTION DU TIMER DE COMBAT ICI ---
         private static void ExecuteNoFightMonitor(object state)
         {
-            const int PEACE_PORTAL_DELAY = 10; // délai "Flash" (en secondes) avant d’être safe au portail
+            const int PEACE_PORTAL_DELAY = 10;
 
             try
             {
@@ -181,7 +175,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
                         if (Session.StoppedPlayer || Session.CharacterInfo.Destroy)
                             continue;
 
-                        // Nettoyage des attaquants
                         if (!Session.CharacterInfo.Destroy && !Session.StoppedPlayer && Session.CharacterInfo.Attacked != null)
                         {
                             if (Session.StoppedPlayer || Session.CharacterInfo.Destroy)
@@ -308,24 +301,15 @@ namespace OrbitReborn_Emulator.Game.Sessions
             if (session.CurrentMapId <= 0)
                 return false;
 
-            // Galaxy Gate stricte : une fermeture d'onglet ne doit jamais
-            // transformer une gate active en logout par inactivité. Tant que
-            // le joueur est vivant sur une map GG, le vaisseau reste en jeu ;
-            // si les NPCs le tuent, KillPlayer le sortira de la gate puis la
-            // session pourra être nettoyée normalement.
             if (GalaxyGateWaveService.IsGateMap(session.CharacterInfo.MapId)
                 || GalaxyGateWaveService.IsGateMap(session.CurrentMapId))
                 return true;
 
             double now = UnixTimestamp.GetCurrent();
 
-            // Grâce initiale après fermeture de socket.
             if (session.TimeStopped < STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS)
                 return true;
 
-            // Après la grâce, seuls les dégâts / attaques reçues prolongent la présence.
-            // Une Galaxy Gate où les NPCs tapent continue donc normalement ;
-            // une fermeture d'onglet sans activité finit en logout automatique.
             return HasRecentIncomingAttackActivity(session, now);
         }
 
@@ -379,10 +363,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 {
                     if (!clist2.Contains(key) && key.Stopped && key.TimeStopped > STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS)
                     {
-                        // Browser refresh / tab close is not a logout immédiat : le vaisseau
-                        // continue côté serveur. Par contre, s'il n'est plus attaqué pendant
-                        // la fenêtre d'inactivité, on le logout proprement pour éviter les
-                        // sessions vivantes éternelles.
                         if (ShouldKeepStoppedGameplaySessionAlive(key))
                             continue;
 

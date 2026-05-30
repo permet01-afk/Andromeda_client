@@ -1,8 +1,3 @@
-// Type: OrbitReborn_Emulator.Game.Characters.CharacterInfo
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
-
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
@@ -31,7 +26,6 @@ namespace OrbitReborn_Emulator.Game.Characters
     {
         public bool Invincible = false;
         public System.Threading.Timer InvincibilityTimer;
-        // ✅ Galaxy Gates (portails dynamiques par joueur)
         public CList<PortalInfo> GalaxyGatePortals = new CList<PortalInfo>();
 
         public CDictionnary<int, PortalInfo> GalaxyGatePortalDestinations = new CDictionnary<int, PortalInfo>();
@@ -92,13 +86,10 @@ namespace OrbitReborn_Emulator.Game.Characters
         private Random mRandomDamage;
         private int mShipCargo;
         private int mShipMaxCargo;
-        // ------------------------------------------------------------
-        // Extras équipés (par configuration A/B via le site)
-        // ------------------------------------------------------------
-        private const int EXTRA_ID_AUTO_ROCKET_CPU = 20;     // Auto-Rocket CPU
-        private const int EXTRA_ID_CARGO_COMPRESSOR = 21;    // Cargo Compressor (double cargo)
-        private const int EXTRA_ID_HELLSTORM_HST1 = 38;      // HST-1
-        private const int EXTRA_ID_HELLSTORM_HST2 = 39;      // HST-2
+        private const int EXTRA_ID_AUTO_ROCKET_CPU = 20;
+        private const int EXTRA_ID_CARGO_COMPRESSOR = 21;
+        private const int EXTRA_ID_HELLSTORM_HST1 = 38;
+        private const int EXTRA_ID_HELLSTORM_HST2 = 39;
 
         private bool mHasAutoRocketCpuCfgA = false;
         private bool mHasAutoRocketCpuCfgB = false;
@@ -131,7 +122,6 @@ namespace OrbitReborn_Emulator.Game.Characters
         private int mMapId;
         private long mCredits;
         private long mUridium;
-        // -------------------- MUNITIONS (table users : ammo_*) --------------------
         public long AmmoLcb10;
         public long AmmoMcb25;
         public long AmmoMcb50;
@@ -147,12 +137,10 @@ namespace OrbitReborn_Emulator.Game.Characters
         public long AmmoUbr100;
         public long AmmoEco10;
 
-        // --- MUNITIONS SPECIALES (SMB-01 / ISH-01 / EMP-01) ---
         public long AmmoSmb01;
         public long AmmoIsh01;
         public long AmmoEmp01;
 
-        // Optionnel (pour récupérer les achats du site sans relog)
         public System.Threading.Timer AmmoSyncTimer;
         public System.Threading.Timer ConfigRefreshTimer;
         public HashSet<int> ClientPortalIds = null;
@@ -166,8 +154,6 @@ namespace OrbitReborn_Emulator.Game.Characters
         private int mSelectedRocket;
         private int mSelectedRocketAuto;
         private int mSelectedPlayerRocket;
-        // ✅ Empêche une roquette en vol de frapper un NPC qui a respawn avec le même Id.
-        // Stocke le "SpawnSeq" du NPC ciblé au moment du tir.
         private int mSelectedPlayerRocketSpawnSeq;
         private long mRankPoints;
         private int mUserKill;
@@ -181,9 +167,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         public CList<int> Members;
         public CList<int> InvitationSend;
         public CList<int> InvitationReceive;
-        /* public CList<int> Members = new CList<int>();
-        public CList<int> InvitationSend = new CList<int>();
-        public CList<int> InvitationReceive = new CList<int>(); */
+
         private bool mGroupLeader = false;
 
         private CList<Session> mAttacked;
@@ -1230,11 +1214,8 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.mAttacking = value;
                 this.mAttackingRepBug = value;
 
-                // IMPORTANT : dès qu'on attaque, on repasse instantanément en "combat"
-                // (sinon le NoFightMonitor peut rater une attaque courte)
                 if (value)
                     this.mNoFightTimer = 0;
-                // ✅ Stop repair bot immediately if player starts attacking (DarkOrbit-like)
                 if (value && this.IsRepairing)
                 {
                     Session sRep = SessionManager.GetSessionByCharacterId(this.mId);
@@ -3280,16 +3261,12 @@ namespace OrbitReborn_Emulator.Game.Characters
                 return Convert.ToString(value);
             };
 
-            // Infos de base
             this.mFactionId = getInt32("factionid", this.mFactionId);
             this.mRealFaction = getInt32("factionid", this.mRealFaction);
             this.mGameTitle = getString("game_title", this.mGameTitle ?? string.Empty);
             this.mGrade = getInt32("grade", this.mGrade);
             this.mCredits = getInt64("credits", this.mCredits);
             this.mUridium = getInt64("uridium", this.mUridium);
-            // --- Munitions depuis users.ammo_* ---
-            // Si le joueur consomme déjà des munitions, on ne remplace pas le cache local ici :
-            // le flush ammo fusionnera les achats web avec la consommation en cours.
             lock (this.mPrimaryAmmoSyncLock)
             {
                 if (!this.mPrimaryAmmoDirty)
@@ -3351,7 +3328,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             int dbActiveConfig = getInt32("active_config", this.mActiveConfig);
             this.mActiveConfig = (dbActiveConfig == 2) ? 2 : 1;
 
-            // Beginner mode
             if (this.mRankPoints < 25000L && canBeginner == 1)
             {
                 this.mGameTitle = "title_5";
@@ -3371,7 +3347,6 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             this.mGGRings = Math.Max(0, Math.Min(4, ringsDb));
 
-            // Drones + Apis / Zeus
             this.Drones = getString("drones", this.Drones ?? "-/-");
             this.mApisBuilt = getBool("apis_built", this.mApisBuilt);
             this.mZeusBuilt = getBool("zeus_built", this.mZeusBuilt);
@@ -3379,7 +3354,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (num3 < 0)
                 num3 = 0;
 
-            // Upgrades / compétences (HP / DMG / SHD / SPEED)
             int num4 = getInt32("hp_lvl", 0);
             if (num4 < 0)
                 num4 = 0;
@@ -3394,7 +3368,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             int num7 = getInt32("speed_lvl", 0);
             if (num7 > 5 || num7 < 0)
                 num7 = 0;
-            // ---- Base ship stats from DB (DarkOrbit 2010) ----
             int baseHp2010 = 100000;
             int baseSpeed2010 = 250;
             int baseCargo2010 = 0;
@@ -3436,30 +3409,25 @@ namespace OrbitReborn_Emulator.Game.Characters
                     ? Convert.ToInt32(shipStatsRow["extra_slots_2010"])
                     : this.mExtraSlots2010;
 
-                // sécurité si un design n’est pas rempli
                 if (baseHp2010 <= 0) baseHp2010 = 100000;
                 if (baseSpeed2010 <= 0) baseSpeed2010 = 250;
             }
 
 
-            // Cargo max (si ton serveur l’affiche)
             if (baseCargo2010 <= 0)
                 baseCargo2010 = 1000;
 
             this.mBaseCargo2010 = baseCargo2010;
             this.mShipMaxCargo = baseCargo2010;
 
-            // Recharge les extras équipés (Auto-Rocket CPU / Cargo Compressor) depuis la DB
             this.RefreshEquippedExtras(MySqlClient);
 
-            // HP : on garde l’ancienne logique (HP upgrades + drones)
             this.mShipMaxHp = baseHp2010;
             this.mShipMaxHp += 5000 * num4;
 
             int currentHp = getInt32("current_hp", this.mShipMaxHp);
             int storedMaxHp = getInt32("max_hp", this.mShipMaxHp);
 
-            // Si la DB a encore l'ancien max_hp (ex: 100000), on synchronise une fois
             if (storedMaxHp != this.mShipMaxHp)
             {
                 currentHp = this.mShipMaxHp;
@@ -3471,24 +3439,19 @@ namespace OrbitReborn_Emulator.Game.Characters
                 MySqlClient.ExecuteNonQuery("UPDATE users SET max_hp=@max_hp, current_hp=@current_hp WHERE id=@id LIMIT 1");
             }
 
-            // Sécurité : on laisse la sur-vie Energy Leech/nano-hull dépasser le max normal.
-            // Le clamp définitif se fait plus bas après les boosters HP éventuels.
             if (currentHp <= 0)
                 currentHp = this.mShipMaxHp;
 
             this.mShipHp = currentHp;
 
 
-            // --- NOUVELLE PARTIE : base configs avant skilltree/boosters ---
 
-            // Valeurs de base (fallback si aucune config enregistrée en BDD)
             int baseMaxDmg = 0;
 
 
             int baseMaxShield = 0;
             int baseSpeed = baseSpeed2010 + 10 * num7;
 
-            // On initialise Config1 / Config2 avec ces valeurs de base
             this.mConfig1.MaxDamage = baseMaxDmg;
             this.mConfig2.MaxDamage = baseMaxDmg;
             this.mConfig1.MaxShield = baseMaxShield;
@@ -3498,8 +3461,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.mConfig1.ShipSpeed = baseSpeed;
             this.mConfig2.ShipSpeed = baseSpeed;
 
-            // Puis on essaie de charger les stats issues du NOUVEAU système (ship_config_stats)
-            // Ces valeurs ont été calculées par ton config_save.php à partir de l’équipement.
             MySqlClient.ClearParameters();
             MySqlClient.SetParameter("pid", (object)this.mId);
             MySqlClient.SetParameter("sid", (object)this.mShipId);
@@ -3539,7 +3500,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                     }
                 }
             }
-            // ✅ Bonus design (%), appliqué sur les 2 configs
             if (bonusDamagePct > 0)
             {
                 this.mConfig1.MaxDamage += (int)(this.mConfig1.MaxDamage * (bonusDamagePct / 100.0));
@@ -3551,16 +3511,12 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.mConfig1.MaxShield += (int)(this.mConfig1.MaxShield * (bonusShieldPct / 100.0));
                 this.mConfig2.MaxShield += (int)(this.mConfig2.MaxShield * (bonusShieldPct / 100.0));
 
-                // on remet le shield au max (sinon incohérences)
                 this.mConfig1.Shield = this.mConfig1.MaxShield;
                 this.mConfig2.Shield = this.mConfig2.MaxShield;
             }
 
 
-            // NOTE : ici on ne lit plus player_config (damage1/shield1/speed1, etc.)
-            // L’ancien système de "15 points" est donc totalement désactivé.
 
-            // Avantages admin
             if (this.IsAdmin)
             {
                 this.mConfig2.ShipSpeed = 1000;
@@ -3569,35 +3525,29 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (this.IsAdmin || this.IsMod)
                 this.mGrade = 21;
 
-            // Boosters temps : on garde UNIQUEMENT ceux du site (DMG / HP / SHD)
             this.mBoosterHpTime = getInt32("booster_hp_time", this.mBoosterHpTime);
             this.mBoosterShdTime = getInt32("booster_shd_time", this.mBoosterShdTime);
             this.mBoosterDmgTime = getInt32("booster_dmg_time", this.mBoosterDmgTime);
 
-            // Désactivation totale des boosters non voulus
             this.mBoosterNpcTime = 0;
             this.mExtraBooster = "";
 
             int totalSeconds = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
-            // HP booster = +10%
             if (this.mBoosterHpTime > totalSeconds)
                 this.mShipMaxHp += (int)(this.mShipMaxHp * 0.10);
 
-            // DMG booster = +10%
             if (this.mBoosterDmgTime > totalSeconds)
             {
                 this.mConfig1.MaxDamage += (int)(this.mConfig1.MaxDamage * 0.10);
                 this.mConfig2.MaxDamage += (int)(this.mConfig2.MaxDamage * 0.10);
             }
 
-            // SHD booster = +25%
             if (this.mBoosterShdTime > totalSeconds)
             {
                 this.mConfig1.MaxShield += (int)(this.mConfig1.MaxShield * 0.25);
                 this.mConfig2.MaxShield += (int)(this.mConfig2.MaxShield * 0.25);
 
-                // clamp shield si besoin
                 this.mConfig1.Shield = Math.Min(this.mConfig1.Shield, this.mConfig1.MaxShield);
                 this.mConfig2.Shield = Math.Min(this.mConfig2.Shield, this.mConfig2.MaxShield);
             }
@@ -3615,13 +3565,11 @@ namespace OrbitReborn_Emulator.Game.Characters
             else
                 this.mConfig2.Shield = this.mConfig2.MaxShield;
 
-            // Clamp HP runtime : Flash accepte une sur-vie jusqu'à 2x le max normal.
             this.mShipHp = ClampRuntimeValue(this.mShipHp, 0, this.ShipOverhealMaxHp);
             if (this.mShipHp <= 0)
                 this.mShipHp = this.mShipMaxHp;
 
 
-            // Skilltree
             this.mSkillTree.Clear();
             string str1 = getString("skilltree", string.Empty);
             char[] chArray1 = { '/' };
@@ -3637,9 +3585,6 @@ namespace OrbitReborn_Emulator.Game.Characters
 
                 string key = strArray[0];
 
-                // Removed skills:
-                // - Rocket Precision (rck)
-                // - Hull Research (hp)
                 if (key == "rck" || key == "hp")
                     continue;
 
@@ -3647,9 +3592,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                     this.mSkillTree.Add(key, Convert.ToInt32(strArray[1]));
             }
 
-            // Laser Engineering (dmg) :
-            // +2% dégâts joueurs & NPC par niveau, max 5 => +10%
-            // FatLasers activé uniquement au niveau max (5/5) pour afficher les "skill lasers" côté client.
             this.MultiplierAgainstPlayers = 1.0;
             this.MultiplierAgainstNpcs = 1.0;
             this.FatLasers = 0;
@@ -3671,7 +3613,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                     this.FatLasers = 1;
             }
 
-            // Hull Research (hp) removed
 
 
             if (this.mSkillTree.ContainsKey("shd_abs") && this.mSkillTree["shd_abs"] > 0)
@@ -3720,7 +3661,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                 }
             }
 
-            // Rocket Precision (rck) removed
 
 
             if (this.mSkillTree.ContainsKey("shreg") && this.mSkillTree["shreg"] > 0)
@@ -3745,7 +3685,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                 }
             }
 
-            // Cargo
             MySqlClient.ClearParameters();
             MySqlClient.SetParameter("id", (object)this.mId);
             DataRow dataRow4 = MySqlClient.ExecuteQueryRow("SELECT * FROM player_cargo WHERE id = @id LIMIT 1");
@@ -3761,13 +3700,11 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.mLabInfos.Promerium = (int)dataRow4["promerium"];
                 this.mLabInfos.Seprom = (int)dataRow4["seprom"];
 
-                // Mise à jour du cargo actuel (somme des ressources)
                 this.mShipCargo = this.GetCurrentCargoTotal();
             }
 
             this.LoadSepromSafe(MySqlClient);
 
-            // Labo reff
             MySqlClient.ClearParameters();
             MySqlClient.SetParameter("id", (object)this.mId);
             DataRow dataRow5 = MySqlClient.ExecuteQueryRow("SELECT * FROM player_reff WHERE id = @id LIMIT 1");
@@ -3791,7 +3728,6 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public void Boosters()
         {
-            // Extra boosters désactivés volontairement
         }
 
         public long GetUpdatedUridium()
@@ -3838,7 +3774,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                 if (c == null)
                     continue;
 
-                // Galaxy Gates are private per account: only send the owner's cargo boxes.
                 if (isGateMap)
                 {
                     CargoBox cb = c as CargoBox;
@@ -3882,21 +3817,19 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             lock (this.mFightUntilDbSyncLock)
             {
-                // Keep the DB value safely in the future, but avoid rewriting it on every hit.
                 if (this.mFightUntilDb > 0 && this.mFightUntilDb - now > FightUntilDbRefreshThresholdSeconds)
                     return;
 
                 this.mFightUntilDb = until;
             }
 
-            // ✅ DO 2010 : timer combat en DB (block hangar save)
             try
             {
                 using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                 {
                     client.ClearParameters();
-                    client.SetParameter("id", (object)this.mId);      // id joueur
-                    client.SetParameter("until", (object)until);      // timestamp fin combat
+                    client.SetParameter("id", (object)this.mId);
+                    client.SetParameter("until", (object)until);
                     client.ExecuteNonQuery("UPDATE users SET in_fight_until=@until WHERE id=@id LIMIT 1");
                 }
             }
@@ -3908,7 +3841,6 @@ namespace OrbitReborn_Emulator.Game.Characters
         public void UpdateAttacker(Session attacker)
         {
             double time = UnixTimestamp.GetCurrent();
-            // ✅ Stop repair bot immediately if player takes any attack/damage (DarkOrbit-like)
             if (this.IsRepairing)
             {
                 Session sRep = SessionManager.GetSessionByCharacterId(this.mId);
@@ -3952,88 +3884,88 @@ namespace OrbitReborn_Emulator.Game.Characters
         {
             switch (shipId)
             {
-                case 1:   // Phoenix
-                case 2:   // Yamato (same hull tier as Phoenix)
+                case 1:
+                case 2:
                     return 1;
 
-                case 3:   // Leonov
-                case 30:  // Leonov blue glow
-                case 106: // Leonov old
+                case 3:
+                case 30:
+                case 106:
                     return 3;
 
-                case 4:   // Defcom
+                case 4:
                     return 4;
 
-                case 5:   // Liberator
+                case 5:
                     return 5;
 
-                case 6:   // Piranha
+                case 6:
                     return 6;
 
-                case 7:   // Nostromo
+                case 7:
                     return 7;
 
-                case 8:   // Vengeance
-                case 16:  // Vengeance Adept
-                case 17:  // Vengeance Corsair
-                case 18:  // Vengeance Lightning
-                case 73:  // Vengeance Lightning (legacy skill-design ship id)
-                case 58:  // Vengeance Revenge
-                case 60:  // Vengeance Avenger
-                case 116: // Red Vengeance
-                case 117: // Vengeance Kaku
-                case 129: // Vengeance blue Lightning
+                case 8:
+                case 16:
+                case 17:
+                case 18:
+                case 73:
+                case 58:
+                case 60:
+                case 116:
+                case 117:
+                case 129:
                     return 8;
 
-                case 9:   // Bigboy
-                case 50:  // Bigboy red
-                case 187: // Bigboy vert
-                case 188: // Bigboy red2
-                case 189: // Bigboy blue
-                case 190: // Bigboy solem
+                case 9:
+                case 50:
+                case 187:
+                case 188:
+                case 189:
+                case 190:
                     return 9;
 
-                case 10:  // Goliath
-                case 19:  // Goliath jade
-                case 51:  // Enforcer (legacy DBs / classic servers)
-                case 52:  // Goliath orange
-                case 53:  // Goliath red
-                case 54:  // Goliath blue
-                case 55:  // Goliath jade
-                case 56:  // Goliath black
-                case 57:  // Goliath Independence
-                case 59:  // Goliath Bastion
-                case 61:  // Solace / legacy goliath design family
-                case 62:  // Exalted / legacy goliath design family
-                case 63:  // Solace
-                case 64:  // Diminisher
-                case 65:  // Spectrum
-                case 66:  // Sentinel
-                case 67:  // Venom
-                case 68:  // Goliath Ignite
-                case 69:  // Goliath red2
-                case 86:  // Goliath Kick
-                case 118: // Goliath Goal
-                case 119: // Goliath Referee
-                case 120: // Goliath Sapphire
-                case 121: // Goliath Amber
-                case 122: // Goliath Crimson
-                case 123: // Goliath Centaure
-                case 124: // Goliath Saturne
-                case 125: // Goliath Plague
-                case 127: // Goliath Yellow
-                case 130: // Goliath Razer
-                case 131: // Goliath Peacemaker
-                case 132: // Goliath Sovereign
-                case 134: // Goliath Vanquisher
-                case 136: // Goliath basic new
-                case 137: // Goliath Bronze
-                case 138: // Goliath Iron
-                case 139: // Goliath Gold
-                case 140: // Goliath Silver
-                case 184: // Goliath red new
-                case 185: // Goliath ITA new
-                case 186: // Goliath black new
+                case 10:
+                case 19:
+                case 51:
+                case 52:
+                case 53:
+                case 54:
+                case 55:
+                case 56:
+                case 57:
+                case 59:
+                case 61:
+                case 62:
+                case 63:
+                case 64:
+                case 65:
+                case 66:
+                case 67:
+                case 68:
+                case 69:
+                case 86:
+                case 118:
+                case 119:
+                case 120:
+                case 121:
+                case 122:
+                case 123:
+                case 124:
+                case 125:
+                case 127:
+                case 130:
+                case 131:
+                case 132:
+                case 134:
+                case 136:
+                case 137:
+                case 138:
+                case 139:
+                case 140:
+                case 184:
+                case 185:
+                case 186:
                     return 10;
             }
 
@@ -4047,39 +3979,39 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             switch (NormalizePvpDestroyRewardShipId(shipId))
             {
-                case 1:  // Phoenix / Yamato
+                case 1:
                     experienceReward = 100;
                     honorReward = 0;
                     return;
 
-                case 3:  // Leonov
+                case 3:
                     experienceReward = 400;
                     honorReward = 4;
                     return;
 
-                case 4:  // Defcom (project rule: same as Liberator)
-                case 5:  // Liberator
+                case 4:
+                case 5:
                     experienceReward = 1600;
                     honorReward = 16;
                     return;
 
-                case 6:  // Piranha
-                case 7:  // Nostromo
+                case 6:
+                case 7:
                     experienceReward = 6400;
                     honorReward = 64;
                     return;
 
-                case 8:  // Vengeance + designs
+                case 8:
                     experienceReward = 12800;
                     honorReward = 128;
                     return;
 
-                case 9:  // Bigboy + variants
+                case 9:
                     experienceReward = 25600;
                     honorReward = 256;
                     return;
 
-                case 10: // Goliath + designs
+                case 10:
                     experienceReward = 51200;
                     honorReward = 512;
                     return;
@@ -4385,9 +4317,9 @@ namespace OrbitReborn_Emulator.Game.Characters
         {
             int mask = 0;
 
-            if (this.mBoosterDmgTime > now) mask |= 1; // DMG
-            if (this.mBoosterHpTime > now) mask |= 2; // HP
-            if (this.mBoosterShdTime > now) mask |= 4; // SHD
+            if (this.mBoosterDmgTime > now) mask |= 1;
+            if (this.mBoosterHpTime > now) mask |= 2;
+            if (this.mBoosterShdTime > now) mask |= 4;
 
             return mask;
         }
@@ -4435,34 +4367,28 @@ namespace OrbitReborn_Emulator.Game.Characters
                 if (mask == this.mBoosterMaskLast)
                     return;
 
-                // Sauvegarde des barres actuelles pour éviter un reset DB
                 int oldHp = this.ShipHp;
                 int oldShdCfg1 = this.Config1.Shield;
                 int oldShdCfg2 = this.Config2.Shield;
 
                 using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                 {
-                    // Recalcule stats + applique boosters selon les times
                     this.RefreshUserData(client);
                 }
 
-                // Restaure HP/Shield actuels (clampés aux nouveaux max)
                 this.ShipHp = Math.Min(oldHp, this.ShipOverhealMaxHp);
                 this.Config1.Shield = Math.Min(oldShdCfg1, this.Config1.MaxShield);
                 this.Config2.Shield = Math.Min(oldShdCfg2, this.Config2.MaxShield);
 
                 this.mBoosterMaskLast = mask;
 
-                // Valeurs correctes pour le client
                 int dmgPct = (mask & 1) != 0 ? 10 : 0;
                 int hpPct = (mask & 2) != 0 ? 10 : 0;
                 int shdPct = (mask & 4) != 0 ? 25 : 0;
 
-                // Icônes boosters + refresh UI client
                 session.SendData(PacketComposer.Compose("A", "BS|0/0/" + dmgPct + "/" + shdPct + "/0/0/0/" + hpPct));
                 session.SendData(UserDataComposer.Compose(session));
 
-                // Force un refresh des barres
                 session.SendData(PacketComposer.Compose("A", "HL|1|" + this.mId + "|HPT|" + this.ShipHp + "|0"));
                 session.SendData(PacketComposer.Compose("A", "HL|1|" + this.mId + "|SHD|" + this.ShipShield + "|0"));
             }
@@ -4500,7 +4426,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                     dbShd = (int)row["booster_shd_time"];
                 }
 
-                // Mise à jour en mémoire
                 this.mBoosterDmgTime = dbDmg;
                 this.mBoosterHpTime = dbHp;
                 this.mBoosterShdTime = dbShd;
@@ -4510,7 +4435,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
             catch
             {
-                // évite qu'une exception timer casse ton serveur
             }
             finally
             {
@@ -4603,7 +4527,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (iResId == 13L)
                 return "promerium";
 
-            // ✅ AJOUT: Seprom (resId 14)
             if (iResId == 14L)
                 return "seprom";
 
@@ -4666,7 +4589,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 (object)this.mLabInfos.Prometid + "|" +
                 (object)this.mLabInfos.Duranium + "|" +
                 (object)this.mLabInfos.Promerium + "|" +
-                (object)this.mLabInfos.Seprom + "|" +   // ✅ ici
+                (object)this.mLabInfos.Seprom + "|" +
                 (object)this.mLabInfos.Palladium
             );
         }
@@ -5034,7 +4957,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (iAmount <= 0)
                 return;
 
-            // 1 ore => 10 refinery units (requested)
             int addUnits = iAmount * 10;
 
             if (this.mLabInfos.Laser[0] != iResId)
@@ -5066,7 +4988,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (iAmount <= 0)
                 return;
 
-            // 1 ore => 10 refinery units (requested)
             int addUnits = iAmount * 10;
 
             if (this.mLabInfos.Rocket[0] != iResId)
@@ -5112,7 +5033,6 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             int total = 0;
 
-            // entries: "2/0", "3/0", ...
             string[] entries = this.Drones.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
 
             foreach (string entry in entries)
@@ -5126,8 +5046,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                 if (!int.TryParse(p[0], out t))
                     continue;
 
-                // Chez toi: Flax = 2, Iris = 3
-                // (on accepte 5 en "fallback" si jamais tu as eu des données historiques)
                 if (t == 2 || t == 5)
                 {
                     flax++;
@@ -5171,8 +5089,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (designItemId <= 0)
                 return false;
 
-            // Priorité à l'id/nom Havok : cela reste compatible si l'ancienne table items
-            // utilise une catégorie générique au lieu de "drone_design".
             if (designItemId == 9001 || designName.Contains("havok") || designName.Contains("havoc"))
                 return true;
 
@@ -5223,8 +5139,6 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public string GetDronePacketString()
         {
-            // Récupère une liste de codes "15"/"25"/"25,H" dans l'ordre du storage DB.
-            // "25,H" = Iris niveau 5 avec design Havok. Le client Flash ignore le suffixe après la virgule.
             List<string> codes = GetDronePacketCodesFromDroneTable();
 
             if (codes.Count == 0 && !string.IsNullOrEmpty(this.Drones))
@@ -5241,14 +5155,11 @@ namespace OrbitReborn_Emulator.Game.Characters
                     if (!int.TryParse(p[0], out t))
                         continue;
 
-                    if (t == 3) codes.Add("25");             // Iris  -> id=2 level=5
-                    else if (t == 2 || t == 5) codes.Add("15"); // Flax -> id=1 level=5
+                    if (t == 3) codes.Add("25");
+                    else if (t == 2 || t == 5) codes.Add("15");
                 }
             }
 
-            // Layout simple et stable pour max 8 drones :
-            // groupCount=3 => RIGHT (2) / DOWN (4) / LEFT (2)
-            // (le client gère ce pattern proprement)
             var right = codes.Take(2).ToList();
             var down = codes.Skip(2).Take(4).ToList();
             var left = codes.Skip(6).Take(2).ToList();
@@ -5647,16 +5558,11 @@ namespace OrbitReborn_Emulator.Game.Characters
             SpinWait.SpinUntil(() => !this.IsLaserAttackTickRunning, timeoutMs);
         }
 
-        // Format Flash attendu:
-        // B (PRIMARY_WEAPON_INFO)  : LCB10|MCB25|MCB50|UCB100|SAB50|RSB75
         public string GetPrimaryWeaponInfoPayload()
         {
             return $"{AmmoLcb10}|{AmmoMcb25}|{AmmoMcb50}|{AmmoUcb100}|{AmmoSab50}|{AmmoRsb75}";
         }
 
-        // Format Flash attendu:
-        // 3 (SECONDARY_WEAPON_INFO):
-        // R310|PLT_2026|PLT_2021|PLT_3030|PLD_8|DCR_250|WIZ|MINE|SMARTBOMB|INSTASHIELD|EMP|MINE_EMP|MINE_SAB|MINE_DDM
         public string GetSecondaryWeaponInfoPayload()
         {
             return $"{AmmoR310}|{AmmoPlt2026}|{AmmoPlt2021}|0|0|{AmmoDcr250}|0|0|{AmmoSmb01}|{AmmoIsh01}|{AmmoEmp01}|0|0|0";
@@ -5698,18 +5604,16 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool TryConsumeLaserAmmo(int ammoId)
         {
-            // C'EST ICI QU'ON TRICHE : On dit qu'on a 18 lasers
             int lasersCount = 18;
 
             switch (ammoId)
             {
-                // Pour chaque type de laser, on enlève 18 en mémoire (flush DB hors boucle de tir)
                 case 1: return this.TryConsumePrimaryLaserColumn(ref this.AmmoLcb10, lasersCount);
                 case 2: return this.TryConsumePrimaryLaserColumn(ref this.AmmoMcb25, lasersCount);
                 case 3: return this.TryConsumePrimaryLaserColumn(ref this.AmmoMcb50, lasersCount);
                 case 4: return this.TryConsumePrimaryLaserColumn(ref this.AmmoUcb100, lasersCount);
                 case 5: return this.TryConsumePrimaryLaserColumn(ref this.AmmoSab50, lasersCount);
-                case 6: return this.TryConsumePrimaryLaserColumn(ref this.AmmoRsb75, lasersCount); // Le fameux RSB
+                case 6: return this.TryConsumePrimaryLaserColumn(ref this.AmmoRsb75, lasersCount);
                 default:
                     return false;
             }
@@ -5717,7 +5621,6 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool TryConsumeRocketAmmo(int rocketId)
         {
-            // Ici on laisse à 1 pour les roquettes
             int rocketConsumption = 1;
 
             switch (rocketId)
@@ -5744,11 +5647,8 @@ namespace OrbitReborn_Emulator.Game.Characters
                     return false;
             }
         }
-        // Consommation des munitions spéciales (explosifs) : SMB-01 / ISH-01 / EMP-01
-        // Le client Flash envoie : S|SMB / S|ISH / S|EMP (voir SelectAction.cs)
         public bool TryConsumeExplosiveAmmo(string explosiveCode)
         {
-            // On consomme 1 unité à chaque utilisation.
             switch (explosiveCode)
             {
                 case "SMB": return TryConsumeColumn("ammo_smb01", ref AmmoSmb01, 1);
@@ -5841,7 +5741,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        // OPTIONNEL : pour récupérer les achats du site pendant que le joueur est connecté
         public bool RefreshAmmoFromDbIfHigher()
         {
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
@@ -5956,13 +5855,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
 
 
-        // ============================================================
-        // Extras: Auto-Rocket CPU / Cargo Compressor
-        // ============================================================
 
-        /// <summary>
-        /// True si l'Auto-Rocket CPU (extra id 20) est équipé sur la configuration active.
-        /// </summary>
         public bool HasAutoRocketCpu
         {
             get
@@ -5971,9 +5864,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        /// <summary>
-        /// True si le Cargo Compressor (extra id 21) est équipé sur la configuration active.
-        /// </summary>
         public bool HasCargoCompressor
         {
             get
@@ -6010,9 +5900,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        /// <summary>
-        /// Disponibilité des munitions Hellstorm en inventaire.
-        /// </summary>
         public bool HasAnyRocketLauncherAmmo
         {
             get
@@ -6021,10 +5908,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        /// <summary>
-        /// Recharge depuis la DB les extras équipés sur les 2 configs (A/B) pour le vaisseau actuel,
-        /// y compris le type de Hellstorm équipé et la présence éventuelle du CPU RLLB-1.
-        /// </summary>
         public void RefreshEquippedExtras(SqlDatabaseClient MySqlClient)
         {
             if (MySqlClient == null)
@@ -6143,14 +6026,10 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.UpdateCargoMaxForCurrentConfig();
         }
 
-        /// <summary>
-        /// Recalcule le cargo max selon la config active (et le Cargo Compressor équipé ou non).
-        /// </summary>
         public void UpdateCargoMaxForCurrentConfig()
         {
             int baseCargo = this.mBaseCargo2010;
 
-            // Fallback de sécurité si la DB ne renvoie rien
             if (baseCargo <= 0)
                 baseCargo = (this.mShipMaxCargo > 0 ? this.mShipMaxCargo : 1000);
 
@@ -6158,18 +6037,12 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.mShipMaxCargo = baseCargo * multiplier;
         }
 
-        /// <summary>
-        /// Packet A|ITM|... attendu par le client Flash.
-        /// On garde les valeurs actuelles du serveur, mais on rend l'Auto-Rocket CPU dynamique (index 14).
-        /// </summary>
         public string GetCpuItemsPayload(bool includeRocketLauncherCpu)
         {
             int[] cpu = new int[16] { 0, 0, 0, 0, 4, 0, 0, 1, 1, 0, 1, 0, 2, 0, 0, 0 };
 
-            // Dans le client Flash, AROL = slot 14 => 12e valeur après ITM (cpu[11]).
             cpu[11] = this.HasAutoRocketCpu ? 1 : 0;
 
-            // RLLB-1 = slot 16 => 14e valeur après ITM (cpu[13]).
             cpu[13] = includeRocketLauncherCpu && this.HasRocketLauncherCpu ? 1 : 0;
 
             return "ITM|" + string.Join("|", cpu);
@@ -6180,9 +6053,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             return this.GetCpuItemsPayload(this.HasRocketLauncherCpu);
         }
 
-        /// <summary>
-        /// Total du cargo actuel (somme des ressources).
-        /// </summary>
         public int GetCurrentCargoTotal()
         {
             long total = 0L;

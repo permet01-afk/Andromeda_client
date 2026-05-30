@@ -15,8 +15,8 @@ namespace OrbitReborn_Emulator.Game.Event
 {
     public static class Spaceball
     {
-        private const int SpaceballMapId = 16; // 4-4
-        private const int SpaceballShipId = 442; // serveur inchangé; le client peut afficher ship443
+        private const int SpaceballMapId = 16;
+        private const int SpaceballShipId = 442;
 
         private const int CenterX = 21000;
         private const int CenterY = 14333;

@@ -116,9 +116,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        // ============================================================
-        // ✅ ROB helpers: clean stop + update for "selected-by" players
-        // ============================================================
         public static void StopRepair(Session session, string stdMessage = null)
         {
             if (session == null || session.CharacterInfo == null)
@@ -132,17 +129,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.CharacterInfo.RepairTimer = null;
             }
 
-            // ✅ Flash expects RS can be "disabled"
             session.SendData(PacketComposer.Compose("A", "RS|-1"));
 
-            // ✅ Resync self HUD
             session.SendData(PacketComposer.Compose("A", "HPT|" + session.CharacterInfo.ShipHp + "|" + session.CharacterInfo.ShipMaxHp));
             session.SendData(PacketComposer.Compose("A", "SHD|" + session.CharacterInfo.ShipShield + "|" + session.CharacterInfo.ShipMaxShield));
 
-            // ✅ Resync zones (peace/trade/rad/portal)
             ShipMovement.SendPeacePortalInfos(session);
 
-            // ✅ Update target window (Y) for everyone who has this player selected
             MapInstance inst = MapManager.GetInstanceByMapId(session.CharacterInfo.MapId);
             if (inst != null)
             {
@@ -160,25 +153,21 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void UseRob(Session Session)
         {
-            // 1) Immediate sync (prevents Flash visual desync)
             Session.SendData(PacketComposer.Compose("A", "HPT|" + Session.CharacterInfo.ShipHp + "|" + Session.CharacterInfo.ShipMaxHp));
             Session.SendData(PacketComposer.Compose("A", "SHD|" + Session.CharacterInfo.ShipShield + "|" + Session.CharacterInfo.ShipMaxShield));
 
-            // 2) Toggle: if already repairing -> stop
             if (Session.CharacterInfo.IsRepairing)
             {
                 StopRepair(Session, "Repair canceled (manual).");
                 return;
             }
 
-            // 3) Block: moving
             if (Session.CharacterInfo.IsMoving)
             {
                 Session.SendData(PacketComposer.Compose("A", "STD|Cannot do that while moving!"));
                 return;
             }
 
-            // 4) Block: combat / radiation / etc
             if (Session.CharacterInfo.Attacked.Count > 0 ||
                 Session.CharacterInfo.Attacking ||
                 Session.CharacterInfo.WarningZone ||
@@ -193,14 +182,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // 5) HP already full
             if (Session.CharacterInfo.ShipHp >= Session.CharacterInfo.ShipMaxHp)
             {
                 Session.SendData(PacketComposer.Compose("A", "STD|Hitpoints are already at maximum."));
                 return;
             }
 
-            // 6) Start repair
             if (Session.CharacterInfo.RepairTimer != null)
             {
                 Session.CharacterInfo.RepairTimer.Dispose();
@@ -209,18 +196,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             Session.CharacterInfo.IsRepairing = true;
 
-            // ✅ Repair bot display (big/small)
             if (Session.CharacterInfo.RepairBotHp >= 30000)
                 Session.SendData(PacketComposer.Compose("A", "RS|1"));
             else
                 Session.SendData(PacketComposer.Compose("A", "RS|0"));
 
-            // ✅ Send correct D state (peace/trade/rad/portal) from server truth
             ShipMovement.SendPeacePortalInfos(Session);
 
             Session.SendData(PacketComposer.Compose("A", "STD|Repair started."));
 
-            // ✅ DarkOrbit 2010: NO instant tick (prevents spam exploit)
             Session.CharacterInfo.RepairTimer = new Timer(new TimerCallback(SelectAction.RepairTimer), (object)Session, 1000, 1000);
         }
 
@@ -235,7 +219,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (observer.CharacterId == source.CharacterId)
                 return true;
 
-            // Preserve existing broad visibility in special combat maps/admin views while avoiding whole-map spam elsewhere.
             if (observer.CharacterInfo.IsAdmin || observer.CharacterInfo.MapId == 83 || _1v1.IsOnMap(observer.CharacterInfo.MapId))
                 return true;
 
@@ -308,16 +291,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (instanceByMapId == null)
                 return;
 
-            // ✅ Consomme 1 ISH-01 (insta shield)
             if (!Session.CharacterInfo.TryConsumeExplosiveAmmo("ISH"))
             {
                 Session.SendData(PacketComposer.Compose("A", "STD|You don't have any ISH-01."));
-                // Resync client quantities
                 Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
                 return;
             }
 
-            // Update quantities on the client side
             Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
 
             SendActionVisualEffectScoped(instanceByMapId, Session, "ISH");
@@ -338,7 +318,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (instanceByMapId == null)
                 return;
 
-            // ✅ Consomme 1 SMB-01 (smartbomb)
             if (!Session.CharacterInfo.TryConsumeExplosiveAmmo("SMB"))
             {
                 Session.SendData(PacketComposer.Compose("A", "STD|You don't have any SMB-01."));
@@ -346,7 +325,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // Update quantities on the client side
             Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
 
             SendActionVisualEffectScoped(instanceByMapId, Session, "SMB");
@@ -378,11 +356,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                                 + (object)smbDamages
                             );
 
-                            // Attacker + victim (as before)
                             Session.SendData(msg);
                             sessionByCharacterId.SendData(msg);
 
-                            // Everyone who has the victim selected (no duplicates)
                             foreach (MapActor a in (IEnumerable<MapActor>)instanceByMapId.Actors.Keys)
                             {
                                 if (a.Type != MapActorType.UserCharacter)
@@ -411,7 +387,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (instanceByMapId == null)
                 return;
 
-            // ✅ Consomme 1 EMP-01
             if (!Session.CharacterInfo.TryConsumeExplosiveAmmo("EMP"))
             {
                 Session.SendData(PacketComposer.Compose("A", "STD|You don't have any EMP-01."));
@@ -419,7 +394,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // Update quantities on the client side
             Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
 
             SendActionVisualEffectScoped(instanceByMapId, Session, "EMP");
@@ -451,8 +425,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
 
-            // EMP/IEM : les joueurs perdaient déjà le lock, mais les NPC non.
-            // Anti micro-freeze serveur : ne scanne que les NPC de la map/instance actuelle.
             foreach (MapActor npcActor in instanceByMapId.GetNpcActorSnapshot())
             {
                 Npc npc = npcActor != null ? npcActor.ReferenceObject as Npc : null;
@@ -473,7 +445,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (Session == null || Session.CharacterInfo == null)
                 return;
 
-            // Blocks if the player is currently attacking
             if (Session.CharacterInfo.Attacking)
             {
                 Session.SendData(PacketComposer.Compose("A", "STD|Cannot activate cloak while attacking."));
@@ -481,11 +452,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
 
             const int CLOAK_COST_URIDIUM = 500;
-            const int CLOAK_COOLDOWN_SECONDS = 240; // 4 minutes
+            const int CLOAK_COOLDOWN_SECONDS = 240;
 
             int now = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
-            // Cooldown
             if (Session.CharacterInfo.InvisibleCooldown > now)
             {
                 int remaining = Session.CharacterInfo.InvisibleCooldown - now;
@@ -496,14 +466,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // Already cloaked
             if (Session.CharacterInfo.Invisible == 1)
             {
                 Session.SendData(PacketComposer.Compose("A", "STD|Cloak already active."));
                 return;
             }
 
-            // Sync Uridium from DB and check (avoids desync if bought on website)
             long uridium = Session.CharacterInfo.GetUpdatedUridium();
             if (uridium < CLOAK_COST_URIDIUM)
             {
@@ -511,17 +479,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // Immediate debit server-side (DB + memory)
             Session.CharacterInfo.RemoveReward(0, CLOAK_COST_URIDIUM);
 
-            // Refresh client HUD (uridium)
             Session.SendData(UserDataComposer.Compose(Session));
 
-            // Activate cloak + start cooldown
             Session.CharacterInfo.Invisible = 1;
             Session.CharacterInfo.InvisibleCooldown = now + CLOAK_COOLDOWN_SECONDS;
 
-            // Scoped invisibility visual: Flash only updates ships that are visible to the client.
             MapInstance instanceByMapId = MapManager.GetInstanceByMapId(Session.CharacterInfo.MapId);
             if (instanceByMapId != null)
             {
@@ -532,7 +496,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 );
             }
 
-            // Optional confirmation message
             Session.SendData(PacketComposer.Compose("A", "STD|Cloak activated (-" + CLOAK_COST_URIDIUM + " Uridium)."));
         }
 
@@ -575,20 +538,17 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (Session == null || Session.CharacterInfo == null)
                 return;
 
-            // Flash : S|ARL|0/1
             int state;
             if (!int.TryParse(Message.GetNextString(2), out state))
                 return;
 
             state = (state == 1) ? 1 : 0;
 
-            // Safety: if the CPU isn't equipped on the active config, ignore it (client shouldn't send it)
             if (!Session.CharacterInfo.HasAutoRocketCpu)
                 return;
 
             Session.CharacterInfo.AutoRocketSkill = state;
 
-            // Persist en base (users.auto_rkt_skill)
             try
             {
                 using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
@@ -604,20 +564,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Output.WriteLine("auto_rkt_skill DB update failed: " + ex.Message);
             }
 
-            // Response expected by the Flash client: A|CPU|R|0/1
             Session.SendData(PacketComposer.Compose("A", "CPU|R|" + state));
 
-            // Expected message (client-side feedback)
             Session.SendData(PacketComposer.Compose("A", "STD|autorocket " + (state == 1 ? "on" : "off")));
 
             if (state == 0)
             {
-                // Stop le loop si jamais il tournait
                 Session.CharacterInfo.ActiveAutoRocket = false;
             }
             else
             {
-                // If already attacking, start auto-rocket immediately
                 Fight.TryStartAutoRocket(Session);
             }
         }
@@ -651,7 +607,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             int repairPerTick = session.CharacterInfo.RepairBotHp;
 
-            // --- STOP CONDITIONS ---
             if (session.CharacterInfo.Disconnected)
             {
                 StopRepair(session);
@@ -694,14 +649,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // --- END IF HP FULL ---
             if (session.CharacterInfo.ShipHp >= session.CharacterInfo.ShipMaxHp)
             {
                 StopRepair(session, "Repair complete.");
                 return;
             }
 
-            // --- APPLY HEAL ---
             int oldHp = session.CharacterInfo.ShipHp;
             int delta = repairPerTick;
 
@@ -712,15 +665,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             session.CharacterInfo.ShipHp = oldHp + delta;
 
-            // ✅ Self HUD
             session.SendData(PacketComposer.Compose("A", "HPT|" + session.CharacterInfo.ShipHp + "|" + session.CharacterInfo.ShipMaxHp));
             session.SendData(PacketComposer.Compose("A", "SHD|" + session.CharacterInfo.ShipShield + "|" + session.CharacterInfo.ShipMaxShield));
 
-            // ✅ (Optional) heal feedback
             session.SendData(PacketComposer.Compose("A",
                 "HL|1|" + session.CharacterInfo.Id + "|HPT|" + session.CharacterInfo.ShipHp + "|" + delta));
 
-            // ✅ Update target window for ALL selectors using Y
             MapInstance inst = MapManager.GetInstanceByMapId(session.CharacterInfo.MapId);
             if (inst != null)
             {

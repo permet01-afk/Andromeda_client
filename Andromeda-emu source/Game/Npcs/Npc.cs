@@ -20,29 +20,16 @@ namespace OrbitReborn_Emulator.Game.Npcs
 {
     public class Npc
     {
-        // --- LISTE POUR STOCKER LES PROTEGITS DU CUBIKON ---
         public ConcurrentDictionary<int, byte> SpawnedMinions = new ConcurrentDictionary<int, byte>();
-        // --------------------------------------------------
 
-        // =========================================================
-        // ✅ Cubikon / Protegit behaviour (DarkOrbit 2010-like)
-        //  - Spawn Protegits in waves (4/sec -> 20 in 5 seconds)
-        //  - Protegits are linked to a Cubikon and handled by NpcAI (leash, retarget, despawn)
-        // =========================================================
         public double CubikonLastSpawnTick = 0.0;
 
-        // If this NPC is a Cubikon minion (Protegit), this is the parent Cubikon reference id.
         public int ParentNpcId = 0;
 
-        // Used by NpcAI to despawn minions (Cubikon idle/dead).
         public double DespawnAt = 0.0;
 
-        // Retarget cooldown for Cubikon minions.
         public double MinionLastRetargetTick = 0.0;
 
-        // =========================================================
-        // ✅ Gestion des CargoBox NPC : ID unique + limite (FIFO)
-        // =========================================================
         private static int _nextNpcCargoBoxId = -2000000;
 
         private static int NextNpcCargoBoxId()
@@ -59,16 +46,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private CDictionnary<int, int> mAttackers = new CDictionnary<int, int>();
         private const double CLAIM_TIMEOUT_SECONDS = 10.0;
 
-        // CharacterId qui "possède" actuellement le NPC (cercle rouge).
-        // Visuel : owner UNIQUE uniquement.
         private int mRewardOwnerId = 0;
 
-        // Dernière attaque réellement reçue par l'owner courant.
-        // Les attaques des autres joueurs (même du groupe) n'entretiennent pas le claim.
         private double mRewardOwnerLastHit = 0.0;
 
-        // File d'attente d'ownership : ordre d'arrivée des autres attaquants.
-        // Quand l'owner devient inactif pendant 10s, on passe au premier attaquant valide de cette file.
         private readonly List<int> mRewardOwnerQueue = new List<int>();
         private readonly object mRewardOwnerQueueSync = new object();
 
@@ -100,23 +81,18 @@ namespace OrbitReborn_Emulator.Game.Npcs
         public int Credits;
         public int Uridium;
 
-        // ✅ EP/HON stockés dans l'instance NPC
-        public int ExperienceReward; // EP donnés par ce NPC
-        public int HonorReward;      // HON donnés par ce NPC
+        public int ExperienceReward;
+        public int HonorReward;
 
-        // ✅ Dégâts min/max (Flash 2010)
         public int DamageMin;
         public int DamageMax;
 
-        // ✅ Cargo fixe (Flash 2010)
         public int CargoPrometium;
         public int CargoEndurium;
         public int CargoTerbium;
 
-        // Palladium existe dans ton émulateur (cargo box), mais n'est pas forcément dans ton Excel NPC
         public int CargoPalladium;
 
-        // ✅ Important : dans les drops NPC Flash 2010, "Pd" = Prometid (pas Palladium)
         public int CargoPrometid;
         public int CargoDuranium;
         public int CargoPromerium;
@@ -139,13 +115,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private Timer mRespawnDelayTimer;
         private readonly object mRespawnDelaySync = new object();
 
-        // ✅ Identifiant de "vie" (spawn/respawn).
-        // Incrémenté à chaque respawn pour éviter qu'une roquette en vol
-        // applique ses dégâts sur un NPC fraîchement respawn avec le même Id.
         private int mSpawnSeq;
 
-        // Multiplie uniquement les récompenses économiques au kill NPC
-        // (crédits + uridium). N'impacte pas XP/HON.
         private const int NPC_KILL_ECONOMY_MULTIPLIER = 3;
 
         private Timer mAttackTimer;
@@ -154,30 +125,20 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private double mLastAttackByAttackerReceived;
         private double mLastAttackReceived;
 
-        // Décrochage NPC façon Flash/DO : le lock n'est pas prolongé par la poursuite seule.
-        // Seuls les dégâts réellement reçus par le NPC ou infligés par le NPC prolongent le combat.
         private const double NPC_COMBAT_IDLE_TIMEOUT_SECONDS = 10.0;
-        private double mLastAggroTick = 0; // conservé pour compatibilité interne legacy
+        private double mLastAggroTick = 0;
         private double mLastNpcDamageReceivedTick = 0.0;
         private double mLastNpcDamageDealtTick = 0.0;
         private double mLastNpcCombatActivityTick = 0.0;
         private int mLastNpcCombatTargetId = 0;
 
-        // EMP/IEM : même fenêtre anti-relock que le lock joueur -> joueur.
-        // Cette logique casse temporairement le lock NPC sans reset complet du combat.
         public const double NPC_EMP_LOCK_BREAK_SECONDS = 2.0;
         private int mEmpInterruptedTargetId = 0;
         private double mEmpLockBlockedUntil = 0.0;
 
-        // =========================================================
-        // ✅ CORRECTIFS : anti double-hit & anti concurrence Attack()
-        // =========================================================
-        // Empêche Attack() de tourner en parallèle (Timer + AI).
         private int mAttackInProgress = 0;
 
-        // Empêche 2 hits collés si NpcAI force un Attack() immédiat.
         private int mLastDamageTick = 0;
-        // =========================================================
 
         public int Id
         {
@@ -600,8 +561,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (this.TargetId != targetId)
                 return;
 
-            // Important : ne pas appeler StopNpcAttack() ici.
-            // StopNpcAttack() reset le suivi 10s, alors qu'un EMP doit seulement casser le lock temporairement.
             this.mTargetId = 0;
             this.IsAttacking = false;
             this.mLastDamageTick = 0;
@@ -630,8 +589,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             double now = UnixTimestamp.GetCurrent();
 
-            // Nouveau target : on démarre le compte à rebours de 10s.
-            // Relock la même cible ne doit pas rafraîchir l'aggro.
             if (this.mLastNpcCombatActivityTick <= 0.0 || this.mLastNpcCombatTargetId != targetId)
                 this.mLastNpcCombatActivityTick = now;
 
@@ -668,7 +625,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (this.TargetId <= 0 || this.IsDestroying)
                 return false;
 
-            // On conserve l'exception legacy existante des Galaxy Gates.
             if (IsGalaxyGateMap(this.MapId))
                 return false;
 
@@ -681,9 +637,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             return now - this.mLastNpcCombatActivityTick >= NPC_COMBAT_IDLE_TIMEOUT_SECONDS;
         }
 
-        // ---------------------------------------------------------------------
-        // ✅ TABLE DES NPCs FLASH 2010 (prise de ton Excel)
-        // ---------------------------------------------------------------------
         private struct NpcBalance2010
         {
             public int Hp;
@@ -696,14 +649,14 @@ namespace OrbitReborn_Emulator.Game.Npcs
             public int Credits;
             public int Uridium;
 
-            public int CargoP;  // Prometium
-            public int CargoE;  // Endurium
-            public int CargoT;  // Terbium
+            public int CargoP;
+            public int CargoE;
+            public int CargoT;
 
-            public int CargoPd; // ✅ Prometid (PAS Palladium)
-            public int CargoDu; // Duranium
-            public int CargoPr; // Promerium
-            public int CargoXe; // Xenomit
+            public int CargoPd;
+            public int CargoDu;
+            public int CargoPr;
+            public int CargoXe;
         }
 
         private static readonly Dictionary<string, NpcBalance2010> Balance2010 = new Dictionary<string, NpcBalance2010>()
@@ -1192,10 +1145,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private static readonly object DmgRandLock = new object();
         private static readonly Random DmgRand = new Random();
 
-        // Flash parity (game.xml laserClassID -> fireRate) for the common PvE NPCs.
-        // Unmapped/special NPCs intentionally keep the legacy cadence to avoid gameplay regressions.
-        // Note: laserClassID 4 (Devolarium/Sibelon family) was too aggressive when used as a real hit timer.
-        // We keep those NPCs on the conservative legacy damage cadence and only use the faster class 4 feel visually client-side.
         private const int LEGACY_ATTACK_PERIOD_MS = 1250;
         private const int ATTACK_GUARD_SLACK_MS = 50;
 
@@ -1258,7 +1207,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (!Balance2010.TryGetValue(this.mName, out bal))
                 return;
 
-            // PV / Shield / Speed
             this.mShipMaxHp = bal.Hp;
             this.mShipHp = bal.Hp;
 
@@ -1268,45 +1216,38 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (bal.Speed > 0)
                 this.mShipSpeed = bal.Speed;
 
-            // Récompenses
             this.Credits = bal.Credits;
             this.Uridium = bal.Uridium;
             this.ExperienceReward = bal.Xp;
             this.HonorReward = bal.Honor;
 
-            // Dégâts min/max
             this.DamageMin = bal.DmgMin;
             this.DamageMax = bal.DmgMax;
 
-            // compatibilité ancienne variable "Damages"
             this.Damages = (bal.DmgMin + bal.DmgMax) / 2;
 
-            // Cargo fixe Flash 2010
             this.CargoPrometium = bal.CargoP;
             this.CargoEndurium = bal.CargoE;
             this.CargoTerbium = bal.CargoT;
 
-            // ✅ Pd = Prometid
             this.CargoPrometid = bal.CargoPd;
             this.CargoDuranium = bal.CargoDu;
             this.CargoPromerium = bal.CargoPr;
             this.CargoXenomit = bal.CargoXe;
 
-            // Palladium par défaut (pas dans le tableau excel)
             this.CargoPalladium = 0;
         }
 
         private void ApplyGalaxyGateMultiplierIfNeeded()
         {
-            // On ne multiplie que dans les maps Galaxy Gate
             if (!GalaxyGateWaveService.IsGateMap(this.mMapId))
                 return;
 
             int gateId = GalaxyGateWaveService.GateIdFromMap(this.mMapId);
 
             int mult = 1;
-            if (gateId == 2) mult = 2;        // Beta
-            else if (gateId == 3) mult = 3;   // Gamma
+            if (gateId == 2) mult = 2;
+            else if (gateId == 3) mult = 3;
 
             if (mult <= 1)
                 return;
@@ -1340,7 +1281,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.CargoPalladium *= mult;
         }
 
-        // ✅ IMPORTANT : constructeur attendu par NpcManager.CreateNewInstance
         public Npc(
             int Id,
             string Name,
@@ -1416,7 +1356,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.CargoPromerium = 0;
             this.CargoXenomit = 0;
 
-            // ✅ applique automatiquement le tableau 2010 si NPC connu
             ApplyBalance2010IfExists();
             ApplyGalaxyGateMultiplierIfNeeded();
         }
@@ -1684,10 +1623,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.mLastAggroTick = now;
             RegisterNpcDamageReceived(damages);
 
-            // On purge/promeut l'owner si nécessaire avant de traiter ce nouveau hit.
             RefreshOwnerClaimState();
 
-            // On mémorise systématiquement l'attaquant pour la file d'attente et/ou les rewards.
             AddDamageForAttacker(attacker, damages);
 
             if (this.mRewardOwnerId <= 0)
@@ -1727,9 +1664,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (!isCubikon && ownerValid)
                 EnsureOwnerGroupEntries(ownerSession);
 
-            // ==============================
-            // CUBIKON : owner visuel unique + rewards partagées par dégâts
-            // ==============================
             if (isCubikon)
             {
                 MapInstance instance = MapManager.GetInstanceByMapId(this.MapId);
@@ -1796,10 +1730,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 return;
             }
 
-            // ==============================
-            // NPC agressifs : ils doivent toujours taper l'owner courant.
-            // Les autres attaquants entrent seulement dans la file d'attente.
-            // ==============================
             if (isAggressiveNpc && ownerValid && ownerId > 0 && this.TargetId != ownerId)
             {
                 if (NpcAI.IsValidAggroTarget(ownerSession, this.MapId))
@@ -1848,8 +1778,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         private void CompleteRespawnCycle()
         {
-            // Nouveau cycle de vie : permet d'ignorer les roquettes en vol qui visaient
-            // l'ancienne instance (avant respawn) même si l'Id est réutilisé.
             this.mSpawnSeq++;
 
             this.SpawnedMinions.Clear();
@@ -1890,20 +1818,16 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             this.IsDestroying = true;
 
-            // LK lock intent: NPC IDs are negative, so clear any remote orientation lock
-            // held by players targeting this NPC before the destroy/reward flow continues.
             if (map != null)
                 Fight.BroadcastLockIntentClearForTarget(map, this.Id);
 
             GalaxyGateWaveService.OnNpcDestroyed(this.MapId, this.Id);
 
-            // --- DISPARITION DES PROTEGITS A LA MORT DU CUBIKON (retardée) ---
             if (this.ShipId == 80)
             {
                 MapInstance currentMap = MapManager.GetInstanceByMapId(this.MapId);
                 if (currentMap != null)
                 {
-                    // DarkOrbit : ils restent encore quelques secondes puis despawn
                     double despawnAt = UnixTimestamp.GetCurrent() + 3.0;
 
                     foreach (int minionId in this.SpawnedMinions.Keys)
@@ -1916,31 +1840,23 @@ namespace OrbitReborn_Emulator.Game.Npcs
                             if (minionNpc.DespawnAt <= 0.0)
                                 minionNpc.DespawnAt = despawnAt;
 
-                            // Evite qu'ils poursuivent un joueur loin après la mort du Cubikon
                             minionNpc.TargetId = 0;
                             minionNpc.IsAttacking = false;
                         }
                     }
                 }
 
-                // La suppression réelle est gérée dans NpcAI (DespawnAt).
                 this.SpawnedMinions.Clear();
             }
-            // --------------------------------------------------------------------------
 
 
-            // ⚡️ IMPORTANT : on envoie immédiatement les paquets de destruction (K / R / unlock)
-            // avant les récompenses SQL, sinon on ressent un retard côté client.
             try
             {
-                // Stop l'attaque du NPC tout de suite (évite qu'il continue à tirer pendant sa destruction)
                 StopNpcAttack();
 
-                // Explosion / destroy animation
                 ServerMessage Message1 = PacketComposer.Compose("K", this.Id.ToString());
                 map.BroadcastMessageInRange(Message1, this.Id, false);
 
-                // Suppression chez tous les joueurs qui l'ont en range + délock si sélectionné
                 foreach (MapActor mapActor in map.GetUserActorSnapshot())
                 {
                     if (mapActor.Type == MapActorType.UserCharacter && mapActor.ReferenceSessionId > 0)
@@ -1952,7 +1868,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                         {
                             if (sessionById.CharacterInfo.SelectedPlayer == this.Id)
                             {
-                                // stop tir + unlock immédiat
                                 Fight.StopLaser(sessionById, null);
                             }
 
@@ -1966,12 +1881,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             {
             }
 
-            // =====================================
-            // REWARDS :
-            // - NPC normaux : owner rouge + groupe (same map)
-            // - Cubikon     : récompenses partagées selon les dégâts réellement infligés
-            //                 (sans changer le visuel rouge/blanc existant)
-            // =====================================
             int ownerId = this.mRewardOwnerId;
 
             if (ownerId <= 0 && this.Attackers != null && this.Attackers.Count > 0)
@@ -2081,8 +1990,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     if (eligible.Count <= 0)
                         continue;
 
-                    // Outfit Flash-like : pour les NPC normaux, owner + membres du groupe sur la même map
-                    // reçoivent une part égale. Ils n'ont pas besoin d'avoir infligé des dégâts.
                     share = 1.0 / (double)eligible.Count;
                 }
 
@@ -2104,8 +2011,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     int32_3 *= 2;
                 }
 
-                // ✅ Option 1: tripler uniquement crédits + uridium au kill NPC.
-                // XP/HON restent inchangés (calculés plus bas via ExperienceReward/HonorReward).
                 int32_1 *= NPC_KILL_ECONOMY_MULTIPLIER;
                 int32_2 *= NPC_KILL_ECONOMY_MULTIPLIER;
 
@@ -2194,9 +2099,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             if (this.Respawn)
             {
-                // On garde l'Id NPC indisponible brièvement après la mort.
-                // Cela laisse les roquettes/Hellstorm/bulles finir sur l'ancienne position
-                // avant qu'un nouveau NPC avec le même Id puisse réapparaître côté client.
                 ScheduleDelayedRespawn();
             }
             else
@@ -2215,7 +2117,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.IsAttacking = false;
             ClearEmpInterruptedTarget();
 
-            // ✅ reset guards
             this.mLastDamageTick = 0;
             this.mLastNpcCombatTargetId = 0;
             this.mLastNpcCombatActivityTick = 0.0;
@@ -2274,8 +2175,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             this.mLastAggroTick = now;
 
-            // ✅ Si l'IA relock immédiatement la même cible après un tir instantané,
-            // on conserve le garde-fou anti double-hit pour éviter une double salve.
             if (!preserveRecentAttackGuard)
                 this.mLastDamageTick = 0;
             System.Threading.Volatile.Write(ref this.mAttackInProgress, 0);
@@ -2287,7 +2186,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         public void Attack(object Npc)
         {
-            // ✅ Anti-concurrence : Timer + AI ne doivent pas exécuter Attack() en parallèle
             if (System.Threading.Interlocked.Exchange(ref this.mAttackInProgress, 1) == 1)
                 return;
 
@@ -2344,7 +2242,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 if (!DistanceUtil.IsWithinRangeSquared(sessionByCharacterId.CharacterInfo.LocX, sessionByCharacterId.CharacterInfo.LocY, this.LocX, this.LocY, shootRange))
                     return;
 
-                // ✅ Anti double-hit : si AI force un Attack immédiat, pas de 2 hits collés
                 int nowTick = Environment.TickCount;
                 int attackGuardCooldownMs = this.GetAttackGuardCooldownMs();
                 if (this.mLastDamageTick != 0 && unchecked(nowTick - this.mLastDamageTick) < attackGuardCooldownMs)
@@ -2395,7 +2292,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 RegisterNpcDamageDealt(dmg);
 
-                // ✅ Stop repair bot immediately if the player gets attacked by an NPC
                 if (sessionByCharacterId.CharacterInfo.IsRepairing)
                 {
                     SelectAction.StopRepair(sessionByCharacterId, "Stopped: taking damage");
@@ -2408,9 +2304,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 sessionByCharacterId.CharacterInfo.ShipHp -= hpDmg;
 
-                // Une attaque NPC compte comme activité serveur même si le dégât final vaut 0
-                // (ex: ISH actif). Cela annule le logout volontaire et repousse
-                // le timeout d'inactivité après fermeture d'onglet.
                 sessionByCharacterId.CharacterInfo.RegisterIncomingAttackActivity();
 
                 ServerMessage npcDamageMessage = PacketComposer.Compose(
@@ -2451,7 +2344,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             }
             finally
             {
-                // ✅ libère le verrou même en cas de return
                 System.Threading.Volatile.Write(ref this.mAttackInProgress, 0);
             }
         }
@@ -2488,10 +2380,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (owned.Count <= keepNewest)
                 return;
 
-            // Newest first (SpawnSequence le plus élevé)
             owned.Sort((a, b) => b.SpawnSequence.CompareTo(a.SpawnSequence));
 
-            // Supprime tout ce qui dépasse keepNewest (FIFO : on garde les plus récentes)
             for (int i = keepNewest; i < owned.Count; i++)
             {
                 int removeId = owned[i].Id;
@@ -2499,7 +2389,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 if (instanceByMapId.Info.Collectables.ContainsKey(removeId))
                 {
                     instanceByMapId.Info.Collectables.Remove(removeId);
-                    // In Galaxy Gates, only notify the owner (private run).
                     if (GalaxyGateWaveService.IsGateMap(instanceByMapId.MapId) && ownerCharacterId > 0)
                     {
                         Session ownerSession = SessionManager.GetSessionByCharacterId(ownerCharacterId);
@@ -2527,11 +2416,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             int ownerCharacterId = this.mRewardOwnerId;
 
-            // Limite à 5 cargos NPC par joueur (FIFO) :
-            // si le joueur en a déjà 5 sur la map, on supprime le plus ancien avant de spawn le nouveau.
             TrimNpcCargoBoxesForOwner(instanceByMapId, ownerCharacterId, 4);
 
-            // ID unique pour éviter les conflits (ne pas réutiliser l'Id du NPC !)
             int boxId = NextNpcCargoBoxId();
             while (instanceByMapId.Info.Collectables.ContainsKey(boxId))
                 boxId = NextNpcCargoBoxId();
@@ -2570,7 +2456,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
 
             instanceByMapId.Info.Collectables.Add(boxId, (Collectable)cargoBox);
-            // In Galaxy Gates, the run is private per account: only the owner should see the cargo box.
             if (GalaxyGateWaveService.IsGateMap(this.MapId) && ownerCharacterId > 0)
             {
                 Session ownerSession = SessionManager.GetSessionByCharacterId(ownerCharacterId);
@@ -2582,7 +2467,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 instanceByMapId.BroadcastMessage(PacketComposer.Compose("c", boxId.ToString() + "|" + (object)1 + "|" + (object)locX + "|" + (object)locY), false);
             }
 
-            // Booty boxes should not spawn inside Galaxy Gates (cargo boxes are allowed).
             if (!GalaxyGateWaveService.IsGateMap(this.MapId))
                 this.BoxSpawn(random, npcId, instanceByMapId);
         }
@@ -2605,17 +2489,12 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         private void BoxSpawn(Random random, int id, MapInstance instanceByMapId)
         {
-            // Custom Booty Box drop system:
-            // - Only one type of box: BootyBox (type 21 / pirateBootyBox client-side)
-            // - Only on large maps (X-5..X-8 => mapIds 17..28)
-            // - Only for selected NPC types with specific spawn chances
 
             if (instanceByMapId == null)
                 return;
 
             int mapId = instanceByMapId.MapId;
 
-            // Large maps: X-5..X-8
             if (mapId < 17 || mapId > 28)
                 return;
 
@@ -2652,7 +2531,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     return;
             }
 
-            // Roll 1..100 (inclusive)
             int roll = random.Next(1, 101);
             if (roll > spawnChancePercent)
                 return;

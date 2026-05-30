@@ -21,9 +21,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
 {
     public static class Fight
     {
-        // CONSTANTES DE PORTÉE (DarkOrbit 2010)
-        private const double RANGE_LASER = 700.0;   // Portée Lasers ajustée
-        private const double RANGE_ROCKET = 750.0;  // Portée Roquettes (Un peu plus que les lasers)
+        private const double RANGE_LASER = 700.0;
+        private const double RANGE_ROCKET = 750.0;
         private const int DIMINISHER_SELF_SHIELD_LOSS_PERCENT = 30;
         private const int TECH_ENERGY_LEECH_LIFESTEAL_PERCENT = 10;
         private const int TECH_ENERGY_LEECH_DURATION_SECONDS = 900;
@@ -426,13 +425,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             bool launcherChanged = state.LauncherType != equippedLauncherType;
             if (launcherChanged)
             {
-                // Le launcher réellement équipé a changé / disparu : on réinitialise.
                 state.LoadedCount = 0;
                 StopRocketLauncherReloadTimer(state);
             }
-            // Si seule la configuration A/B change mais que le même Hellstorm reste équipé,
-            // on conserve le chargement et l'état auto RLLB. Sinon un simple switch config
-            // vide le lanceur alors que le client Flash gardait l'état de l'équipement.
 
             state.ActiveConfig = activeConfig;
             state.LauncherType = equippedLauncherType;
@@ -2307,7 +2302,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (referenceObject == null)
                     return;
 
-                // Galaxy Gate isolation: a player may only select NPCs from his own run.
                 if (!CanSessionAttackNpc(Session, referenceObject))
                 {
                     Session.CharacterInfo.SelectedPlayer = 0;
@@ -2325,7 +2319,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     (object)referenceObject.ShipMaxHp
                 ));
 
-                // Flash-like: la couleur du lock dépend du vrai owner serveur.
                 Fight.SendNpcTargetOwnershipVisual(Session, referenceObject);
 
             }
@@ -2362,7 +2355,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 Session.SendData(FightSelectPlayerComposer.Compose(sessionByCharacterId.CharacterInfo));
 
-                // Flash-like: la couleur du lock dépend du vrai attaquant serveur.
                 Fight.SendPlayerTargetOwnershipVisual(Session, sessionByCharacterId);
             }
         }
@@ -2465,7 +2457,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         if (referenceObject == null)
                             return;
 
-                        // FIX RANGE: 600 pour lasers
                         if (Fight.GetDistanceNpc(Session, referenceObject) >= RANGE_LASER)
                             return;
 
@@ -2490,7 +2481,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         if (sessionByCharacterId == null || sessionByCharacterId.CharacterInfo == null)
                             return;
 
-                        // FIX RANGE: 600 pour lasers
                         if (!Fight.PlayerCanAttack(Session, sessionByCharacterId) || Fight.GetDistance(Session, sessionByCharacterId) >= RANGE_LASER)
                             return;
 
@@ -2516,12 +2506,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (!int.TryParse(Message.GetNextString(1), out result))
                 return;
 
-            // ID autorisés (roquettes gérées par ton émulateur) : 1,2,3,10
             if (new CList<int>() { 1, 2, 3, 10 }.Contains(result))
             {
                 Session.CharacterInfo.SelectedRocket = result;
 
-                // Keep a non-special rocket for auto-rocket CPU (DCR-250 must not be used by auto-rocket).
                 if (result != 10)
                 {
                     Session.CharacterInfo.SelectedRocketAuto = result;
@@ -2531,16 +2519,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.CharacterInfo.SelectedRocketAuto = 1;
                 }
 
-                // Confirmation client (icône roquette)
                 Session.SendData(PacketComposer.Compose("7", "SELECTED_ROCKET|" + result.ToString()));
             }
         }
 
 
-        /// <summary>
-        /// Démarre l'auto-roquette si le joueur est en attaque laser et que le CPU Auto-Rocket est équipé + activé.
-        /// (Le client Flash envoie S|ARL|1/0 pour activer/désactiver)
-        /// </summary>
         public static void TryStartAutoRocket(Session Session)
         {
             if (Session == null || Session.CharacterInfo == null || !Session.Authenticated)
@@ -2608,15 +2591,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // CPU Auto-Rocket : doit être activé (AutoRocketSkill=1) ET équipé sur la config active.
-            // Si on le désactive ou si on change de config sans l'item, on stop le loop.
             if (Session.CharacterInfo.AutoRocketSkill != 1 || !Session.CharacterInfo.HasAutoRocketCpu)
             {
                 Session.CharacterInfo.ActiveAutoRocket = false;
                 return;
             }
 
-            // Pas de roquettes sélectionnées => on stop le loop
             if (Session.CharacterInfo.SelectedRocket <= 0)
             {
                 Session.CharacterInfo.ActiveAutoRocket = false;
@@ -2650,7 +2630,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // Auto-Rocket CPU must not use the special DCR-250 rocket.
             bool isAutoRocketCall = (Message == null && Session.CharacterInfo.ActiveAutoRocket && Session.CharacterInfo.AutoRocketSkill == 1);
 
             int rocketId = isAutoRocketCall ? Session.CharacterInfo.SelectedRocketAuto : Session.CharacterInfo.SelectedRocket;
@@ -2663,7 +2642,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (Session.CharacterInfo.SelectedPlayer == 0)
                 return;
 
-            // DCR-250 cooldown (4 minutes) - manual only (auto-rocket never uses DCR).
             if (rocketId == 10)
             {
                 double now = UnixTimestamp.GetCurrent();
@@ -2677,12 +2655,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
 
-            // Tir roquette = entrée en combat + sortie immédiate de peace/trade zone
             Session.CharacterInfo.NoFightTimer = 0;
             Session.CharacterInfo.PeaceZone = false;
             Session.CharacterInfo.TradeZone = false;
 
-            // refresh UI côté client (station / peace)
             ShipMovement.SendPeacePortalInfos(Session);
 
             MapActor actorByReferenceId1 = instanceByMapId.GetActorByReferenceId(Session.CharacterInfo.SelectedPlayer, MapActorType.AiBot);
@@ -2690,7 +2666,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 Npc referenceObject = (Npc)actorByReferenceId1.ReferenceObject;
 
-                // FIX RANGE: 750 pour roquettes (Un peu plus confortable)
                 if (referenceObject == null || referenceObject.IsDestroying || !CanSessionAttackNpc(Session, referenceObject) || Fight.GetDistanceNpc(Session, referenceObject) >= RANGE_ROCKET)
                     return;
 
@@ -2700,13 +2675,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     SendSessionScopedMessage(instanceByMapId, Session, PacketComposer.Compose("n", "INV|" + (object)Session.CharacterInfo.Id + "|" + (object)0));
                 }
 
-                // ✅ CONSOMMATION ROQUETTE + HUD (packet "3")
                 if (!Session.CharacterInfo.TryConsumeRocketAmmo(rocketId))
                 {
-                    // plus de roquettes => stop auto-roquette et refresh HUD
                     Session.CharacterInfo.ActiveAutoRocket = false;
 
-                    // Flash: NO_AMMUNITION (W) => rockets empty
                     Session.SendData(PacketComposer.Compose("W", "R|0|0"));
 
                     Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
@@ -2714,11 +2686,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
                 Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
 
-                // ✅ TAG IMMÉDIAT AU TIR (claim DO 2010) : devient rouge pour le tireur (si claim dispo)
                 referenceObject.UpdateAttackers(Session.CharacterId, 0);
 
                 Session.CharacterInfo.SelectedPlayerRocket = Session.CharacterInfo.SelectedPlayer;
-                // ✅ Snapshot du cycle de vie du NPC ciblé (anti-hit sur respawn)
                 Session.CharacterInfo.SelectedPlayerRocketSpawnSeq = referenceObject.SpawnSeq;
 
                 SendNpcScopedMessage(instanceByMapId, referenceObject, PacketComposer.Compose(
@@ -2735,7 +2705,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.SendData(PacketComposer.Compose("A", "CLD|DCR|240"));
                 }
 
-                // One-shot timer, nettoyé dans EffectRocket()
                 Session.CharacterInfo.RocketAttackTimer = new System.Threading.Timer(
                     new TimerCallback(Fight.EffectRocket),
                     (object)Session,
@@ -2755,7 +2724,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (sessionByCharacterId == null || sessionByCharacterId.CharacterInfo == null)
                     return;
 
-                // FIX RANGE: 750 pour roquettes
                 if (!Fight.PlayerCanAttack(Session, sessionByCharacterId)
                     || sessionByCharacterId.CharacterInfo.PeaceZone
                     || Fight.GetDistance(Session, sessionByCharacterId) >= RANGE_ROCKET)
@@ -2769,12 +2737,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     SendSessionScopedMessage(instanceByMapId, Session, PacketComposer.Compose("n", "INV|" + (object)Session.CharacterInfo.Id + "|" + (object)0));
                 }
 
-                // ✅ CONSOMMATION ROQUETTE + HUD (packet "3")
                 if (!Session.CharacterInfo.TryConsumeRocketAmmo(rocketId))
                 {
                     Session.CharacterInfo.ActiveAutoRocket = false;
 
-                    // Flash: NO_AMMUNITION (W) => rockets empty
                     Session.SendData(PacketComposer.Compose("W", "R|0|0"));
 
                     Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
@@ -2782,11 +2748,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
                 Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
 
-                // ✅ Pas de TAG immédiat au tir en PVP : on tag seulement à l'impact (ApplyDamageToPlayer)
-                // afin que l'ISH (bouclier instantané) puisse réellement empêcher l'entrée en combat quand aucun dégât n'est pris.
 
                 Session.CharacterInfo.SelectedPlayerRocket = Session.CharacterInfo.SelectedPlayer;
-                // Cible joueur : pas de SpawnSeq (réservé aux NPC)
                 Session.CharacterInfo.SelectedPlayerRocketSpawnSeq = 0;
 
                 SendPlayerScopedCombatMessage(instanceByMapId, Session, sessionByCharacterId, PacketComposer.Compose(
@@ -2803,7 +2766,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.SendData(PacketComposer.Compose("A", "CLD|DCR|240"));
                 }
 
-                // One-shot timer, nettoyé dans EffectRocket()
                 Session.CharacterInfo.RocketAttackTimer = new System.Threading.Timer(
                     new TimerCallback(Fight.EffectRocket),
                     (object)Session,
@@ -2823,7 +2785,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (session == null || session.CharacterInfo == null)
                     return;
 
-                // Nettoyage du timer (évite fuite)
                 try
                 {
                     if (session.CharacterInfo.RocketAttackTimer != null)
@@ -2847,14 +2808,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Random rng = session.CharacterInfo.RandomDamage ?? new Random();
                 int baseDamage = GetBaseRocketDamage(session.CharacterInfo.RckDamages, rocketId);
 
-                // DCR-250 = utilitaire (0 dégât)
                 int damage;
                 if (rocketId == 10)
                     damage = 0;
                 else
                     damage = Math.Max(0, baseDamage + rng.Next(-200, 200));
 
-                // --- CIBLE NPC ---
                 MapActor actorNpc = instanceByMapId.GetActorByReferenceId(session.CharacterInfo.SelectedPlayerRocket, MapActorType.AiBot);
                 if (actorNpc != null)
                 {
@@ -2862,16 +2821,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     if (npc == null || npc.IsDestroying || !CanSessionAttackNpc(session, npc))
                         return;
 
-                    // ✅ Anti-bug : si le NPC a été détruit puis a respawn (même Id) avant l'impact,
-                    // on ignore cette roquette pour éviter qu'elle "saute" sur le nouveau NPC.
                     if (npc.SpawnSeq != session.CharacterInfo.SelectedPlayerRocketSpawnSeq)
                         return;
 
-                    // Si le NPC a respawn entre le tir et l'impact, on ignore la roquette.
                     if (npc.SpawnSeq != session.CharacterInfo.SelectedPlayerRocketSpawnSeq)
                         return;
 
-                    // Se prom (raffinage roquettes)
                     if (session.CharacterInfo.LabInfos != null && session.CharacterInfo.LabInfos.Rocket[1] > 0)
                     {
                         if (session.CharacterInfo.LabInfos.Rocket[0] == 11)
@@ -2888,7 +2843,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                             session.CharacterInfo.UpdateLaserRocketReff();
                     }
 
-                    // Spaceball
                     if (npc.ShipId == 442)
                     {
                         if (session.CharacterInfo.SelectedAmmo == 5)
@@ -2904,7 +2858,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 }
 
-                // --- CIBLE JOUEUR (PVP) ---
                 MapActor actorPlayer = instanceByMapId.GetActorByReferenceId(session.CharacterInfo.SelectedPlayerRocket, MapActorType.UserCharacter);
                 if (actorPlayer == null)
                     return;
@@ -2913,18 +2866,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (targetSession == null || targetSession.CharacterInfo == null || !PlayerCanAttack(session, targetSession))
                     return;
 
-                // Pas de roquette sur ISH / peace
                 if (targetSession.CharacterInfo.ActiveISH || targetSession.CharacterInfo.PeaceZone)
                     return;
 
-                // Effet DCR-250
                 if (rocketId == 10)
                 {
                     ApplyDCR250Effect(targetSession);
-                    // dégâts = 0, mais on garde la logique combat / attacker
                 }
 
-                // Raffinage roquettes
                 if (session.CharacterInfo.LabInfos != null && session.CharacterInfo.LabInfos.Rocket[1] > 0)
                 {
                     if (session.CharacterInfo.LabInfos.Rocket[0] == 11)
@@ -2985,7 +2934,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (Session.CharacterInfo == null)
                 return;
 
-            // --- PERTE INVINCIBILITÉ AU TIR ---
             if (Session.CharacterInfo.Invincible)
             {
                 Session.CharacterInfo.Invincible = false;
@@ -3019,7 +2967,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (Session.CharacterInfo.SelectedPlayer == 0)
                 return;
 
-            // entrée en combat + sortie immédiate peace/trade
             Session.CharacterInfo.NoFightTimer = 0;
             Session.CharacterInfo.PeaceZone = false;
             Session.CharacterInfo.TradeZone = false;
@@ -3036,7 +2983,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (referenceObject == null)
                     return;
 
-                // ici on ne return pas si hors range : AttackNpc gère "O"
             }
             else
             {
@@ -3055,16 +3001,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 }
 
-                // idem : pas de return si hors range
                 npc = false;
             }
 
             Session.CharacterInfo.Attacking = true;
 
-            // Lock intent: orientation only. No laser visual is created by this packet.
             Fight.BroadcastLockIntent(instanceByMapId, Session);
 
-            // Flash-like: attaquer ne rend pas visuellement owner si la cible appartient déjà à un autre joueur.
             if (npc)
             {
                 Npc n = (Npc)referenceObject;
@@ -3091,11 +3034,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (Session.CharacterInfo.Invisible == 1)
                 Fight.RemoveCloack(Session, instanceByMapId);
 
-            // Flash parity / anti-exploit: the laser cadence is global for the
-            // attacker. Switching NPC targets must not grant an immediate extra
-            // shot. The old code only applied the remaining wait when attacking
-            // a player or the same NPC, which allowed key-repeat + retargeting
-            // to restart attacks with wait=0 on different NPCs.
             double wait = DateTime.Now.TimeOfDay.TotalMilliseconds - Session.CharacterInfo.PreviousDamageTime;
 
             if (Session.CharacterInfo.PreviousDamageTime <= 0 || wait >= Session.CharacterInfo.AttackSpeed || wait < 0)
@@ -3113,7 +3051,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.AttackSpeed
             );
 
-            // Auto-Rocket CPU (AROL) : si activé (AutoRocketSkill=1) ET équipé sur la config active
             if (Session.CharacterInfo.AutoRocketSkill == 1 && Session.CharacterInfo.HasAutoRocketCpu)
             {
                 Fight.TryStartAutoRocket(Session);
@@ -3203,14 +3140,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         Npc referenceObject = (Npc)actorByReferenceId.ReferenceObject;
                         if (referenceObject == null)
                         {
-                            // NPC introuvable => stop tir + unlock
                             Fight.StopLaser(Session, null);
                             return;
                         }
 
                         if (referenceObject.IsDestroying)
                         {
-                            // NPC en cours de destruction => stop + unlock immédiat
                             Fight.StopLaser(Session, null);
                             return;
                         }
@@ -3272,7 +3207,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             double distanceNpc = Fight.GetDistanceNpc(Session, Npc);
 
-            // FIX RANGE: Si > 600, on est hors de portée
             if (distanceNpc <= RANGE_LASER && Session.CharacterInfo.OutOfRange)
             {
                 Session.CharacterInfo.OutOfRange = false;
@@ -3281,10 +3215,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             if (distanceNpc <= RANGE_LASER && !Session.CharacterInfo.OutOfRange)
             {
-                // -------------------- AMMO LIMIT (LASERS) + HUD UPDATE --------------------
                 if (damage)
                 {
-                    // même logique que ton DoDamageNpc : pas de SAB sur Spaceball (sinon on consomme pour rien)
                     if (Npc != null && Npc.ShipId == 442 && Ammo == 5)
                         return;
 
@@ -3293,21 +3225,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                     if (!Session.CharacterInfo.TryConsumeLaserAmmo(Ammo))
                     {
-                        // plus de munitions => stop tir (sans unlock la cible)
                         Fight.StopLaser(Session, null, false);
 
-                        // Flash: NO_AMMUNITION (W) => lasers empty
                         Session.SendData(PacketComposer.Compose("W", "L|0|0"));
 
-                        // refresh HUD (packet B)
                         Session.SendData(PacketComposer.Compose("B", Session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                         return;
                     }
 
-                    // refresh HUD en temps réel (packet B)
                     Session.SendData(PacketComposer.Compose("B", Session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                 }
-                // -------------------------------------------------------------------------
 
                 double now = DateTime.Now.TimeOfDay.TotalMilliseconds;
                 double num = now - Session.CharacterInfo.LastRSB75;
@@ -3460,7 +3387,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (Npc.ShipHp > 0)
                     return;
 
-                // ⚡️ Stop/Unlock immédiatement (avant les rewards SQL dans Npc.Destroy)
                 Fight.StopLaser(Session, null);
 
                 Fight.KillNPC(Instance, Npc, Session);
@@ -3480,7 +3406,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     num = 2.0;
                     break;
                 case 3:
-                    // MCB-50 = x3 (Flash-like)
                     num = 3.0;
                     break;
                 case 4:
@@ -3507,7 +3432,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             double distance = Fight.GetDistance(Session, Ennemy);
 
-            // FIX RANGE: Si > 600, on est hors de portée
             if (distance <= RANGE_LASER && Session.CharacterInfo.OutOfRange)
             {
                 Session.CharacterInfo.OutOfRange = false;
@@ -3516,7 +3440,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             if (distance <= RANGE_LASER && !Session.CharacterInfo.OutOfRange)
             {
-                // -------------------- AMMO LIMIT (LASERS) + HUD UPDATE --------------------
                 if (damage)
                 {
                     if (Ammo == 6 && !Fight.IsRsbReady(Session))
@@ -3526,18 +3449,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     {
                         Fight.StopLaser(Session, Ennemy, false);
 
-                        // Flash: NO_AMMUNITION (W) => lasers empty
                         Session.SendData(PacketComposer.Compose("W", "L|0|0"));
 
-                        // refresh HUD (packet B)
                         Session.SendData(PacketComposer.Compose("B", Session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                         return;
                     }
 
-                    // refresh HUD en temps réel (packet B)
                     Session.SendData(PacketComposer.Compose("B", Session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                 }
-                // -------------------------------------------------------------------------
 
                 double now = DateTime.Now.TimeOfDay.TotalMilliseconds;
                 double num = now - Session.CharacterInfo.LastRSB75;
@@ -3719,7 +3638,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (num2 > 0)
                     Ennemy.CharacterInfo.RegisterShieldDamageReceived();
 
-                // ⚡️ Si la cible est déjà en cours de destruction, on unlock immédiatement
                 if (Ennemy.CharacterInfo.Destroy)
                 {
                     Fight.StopLaser(Session, Ennemy);
@@ -3729,7 +3647,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (Ennemy.CharacterInfo.ShipHp > 0)
                     return;
 
-                // ⚡️ On stop/unlock AVANT les writes SQL (récompenses), sinon le client "freeze" le lock
                 Fight.StopLaser(Session, Ennemy);
 
                 Ennemy.CharacterInfo.SendReward(Ennemy);
@@ -3754,8 +3671,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static bool IsValidLockIntentTargetId(int targetId)
         {
-            // Player IDs are positive. NPC instance IDs are negative (usually <= -2).
-            // 0 means no selected target and -1 is reserved for LK clear packets.
             return targetId != 0 && targetId != -1;
         }
 
@@ -3989,7 +3904,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (instanceByMapId == null)
                 return;
 
-            // Lock intent: clear orientation lock only if we actually unlock the target.
             if (unlock)
                 Fight.BroadcastLockIntentClear(instanceByMapId, Session);
 
@@ -4197,8 +4111,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         sessionByCharacterId2.CharacterInfo.PlayerInRange.Remove(Session.CharacterInfo.Id);
                 }
 
-                // DarkOrbit-like: if you die in 4-4 or in X-5..X-8, respawn at your X-8 base
-                // only if you have the required level to access X-8; otherwise respawn at X-1 (default).
                 bool respawnToX8 = (deathMapId == 16) || (deathMapId >= 17 && deathMapId <= 28);
 
                 int targetMapId = 0;
@@ -4216,7 +4128,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     targetMapId = MapAccessService.GetHomeMapX1(factionId);
                 }
 
-                // Spawn coordinates: same as classic base spawn points, applied to X-1 or X-8
                 if (factionId == 1)
                 {
                     Session.CharacterInfo.LocX = 2000;
@@ -4239,8 +4150,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 if (Session.Stopped || Session.CharacterInfo.Disconnected)
                 {
-                    // The ship died while the browser/socket was gone. This is a real death:
-                    // save the base respawn state, remove the actor, then fully dispose the session.
                     MapManager.RemoveUserFromMap(Session);
 
                     using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
@@ -4314,10 +4223,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 "HL|1|" + Session.CharacterInfo.Id + "|SHD|" + Session.CharacterInfo.ShipShield + "|" + num
             );
 
-            // Le joueur le reçoit toujours
             Session.SendData(msg);
 
-            // + tous ceux qui ont ce joueur sélectionné
             MapInstance instanceByMapId = MapManager.GetInstanceByMapId(Session.CurrentMapId);
             instanceByMapId?.BroadcastToSelectedTarget(Session.CharacterId, msg);
         }
@@ -4328,39 +4235,34 @@ namespace OrbitReborn_Emulator.Game.Handlers
             npc.Destroy(map);
         }
 
-        // --- DÉGÂTS ROQUETTES (basé sur RckDamages + multiplicateur type) ---
         private static int GetBaseRocketDamage(int baseRckDamages, int rocketType)
         {
-            // baseRckDamages = CharacterInfo.RckDamages (skilltree)
-            // On garde une logique cohérente avec tes valeurs par défaut (1000 => 2000 => 4000, etc.)
             switch (rocketType)
             {
                 case 1:
-                    return baseRckDamages; // R-310
+                    return baseRckDamages;
                 case 2:
-                    return (int)Math.Round(baseRckDamages * 2.0); // PLT-2026
+                    return (int)Math.Round(baseRckDamages * 2.0);
                 case 3:
-                    return (int)Math.Round(baseRckDamages * 4.0); // PLT-2021
+                    return (int)Math.Round(baseRckDamages * 4.0);
                 case 7:
-                    return (int)Math.Round(baseRckDamages * 4.0); // HSTRM-01
+                    return (int)Math.Round(baseRckDamages * 4.0);
                 case 8:
-                    return (int)Math.Round(baseRckDamages * 4.0); // UBR-100 base (NPC bonus handled separately)
+                    return (int)Math.Round(baseRckDamages * 4.0);
                 case 9:
-                    return (int)Math.Round(baseRckDamages * 2.0); // ECO-10
+                    return (int)Math.Round(baseRckDamages * 2.0);
                 case 10:
-                    return 0; // DCR-250 utilitaire
+                    return 0;
                 default:
                     return baseRckDamages;
             }
         }
 
-        // --- DCR-250 : ralentissement (-30%) non cumulable, timer relancé ---
         private static void ApplyDCR250Effect(Session target)
         {
             if (target == null || target.CharacterInfo == null)
                 return;
 
-            // Déjà ralenti => on relance juste le timer
             if (target.CharacterInfo.SpeedDebuffTimer != null)
             {
                 try
@@ -4424,7 +4326,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        // --- ROQUETTE -> DÉGÂTS NPC ---
         private static void ApplyDamageToNpc(Session session, Npc npc, int damage, MapInstance instance)
         {
             if (session == null || session.CharacterInfo == null || npc == null || instance == null)
@@ -4454,12 +4355,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             int applied = shieldPart + hpPart;
 
-            // Packet Y aux joueurs qui ont ce NPC sélectionné (comme lasers)
             SendNpcDamageUpdate(instance, session, npc, applied);
 
             npc.UpdateAttackers(session.CharacterId, applied);
 
-            // Aggro si aucun target
             if (!npc.IsDestroying && npc.TargetId == 0)
                 npc.LockTarget(session.CharacterId);
 
@@ -4487,7 +4386,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 npc.LockTarget(session.CharacterId);
         }
 
-        // --- ROQUETTE -> DÉGÂTS PVP ---
         private static void ApplyDamageToPlayer(Session attacker, Session target, int damage, MapInstance instance)
         {
             if (attacker == null || attacker.CharacterInfo == null || target == null || target.CharacterInfo == null || instance == null)
@@ -4495,7 +4393,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (!PlayerCanAttack(attacker, target))
                 return;
 
-            // Entrée combat / attacker
             target.CharacterInfo.UpdateAttacker(attacker);
 
             int baseShieldPart = Convert.ToInt32(damage * target.CharacterInfo.ShieldAbsorption);
@@ -4519,7 +4416,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (shieldPart + hpPart > 0)
                 target.CharacterInfo.RegisterShieldDamageReceived();
 
-            // Packet Y comme lasers : aux joueurs qui ont la cible sélectionnée ou à la cible elle-même
             foreach (MapActor key in instance.GetActorSnapshot())
             {
                 if (key.Type == MapActorType.UserCharacter)
@@ -4542,7 +4438,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 target.CharacterInfo.SendReward(target);
 
-                // Si l'attaquant est en laser sur cette cible, on stop (comportement standard)
                 Fight.StopLaser(attacker, target);
 
                 Fight.KillPlayer(target);

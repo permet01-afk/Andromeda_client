@@ -1,8 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: OrbitReborn_Emulator.Game.Handlers.Handshake
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
+﻿
 
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
@@ -15,7 +11,7 @@ using OrbitReborn_Emulator.Specialized;
 using OrbitReborn_Emulator.Storage;
 using System;
 using System.Collections.Generic;
-using System.Text; // Ajouté pour StringBuilder
+using System.Text;
 using System.Threading;
 
 namespace OrbitReborn_Emulator.Game.Handlers
@@ -85,8 +81,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.RefreshClan(client);
                 Output.WriteLine("[LOGIN_FLOW] DB refresh completed for " + Session.CharacterId, OutputLevel.DebugInformation);
 
-                // The reconnecting client needs a fresh visual snapshot, but other players must not
-                // receive a fake leave packet: the ship never left the server map.
                 Session.CharacterInfo.NpcInRange.Clear();
                 if (reconnectHandoff)
                 {
@@ -149,7 +143,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 int requiredLevel;
                 if (!MapAccessService.CanAccessMap(Session.CharacterInfo.FactionId, Session.CharacterInfo.Level, startMapId, out requiredLevel))
                 {
-                    // If something stored an invalid/locked map in DB, force player to their home X-1.
                     startMapId = MapAccessService.GetHomeMapX1(Session.CharacterInfo.FactionId);
                 }
             }
@@ -183,7 +176,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Session.SendData(PacketComposer.Compose("A", Session.CharacterInfo.GetCpuItemsPayload(Fight.ShouldAdvertiseRocketLauncherCpu(Session))));
             Session.SendData(PacketComposer.Compose("A", "CPU|C|" + (object)100));
             Fight.SendRocketLauncherProtocolState(Session, true);
-            // Auto-Rocket CPU state (CPU|R|0/1) - uniquement si le CPU est présent sur la config active
             if (Session.CharacterInfo.HasAutoRocketCpu)
             {
                 int state = (Session.CharacterInfo.AutoRocketSkill == 1) ? 1 : 0;
@@ -195,12 +187,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Session.SendData(Session.CharacterInfo.GetCargoMessage());
             int totalSeconds = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
-            // Valeurs exactes que tu veux garder
-            int dmgPct = (Session.CharacterInfo.BoosterDmgTime > totalSeconds) ? 10 : 0;  // +10% dégâts
-            int hpPct = (Session.CharacterInfo.BoosterHpTime > totalSeconds) ? 10 : 0;  // +10% HP
-            int shdPct = (Session.CharacterInfo.BoosterShdTime > totalSeconds) ? 25 : 0;  // +25% bouclier
+            int dmgPct = (Session.CharacterInfo.BoosterDmgTime > totalSeconds) ? 10 : 0;
+            int hpPct = (Session.CharacterInfo.BoosterHpTime > totalSeconds) ? 10 : 0;
+            int shdPct = (Session.CharacterInfo.BoosterShdTime > totalSeconds) ? 25 : 0;
 
-            // NPC/Speed/Extra = supprimés => on laisse à 0
             Session.SendData(PacketComposer.Compose("A", "BS|0/0/" + dmgPct + "/" + shdPct + "/0/0/0/" + hpPct));
 
             Session.SendData(PacketComposer.Compose("A", "JV|0"));
@@ -232,7 +222,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.RandomDamage = new Random();
                 Session.CharacterInfo.Destroy = false;
                 Session.CharacterInfo.Attacking = false;
-                // ✅ Autorise le tir immédiatement (pas de timer de 1s)
                 Session.CharacterInfo.CanLaserAttack = true;
                 Session.CharacterInfo.OutOfRange = false;
                 Session.CharacterInfo.CanMove = true;
@@ -253,9 +242,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Fight.KillPlayer(Session, true);
             }
 
-            // =========================================================
-            // CORRECTIF GROUPE (room Group réelle + payload Flash-like)
-            // =========================================================
             try
             {
                 foreach (var otherSession in SessionManager.SessionsUser.Values)
@@ -279,7 +265,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 Console.WriteLine("Group restoration error: " + ex.Message);
             }
-            // =========================================================
         }
         private static void LogTimerFailure(string callbackName, Exception ex)
         {

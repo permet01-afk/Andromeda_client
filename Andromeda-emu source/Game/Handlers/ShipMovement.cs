@@ -1,8 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: OrbitReborn_Emulator.Game.Handlers.ShipMovement
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
+﻿
 
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
@@ -26,12 +22,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
     {
         public static Timer CheckAliensInRangeTimer;
 
-        // ------------------------------------------------------------
-        // Minimap Enemy Threat Indicator (Flash packet "w")
-        // - Only on X-1 and X-2 maps: 1,2,5,6,9,10
-        // - Enemies = faction different ONLY (no clan-war logic)
-        // - Sends level 0..5 (clamped), only when changed
-        // ------------------------------------------------------------
         private static readonly object EnemyWarningLock = new object();
         private static readonly Dictionary<int, int> LastEnemyWarningLevel = new Dictionary<int, int>();
         private static readonly Dictionary<int, int> LastEnemyWarningRefreshTick = new Dictionary<int, int>();
@@ -44,11 +34,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private static readonly Dictionary<int, bool> MovementUpdateRunning = new Dictionary<int, bool>();
 
 
-        // ------------------------------------------------------------
-        // Radiation zone (~DarkOrbit 2010 behaviour)
-        // - Damage pierces shields (HP only)
-        // - Starts at 1% max HP per tick and ramps up to 5% while staying in radiation
-        // ------------------------------------------------------------
         private static readonly object RadiationLock = new object();
         private static readonly Dictionary<int, int> RadiationTicks = new Dictionary<int, int>();
 
@@ -395,22 +380,20 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Fight.BroadcastLockIntentForMovedTarget(instanceByMapId, Session.CharacterId);
         }
 
-#pragma warning disable IDE1006 // Naming Styles (legacy API name kept for compatibility)
+#pragma warning disable IDE1006
         public static double getTimeTaken(Session Session, int nextInt1, int nextInt2)
         {
             double dx = (double)(Session.CharacterInfo.LocX - nextInt1);
             double dy = (double)(Session.CharacterInfo.LocY - nextInt2);
             double num = Math.Sqrt(dx * dx + dy * dy);
 
-            // Définition des limites par défaut
             int limitX = 22000;
             int limitY = 14000;
 
-            // Si on est sur la map 4-4 (ID 16), on augmente les limites
             if (Session.CharacterInfo.MapId == 16)
             {
-                limitX = 43000; // Largeur map 4-4 (+ marge radiation)
-                limitY = 28000; // Hauteur map 4-4
+                limitX = 43000;
+                limitY = 28000;
             }
 
             if (num < 50.0 || (nextInt1 > limitX || nextInt1 < -1000 || nextInt2 > limitY || nextInt2 < -1000))
@@ -419,7 +402,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             double TimeTaken = num * 1000.0 / (double)Session.CharacterInfo.ShipSpeed;
             return TimeTaken;
         }
-#pragma warning restore IDE1006 // Naming Styles
+#pragma warning restore IDE1006
 
         public static void MoveShip(Session Session, double TimeTaken)
         {
@@ -505,8 +488,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (viewer.CharacterInfo.MapId != other.CharacterInfo.MapId)
                 return false;
 
-            // Galaxy Gates are private per account in this emulator. Keep that rule stronger
-            // than the group visibility exception.
             if (GalaxyGateWaveService.IsGateMap(viewer.CharacterInfo.MapId))
                 return false;
 
@@ -570,7 +551,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 ShipMovement.CheckPlayerInRange(session);
                 ShipMovement.CheckAliensInRange(session);
-                ShipMovement.UpdateEnemyWarning(session); // throttled minimap enemy warning
+                ShipMovement.UpdateEnemyWarning(session);
             }
             catch (Exception ex)
             {
@@ -582,9 +563,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        // ------------------------------------------------------------
-        // Enemy warning ("w") => minimap threat bar
-        // ------------------------------------------------------------
         private static void UpdateEnemyWarning(object state)
         {
             ShipMovement.UpdateEnemyWarning(state, false);
@@ -602,10 +580,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             int mapId = session.CharacterInfo.MapId;
             int myFaction = session.CharacterInfo.FactionId;
 
-            // Flash enemy warning is active on your own X-1 / X-2 / X-3 maps.
-            // MMO: 1-1 / 1-2 / 1-3 => mapId 1,2,3
-            // EIC: 2-1 / 2-2 / 2-3 => mapId 5,6,7
-            // VRU: 3-1 / 3-2 / 3-3 => mapId 9,10,11
             bool enabled =
                 (myFaction == 1 && (mapId == 1 || mapId == 2 || mapId == 3)) ||
                 (myFaction == 2 && (mapId == 5 || mapId == 6 || mapId == 7)) ||
@@ -639,7 +613,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                         int otherFaction = other.CharacterInfo.FactionId;
 
-                        // Flash threat bar counts foreign-company ships only.
                         if (myFaction != 0 && otherFaction != 0 && otherFaction != myFaction)
                         {
                             enemies++;
@@ -705,7 +678,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             ShipMovement.AdvanceMovingPlayerToCurrentPosition(Session);
 
-            // Galaxy Gates are private per account: do not show other players on gate maps.
             if (GalaxyGateWaveService.IsGateMap(Session.CharacterInfo.MapId))
             {
                 CList<int> toRemove = new CList<int>();
@@ -747,7 +719,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         }
                         else if (Session.CharacterInfo.PlayerInRange.Contains(sessionByCharacterId.CharacterId))
                         {
-                            // --- CORRECTION : Garder le lock sur la cible ---
                             if (Session.CharacterInfo.SelectedPlayer != sessionByCharacterId.CharacterId)
                             {
                                 clist.Add(sessionByCharacterId.CharacterId);
@@ -825,10 +796,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 npcById[referenceObject.Id] = referenceObject;
 
-                // Galaxy Gates are private per account: only show NPCs that belong to this player's run.
                 if (isGateMap && !GalaxyGateWaveService.IsNpcOwnedBy(referenceObject.Id, session.CharacterId))
                 {
-                    // If the NPC was previously in range (older version), force-remove it.
                     if (session.CharacterInfo.NpcInRange.Contains(referenceObject.Id))
                         clist.Add(referenceObject.Id);
                     continue;
@@ -846,7 +815,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         session.SendData(Message);
                         if (referenceObject.Drones == 1)
                         {
-                            // 8 Iris : 2 / 4 / 2
                             session.SendData(PacketComposer.Compose(
                                 "n",
                                 "d|" + referenceObject.Id + "|3/2-15-15-15-15/4-15-15-15-15-15-15-15-15/2-15-15-15-15"
@@ -854,7 +822,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         }
                         else if (referenceObject.Drones == 2)
                         {
-                            // 8 Flax : 2 / 4 / 2
                             session.SendData(PacketComposer.Compose(
                                 "n",
                                 "d|" + referenceObject.Id + "|3/2-25-25-25-25/4-25-25-25-25-25-25-25-25/2-25-25-25-25"
@@ -864,7 +831,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
                 else if (session.CharacterInfo.NpcInRange.Contains(referenceObject.Id))
                 {
-                    // --- CORRECTION : Garder le lock sur le NPC ---
                     if (session.CharacterInfo.SelectedPlayer != referenceObject.Id)
                     {
                         clist.Add(referenceObject.Id);
@@ -897,7 +863,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             bool insideSafe = ShipMovement.IsInsideRadiationSafeArea(Session.CharacterInfo.MapId, Session.CharacterInfo.LocX, Session.CharacterInfo.LocY);
 
-            // Entrée en radiation
             if (!insideSafe && Session.CharacterInfo.WarningZoneTimer == null)
             {
                 Session.CharacterInfo.WarningZone = true;
@@ -906,7 +871,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (Session.Authenticated)
                     ShipMovement.SendPeacePortalInfos(Session);
 
-                // Clean ancien timer si existant (sécurité)
                 if (Session.CharacterInfo.WarningZoneTimer != null)
                 {
                     Session.CharacterInfo.WarningZoneTimer.Dispose();
@@ -917,7 +881,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.WarningZoneTimer = new Timer(new TimerCallback(ShipMovement.WarningZone), (object)Session, 1000, 1000);
                 ++TimerManager.TimerRunning;
             }
-            // Sortie de radiation
             else if (insideSafe && Session.CharacterInfo.WarningZoneTimer != null)
             {
                 Session.CharacterInfo.WarningZone = false;
@@ -955,7 +918,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
         public static void SendPeacePortalInfos(Session Session, bool force = false)
         {
             int peace = Session.CharacterInfo.PeaceZone ? 1 : 0;
-            int trade = Session.CharacterInfo.TradeZone ? 1 : 0;   // <-- AJOUT
+            int trade = Session.CharacterInfo.TradeZone ? 1 : 0;
             int portal = Session.CharacterInfo.PortalZone ? 1 : 0;
             int radiation = Session.CharacterInfo.WarningZone ? 1 : 0;
             string payload = Session.CharacterInfo.LocX + "|" + Session.CharacterInfo.LocY + "|" +
@@ -967,15 +930,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Session.SendData(PacketComposer.Compose("D", payload));
         }
 
-        // OPTIONNEL : à appeler juste après un jump / TP (après avoir posé MapId/LocX/LocY)
-        // => met immédiatement à jour PortalZone + PeaceZone sans devoir bouger.
         public static void RefreshZones(Session Session)
         {
             if (Session == null || Session.CharacterInfo == null)
                 return;
 
             ShipMovement.CheckWarningZone(Session);
-            ShipMovement.CheckPortalZone(Session, true); // CheckPortalZone recalcule aussi la PeaceZone maintenant
+            ShipMovement.CheckPortalZone(Session, true);
         }
 
         private static bool IsPortalPeaceMap(int factionId, int mapId)
@@ -995,16 +956,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
             return false;
         }
 
-        // Calcule la PeaceZone + TradeZone sans envoyer le packet (pour éviter les doubles envois)
         private static void ComputePeaceZone(Session Session)
         {
             int factionId = Session.CharacterInfo.FactionId;
             int mapId = Session.CharacterInfo.MapId;
 
-            // Par défaut : pas en zone commerciale
             Session.CharacterInfo.TradeZone = false;
 
-            // 1) Si TOI tu attaques => jamais safe + jamais zone commerciale
             if (Session.CharacterInfo.Attacking)
             {
                 Session.CharacterInfo.PeaceZone = false;
@@ -1012,13 +970,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // 2) Zone de paix STATION (comme avant) + Zone commerciale (Flash)
             if (mapId == 1)
             {
                 if (factionId == 1 && ShipMovement.IsBetween(Session.CharacterInfo.LocX, Session.CharacterInfo.LocY, 1000, 600, 1600, 1600))
                 {
                     Session.CharacterInfo.PeaceZone = true;
-                    Session.CharacterInfo.TradeZone = true; // ✅ VENTE autorisée ici
+                    Session.CharacterInfo.TradeZone = true;
                     return;
                 }
             }
@@ -1027,7 +984,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (factionId == 2 && ShipMovement.IsBetween(Session.CharacterInfo.LocX, Session.CharacterInfo.LocY, 18000, 600, 1600, 1600))
                 {
                     Session.CharacterInfo.PeaceZone = true;
-                    Session.CharacterInfo.TradeZone = true; // ✅ VENTE autorisée ici
+                    Session.CharacterInfo.TradeZone = true;
                     return;
                 }
             }
@@ -1036,47 +993,41 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (factionId == 3 && ShipMovement.IsBetween(Session.CharacterInfo.LocX, Session.CharacterInfo.LocY, 18300, 10700, 1600, 1600))
                 {
                     Session.CharacterInfo.PeaceZone = true;
-                    Session.CharacterInfo.TradeZone = true; // ✅ VENTE autorisée ici
+                    Session.CharacterInfo.TradeZone = true;
                     return;
                 }
             }
 
             else if (mapId == 20)
             {
-                // MMO X-8 base: top-left
                 if (factionId == 1 && ShipMovement.IsBetween(Session.CharacterInfo.LocX, Session.CharacterInfo.LocY, 1000, 600, 1600, 1600))
                 {
                     Session.CharacterInfo.PeaceZone = true;
-                    Session.CharacterInfo.TradeZone = true; // ✅ allow selling ores at X-8 base
+                    Session.CharacterInfo.TradeZone = true;
                     return;
                 }
             }
             else if (mapId == 24)
             {
-                // EIC X-8 base: top-right
                 if (factionId == 2 && ShipMovement.IsBetween(Session.CharacterInfo.LocX, Session.CharacterInfo.LocY, 18000, 600, 1600, 1600))
                 {
                     Session.CharacterInfo.PeaceZone = true;
-                    Session.CharacterInfo.TradeZone = true; // ✅ allow selling ores at X-8 base
+                    Session.CharacterInfo.TradeZone = true;
                     return;
                 }
             }
             else if (mapId == 28)
             {
-                // VRU X-8 base: bottom-right
                 if (factionId == 3 && ShipMovement.IsBetween(Session.CharacterInfo.LocX, Session.CharacterInfo.LocY, 18300, 10700, 1600, 1600))
                 {
                     Session.CharacterInfo.PeaceZone = true;
-                    Session.CharacterInfo.TradeZone = true; // ✅ allow selling ores at X-8 base
+                    Session.CharacterInfo.TradeZone = true;
                     return;
                 }
             }
 
-            // 3) COMBAT LOCK (Flash)
             bool combatLocked = (Session.CharacterInfo.NoFightTimer < 10);
 
-            // 4) Portail safe uniquement si pas combat lock + map autorisée
-            // ⚠️ TradeZone reste FALSE ici (on ne veut vendre QUE station)
             if (!combatLocked && IsPortalPeaceMap(factionId, mapId))
             {
                 CList<PortalInfo> portalForMap = PortalManager.GetPortalForMap(mapId);
@@ -1090,14 +1041,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         if (ShipMovement.IsBetween(Session.CharacterInfo.LocX, Session.CharacterInfo.LocY, key.PosX - 500, key.PosY - 500, 1000, 1000))
                         {
                             Session.CharacterInfo.PeaceZone = true;
-                            Session.CharacterInfo.TradeZone = false; // ✅ important
+                            Session.CharacterInfo.TradeZone = false;
                             return;
                         }
                     }
                 }
             }
 
-            // 5) Sinon pas de peace zone + pas de trade zone
             Session.CharacterInfo.PeaceZone = false;
             Session.CharacterInfo.TradeZone = false;
         }
@@ -1130,7 +1080,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
             }
-            // ✅ Portails Galaxy Gates (dynamiques)
             if (Session.CharacterInfo.GalaxyGatePortals != null)
             {
                 foreach (PortalInfo key in (System.Collections.Generic.IEnumerable<PortalInfo>)Session.CharacterInfo.GalaxyGatePortals.Keys)
@@ -1143,7 +1092,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
             }
-            // ✅ Portail interne de fin (maps 51/52/53/55)
             if (Session.CharacterInfo.GalaxyGateInternalPortals != null)
             {
                 foreach (PortalInfo key in (System.Collections.Generic.IEnumerable<PortalInfo>)Session.CharacterInfo.GalaxyGateInternalPortals.Keys)
@@ -1157,7 +1105,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
 
-            // ✅ IMPORTANT : on recalcule la PeaceZone maintenant, pour être safe immédiatement à l'arrivée sur le portail.
             ComputePeaceZone(Session);
 
             ShipMovement.SendPeacePortalInfos(Session, force);
@@ -1172,7 +1119,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (session == null || session.CharacterInfo == null)
                     return;
 
-                // If the server has already flagged us as out of radiation, stop the timer cleanly.
                 if (!session.CharacterInfo.WarningZone)
                 {
                     ClearRadiationTicks(session.CharacterId);
@@ -1187,7 +1133,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 }
 
-                // Stop radiation on invalid states
                 if (session.StoppedPlayer || session.CharacterInfo.Destroy || session.CharacterInfo.Disconnected || session.CharacterInfo.ShipHp <= 0)
                 {
                     ClearRadiationTicks(session.CharacterId);
@@ -1202,22 +1147,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 }
 
-                // ------------------------------------------------------------
-                // Classic radiation (~2010):
-                // - pierces shields (HP only)
-                // - ramps from 1% max HP per tick up to 5% while staying in radiation
-                // ------------------------------------------------------------
 
 
-                // ISH (Bouclier instantané) : ne doit pas prendre de dégâts en radiation
-                // (on garde l'incrément du tick pour que l'intensité continue à monter en restant en radiation)
                 if (session.CharacterInfo.ActiveISH)
                 {
                     NextRadiationTick(session.CharacterId);
                     return;
                 }
-                int tick = NextRadiationTick(session.CharacterId);   // 1..n
-                double percent = Math.Min(0.05, 0.01 * tick);        // 1% .. 5%
+                int tick = NextRadiationTick(session.CharacterId);
+                double percent = Math.Min(0.05, 0.01 * tick);
 
                 int maxHp = session.CharacterInfo.ShipMaxHp > 0 ? session.CharacterInfo.ShipMaxHp : session.CharacterInfo.ShipHp;
                 if (maxHp <= 0)
@@ -1227,7 +1165,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (totalDamage < 1)
                     totalDamage = 1;
 
-                // Damage goes directly to HP (shield ignored)
                 session.CharacterInfo.ShipHp -= totalDamage;
                 if (session.CharacterInfo.ShipHp < 0)
                     session.CharacterInfo.ShipHp = 0;
@@ -1237,10 +1174,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     "0|" + session.CharacterId + "|RAD|" + session.CharacterInfo.ShipHp + "|" + session.CharacterInfo.ShipShield + "|" + totalDamage
                 );
 
-                // Self
                 session.SendData(dmgMsg);
 
-                // + anyone who has this player selected (Flash target window)
                 MapInstance instanceByMapId = MapManager.GetInstanceByMapId(session.CurrentMapId);
                 if (instanceByMapId != null)
                 {
@@ -1259,7 +1194,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
 
-                // Death by radiation
                 if (session.CharacterInfo.ShipHp <= 0 && !session.CharacterInfo.Destroy)
                 {
                     if (session.CharacterInfo.LaserAttackTimer != null)
@@ -1304,7 +1238,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             session.CharacterInfo.PathTime = (Timer)null;
         }
 
-#pragma warning disable IDE1006 // Naming Styles (legacy API name kept for compatibility)
+#pragma warning disable IDE1006
         public static Vector calculatePosition(Vector start_pos, Vector end_pos, double time, double speed)
         {
             Vector vector = Vector.Subtract(end_pos, start_pos);
@@ -1314,6 +1248,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Vector vector2 = vector * time * speed;
             return Vector.Add(start_pos, vector2);
         }
-#pragma warning restore IDE1006 // Naming Styles
+#pragma warning restore IDE1006
     }
 }

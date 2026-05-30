@@ -1,8 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: OrbitReborn_Emulator.Game.Maps.Collectables.BootyBox
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
+﻿
 
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Sessions;
@@ -44,7 +40,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                 }
                 else
                 {
-                    // Keep the key requirement logic
                     user.CharacterInfo.RemoveBootyKey(1);
                     user.SendData(PacketComposer.Compose("A", "BK|" + (object)user.CharacterInfo.BootyKeys));
                     this.Collecting = true;
@@ -53,9 +48,8 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
 
                     using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                     {
-                        int roll = random.Next(1, 101); // 1..100 inclusive
+                        int roll = random.Next(1, 101);
 
-                        // 31% : 2000 munitions UCB-100
                         if (roll <= 31)
                         {
                             client.ClearParameters();
@@ -66,7 +60,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                             user.SendData(PacketComposer.Compose("B", user.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                             user.SendData(PacketComposer.Compose("A", "STD|You received 2000 UCB-100."));
                         }
-                        // 15% : 20 Logfiles
                         else if (roll <= 46)
                         {
                             client.ClearParameters();
@@ -75,7 +68,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
 
                             user.SendData(PacketComposer.Compose("A", "STD|You received 20 logfiles."));
                         }
-                        // 9% : 1 Booster de 2h (Damage / HP / Shield)
                         else if (roll <= 55)
                         {
                             int b = random.Next(0, 3);
@@ -95,7 +87,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                                 user.SendData(PacketComposer.Compose("A", "STD|You received a 2-hour Shield Booster."));
                             }
                         }
-                        // 8% : 15 munitions SMB-01
                         else if (roll <= 63)
                         {
                             client.ClearParameters();
@@ -106,7 +97,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                             user.SendData(PacketComposer.Compose("3", user.CharacterInfo.GetSecondaryWeaponInfoPayload()));
                             user.SendData(PacketComposer.Compose("A", "STD|You received 15 SMB-01."));
                         }
-                        // 8% : 15 munitions ISH-01
                         else if (roll <= 71)
                         {
                             client.ClearParameters();
@@ -117,7 +107,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                             user.SendData(PacketComposer.Compose("3", user.CharacterInfo.GetSecondaryWeaponInfoPayload()));
                             user.SendData(PacketComposer.Compose("A", "STD|You received 15 ISH-01."));
                         }
-                        // 8% : 15 munitions EMP-01
                         else if (roll <= 79)
                         {
                             client.ClearParameters();
@@ -128,7 +117,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                             user.SendData(PacketComposer.Compose("3", user.CharacterInfo.GetSecondaryWeaponInfoPayload()));
                             user.SendData(PacketComposer.Compose("A", "STD|You received 15 EMP-01."));
                         }
-                        // 7% : 1 Arme LF-3 (item_id = 1) -> player_inventory
                         else if (roll <= 86)
                         {
                             int itemId = 1;
@@ -137,7 +125,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
 
                             user.SendData(PacketComposer.Compose("A", "STD|You received 1x LF-3 Laser (added to your inventory)."));
                         }
-                        // 7% : 1 Bouclier SG3N-B02 (item_id = 2) -> player_inventory
                         else if (roll <= 93)
                         {
                             int itemId = 2;
@@ -146,7 +133,6 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
 
                             user.SendData(PacketComposer.Compose("A", "STD|You received 1x SG3N-B02 Shield (added to your inventory)."));
                         }
-                        // 7% : 1 Générateur G3N-7900 (item_id = 4) -> player_inventory
                         else
                         {
                             int itemId = 4;

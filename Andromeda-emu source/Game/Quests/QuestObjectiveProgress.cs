@@ -168,9 +168,6 @@ namespace OrbitReborn_Emulator.Game.Quests
             if (string.IsNullOrEmpty(npcName))
                 return null;
 
-            // "StreuneR" (capital R, x-8) must stay separate from classic "Streuner" (x-1).
-            // Use a distinct database key instead of relying on case-only differences, because
-            // many MySQL collations treat "Streuner" and "StreuneR" as identical.
             if (ContainsNpcNameExact(npcName, "StreuneR") || ContainsNpcName(npcName, "Streuner R"))
                 return "StreuneR_X8";
             if (ContainsNpcNameExact(npcName, "Streuner"))

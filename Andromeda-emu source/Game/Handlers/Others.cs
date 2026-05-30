@@ -32,21 +32,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private const int FASTBUY_LASER_BATCH = 1000;
         private const int FASTBUY_ROCKET_BATCH = 100;
 
-        // Logout Flash-like : le serveur reste l'autorité.
-        // Le client affiche le compte à rebours, mais le serveur confirme avec "l"
-        // ou annule avec "t" si le joueur est touché / en combat.
         private const int LOGOUT_COUNTDOWN_SECONDS = 5;
         private const double LOGOUT_DAMAGE_CANCEL_SECONDS = 10.0;
 
-        // --- AJOUT : maps PVP où on garde le blocage "under attack" ---
-        // Adapte si tes IDs sont différents.
         private static bool IsPvpMap(int mapId)
         {
-            // 4-1 / 4-2 / 4-3 / 4-4 (souvent 13/14/15/16)
             return mapId == 13 || mapId == 14 || mapId == 15 || mapId == 16;
         }
 
-        // --- AJOUT : dispose propre du timer de jump ---
         private static void DisposePortalJumpTimer(Session session)
         {
             if (session?.CharacterInfo?.PortalJumpTimer != null)
@@ -57,7 +50,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        // Removes internal Galaxy Gate portals (between waves) so they are not visible when the next wave starts.
         private static void ClearGalaxyGateInternalPortals(Session session)
         {
             if (session == null || session.CharacterInfo == null)
@@ -422,9 +414,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (session.CharacterInfo.Destroy || session.CharacterInfo.ShipHp <= 0)
                 return true;
 
-            // Galaxy Gate stricte : le logout volontaire est interdit tant que
-            // le vaisseau est vivant sur une map Galaxy Gate. Cela empêche
-            // l'abus "je fuis loin -> logout -> cleanup des NPCs -> vague reset".
             if (GalaxyGateWaveService.IsGateMap(session.CharacterInfo.MapId)
                 || GalaxyGateWaveService.IsGateMap(session.CurrentMapId))
                 return true;
@@ -469,9 +458,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.DisconnectTimer = (Timer)null;
             }
 
-            // IMPORTANT: Ne PAS stopper le booster timer ici,
-            // car si logout est refusé (attaque / warning zone / dégâts récents),
-            // le joueur reste connecté.
 
             if (IsLogoutBlocked(Session))
             {
@@ -490,11 +476,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (session == null || session.CharacterInfo == null)
                 return;
 
-            // Si timer déjà null (cleanup ailleurs), on évite les doubles dispose
             if (session.CharacterInfo.DisconnectTimer == null)
                 return;
 
-            // Si la session est déjà terminée / considérée finie
             if (session.CharacterInfo.Disconnected || session.StoppedPlayer || session.CharacterInfo.Destroy)
             {
                 session.CharacterInfo.StopBoosterAutoRefresh();
@@ -505,16 +489,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // Blocage déco si zone/attaque/dégâts récents.
-            // C'est ici que le comportement Flash est reproduit : le serveur annule
-            // le compte à rebours avec "t" dès que le joueur se fait toucher.
             if (IsLogoutBlocked(session))
             {
                 CancelLogoutFromServer(session);
                 return;
             }
 
-            // Fin du timer => déconnexion réelle confirmée par le serveur.
             if (session.CharacterInfo.DisconnectCounter >= LOGOUT_COUNTDOWN_SECONDS)
             {
                 session.CharacterInfo.DisconnectTimer.Dispose();
@@ -523,8 +503,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 session.CharacterInfo.StopBoosterAutoRefresh();
 
-                // Le client HTML5 ne ferme plus localement à la fin du compte à rebours :
-                // il attend cette confirmation serveur, comme le client Flash.
                 session.SendData(PacketComposer.Compose("l", ""));
 
                 session.CharacterInfo.Disconnected = true;
@@ -571,19 +549,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 (Session.CharacterInfo.CurrentPortal == 0 || Session.CharacterInfo.IsJumping || !Session.CharacterInfo.PortalZone))
                 return;
 
-            // Clean ancien timer si existant
             DisposePortalJumpTimer(Session);
 
-            // reset (important)
             Session.CharacterInfo.PendingGalaxyGateDestination = null;
 
             PortalInfo portalById1 = PortalManager.GetPortalById(Session.CharacterInfo.CurrentPortal);
             PortalInfo portalById2 = null;
 
-            // ✅ 1) Portail GG sur X-1 (dynamique)
             if (portalById1 == null && GalaxyGatePortalService.IsGalaxyGatePortalId(Session.CharacterInfo.CurrentPortal))
             {
-                // retrouver l’objet portail GG dans la liste session
                 if (Session.CharacterInfo.GalaxyGatePortals != null)
                 {
                     foreach (PortalInfo p in (System.Collections.Generic.IEnumerable<PortalInfo>)Session.CharacterInfo.GalaxyGatePortals.Keys)
@@ -596,7 +570,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
 
-                // retrouver destination
                 if (portalById1 != null && GalaxyGatePortalService.TryGetDestination(Session, portalById1.Id, out PortalInfo dest))
                 {
                     portalById2 = dest;
@@ -604,7 +577,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
 
-            // ✅ 2) Portail interne de fin (maps 51/52/53/55)
             if (portalById2 == null)
             {
                 if (Session.CharacterInfo.GalaxyGateInternalPortals != null)
@@ -624,32 +596,22 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     portalById2 = internalDest;
                     Session.CharacterInfo.PendingGalaxyGateDestination = internalDest;
 
-                    // PATCH 3/3 : on note que CE jump déclenche la récompense
                     Session.CharacterInfo.PendingGalaxyGateRewardGateId = GalaxyGateWaveService.GateIdFromMap(Session.CharacterInfo.MapId);
 
                     internalGatePortal = true;
                 }
             }
 
-            // ✅ 3) Portail normal SQL (fallback)
             if (portalById1 != null && portalById2 == null)
             {
                 portalById2 = PortalManager.GetPortalById(portalById1.LinkedId);
             }
 
-            // sécurité
             if (portalById1 == null || portalById2 == null)
                 return;
 
-            // --- MODIF PRINCIPALE ---
-            // Sur maps PVP : on garde le blocage under attack (5s)
-            // Sur maps NON-PVP : on autorise même si under attack
             bool isPvpMap = IsPvpMap(Session.CharacterInfo.MapId);
 
-            // Sur maps PVP : blocage si le joueur a reçu des dégâts récemment (en secondes).
-            // IMPORTANT : on se base sur LastAttackByAttackerReceived (dégâts réels),
-            // ce qui permet l'ISH : si aucun dégât n'est pris pendant le bouclier instantané,
-            // on doit pouvoir sauter le portail.
             const double PVP_PORTAL_COMBAT_BLOCK_SECONDS = 5.0;
             bool underAttack = (UnixTimestamp.GetCurrent() - Session.CharacterInfo.LastAttackByAttackerReceived < PVP_PORTAL_COMBAT_BLOCK_SECONDS);
 
@@ -660,9 +622,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
 
 
-            // --- MAP ACCESS (LEVEL RESTRICTION) ---
-            // Flash sends the dedicated JUMP_FAILED packet (opcode "k") with the required level.
-            // That lets the client show the proper "jumplevelfalse" message instead of the generic CPU text.
             if (!Session.CharacterInfo.IsAdmin && !Session.CharacterInfo.IsMod)
             {
                 int targetMapId = Others.invasionPortal.Contains(portalById1.Id) ? 81 : portalById2.MapId;
@@ -677,7 +636,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             canJump = checkCanJump(Session, portalById1);
             if (canJump)
             {
-                // If this jump uses an internal Galaxy Gate portal (between waves), remove both portals immediately.
                 if (internalGatePortal)
                     ClearGalaxyGateInternalPortals(Session);
 
@@ -746,13 +704,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            // --- MODIF PRINCIPALE ---
-            // Sur maps PVP : jump annulé si under attack (3s)
-            // Sur maps NON-PVP : on laisse passer même si under attack
             bool isPvpMap = IsPvpMap(session.CharacterInfo.MapId);
 
-            // Sur maps PVP : blocage si le joueur a reçu des dégâts récemment (en secondes).
-            // (basé sur dégâts réels, compatible ISH)
             const double PVP_PORTAL_COMBAT_BLOCK_SECONDS = 5.0;
             bool underAttack = (UnixTimestamp.GetCurrent() - session.CharacterInfo.LastAttackByAttackerReceived < PVP_PORTAL_COMBAT_BLOCK_SECONDS);
 
@@ -768,11 +721,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             PortalInfo portalById = null;
 
-            // ✅ Si on vient d’un Galaxy Gate (destination déjà calculée)
             if (session.CharacterInfo.PendingGalaxyGateDestination != null)
             {
                 portalById = session.CharacterInfo.PendingGalaxyGateDestination;
-                session.CharacterInfo.PendingGalaxyGateDestination = null; // cleanup
+                session.CharacterInfo.PendingGalaxyGateDestination = null;
             }
             else
             {
@@ -791,8 +743,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
 
 
-            // --- MAP ACCESS (LEVEL RESTRICTION) ---
-            // Safety check (in case a jump bypassed PortalJump check).
             if (!session.CharacterInfo.IsAdmin && !session.CharacterInfo.IsMod)
             {
                 int targetMapId = Others.invasionPortal.Contains(session.CharacterInfo.CurrentPortal) ? 81 : portalById.MapId;
@@ -819,17 +769,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (session.CharacterInfo.PathTime != null)
                 session.CharacterInfo.PathTime.Dispose();
 
-            // =====================================================================
-            // PATCH 3/3 : Récompense GG AVANT le retour base
-            // =====================================================================
             if (session.CharacterInfo.PendingGalaxyGateRewardGateId > 0)
             {
                 int gateId = session.CharacterInfo.PendingGalaxyGateRewardGateId;
-                session.CharacterInfo.PendingGalaxyGateRewardGateId = 0; // anti double reward
+                session.CharacterInfo.PendingGalaxyGateRewardGateId = 0;
 
                 GalaxyGateRewardService.GiveCompletionReward(session, gateId);
             }
-            // =====================================================================
 
             if (Others.invasionPortal.Contains(session.CharacterInfo.CurrentPortal))
                 MapHandler.OpenPublicConnection(session, 81, null);
@@ -839,7 +785,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             session.CharacterInfo.IsJumping = false;
             ShipMovement.RefreshZones(session);
 
-            // --- MODIF : Activation Invincibilité Visuelle ---
             session.CharacterInfo.Invincible = true;
             session.SendData(PacketComposer.Compose("n", "fx|start|INVINCIBILITY|" + session.CharacterId));
 
@@ -847,7 +792,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.CharacterInfo.InvincibilityTimer.Dispose();
 
             session.CharacterInfo.InvincibilityTimer = new Timer(new TimerCallback(Others.RemoveInvincibility), (object)session, 10000, 0);
-            // ------------------------------------------------
 
             session.CharacterInfo.CanMove = true;
             session.CharacterInfo.SendCollectibles(session);
@@ -855,7 +799,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             DisposePortalJumpTimer(session);
         }
 
-        // --- AJOUT : Fonction d'arrêt de l'Invincibilité ---
         private static void RemoveInvincibility(object state)
         {
             Session session = (Session)state;

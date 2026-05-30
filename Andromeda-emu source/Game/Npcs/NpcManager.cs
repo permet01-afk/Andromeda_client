@@ -11,11 +11,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
         public static void Initialize()
         {
             mNpcInstances = new CDictionnary<int, Npc>();
-            mNpcInstanceIdGenerator = -2; // IDs NPC = négatifs (comme avant)
+            mNpcInstanceIdGenerator = -2;
             mSyncRoot = new object();
         }
 
-        // ✅ IMPORTANT : on ne change PAS la signature (22 paramètres)
         public static Npc CreateNewInstance(
             string Name, int MapId, int LocX, int LocY,
             int ShipId, int ShipHp, int ShipMaxHp, int ShipShield, int ShipMaxShield,
@@ -25,13 +24,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
             int NpcPoints, int Damages
         )
         {
-            // sécurité : si jamais Initialize() n'a pas été appelé
             if (mNpcInstances == null)
                 Initialize();
 
             lock (mSyncRoot)
             {
-                // ✅ ID unique garanti (pas de collision si plusieurs spawn en même temps)
                 int npcId = mNpcInstanceIdGenerator--;
 
                 Npc npc = new Npc(

@@ -1,8 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: OrbitReborn_Emulator.Game.Sessions.Session
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
+﻿
 
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
@@ -25,18 +21,16 @@ namespace OrbitReborn_Emulator.Game.Sessions
     public class Session : IDisposable
     {
         private const int RX_CHUNK_SIZE = 8192;
-        private const int RX_BUFFER_MAX = 1024 * 1024; // 1MB sécurité
+        private const int RX_BUFFER_MAX = 1024 * 1024;
 
-        // Délimiteurs supportés (pour être compatible avec tout)
-        private const byte DELIM_NULL = 0x00;                 // vrai \0 (byte 0)
-        private const byte DELIM_BS = (byte)'\\';             // '\'
-        private const byte DELIM_CHAR0 = (byte)'0';           // '0'  => séquence "\\0"
+        private const byte DELIM_NULL = 0x00;
+        private const byte DELIM_BS = (byte)'\\';
+        private const byte DELIM_CHAR0 = (byte)'0';
 
         private int mId;
         private Socket mSocket;
         private byte[] mBuffer;
 
-        // Buffer RX pour reconstituer les paquets TCP (split/collés)
         private readonly List<byte> mRxBuffer = new List<byte>(RX_CHUNK_SIZE);
         private int mRxHead;
 
@@ -149,7 +143,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
             this.mId = Id;
             this.mSocket = Socket;
 
-            // Buffer plus large pour éviter “ByteCount == buffer.Length => stop”
             this.mBuffer = new byte[RX_CHUNK_SIZE];
             this.mPongOk = true;
 
@@ -305,20 +298,17 @@ namespace OrbitReborn_Emulator.Game.Sessions
             }
             catch
             {
-                // ignore; stop plus bas
             }
 
             if (!object.ReferenceEquals(receiveSocket, this.mSocket))
                 return;
 
-            // Seul vrai cas mort: 0
             if (ByteCount < 1)
             {
                 SessionManager.StopSession(this.mId);
                 return;
             }
 
-            // Traite exactement ByteCount (même si == buffer.Length)
             this.ProcessData(this.mBuffer, 0, ByteCount);
             this.BeginReceive();
         }
@@ -357,10 +347,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
             }
         }
 
-        // Cherche le prochain délimiteur dans mRxBuffer
-        // Supporte:
-        //  - 0x00 (vrai \0)
-        //  - la séquence texte "\\0" (0x5C 0x30)
         private bool TryFindDelimiter(out int index, out int delimLen)
         {
             index = -1;
@@ -407,7 +393,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
             }
         }
 
-        // Version robuste: bufferise et split sur \0 (0x00) OU "\\0"
         private void ProcessData(byte[] Data, int Offset, int Count)
         {
             if (Data == null || Count <= 0) return;
@@ -430,7 +415,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 {
                     int packetLength = delimIndex - this.mRxHead;
 
-                    // Délimiteur en tête => on le jette
                     if (packetLength == 0)
                     {
                         this.mRxHead += delimLen;
@@ -441,11 +425,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     byte[] packetBytes = new byte[packetLength];
                     this.mRxBuffer.CopyTo(this.mRxHead, packetBytes, 0, packetLength);
 
-                    // Move head after packet + delim
                     this.mRxHead = delimIndex + delimLen;
                     this.CompactRxBufferIfNeeded();
 
-                    // Crossdomain Flash (commence par '<')
                     if (packetBytes[0] == (byte)'<')
                     {
                         this.SendData(CrossdomainPolicy.GetBytes());
@@ -453,7 +435,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
                         return;
                     }
 
-                    // Paquet invalide (rare)
                     if (packetBytes[0] <= 0)
                     {
                         SessionManager.StopSession(this.mId);
@@ -465,7 +446,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     {
                         string packet = Encoding.UTF8.GetString(packetBytes);
                         Message = new ClientMessage(packet);
-                        string header = Message.Header; // force parse
+                        string header = Message.Header;
                     }
                     catch
                     {
@@ -497,9 +478,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             if (this.Stopped) return;
 
-            // A stop queued from the old socket can still be in SessionManager while a
-            // reconnect handoff has already attached a fresh socket to this same ship.
-            // Ignore that stale stop shortly after the handoff.
             if (!this.StoppedPlayer
                 && this.mCharacterInfo != null
                 && !this.mCharacterInfo.Disconnected
@@ -592,7 +570,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     }
                     catch { }
 
-                    // ✅ Timer sync munitions (achat site / refresh HUD)
                     if (this.CharacterInfo.AmmoSyncTimer != null)
                     {
                         this.CharacterInfo.AmmoSyncTimer.Dispose();

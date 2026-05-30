@@ -11,7 +11,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
 {
     static class ChatAction
     {
-        // /duel
         public static void AskDuel(string entered, Session Session)
         {
             if (Session == null || Session.CharacterInfo == null)
@@ -106,7 +105,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Session.SendData(PacketComposer.ComposeChat("dq%- You invited " + user.CharacterInfo.Username + " to a duel.#"));
         }
 
-        // /duel_accept
         public static void DuelAccept(string entered, Session Session)
         {
             if (Session == null || Session.CharacterInfo == null)

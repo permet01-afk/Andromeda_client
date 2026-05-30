@@ -1,8 +1,4 @@
-﻿// Decompiled with JetBrains decompiler
-// Type: OrbitReborn_Emulator.Game.Maps.MapHandler
-// Assembly: MilkyWay Emulator, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// MVID: 41E1229A-7B44-4276-8108-A67D8866C227
-// Assembly location: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe
+﻿
 
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Handlers;
@@ -38,7 +34,6 @@ namespace OrbitReborn_Emulator.Game.Maps
             if (instance == null)
                 return;
 
-            // Reconnect/refresh: the actor already exists server-side and must not be removed.
             Session.AbsoluteMapId = mapInfo.Id;
             Session.MapAuthed = true;
             Session.MapJoined = true;
@@ -126,17 +121,11 @@ namespace OrbitReborn_Emulator.Game.Maps
         private static bool IsHomePeaceMap(int mapId)
         {
             return
-                // 1-1..1-4
                 mapId == 1 || mapId == 2 || mapId == 3 || mapId == 4 ||
-                // 2-1..2-4
                 mapId == 5 || mapId == 6 || mapId == 7 || mapId == 8 ||
-                // 3-1..3-4
                 mapId == 9 || mapId == 10 || mapId == 11 || mapId == 12 ||
-                // 1-5..1-8
                 mapId == 17 || mapId == 18 || mapId == 19 || mapId == 20 ||
-                // 2-5..2-8
                 mapId == 21 || mapId == 22 || mapId == 23 || mapId == 24 ||
-                // 3-5..3-8
                 mapId == 25 || mapId == 26 || mapId == 27 || mapId == 28;
         }
 
@@ -199,24 +188,16 @@ namespace OrbitReborn_Emulator.Game.Maps
                 Session.CharacterInfo.Attacked.Clear();
                 Session.CharacterInfo.SelectedPlayer = 0;
 
-                // IMPORTANT : arrêter l'état "attaque" au changement de map
                 Session.CharacterInfo.Attacking = false;
 
-                // Safe immédiat UNIQUEMENT si la map d'arrivée a une peace zone portail
                 if (IsHomePeaceMap(Session.CharacterInfo.MapId))
-                    Session.CharacterInfo.NoFightTimer = 10;   // >=10 => pas de combat lock
+                    Session.CharacterInfo.NoFightTimer = 10;
                 else
                     Session.CharacterInfo.NoFightTimer = 0;
 
-                // ------------------------------------------------------------
-                // IMPORTANT (Flash-like): reset SHS state on map change
-                // Empêche de conserver un twinkle ON provenant de la map précédente.
-                // Le (re)enable sera géré ensuite par ExecuteNoFightMonitor.
-                // ------------------------------------------------------------
                 Session.CharacterInfo.ShieldTwinkleEnabled = false;
                 Session.SendData(PacketComposer.Compose("A", "SHS|0|0|0"));
 
-                // Optionnel mais conseillé: stopper les timers d'attaque si encore actifs
                 if (Session.CharacterInfo.LaserAttackTimer != null)
                 {
                     Session.CharacterInfo.LaserAttackTimer.Dispose();
@@ -249,13 +230,10 @@ namespace OrbitReborn_Emulator.Game.Maps
 
                 Session.SendData(PacketComposer.Compose("N", "-1"));
                 Instance.SendObjects(Session);
-                Session.CharacterInfo.ClientPortalIds = null; // force snapshot propre sur nouvelle map
+                Session.CharacterInfo.ClientPortalIds = null;
                 Instance.SendPortals(Session);
                 GalaxyGateWaveService.OnPlayerEnteredMap(Session);
 
-                // Flash parity: TX|S refreshes the owner runtime/UI state, but map visuals are still
-                // driven by visual TX|A replays. The hero is not part of SendObjects(), so re-send
-                // the owner tech visuals explicitly after map entry / respawn.
                 Fight.SendTechStatus(Session);
                 Fight.SendOwnerTechVisualReplay(Session);
                 Fight.SendRocketLauncherProtocolState(Session, true);
