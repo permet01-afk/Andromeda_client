@@ -723,6 +723,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             LastInstantShootTick[npc.Id] = nowTick;
 
             // ✅ Tir immédiat (ne dépend pas du positionnement/orbite)
+            npc.StopMovementBeforeAttack();
             npc.Attack(npc);
         }
 

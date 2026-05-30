@@ -531,14 +531,14 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.mEmpLockBlockedUntil = 0.0;
         }
 
-        private void StopNpcMovementForEmp()
+        private bool StopMovementAtCurrentPositionAndBroadcast()
         {
             bool hadMovement = this.IsMoving || this.NewLocX != this.LocX || this.NewLocY != this.LocY;
 
             this.StopMovementAtCurrentPosition();
 
             if (!hadMovement)
-                return;
+                return false;
 
             MapInstance inst = MapManager.GetInstanceByMapId(this.MapId);
             if (inst != null)
@@ -549,6 +549,18 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     false
                 );
             }
+
+            return true;
+        }
+
+        internal void StopMovementBeforeAttack()
+        {
+            StopMovementAtCurrentPositionAndBroadcast();
+        }
+
+        private void StopNpcMovementForEmp()
+        {
+            StopMovementAtCurrentPositionAndBroadcast();
         }
 
         private bool CanLockTargetAfterEmp(int targetId, double now)
@@ -2230,9 +2242,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 --TimerManager.TimerRunning;
             }
 
+            this.StopMovementBeforeAttack();
+
             this.TargetId = targetId;
             this.IsAttacking = false;
-            this.IsMoving = false;
             this.mLastAggroTick = now;
             this.mLastDamageTick = 0;
             System.Threading.Volatile.Write(ref this.mAttackInProgress, 0);
@@ -2254,9 +2267,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 --TimerManager.TimerRunning;
             }
 
+            this.StopMovementBeforeAttack();
+
             this.TargetId = targetId;
             this.IsAttacking = true;
-            this.IsMoving = false;
 
             this.mLastAggroTick = now;
 
