@@ -3289,7 +3289,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (!CanSessionAttackNpc(Session, Npc))
                 return;
 
-            double multiplier = Fight.GetMultiplier(Ammo, Session.CharacterInfo.ApisBuilt, Session.CharacterInfo.ZeusBuilt);
+            double multiplier = Fight.GetMultiplier(Ammo, Session.CharacterInfo.ApisBuilt);
 
             int baseDamage = Convert.ToInt32((double)Session.CharacterInfo.MaxDamage * multiplier * Session.CharacterInfo.MultiplierAgainstNpcs);
             int spread = Math.Max(1, (int)Math.Round(baseDamage * 0.10));
@@ -3393,7 +3393,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        private static double GetMultiplier(int SelectedAmmo, bool bApis, bool bZeus)
+        private static double GetMultiplier(int SelectedAmmo, bool bApis)
         {
             double num;
 
@@ -3412,10 +3412,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     num = !bApis ? 4.0 : 4.6;
                     break;
                 case 5:
-                    num = !bZeus ? 2.0 : 2.4;
+                    num = 2.4;
                     break;
                 case 6:
-                    num = 5.5;
+                    num = 6.0;
                     break;
                 default:
                     num = 1.0;
@@ -3522,7 +3522,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            double multiplier = Fight.GetMultiplier(Ammo, Session.CharacterInfo.ApisBuilt, Session.CharacterInfo.ZeusBuilt);
+            double multiplier = Fight.GetMultiplier(Ammo, Session.CharacterInfo.ApisBuilt);
 
             int baseDamage = Convert.ToInt32((double)Session.CharacterInfo.MaxDamage * multiplier * Session.CharacterInfo.MultiplierAgainstPlayers);
             int spread = Math.Max(1, (int)Math.Round(baseDamage * 0.10));
