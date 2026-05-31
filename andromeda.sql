@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : dim. 31 mai 2026 à 02:52
+-- Généré le : dim. 31 mai 2026 à 11:55
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.2.12
 
@@ -985,6 +985,7 @@ INSERT INTO `maps` (`id`, `name`, `player_on_map`) VALUES
 (26, '3-6', 0),
 (27, '3-7', 0),
 (28, '3-8', 0),
+(29, '4-5', 0),
 (51, 'GGA', 0),
 (52, 'GGB', 0),
 (53, 'GGG', 0),
@@ -1056,7 +1057,7 @@ CREATE TABLE `player_cargo` (
 --
 
 INSERT INTO `player_cargo` (`id`, `prometium`, `endurium`, `terbium`, `xenomit`, `prometid`, `duranium`, `promerium`, `palladium`, `seprom`) VALUES
-(1, 18, 70, 2, 15776, 7, 10, 0, 0, 0),
+(1, 0, 62, 4, 15777, 8, 10, 0, 0, 0),
 (2, 78, 0, 0, 2, 2, 0, 0, 0, 0),
 (3, 30, 37, 0, 0, 2, 0, 0, 0, 0),
 (4, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -1195,7 +1196,7 @@ CREATE TABLE `player_reff` (
 --
 
 INSERT INTO `player_reff` (`id`, `laser0`, `laser1`, `rocket0`, `rocket1`, `speed0`, `speed1`, `shield0`, `shield1`) VALUES
-(1, 13, 8530, 13, 349, 13, 1780627942, 13, 1780475148),
+(1, 13, 7036, 13, 349, 13, 1780627942, 13, 1780475148),
 (2, 0, 0, 0, 0, 0, 0, 0, 0),
 (3, 0, 0, 0, 0, 0, 0, 0, 0),
 (4, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -1341,7 +1342,14 @@ INSERT INTO `portals` (`id`, `pos_x`, `pos_y`, `map_id`, `arrive_id`, `type`) VA
 (403, 20, 110, 23, 402, 1),
 (404, 190, 110, 26, 405, 1),
 (405, 20, 110, 28, 404, 1),
-(406, 190, 110, 27, 71, 1);
+(406, 190, 110, 27, 71, 1),
+(407, 105, 120, 17, 408, 1),
+(408, 40, 131, 29, 407, 1),
+(409, 190, 65, 21, 410, 1),
+(410, 210, 40, 29, 409, 1),
+(411, 190, 20, 25, 412, 1),
+(412, 380, 131, 29, 411, 1),
+(413, 210, 131, 29, 45, 1);
 
 -- --------------------------------------------------------
 
@@ -1382,7 +1390,7 @@ CREATE TABLE `server_statistics` (
 --
 
 INSERT INTO `server_statistics` (`skey`, `sval`) VALUES
-('active_connections', '2'),
+('active_connections', '1'),
 ('active_EIC', '1'),
 ('active_MMO', '3'),
 ('active_VRU', '0');
@@ -2129,7 +2137,7 @@ INSERT INTO `site_player_quest_objective_progress` (`player_id`, `quest_id`, `ob
 (1, 85613, 'galaxy_gate_complete', 'Beta', 0, '2026-05-03 01:33:35'),
 (1, 85614, 'galaxy_gate_complete', 'Alpha', 0, '2026-05-03 01:33:23'),
 (1, 85615, 'galaxy_gate_complete', 'Gamma', 1, '2026-05-03 01:46:11'),
-(1, 85617, 'npc_kill', 'StreuneR_X8', 23, '2026-05-25 19:19:48');
+(1, 85617, 'npc_kill', 'StreuneR_X8', 24, '2026-05-31 11:43:37');
 
 -- --------------------------------------------------------
 
@@ -2430,7 +2438,7 @@ CREATE TABLE `site_quest_ore_counts` (
 --
 
 INSERT INTO `site_quest_ore_counts` (`player_id`, `prometium`, `endurium`, `terbium`, `updated_at`) VALUES
-(1, 17642, 17650, 16807, '2026-05-30 23:42:08'),
+(1, 17644, 17652, 16809, '2026-05-31 11:44:30'),
 (3, 20, 20, 0, '2026-05-30 23:44:14');
 
 -- --------------------------------------------------------
@@ -2571,7 +2579,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `sid`, `username`, `game_title`, `password`, `email`, `birthday`, `AuthTicket`, `ip`, `online`, `oldlocx`, `oldlocy`, `locx`, `locy`, `mapid`, `shipid`, `grade`, `factionid`, `clanid`, `clan_grade`, `registerdate`, `lastlogin`, `credits`, `uridium`, `speed`, `current_shield`, `max_shield`, `current_hp`, `max_hp`, `current_cargo`, `max_cargo`, `in_peacezone`, `in_fight`, `in_outofrange`, `in_warningzone`, `connID`, `FightThreadID`, `SelectedPlayer`, `user_kill`, `kill_assists`, `isDestroy`, `active_config`, `cooldown_ISH`, `cooldown_SMB`, `cooldown_ROCKET`, `auto_logout`, `is_ban`, `ban_reason`, `game_resolution`, `is_mod`, `is_admin`, `fat_lasers`, `shield_mechanics`, `drones`, `damages`, `npc_kill`, `pvp_points`, `experience`, `honor`, `level`, `dmg_lvl`, `hp_lvl`, `shd_lvl`, `speed_lvl`, `booster_dmg_time`, `booster_hp_time`, `booster_shd_time`, `booster_npc_time`, `booster_spd_time`, `booty_keys`, `drone_parts`, `apis_built`, `zeus_built`, `skilltree`, `logfiles`, `rankpoints`, `message`, `display_ads`, `auto_rkt_skill`, `legend_rankpoints`, `canBeginner`, `extra_booster`, `last_duel`, `in_fight_until`, `ammo_lcb10`, `ammo_mcb25`, `ammo_mcb50`, `ammo_ucb100`, `ammo_sab50`, `ammo_rsb75`, `ammo_r310`, `ammo_plt2026`, `ammo_plt2021`, `ammo_dcr250`, `ammo_eco10`, `ammo_ubr100`, `ammo_hstrm01`, `gg_multiplier`, `gg_rings`, `ammo_smb01`, `ammo_ish01`, `ammo_emp01`, `config_refresh_pending`, `cooldown_IH`, `cooldown_WS`, `cooldown_PS`, `cooldown_FOR`, `cooldown_SIN`, `cooldown_SB`, `current_shield1`, `current_shield2`) VALUES
-(1, 0, 'lefaucheur', '', '', '', '', '', '127.0.0.1', 1, 0, 0, 3490, 2673, 1, 67, 23, 1, 0, 0, '2026-04-04 16:54:05', 1780177358.4566333, 241281892, 5384326, 450, 0, 20000, 264062, 306000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 2, 0, 0, 0, 0, 0, '', 1, 0, 1, 0, 0, '3/0-3/0-3/0-3/0-3/0-3/0-3/0', 4086, 15473, 0, 592410300, 280910, 17, 0, 10, 0, 0, 1780178764, 1777327585, 1777327587, 0, 0, 0, 0, 0, 0, 'dmg:5/hp:0/rep:3/shd_abs:3/smb:0/rck:0/shreg:0', 1007, 10497, '', 1, 0, 0, 1, 'nothing', 0, 1780175307, 1132, 595924, 258022, 69776, 198780, 94218, 262, 6438, 1045, 1872, 0, 310, 933, 1, 4, 48, 30, 156, 0, 0, 0, 0, 0, 0, 0, 20000, 190000),
+(1, 0, 'lefaucheur', '', '', '', '', '', '127.0.0.1', 1, 0, 0, 21953, 5090, 29, 67, 23, 1, 0, 0, '2026-04-04 16:54:05', 1780221156.5280523, 243320380, 5384181, 450, 0, 20000, 293031, 306000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 2, 0, 0, 0, 0, 0, '', 1, 0, 1, 0, 0, '3/0-3/0-3/0-3/0-3/0-3/0-3/0', 4086, 15593, 0, 592524300, 281480, 17, 0, 10, 0, 0, 1780178764, 1777327585, 1777327587, 0, 0, 0, 0, 0, 0, 'dmg:5/hp:0/rep:3/shd_abs:3/smb:0/rck:0/shreg:0', 1007, 10617, '', 1, 0, 0, 1, 'nothing', 0, 1780220984, 3684, 595924, 258022, 68840, 198780, 94110, 262, 6438, 1045, 1872, 0, 310, 933, 1, 4, 48, 29, 153, 0, 0, 0, 0, 0, 768, 0, 20000, 190000),
 (2, 0, 'lefaucheur1', '', '', '', '', 'c38cf60fc9ea6fac08ffbfbbe3aea4bf4c88c858', '127.0.0.1', 0, 0, 0, 13611, 11215, 2, 1, 20, 1, 0, 0, '2026-04-06 08:53:43', 1775784058.1036468, 80224, 10150, 380, 0, 10000, 4000, 4000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 0, 0, 0, '', 1500, 36, 0, 20000, 100, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'dmg:0/hp:0/rep:0/shd_abs:0/smb:0/rck:0/shreg:0', 0, 36, '', 1, 0, 0, 1, 'nothing', 0, 1775784104, 9478, 5000, 3000, 1500, 3000, 0, 500, 300, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL),
 (3, 0, 'RΘCINΔNTΣ', '', '', '', '', '', '127.0.0.1', 0, 0, 0, 5126, 2050, 1, 1, 19, 1, 0, 0, '2026-04-06 11:28:21', 1780177464.2104578, 2722172, 27714, 380, 0, 10000, 899, 4000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 0, 0, 0, '', 1500, 65, 0, 81000, 661, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'dmg:0/hp:0/rep:0/shd_abs:0/smb:0/rck:0/shreg:0', 0, 65, '', 1, 0, 0, 1, 'nothing', 0, 1780177458, 12362, 6516, 3000, 6, 1290, 0, 435, 280, 82, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 (4, 0, 'test12345', '', '', '', '', '', '127.0.0.1', 0, 0, 0, 7388, 5721, 1, 10, 18, 1, 0, 0, '2026-04-08 16:40:03', 1776630123.672668, 21749, 273003, 380, 0, 10000, 255527, 256000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 0, 0, 0, '3/0-3/0-3/0-3/0-3/0-3/0-3/0-3/0', 1500, 1, 0, 400, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'dmg:0/hp:0/rep:0/shd_abs:0/smb:0/rck:0/shreg:0', 0, 1, '', 1, 0, 0, 1, 'nothing', 0, 1776608357, 9946, 5000, 3005, 708, 3000, 0, 500, 300, 99, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL);
@@ -4591,7 +4599,15 @@ INSERT INTO `users_log` (`id`, `playerid`, `message`, `timestamp`) VALUES
 (1955, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-05-30 21:31:06'),
 (1956, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-05-30 21:31:18'),
 (1957, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-05-30 21:42:06'),
-(1958, 3, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-05-30 21:44:11');
+(1958, 3, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-05-30 21:44:11'),
+(1959, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-05-31 09:37:21'),
+(1960, 1, 'You have detroyed -=[ Boss Streuner ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-05-31 09:37:24'),
+(1961, 1, 'You have detroyed -=[ Boss Streuner ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-05-31 09:37:26'),
+(1962, 1, 'You have detroyed -=[ Uber StreuneR ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-05-31 09:43:37'),
+(1963, 1, 'You have detroyed -=[ Uber Lordakium ]=-.<br/>You received 1843200 credits.<br/>You received 576 uridium.<br/>You received 60 npc point(s).<br/>You received 60 rankpoint(s).<br/>You received 76800 experience.<br/>You received 384 honor.', '2026-05-31 09:44:16'),
+(1964, 1, 'You have detroyed -=[ Uber Saimon ]=-.<br/>You received 14400 credits.<br/>You received 36 uridium.<br/>You received 9 npc point(s).<br/>You received 9 rankpoint(s).<br/>You received 4800 experience.<br/>You received 24 honor.', '2026-05-31 09:44:17'),
+(1965, 1, 'You have detroyed -=[ Uber Streuner ]=-.<br/>You received 3600 credits.<br/>You received 9 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1200 experience.<br/>You received 6 honor.', '2026-05-31 09:44:29'),
+(1966, 1, 'You have detroyed -=[ Uber Kristallin ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 18 npc point(s).<br/>You received 18 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-05-31 09:47:31');
 
 -- --------------------------------------------------------
 
@@ -4629,7 +4645,7 @@ CREATE TABLE `users_npc_counts` (
 --
 
 INSERT INTO `users_npc_counts` (`id`, `Streuner`, `Lordakia`, `Saimon`, `Sibelon`, `Kristallin`, `Kristallon`, `Cubikon`, `IceMeteroid`, `Melter`, `Scorcher`, `BossCurcubitor`, `Hitac`, `Devourer`, `BossKuKu`, `Saboteur`, `Annihilator`, `Battleray`, `Mordon`, `Devolarium`, `Sibelonit`, `Lordakium`) VALUES
-(1, 354, 411, 337, 37, 264, 78, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 51, 232, 41),
+(1, 358, 412, 337, 37, 264, 78, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 51, 232, 41),
 (2, 12, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 (3, 50, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 (4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -4724,7 +4740,7 @@ CREATE TABLE `users_settings` (
 --
 
 INSERT INTO `users_settings` (`id`, `playerid`, `flash_set`, `minimap_scale`, `resizable_windows`, `display_player_names`, `display_chat`, `play_music`, `play_sfx`, `bar_status`, `window_settings`, `client_resolution`, `auto_refinement`, `quickslot_stop_attack`, `doubleclick_attack`, `auto_start`, `display_notifications`, `show_drones`, `display_window_background`, `always_draggable_windows`, `preload_user_ships`, `quality_presetting`, `quality_customized`, `quality_background`, `quality_poizone`, `quality_ship`, `quality_engine`, `quality_collectable`, `quality_attack`, `quality_effect`, `quality_explosion`, `quickbar_slot`, `mainmenu_position`, `slotmenu_position`, `slotmenu_order`) VALUES
-(1, 1, '1|1|1|1|1|1|1|1|1|1|1|1|0|1|1|1|3|1|1|0|0|1|1|1|1', '5', '', 1, 1, 0, 1, '23,0,24,0,25,1,26,0,27,0', '0|0,16,16,0,1,28,13,1,3,1449,750,1,5,1268,26,1,10,959,198,0,13,1002,159,0,15,463,293,0,16,628,193,1,20,3,797,1,23,262,21,1,24,1134,114,0', '0,820,600|1', 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, '3,4,5,6,7,39,16,17,45,23', '0|318,503', '0|794,880', '0'),
+(1, 1, '1|1|1|1|1|1|1|1|1|1|1|1|0|1|1|1|3|1|1|0|0|1|1|1|1', '5', '', 1, 1, 0, 1, '23,0,24,0,25,1,26,0,27,0', '0|0,16,16,0,1,28,13,1,3,1449,750,1,5,1268,26,0,10,959,198,0,13,1002,159,0,15,463,293,0,16,628,193,1,20,3,797,1,23,262,21,1,24,1134,114,0', '0,820,600|1', 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, '3,4,5,6,7,39,16,17,45,23', '0|318,503', '0|794,880', '0'),
 (2, 2, '1|1|1|1|1|1|1|1|1|1|1|1|0|1|1|1|3|1|1|0|0|1|1|1|1', '5', '', 1, 1, 0, 1, '23,0,24,0,25,1,26,0,27,0', '0|0,9,4,1,1,232,3,1,3,780,388,1,5,5,5,0,10,5,288,0,13,187,50,0,20,5,402,1,22,347,188,0,23,458,1,1,24,284,25,0', '0,820,600|1', 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, '6,39,7,45,17,16,-1,-1,-1,-1', '', '0|771,927', '0'),
 (3, 3, '1|1|1|1|1|1|1|1|1|1|1|1|0|1|1|4|2|1|1|0|0|1|1|1|1', '5', '', 1, 1, 0, 1, '23,0,24,0,25,1,26,0,27,0', '0|0,9,4,1,1,232,3,1,3,1467,744,1,5,565,49,1,10,1000,19,0,13,704,189,0,15,427,407,0,16,628,193,1,20,3,831,1,23,1156,139,1,24,1238,242,0', '0,820,600|1', 0, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, '3,4,7,45,17,16,-1,-1,-1,-1', '', '0|790,896', '0'),
 (4, 4, '1|1|1|1|1|1|1|1|1|1|1|0|0|1|1|0|0|1|1|0|0|1|1|1|1', '7', '', 1, 1, 0, 0, '23,0,24,0,25,1,26,0,27,0', '8|0,376,6,0,1,601,6,1,3,1300,624,1,5,10,10,1,13,520,265,0,15,958,6,0,16,1084,311,1,20,7,544,1,23,1060,131,1,24,613,263,0', '8,1680,1050|1', 0, 1, 1, 1, 1, 0, 1, 1, 1, 3, 1, 0, 3, 3, 3, 3, 3, 3, 3, '6,39,7,45,17,16,-1,-1,-1,-1', '8|399,890', '8|395,855', '0');
@@ -5323,7 +5339,7 @@ ALTER TABLE `player_galaxy_gates`
 -- AUTO_INCREMENT pour la table `portals`
 --
 ALTER TABLE `portals`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=407;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=414;
 
 --
 -- AUTO_INCREMENT pour la table `role_clan`
@@ -5383,7 +5399,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT pour la table `users_log`
 --
 ALTER TABLE `users_log`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1959;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1967;
 
 --
 -- AUTO_INCREMENT pour la table `users_settings`
