@@ -1,10 +1,0 @@
-## OrbitReborn## Server output log file## lundi, 25 mai 2026 20:20:42[20h20s42m64]Initializing Andromeda's Emulator...[20h20s42m66]Configuration value 'debug.sso' missing; using default value.[20h20s42m66]Initializing MySQL manager...[20h20s43m74]Could not initialize Orbit Reborn: Unable to connect to any of the specified MySQL hosts.
-   à MySql.Data.MySqlClient.NativeDriver.Open()
-   à MySql.Data.MySqlClient.Driver.Open()
-   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
-   à MySql.Data.MySqlClient.MySqlPool..ctor(MySqlConnectionStringBuilder settings)
-   à MySql.Data.MySqlClient.MySqlPoolManager.GetPool(MySqlConnectionStringBuilder settings)
-   à MySql.Data.MySqlClient.MySqlConnection.Open()
-   à OrbitReborn_Emulator.Storage.SqlDatabaseManager.CreateClient(Int32 Id) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseManager.cs:ligne 175
-   à OrbitReborn_Emulator.Storage.SqlDatabaseManager.SetClientAmount(Int32 ClientAmount, String LogReason) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Storage\SqlDatabaseManager.cs:ligne 110
-   à OrbitReborn_Emulator.Program.Main(String[] args) dans C:\Users\the_k\OneDrive\Desktop\serveur andromeda\Server\Andromeda-emu source\Program.cs:ligne 78[20h20s43m74]Cannot proceed; press any key to stop the server.
