@@ -1,0 +1,129 @@
+/* Palette Moderne */
+:root {
+  --bg-card: rgba(26, 30, 41, 0.95);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --accent-blue: #4a90e2;
+  --accent-hover: #357abd;
+  --text-main: #f0f0f0;
+  --text-muted: #8e9297;
+  --danger: #ff5f56;
+}
+
+.CMSContent.settings-page {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 24px;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* Style Global des Boîtes */
+.settings-page .box.settings-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  width: 100% !important;
+  box-sizing: border-box;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* Correction Spécifique pour "My Profile" */
+.settings-page .settings-box--info { 
+  grid-column: 1 / -1 !important; /* Prend toute la largeur de la grille pour pouvoir se centrer */
+  max-width: 600px !important;    /* Largeur limitée pour "entourer" les infos */
+  margin: 0 auto 10px auto !important; /* Centrage horizontal */
+}
+
+/* Titres */
+.settings-page .title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 25px;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left !important;
+}
+
+.cost-badge {
+  background: rgba(74, 144, 226, 0.15);
+  color: var(--accent-blue);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+/* Statistiques (Alignement rapproché) */
+.stat {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.stat-left { 
+  color: var(--text-muted); 
+  width: 120px; /* Largeur fixe pour aligner les valeurs à gauche */
+  flex-shrink: 0;
+}
+
+.stat-right { 
+  color: #fff; 
+  font-weight: 500; 
+}
+
+/* Formulaires et Inputs */
+.settings-page .settings p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.settings-page input[type="text"], 
+.settings-page input[type="password"] {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 15px;
+  color: #fff;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.settings-page input[type="submit"] {
+  width: 100%;
+  background: var(--accent-blue);
+  color: #fff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.2s;
+}
+
+.settings-page input[type="submit"]:hover {
+  background: var(--accent-hover);
+}
+
+/* Bloc d'erreurs */
+.settings-page .settings-box--wide { 
+  grid-column: 1 / -1 !important; 
+  border-left: 4px solid var(--danger) !important; 
+}
+
+.error-list {
+  list-style: none;
+  padding: 0;
+  color: var(--danger);
+  font-size: 0.9rem;
+}

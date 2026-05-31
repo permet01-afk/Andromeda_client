@@ -1,0 +1,113 @@
+.rules-page {
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+}
+
+.rules-container {
+    background: rgba(26, 30, 41, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    max-width: 1000px !important;
+    width: 100% !important;
+    border-radius: 12px;
+    padding: 35px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.6);
+}
+
+.section-blue {
+    color: #4a90e2;
+    font-size: 1.4rem;
+    margin: 30px 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(74, 144, 226, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.rule-item p {
+    color: #b0b3b8;
+    line-height: 1.7;
+    margin-bottom: 12px;
+}
+
+.links-grid {
+    display: flex;
+    gap: 15px;
+    margin: 25px 0;
+    flex-wrap: wrap;
+}
+
+.rule-link {
+    background: rgba(255, 255, 255, 0.05);
+    color: #4a90e2 !important;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    border: 1px solid rgba(74, 144, 226, 0.3);
+    transition: 0.3s;
+}
+
+.rule-link.highlight {
+    background: #4a90e2;
+    color: white !important;
+}
+
+.rule-link:hover {
+    transform: translateY(-2px);
+    background: rgba(74, 144, 226, 0.1);
+}
+
+.rule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.rule-card {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rule-card h4 {
+    color: #fff;
+    margin-bottom: 10px;
+}
+
+.rule-list li {
+    background: rgba(74, 144, 226, 0.05);
+    color: #e4e6eb;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-left: 4px solid #4a90e2;
+    list-style: none;
+}
+
+.chat-rules-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+@media (max-width: 768px) {
+    .chat-rules-container { grid-template-columns: 1fr; }
+}
+
+.chat-column p {
+    color: #b0b3b8;
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.email-text { color: #4a90e2; text-decoration: underline; }
+
+.final-wish {
+    text-align: center;
+    margin-top: 40px;
+    color: #4a90e2;
+    font-style: italic;
+}

@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Andromeda • Equipment</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* =========================================
+     THEME: DEEP SPACE COMMAND
+     ========================================= */
+  :root {
+    --bg-dark: #020407;
+    --panel-bg: #0b1221;
+    --panel-border: #1e293b;
+    --cyan: #5eead4;
+    --cyan-dim: rgba(94, 234, 212, 0.15);
+    --gold: #fbbf24;
+    --danger: #ef4444;
+    
+    --text-main: #e2e8f0;
+    --text-muted: #64748b;
+    
+    --slot-bg: #050911;
+    --slot-border: #253042;
+    --slot-size: 46px;
+  }
+
+  *, *::before, *::after { 
+    box-sizing: border-box; 
+    user-select: none; -webkit-user-select: none;
+  }
+  
+  html, body { height: 100%; margin: 0; padding: 0; }
+
+  body {
+    background: transparent;
+    color: var(--text-main);
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    font-size: 11px;
+    overflow: hidden; 
+  }
+
+  /* Scrollbars fines */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #020407; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
+
+  img { pointer-events: none; -webkit-user-drag: none; }
+
+  .wrap {
+    max-width: 1200px;
+    height: 100vh; 
+    margin: 0 auto;
+    padding: 0 10px 10px 10px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  h1 { display: none; }
+
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 15px;
+    flex: 1;
+    min-height: 0;
+    margin-top: 10px;
+  }
+
+  /* =========================================
+     PANELS (CARTES)
+     ========================================= */
+  .card {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+  }
+
+  .card::before {
+    content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.2) 3px);
+    pointer-events: none; z-index: 0;
+  }
+  .card > * { position: relative; z-index: 1; }
+
+  #rightPanel.dropActive, #invPanel.dropActive {
+    border-color: var(--gold);
+    box-shadow: inset 0 0 0 1px var(--gold);
+  }
+
+  /* =========================================
+     ZONE GAUCHE (Vaisseau)
+     ========================================= */
+  .doTopBar {
+    display: flex; gap: 5px; padding: 8px;
+    background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--panel-border);
+    flex-shrink: 0;
+  }
+
+  .tabs { display: flex; gap: 2px; flex: 1; }
+  .tab {
+    flex: 1; text-align: center; padding: 6px 0;
+    background: #141e30; color: var(--text-muted);
+    font-weight: bold; text-transform: uppercase;
+    cursor: pointer; border-radius: 3px; transition: all 0.2s;
+  }
+  .tab:hover { color: #fff; background: #1e293b; }
+  .tab.active { background: var(--cyan-dim); color: var(--cyan); border: 1px solid var(--cyan-dim); }
+
+  .doDesignTab {
+    background: #0f172a; border: 1px solid var(--panel-border);
+    color: #cbd5e1; padding: 0 12px; font-weight: bold; font-size: 10px;
+    cursor: pointer; text-transform: uppercase; border-radius: 3px;
+  }
+  .doDesignTab:hover { border-color: var(--cyan); color: #fff; }
+
+  .modeTabs {
+    display: flex; margin: 8px; gap: 2px;
+    background: #020407; padding: 2px; border-radius: 4px; border: 1px solid var(--panel-border);
+    flex-shrink: 0;
+  }
+  .modeTab {
+    flex: 1; text-align: center; padding: 4px;
+    color: var(--text-muted); font-weight: bold; cursor: pointer; border-radius: 3px;
+  }
+  .modeTab.active { background: #1e293b; color: #fff; }
+
+  #shipSection {
+    display: flex; flex-direction: column; flex: 1; 
+    overflow-y: auto;
+    padding: 0 10px 10px;
+  }
+
+  #shipPreview {
+    height: 130px; 
+    flex-shrink: 0;
+    background: radial-gradient(circle at center, #1e293b 0%, #050911 80%);
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    display: flex; justify-content: center; align-items: center;
+    box-shadow: inset 0 0 20px #000;
+  }
+
+  #shipPreviewImg {
+    max-height: 100px; max-width: 90%;
+    width: auto; height: auto; object-fit: contain; 
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.8));
+    transition: transform 0.3s;
+  }
+  #shipPreview:hover #shipPreviewImg { transform: scale(1.05); }
+
+  /* =========================================
+     INVENTAIRE (Droite)
+     ========================================= */
+  .invTabs { display: flex; border-bottom: 1px solid var(--panel-border); background: rgba(0,0,0,0.2); flex-shrink: 0; }
+  .invTab {
+    flex: 1; text-align: center; padding: 8px 0;
+    color: var(--text-muted); font-weight: bold; font-size: 10px; cursor: pointer;
+    border-bottom: 2px solid transparent; text-transform: uppercase;
+  }
+  .invTab.active { color: var(--cyan); border-bottom-color: var(--cyan); background: rgba(94, 234, 212, 0.05); }
+
+  .invWrap { flex: 1; overflow-y: auto; padding: 10px; }
+
+  .sectionHead {
+    display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(90deg, rgba(30, 41, 59, 0.5), transparent);
+    padding: 3px 6px; margin: 10px 0 5px;
+    border-left: 2px solid var(--cyan);
+  }
+  .sectionHead label { font-weight: bold; color: #fff; font-size: 10px; text-transform: uppercase; }
+
+  .actions .btn {
+    background: transparent; border: 1px solid #334155;
+    color: #94a3b8; font-size: 9px; padding: 1px 6px;
+    cursor: pointer; text-transform: uppercase; border-radius: 2px;
+  }
+  .actions .btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  .grid, .inv {
+    display: grid; grid-template-columns: repeat(auto-fill, var(--slot-size)); gap: 6px; padding: 2px;
+  }
+  
+  .slot, .token {
+    width: var(--slot-size); height: var(--slot-size);
+    border-radius: 3px; display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  
+  .slot { background: var(--slot-bg); border: 1px solid var(--slot-border); box-shadow: inset 0 0 5px #000; }
+  .slot:hover { border-color: #64748b; }
+  .slot.filled { border-color: #475569; background: #0f172a; }
+  .droneBlock.havokBlock { border-color: rgba(239,68,68,.45); box-shadow: 0 0 12px rgba(239,68,68,.13); }
+
+  .havok-summary {
+    margin: 0 0 8px;
+    padding: 6px 9px;
+    border: 1px solid rgba(248,113,113,.22);
+    border-radius: 3px;
+    background: linear-gradient(180deg, rgba(30,41,59,.55), rgba(15,23,42,.62));
+    color: #f8c7c7;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .15px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  }
+
+  .token {
+    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    border: 1px solid #475569; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+  .token:hover { border-color: #fff; z-index: 10; }
+  .token.selected, .slot.selected { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold); z-index: 20; }
+
+  .token img, .slot img { width: 80%; height: 80%; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); }
+
+  .badge {
+    position: absolute; top: 1px; left: 1px; font-size: 8px; font-weight: bold;
+    color: var(--cyan); background: rgba(0,0,0,0.8); padding: 1px 2px; pointer-events: none;
+    max-width: 40px; white-space: nowrap; overflow: hidden;
+  }
+
+  #droneList { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .droneBlock { background: rgba(0,0,0,0.2); padding: 5px; border: 1px solid var(--panel-border); border-radius: 4px; }
+  .drone-row { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
+
+  /* =========================================
+     TOOLTIP AMÉLIORÉE (BULLE)
+     ========================================= */
+  .item-tooltip {
+    position: fixed;
+    z-index: 10000;
+    background: rgba(11, 18, 33, 0.95);
+    border: 1px solid var(--cyan);
+    border-radius: 4px;
+    padding: 10px;
+    color: #fff;
+    min-width: 180px;
+    box-shadow: 0 0 15px rgba(94, 234, 212, 0.2);
+    pointer-events: none; /* Ignore clicks unless locked */
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .item-tooltip.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .item-tooltip.locked {
+    pointer-events: auto; /* Allow clicking buttons inside */
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+  }
+  .tooltip-header { font-weight: bold; font-size: 12px; color: var(--cyan); border-bottom: 1px solid #334155; padding-bottom: 5px; margin-bottom: 5px; }
+  .tooltip-body { font-size: 10px; color: #94a3b8; }
+  .tooltip-bonus { display: none; margin-top: 6px; padding-top: 6px; border-top: 1px solid #334155; color: #fca5a5; font-size: 10px; line-height: 1.35; }
+  .tooltip-bonus.visible { display: block; }
+  .tooltip-price { font-size: 10px; color: #fbbf24; margin-top: 5px; font-style: italic; }
+  
+  .tooltip-actions { margin-top: 8px; display: none; border-top: 1px solid #334155; padding-top: 8px; }
+  .locked .tooltip-actions { display: block; }
+  
+  .btn-sell {
+    width: 100%;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 5px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .btn-sell:hover { background: var(--danger); color: #fff; }
+
+  /* =========================================
+     FOOTER
+     ========================================= */
+  .bar {
+    margin-top: auto; 
+    padding: 10px;
+    border-top: 1px solid var(--panel-border);
+    background: rgba(11, 18, 33, 0.95);
+    display: flex; justify-content: flex-end;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  
+  #saveAll {
+    background: linear-gradient(to bottom, #10b981, #059669);
+    border: 1px solid #047857;
+    color: #fff; font-weight: bold; font-size: 11px;
+    padding: 8px 25px; border-radius: 3px;
+    cursor: pointer; text-transform: uppercase;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  }
+  #saveAll:hover { filter: brightness(1.1); }
+
+  .toast {
+    position: fixed; top: 20px; right: 20px;
+    background: #0f172a; border: 1px solid var(--panel-border);
+    color: #fff; padding: 10px 20px; border-radius: 4px;
+    z-index: 9999; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+  }
+  .toast.ok { border-left: 3px solid #10b981; }
+  .toast.err { border-left: 3px solid #ef4444; }
+
+  #designModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; }
+  #designModal.open { display: flex; }
+  #designModalBox { width: 400px; max-height: 80vh; background: #0f172a; border: 1px solid var(--panel-border); display: flex; flex-direction: column; border-radius: 6px; }
+  #designModalHead { padding: 10px; border-bottom: 1px solid var(--panel-border); display: flex; justify-content: space-between; font-weight: bold; color: #fff; background: rgba(0,0,0,0.3); }
+  #designList { overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+  .designItem { display: flex; gap: 10px; align-items: center; padding: 5px; background: rgba(255,255,255,0.03); border: 1px solid transparent; cursor: pointer; border-radius: 4px; }
+  .designItem:hover { border-color: var(--cyan); background: rgba(94, 234, 212, 0.05); }
+  .designItem.selected { border-color: var(--gold); }
+  .designItem img { width: 48px; height: 48px; background: #000; padding: 2px; border-radius: 3px; object-fit: contain; }
+  
+  body.embed .wrap { max-width: none; margin: 0; padding: 0; height: 100vh; }
+  body.embed .card { border: none; border-radius: 0; box-shadow: none; background: transparent; }
+
+  /* =========================================
+     CONFIRMATION MODAL (Remplacement de l'alerte)
+     ========================================= */
+  .confirm-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); z-index: 20000;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(2px);
+  }
+  .confirm-overlay.open { display: flex; }
+  
+  .confirm-box {
+    background: #0f172a; border: 1px solid var(--gold);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.15);
+    width: 320px; padding: 0; border-radius: 4px;
+    animation: popIn 0.2s ease-out;
+  }
+  
+  .confirm-header {
+    background: rgba(251, 191, 36, 0.1);
+    color: var(--gold); font-weight: bold;
+    padding: 10px 15px; border-bottom: 1px solid #334155;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  
+  .confirm-body { padding: 20px 15px; color: #e2e8f0; font-size: 13px; text-align: center; }
+  
+  .confirm-actions {
+    display: flex; border-top: 1px solid #334155;
+  }
+  
+  .btn-confirm {
+    flex: 1; background: transparent; border: none;
+    padding: 12px; font-weight: bold; cursor: pointer;
+    text-transform: uppercase; font-size: 11px;
+    transition: background 0.2s;
+  }
+  .btn-confirm.yes { color: var(--danger); border-right: 1px solid #334155; }
+  .btn-confirm.yes:hover { background: rgba(239, 68, 68, 0.2); }
+  
+  .btn-confirm.no { color: #94a3b8; }
+  .btn-confirm.no:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+  @keyframes popIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+</style>
+</head>
+<body>
+
+<script>
+  (function(){
+    const params = new URLSearchParams(location.search);
+    const isEmbed = params.get('embed') === '1';
+    if (isEmbed) document.body.classList.add('embed');
+  })();
+</script>
+
+<div id="customTooltip" class="item-tooltip">
+  <div class="tooltip-header" id="ttName">Item Name</div>
+  <div class="tooltip-body" id="ttType">Type</div>
+  <div class="tooltip-bonus" id="ttBonus"></div>
+  <div class="tooltip-price" id="ttPrice">Sell Price: 0 C</div>
+  <div class="tooltip-actions">
+    <button class="btn-sell" id="btnSellAction">SELL ITEM (50%)</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Equipment Hangar</h1>
+
+  <div class="cols">
+
+    <div class="card" id="rightPanel">
+      
+      <div class="doTopBar">
+        <div class="tabs doTabs">
+          <div class="tab active" data-tab="A">Config 1</div>
+          <div class="tab" data-tab="B">Config 2</div>
+        </div>
+        <button class="doDesignTab" id="btnDesign" type="button">Designs</button>
+      </div>
+
+      <div class="modeTabs">
+        <div class="modeTab active" data-mode="ship">SHIP</div>
+        <div class="modeTab" data-mode="drones">DRONES</div>
+      </div>
+
+      <div id="shipSection">
+        <div id="shipPreview">
+          <img id="shipPreviewImg" src="/img/ship/1.png" alt="Ship preview">
+        </div>
+
+        <div id="cfgA" class="cfgView"></div>
+        <div id="cfgB" class="cfgView" style="display:none"></div>
+      </div>
+
+      <div id="dronesSection" style="display:none">
+        <div id="dronesWrap"></div>
+      </div>
+
+      <div class="bar">
+        <button class="btn" id="saveAll">Save Configuration</button>
+      </div>
+    </div>
+
+    <div class="card" id="invPanel">
+      <div class="invTabs">
+        <div class="invTab active" data-cat="all">All</div>
+        <div class="invTab" data-cat="lasers">Lasers</div>
+        <div class="invTab" data-cat="generators">Gens</div>
+        <div class="invTab" data-cat="extras">Extras</div>
+        <div class="invTab" data-cat="drone_designs">Drone Designs</div>
+      </div>
+
+      <div class="invWrap">
+        
+        <div class="invCat" data-cat="lasers">
+          <div class="sectionHead">
+            <label>Lasers</label>
+            <div class="actions">
+              <button class="btn" id="inv-equip-lasers">All</button>
+              <button class="btn" id="inv-remove-lasers">Clear</button>
+            </div>
+          </div>
+          <div class="inv" id="inv-lasers"></div>
+        </div>
+
+        <div class="invCat" data-cat="generators">
+          <div class="sectionHead">
+            <label>Speed Generators</label>
+            <div class="actions">
+              <button class="btn" id="inv-equip-speed">Equip</button>
+              <button class="btn" id="inv-remove-speed">Clear</button>
+            </div>
+          </div>
+          <div class="inv" id="inv-speed"></div>
+          
+          <div style="height:10px"></div>
+
+          <div class="sectionHead">
+            <label>Shield Generators</label>
+            <div class="actions">
+              <button class="btn" id="inv-equip-shield">Equip</button>
+              <button class="btn" id="inv-remove-shield">Clear</button>
+            </div>
+          </div>
+          <div class="inv" id="inv-shield"></div>
+        </div>
+
+        <div class="invCat" data-cat="extras">
+          <div class="sectionHead">
+            <label>Extras</label>
+          </div>
+          <div class="inv" id="inv-extras"></div>
+        </div>
+
+        <div class="invCat" data-cat="drone_designs">
+          <div class="sectionHead">
+            <label>Drone Designs</label>
+          </div>
+          <div class="inv" id="inv-drone-designs"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<div id="designModal">
+  <div id="designModalBox">
+    <div id="designModalHead">
+      <div>Select Design</div>
+      <button id="designModalClose" type="button" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;">✕</button>
+    </div>
+    <div id="designList"></div>
+  </div>
+</div>
+
+<div id="confirmModal" class="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-header">Confirmation</div>
+    <div class="confirm-body" id="confirmMessage">Are you sure?</div>
+    <div class="confirm-actions">
+      <button class="btn-confirm yes" id="btnConfirmYes">Sell Item</button>
+      <button class="btn-confirm no" id="btnConfirmNo">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+const API_PREFIX = '/views/userTabs/api';
+const ICONS_BASE = '/views/userTabs/icons';
+const ITEMS_ICONS_BASE = ICONS_BASE + '/items';
+const HAVOK_ICON = '/spacemap_html5/graphics/havoks/1.png';
+const HAVOK_SET_SIZE = 8;
+const HAVOK_DAMAGE_PER_DRONE = 2;
+const HAVOK_FULL_SET_DAMAGE = 20;
+
+function getHavokDamageBonus(equippedCount){
+  const count = Math.max(0, Math.min(HAVOK_SET_SIZE, Number(equippedCount || 0) || 0));
+  return count >= HAVOK_SET_SIZE ? HAVOK_FULL_SET_DAMAGE : count * HAVOK_DAMAGE_PER_DRONE;
+}
+
+function havokBonusText(){
+  return `Havok: +${HAVOK_DAMAGE_PER_DRONE}% drone damage each. Full set (${HAVOK_SET_SIZE}): +${HAVOK_FULL_SET_DAMAGE}%.`;
+}
+
+// PRIX D'ACHAT (Pour le tooltip, info indicative)
+// On pourrait charger ça via l'API, mais pour l'affichage immédiat :
+const ITEM_PRICES = {
+  10: 10000, 11: 40000, 12: 250000, 1: 10000, // Lasers
+  30: 2000, 31: 4000, 32: 8000, 33: 16000, 34: 32000, 4: 2000, // Speed
+  35: 8000, 36: 24000, 37: 256000, 2: 10000, // Shield
+  20: 15000, 21: 15000, 38: 500000, 39: 15000, // Extras
+  9001: 100000, // Havok Drone Design
+  3: 100000, 5: 100000 // Drones (Prix approx pour revente)
+};
+
+// ============================================================
+// REVENTE (alignée avec items.php / sell_action.php)
+// - Items standards : 50% du prix
+// - Drones Iris/Flax : prix progressif selon le TIER du drone
+//   (tier = index du drone dans la liste globale 0..7)
+//   Fallback si tier absent : dernier drone (count-1)
+// ============================================================
+const SELL_RATE = 0.50;
+
+// Prix progressifs (0..7)
+const IRIS_PRICES = [15000, 24000, 42000, 60000, 84000, 96000, 126000, 200000];
+const FLAX_PRICES = [100000, 200000, 400000, 800000, 1600000, 3200000, 6400000, 12800000];
+
+function clampPriceIndex(i){
+  i = Number(i);
+  if (!Number.isFinite(i)) i = 0;
+  i = Math.floor(i);
+  if (i < 0) i = 0;
+  if (i > 7) i = 7;
+  return i;
+}
+
+// (note) clampPriceIndex était défini 2 fois dans une ancienne version.
+
+// ✅ Nouveau : calcule le tier PAR TYPE (Iris/Flax) depuis DRONES_STATE (ordre d’acquisition)
+function getDroneTierByTypeFromState(droneItemId, droneId){
+  const tab = activeTab();
+  const list = (Array.isArray(DRONES_STATE?.[tab]) && DRONES_STATE[tab].length)
+    ? DRONES_STATE[tab]
+    : (Array.isArray(DRONES_STATE?.A) ? DRONES_STATE.A : []);
+
+  const wantedDid = Number(droneId || 0) || 0;
+
+  const counters = {}; // {3: n, 5: n}
+  let foundTier = null;
+
+  for (const d of list) {
+    const did = Number(d?.id || d?.drone_id || 0) || 0;
+    const item = Number(d?.drone_item_id || d?.item_id || 3) || 3;
+
+    const tier = (counters[item] ?? 0); // tier AVANT incrément
+
+    if (wantedDid > 0 && did === wantedDid && item === Number(droneItemId)) {
+      foundTier = tier;
+      break;
+    }
+
+    counters[item] = tier + 1;
+  }
+
+  if (foundTier !== null) return foundTier;
+
+  // Fallback : dernier tier du type (count-1)
+  let count = 0;
+  for (const d of list) {
+    const item = Number(d?.drone_item_id || d?.item_id || 3) || 3;
+    if (item === Number(droneItemId)) count++;
+  }
+  return Math.max(0, count - 1);
+}
+
+// Retourne {refund, currency, rate, base, priceIndex}
+function getSellQuote(itemOrId){
+  const it = (typeof itemOrId === 'object' && itemOrId) ? itemOrId : { id: itemOrId };
+  const id = Number(it?.id || 0);
+
+  // Drones
+  if (id === 3 || id === 5) {
+    let idx = (it.priceIndex ?? it.price_index ?? it.dronePriceIndex ?? it.drone_price_index);
+    const did = Number(it.drone_id || it.droneId || 0) || 0;
+
+    // ✅ Si pas d’index fourni → calcul PAR TYPE depuis DRONES_STATE via drone_id
+    if (idx === undefined || idx === null || !Number.isFinite(Number(idx))) {
+      idx = getDroneTierByTypeFromState(id, did);
+    }
+
+    idx = clampPriceIndex(idx);
+    const base = (id === 3) ? IRIS_PRICES[idx] : FLAX_PRICES[idx];
+    const refund = Math.floor(base * SELL_RATE);
+    const currency = (id === 3) ? 'Uridium' : 'Credits';
+    return { refund, currency, rate: SELL_RATE, base, priceIndex: idx };
+  }
+
+  // Items standards
+  const base = Number(ITEM_PRICES[id] || 0) || 0;
+  const refund = Math.floor(base * SELL_RATE);
+
+  // Mapping devise (comme sell_action.php)
+  const currency = (id === 1 || id === 2 || id === 4 || id === 20 || id === 21 || id === 39) ? 'Uridium' : 'Credits';
+  return { refund, currency, rate: SELL_RATE, base, priceIndex: null };
+}
+
+
+let DATA = { items:{}, inventory:[], configs:{}, drones:[] };
+let INVENTORY_TOTAL = [];
+let DRONES_STATE = { A: [], B: [] };
+let SHIP_DESIGN_ID = 1;
+let AVAILABLE_SKINS = [];
+let SELECTED_DESIGN_ID = 1;
+
+// --- TOOLTIP LOGIC ---
+const tooltip = document.getElementById('customTooltip');
+let activeTooltipItem = null;
+let tooltipLocked = false;
+
+function hideTooltip() {
+  if (tooltipLocked) return;
+  tooltip.classList.remove('visible');
+  tooltip.classList.remove('locked');
+  activeTooltipItem = null;
+}
+
+function showTooltip(item, x, y, isLocked = false) {
+  if (tooltipLocked && !isLocked) return;
+
+  const q = getSellQuote(item);
+
+  document.getElementById('ttName').textContent = item.name || ('Item ' + item.id);
+  document.getElementById('ttType').textContent = (item.category || 'item').toUpperCase() + (item.type ? ' (' + item.type + ')' : '');
+  document.getElementById('ttPrice').textContent = `Resale: ${q.refund.toLocaleString()} ${q.currency}`;
+
+  const ttBonus = document.getElementById('ttBonus');
+  if (ttBonus) {
+    const isHavok = isHavokDesignItem(item) || item?.havokEquipped === true;
+    ttBonus.textContent = isHavok ? havokBonusText() : '';
+    ttBonus.classList.toggle('visible', isHavok);
+  }
+
+  // Mettre à jour le bouton (taux affiché)
+  const btnSell = document.getElementById('btnSellAction');
+  if (btnSell) btnSell.textContent = `SELL ITEM (${Math.round(q.rate * 100)}%)`;
+  
+  // Position
+  // Garder le tooltip dans la fenêtre
+  const winW = window.innerWidth;
+  const winH = window.innerHeight;
+  let finalX = x + 15;
+  let finalY = y + 15;
+  
+  if(finalX + 200 > winW) finalX = x - 200;
+  if(finalY + 150 > winH) finalY = y - 150;
+
+  tooltip.style.left = finalX + 'px';
+  tooltip.style.top = finalY + 'px';
+  tooltip.classList.add('visible');
+  
+  activeTooltipItem = item;
+
+  if(isLocked) {
+    tooltipLocked = true;
+    tooltip.classList.add('locked');
+    
+    // Configurer le bouton vendre
+    const btn = document.getElementById('btnSellAction');
+    btn.onclick = () => sellItem(item.id, item.drone_id || item.droneId || null);
+  }
+}
+
+// Clic global pour déverrouiller le tooltip
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.token') && !e.target.closest('.item-tooltip')) {
+    tooltipLocked = false;
+    hideTooltip();
+  }
+});
+
+// --- NOUVELLE LOGIQUE DE CONFIRMATION ---
+function openConfirmModal(msg) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirmModal');
+    const msgEl = document.getElementById('confirmMessage');
+    const btnYes = document.getElementById('btnConfirmYes');
+    const btnNo = document.getElementById('btnConfirmNo');
+
+    msgEl.innerHTML = msg; // Permet de mettre du gras ou couleur
+    modal.classList.add('open');
+
+    // Fonction de nettoyage pour éviter d'empiler les événements
+    const cleanup = () => {
+      modal.classList.remove('open');
+      btnYes.onclick = null;
+      btnNo.onclick = null;
+    };
+
+    btnYes.onclick = () => {
+      cleanup();
+      resolve(true); // L'utilisateur a dit OUI
+    };
+
+    btnNo.onclick = () => {
+      cleanup();
+      resolve(false); // L'utilisateur a dit NON
+    };
+  });
+}
+
+// --- API VENTE MODIFIÉE ---
+async function sellItem(itemId, droneId = null) {
+    // 1) Préparer le montant affiché (utilise le contexte du tooltip si dispo)
+    const ctxItem =
+  (activeTooltipItem && Number(activeTooltipItem.id) === Number(itemId))
+    ? activeTooltipItem
+    : { id: itemId, drone_id: droneId };
+    const q = getSellQuote(ctxItem);
+
+    // 2) On masque le tooltip pour qu'il ne gêne pas
+    hideTooltip(); 
+
+    // 3) On ouvre NOTRE fenêtre personnalisée (et on attend la réponse)
+    const confirmed = await openConfirmModal(
+        `Are you sure you want to sell this item?<br><span style='color:#fbbf24;font-size:11px'>(You will receive ${q.refund.toLocaleString()} ${q.currency} — ${Math.round(q.rate * 100)}%)</span>`
+    );
+
+    // 3. Si l'utilisateur a cliqué sur Cancel, on s'arrête là
+    if (!confirmed) return;
+
+    try {
+        // Attention : Vérifiez bien que le chemin est correct selon votre installation précédente !
+        const res = await fetch(`${API_PREFIX}/sell_action.php`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify((()=>{ const p = { item_id: itemId }; if (droneId) p.drone_id = droneId; return p; })())
+        });
+        const d = await res.json();
+        
+        if (d.success) {
+            toast(d.msg, true);
+            tooltipLocked = false;
+            loadAll(); // Recharger inventaire
+        } else {
+            toast(d.error || 'Error selling item');
+        }
+    } catch (e) {
+        toast('Connection error');
+    }
+}
+
+
+function updateShipPreview(){
+  const img = byId('shipPreviewImg');
+  if(!img) return;
+  img.onerror = () => {
+    if (img.dataset.fallbackTried === '1') {
+      img.onerror = null;
+      img.src = '/img/ship/1.png';
+      return;
+    }
+    img.dataset.fallbackTried = '1';
+    img.src = `/img/shop/${SHIP_DESIGN_ID}.png`;
+  };
+  img.dataset.fallbackTried = '0';
+  img.src = `/img/ship/${SHIP_DESIGN_ID}.png`;
+}
+
+const byId = id => document.getElementById(id);
+
+function el(tag, attrs={}, ...children){
+  const n=document.createElement(tag);
+  for(const k in attrs){
+    if(k==='class') n.className=attrs[k];
+    else if(k==='dataset') Object.assign(n.dataset, attrs[k]);
+    else if(k.startsWith('on')) n.addEventListener(k.slice(2), attrs[k]);
+    else n.setAttribute(k, attrs[k]);
+  }
+  for(const c of children) n.append(c instanceof Node?c:document.createTextNode(c));
+  return n;
+}
+
+function openDesignModal(){
+  const m = byId('designModal');
+  if(!m) return;
+  renderDesignList();
+  m.classList.add('open');
+}
+
+function closeDesignModal(){
+  byId('designModal')?.classList.remove('open');
+}
+
+function renderDesignList(){
+  const list = byId('designList');
+  if(!list) return;
+  list.innerHTML = '';
+
+  if(!AVAILABLE_SKINS.length){
+    list.append(el('div', {style:'opacity:.85; padding:10px; color:#aaa;'}, 'No designs available.'));
+    return;
+  }
+
+  for(const s of AVAILABLE_SKINS){
+    const did = Number(s.design_id || 0);
+    const item = el('div', {class:'designItem' + (did === Number(SELECTED_DESIGN_ID) ? ' selected' : '')});
+
+    item.append(
+      el('img', {src: s.image || `/img/ship/${did}.png`, alt: ''}),
+      el('div', {class:'meta'},
+        el('div', {}, s.name || ('Design #' + did)),
+        el('div', {class:'bonus'}, s.bonus || '')
+      )
+    );
+
+    item.addEventListener('click', ()=>{
+      SELECTED_DESIGN_ID = did;
+      SHIP_DESIGN_ID = did;
+      updateShipPreview();
+      closeDesignModal();
+    });
+
+    list.append(item);
+  }
+}
+
+function toast(msg, ok=false){
+  const t=byId('toast');
+  t.textContent=msg;
+  t.className='toast '+(ok?'ok':'err');
+  t.style.display='block';
+  setTimeout(()=>t.style.display='none',2000);
+}
+
+// Helpers Badge
+function laserBadge(name){
+  if(!name) return 'LAS';
+  const s = String(name).trim().toUpperCase();
+  if(s.startsWith('LF-')) return 'LF' + s.slice(3);
+  if(s.startsWith('MP-')) return 'MP' + s.slice(3);
+  if(s.startsWith('LF')) return s.slice(0,3);
+  if(s.startsWith('MP')) return s.slice(0,3);
+  return s.slice(0,3) || 'LAS';
+}
+
+function generatorBadge(name, type) {
+  if (!name) return type === 3 ? 'SPD' : (type === 4 ? 'SHD' : 'GEN');
+  const s = String(name).trim().toUpperCase();
+  if (s.includes('SG3N-')) {
+    const parts = s.split('SG3N-');
+    if (parts[1]) return parts[1];
+  }
+  if (s.includes('G3N-')) {
+    const parts = s.split('G3N-');
+    if (parts[1]) return parts[1];
+  }
+  return type === 3 ? 'SPD' : 'SHD';
+}
+
+function typeBadge(t){ return t==3?'SPD':(t==4?'SHD':'ITM'); }
+
+function iconFor(cat,t){
+  if(cat==='laser') return `${ICONS_BASE}/laser.png`;
+  if(cat==='generator') return (+t===4)?`${ICONS_BASE}/shield.png`:`${ICONS_BASE}/speed.png`;
+  return `${ICONS_BASE}/speed.png`;
+}
+
+const ITEM_ICON_MAP = {
+  lf1: 'lf1.png', mp1: 'mp1.png', lf2: 'lf2.png', lf3: 'lf3.png',
+  g3n1010: 'g3n1010.png', g3n2010: 'g3n2010.png', g3n3210: 'g3n3210.png',
+  g3n3310: 'g3n3310.png', g3n6900: 'g3n6900.png', g3n7900: 'g3n7900.png',
+  sg3na01: 'sg3na01.png', sg3na02: 'sg3na02.png', sg3nb01: 'sg3nb01.png', sg3nb02: 'sg3nb02.png',
+  autorocket: 'autorocket.png', cargoexp: 'cargoexp.png',
+  iris: 'iris.png', flax: 'flax.png', // Added drones
+  havok: 'havok.png', havoc: 'havok.png', havokdronedesign: 'havok.png', havocdronedesign: 'havok.png'
+};
+
+function normalizeIconKey(s){
+  return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+
+function iconForItem(it){
+  const cat = it?.category || '';
+  const t = + (it?.type ?? 0);
+  const key = normalizeIconKey(it?.name || '');
+  if(cat==='drone_design') return HAVOK_ICON;
+  const mapped = ITEM_ICON_MAP[key];
+  if(mapped) return `${ITEMS_ICONS_BASE}/${mapped}`;
+  if(cat==='laser'){
+    if(key.startsWith('lf') || key.startsWith('mp')) return `${ITEMS_ICONS_BASE}/${key}.png`;
+    return `${ICONS_BASE}/laser.png`;
+  }
+  if(cat==='generator' && t===3){
+    if(key.startsWith('g3n')) return `${ITEMS_ICONS_BASE}/${key}.png`;
+    return `${ICONS_BASE}/speed.png`;
+  }
+  if(cat==='generator' && t===4){
+    if(key.startsWith('sg3n')) return `${ITEMS_ICONS_BASE}/${key}.png`;
+    return `${ICONS_BASE}/shield.png`;
+  }
+  if(cat==='extra'){
+    if(key) return `${ITEMS_ICONS_BASE}/${key}.png`;
+    return `${ITEMS_ICONS_BASE}/extra.png`;
+  }
+  return iconFor(cat,t);
+}
+
+function info(it){
+  const t=+it.type||0;
+  const typ=(it.category==='laser')?'Laser':(it.category==='drone_design'?'Drone Design':(t===3?'Speed Gen':t===4?'Shield Gen':'Generator'));
+  return `${typ} — ${it.name||('ID '+it.id)}`;
+}
+
+function activeTab(){ return document.querySelector('.tab.active')?.dataset.tab || 'A'; }
+function activeMode(){ return document.querySelector('.modeTab.active')?.dataset.mode || 'ship'; }
+
+/* -----------------------------
+   SELECTIONS
+------------------------------ */
+const Selection = {
+  kind: null,
+  invTokens: new Set(),
+  slotCells: new Set()
+};
+
+function clearSelection(){
+  Selection.invTokens.forEach(t => t.classList.remove('selected'));
+  Selection.slotCells.forEach(s => s.classList.remove('selected'));
+  Selection.invTokens.clear();
+  Selection.slotCells.clear();
+  Selection.kind = null;
+  document.querySelectorAll('#dronesWrap .token.selected').forEach(x => x.classList.remove('selected'));
+}
+
+function selectOnlyToken(token){
+  clearSelection();
+  Selection.kind = 'inv';
+  addTokenToSelection(token);
+}
+function addTokenToSelection(token){
+  if(!token) return;
+  Selection.kind = 'inv';
+  token.classList.add('selected');
+  Selection.invTokens.add(token);
+}
+
+function selectOnlySlot(cell){
+  clearSelection();
+  Selection.kind = 'slot';
+  addSlotToSelection(cell);
+}
+function addSlotToSelection(cell){
+  if(!cell) return;
+  if(!cell.classList.contains('filled')) return;
+  Selection.kind = 'slot';
+  cell.classList.add('selected');
+  Selection.slotCells.add(cell);
+}
+
+document.addEventListener('pointerdown', (e)=>{
+  const isToken = e.target.closest('.token');
+  const isSlot  = e.target.closest('.slot');
+  const isTooltip = e.target.closest('.item-tooltip'); // Ignore clicks on tooltip
+  if(!isToken && !isSlot && !isTooltip){
+    clearSelection();
+  }
+}, true);
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape'){
+    clearSelection();
+    hideTooltip();
+  }
+});
+
+let paintSelecting = false;
+let paintKind = null;
+let paintDisableDrag = false;
+
+function setDraggableAllTokens(enabled){
+  document.querySelectorAll('.token').forEach(t=>{ t.draggable = !!enabled; });
+}
+function setDraggableAllFilledSlots(enabled){
+  document.querySelectorAll('.slot.filled').forEach(s=>{ s.draggable = !!enabled; });
+}
+
+document.addEventListener('pointerup', ()=>{
+  if(paintSelecting){
+    paintSelecting = false;
+    paintKind = null;
+    if(paintDisableDrag){
+      setDraggableAllTokens(true);
+      setDraggableAllFilledSlots(true);
+      paintDisableDrag = false;
+    }
+  }
+});
+
+let DRAG_PAYLOAD = null;
+let IS_DRAGGING = false;
+
+/* -----------------------------
+   Inventory
+------------------------------ */
+function renderInventory(){
+  const invL=byId('inv-lasers');  invL.innerHTML='';
+  const invS=byId('inv-speed');   invS.innerHTML='';
+  const invH=byId('inv-shield');  invH.innerHTML='';
+  const invE=byId('inv-extras');  invE.innerHTML='';
+  const invD=byId('inv-drone-designs'); if(invD) invD.innerHTML='';
+
+  for(const it of DATA.inventory){
+    it.icon = iconForItem(it);
+    DATA.items[it.id]=it;
+
+    const target =
+      it.category==='laser'       ? invL :
+      (it.category==='generator' && +it.type===3) ? invS :
+      (it.category==='generator' && +it.type===4) ? invH :
+      (it.category==='drone_design') ? (invD || invE) :
+      invE;
+
+    for(let k=0;k<it.qty;k++){
+      const token=el('div',{class:'token',title:'', dataset:{ itemId: String(it.id) }});
+      
+      let label = 'ITM';
+      if (it.category === 'laser') {
+        label = laserBadge(it.name);
+      } else if (it.category === 'generator') {
+        label = generatorBadge(it.name, +it.type);
+      } else if (it.category === 'drone_design') {
+        label = 'HAV';
+      } else {
+        label = typeBadge(+it.type);
+      }
+
+      token.append(
+        el('img',{src:it.icon,alt:it.name||'item'}),
+        el('span',{class:'badge'}, label)
+      );
+
+      // --- EVENTS TOOLTIP & CLICK ---
+      token.addEventListener('mouseenter', (e) => {
+        showTooltip(it, e.clientX, e.clientY);
+      });
+      token.addEventListener('mouseleave', () => {
+        hideTooltip();
+      });
+      
+      // On click: Lock tooltip + Select
+      token.addEventListener('click',(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        selectOnlyToken(token);
+        
+        // Lock tooltip at mouse position or center of token
+        const rect = token.getBoundingClientRect();
+        showTooltip(it, rect.right + 10, rect.top, true);
+      });
+
+      token.addEventListener('pointerdown', (e)=>{
+        if(e.button !== 0) return;
+        if(!token.classList.contains('selected')){
+          selectOnlyToken(token);
+          paintSelecting = true;
+          paintKind = 'inv';
+          setDraggableAllTokens(false);
+          paintDisableDrag = true;
+        }
+      });
+
+      token.addEventListener('pointerenter', ()=>{
+        if(paintSelecting && paintKind === 'inv'){
+          addTokenToSelection(token);
+        }
+      });
+
+      token.draggable = true;
+      token.addEventListener('dragstart',(e)=>{
+        IS_DRAGGING = true;
+        hideTooltip(); // Hide tooltip on drag
+        if(!token.classList.contains('selected')){
+          selectOnlyToken(token);
+        }
+        const items = [...Selection.invTokens].map(t=>{
+          const id = Number(t.dataset.itemId||0);
+          const meta = DATA.items[id] || { id, category:'laser', type:0, icon:iconFor('laser',0), name:'Item '+id };
+          return { id:+meta.id, category:meta.category, type:+meta.type, icon:meta.icon, name:meta.name };
+        });
+
+        DRAG_PAYLOAD = { kind:'inv', items };
+        try{
+          e.dataTransfer.setData('text/plain','inv');
+          e.dataTransfer.effectAllowed='copy';
+        }catch{}
+      });
+      token.addEventListener('dragend',()=>{
+        IS_DRAGGING = false;
+        DRAG_PAYLOAD = null;
+        byId('rightPanel').classList.remove('dropActive');
+        byId('invPanel').classList.remove('dropActive');
+      });
+
+      target.appendChild(token);
+    }
+  }
+}
+
+function expandPool(items){
+  const out=[]; for(const it of items) for(let k=0;k<it.qty;k++) out.push(it); return out;
+}
+
+function getUsedCountsForTab(tab){
+  const used = {};
+  const mount = (tab==='A') ? byId('cfgA') : byId('cfgB');
+  if(mount){
+    mount.querySelectorAll('.slot.filled').forEach(cell=>{
+      const it = cell.dataset.item ? JSON.parse(cell.dataset.item) : null;
+      if(it && it.id){
+        const id = +it.id;
+        used[id] = (used[id]||0) + 1;
+      }
+    });
+  }
+  const ds = DRONES_STATE[tab] || [];
+  ds.forEach(d=>{
+    (d.slots||[]).forEach(iid=>{
+      const id = +iid;
+      if(id>0) used[id] = (used[id]||0) + 1;
+    });
+    const designId = Number(d.design_item_id || d.designItemId || 0) || 0;
+    if(designId > 0) used[designId] = (used[designId]||0) + 1;
+  });
+  return used;
+}
+
+function buildAvailableInventoryForTab(tab){
+  const used = getUsedCountsForTab(tab);
+  return INVENTORY_TOTAL.map(it=>{
+    const id = +it.id;
+    const u = used[id] || 0;
+    const qty = Math.max(0, (+it.qty||0) - u);
+    return {...it, qty};
+  }).filter(it => (+it.qty||0) > 0);
+}
+
+function refreshInventoryView(){
+  const tab = activeTab();
+  DATA.inventory = buildAvailableInventoryForTab(tab);
+
+  DATA.inventory.sort((a, b) => {
+    if (a.category !== b.category) {
+      return a.category.localeCompare(b.category);
+    }
+    return (a.name || '').localeCompare(b.name || '', undefined, {numeric: true, sensitivity: 'base'});
+  });
+
+  renderInventory();
+}
+
+/* -----------------------------
+   Slot rendering helpers
+------------------------------ */
+function isDroneDesignItem(it){
+  return String(it?.category || '').toLowerCase() === 'drone_design';
+}
+
+function isHavokDesignItem(it){
+  if(!isDroneDesignItem(it)) return false;
+  const key = normalizeIconKey(it?.name || '');
+  return Number(it?.id || 0) === 9001 || key.includes('havok') || key.includes('havoc');
+}
+
+function isFlaxDroneState(d){
+  return Number(d?.drone_item_id || d?.item_id || 3) === 5;
+}
+
+function normalizeHavokDesignItem(item){
+  return {
+    id: Number(item?.id || 0) || 0,
+    category: 'drone_design',
+    type: Number(item?.type || 1) || 1,
+    icon: HAVOK_ICON,
+    name: item?.name || 'Havok Drone Design'
+  };
+}
+
+function ensureDroneStateObj(tab, idx){
+  if(!DRONES_STATE[tab]) DRONES_STATE[tab] = [];
+  if(!DRONES_STATE[tab][idx]) {
+    DRONES_STATE[tab][idx] = { id:0, slots: [], slot_count: 2, drone_item_id: 3, name: `DRONE ${idx+1}`, design_item_id: 0, design_code: null, design_name: null, design_icon: null };
+  }
+  if(!Array.isArray(DRONES_STATE[tab][idx].slots)) DRONES_STATE[tab][idx].slots = [];
+  return DRONES_STATE[tab][idx];
+}
+
+function findDroneIndexInTab(tab, sourceIdx, droneId){
+  const list = DRONES_STATE[tab] || [];
+  if(droneId){
+    const found = list.findIndex(d => Number(d?.id || 0) === Number(droneId));
+    if(found >= 0) return found;
+  }
+  return sourceIdx;
+}
+
+function syncDroneDesignAcrossConfigs(sourceTab, sourceIdx, designItem){
+  const sourceDrone = ensureDroneStateObj(sourceTab, sourceIdx);
+  const droneId = Number(sourceDrone.id || 0) || 0;
+  const designId = designItem ? Number(designItem.id || 0) || 0 : 0;
+
+  ['A','B'].forEach(tabName => {
+    const idx = findDroneIndexInTab(tabName, sourceIdx, droneId);
+    const obj = ensureDroneStateObj(tabName, idx);
+    obj.design_item_id = designId;
+    obj.design_code = designId ? 'havok' : null;
+    obj.design_name = designId ? (designItem.name || 'Havok Drone Design') : null;
+    obj.design_icon = designId ? HAVOK_ICON : null;
+  });
+}
+
+function getDroneDesignMeta(drone){
+  const designId = Number(drone?.design_item_id || drone?.designItemId || 0) || 0;
+  if(!designId) return null;
+  const base = DATA.items[designId] || INVENTORY_TOTAL.find(it => Number(it.id) === designId) || {
+    id: designId,
+    category: 'drone_design',
+    type: 1,
+    name: drone?.design_name || 'Havok Drone Design',
+    icon: drone?.design_icon || HAVOK_ICON
+  };
+  return normalizeHavokDesignItem(base);
+}
+
+function getEquippedHavokCount(tabName){
+  const state = DRONES_STATE[tabName] || [];
+  let count = 0;
+  for (const drone of state) {
+    if (isFlaxDroneState(drone)) continue;
+    const designMeta = getDroneDesignMeta(drone);
+    if (designMeta && isHavokDesignItem(designMeta)) count++;
+  }
+  return Math.min(HAVOK_SET_SIZE, count);
+}
+
+function equipDroneDesignOnDrone(tab, idx, item){
+  if(!isHavokDesignItem(item)){
+    toast('This drone only accepts a Havok design.');
+    return false;
+  }
+  const droneObj = ensureDroneStateObj(tab, idx);
+  if(isFlaxDroneState(droneObj)){
+    toast('Havok designs can only be equipped on Iris drones.');
+    return false;
+  }
+  const design = normalizeHavokDesignItem(item);
+  syncDroneDesignAcrossConfigs(tab, idx, design);
+  renderDrones(tab);
+  refreshInventoryView();
+  toast('Havok equipped on Iris ✅', true);
+  return true;
+}
+
+function unequipDroneDesignFromDrone(tab, idx){
+  const droneObj = ensureDroneStateObj(tab, idx);
+  const designMeta = getDroneDesignMeta(droneObj);
+  if(!designMeta){
+    return false;
+  }
+  syncDroneDesignAcrossConfigs(tab, idx, null);
+  renderDrones(tab);
+  refreshInventoryView();
+  toast('Havok unequipped ✅', true);
+  return true;
+}
+
+function bindDroneTokenDesignDnD(token, tab, idx, droneObj, hasHavokDesign, designMeta){
+  if(token._droneDesignDndBound) return;
+  token._droneDesignDndBound = true;
+  token.dataset.droneDesignIndex = String(idx);
+  token.draggable = !!hasHavokDesign;
+
+  token.addEventListener('dragover', (e)=>{
+    if(!DRAG_PAYLOAD || DRAG_PAYLOAD.kind !== 'inv') return;
+    if(isFlaxDroneState(droneObj)) return;
+    if(!DRAG_PAYLOAD.items || !DRAG_PAYLOAD.items.some(it => isHavokDesignItem(it))) return;
+    e.preventDefault();
+    try{ e.dataTransfer.dropEffect='copy'; }catch{}
+  });
+
+  token.addEventListener('drop', (e)=>{
+    if(!DRAG_PAYLOAD || DRAG_PAYLOAD.kind !== 'inv') return;
+    if(isFlaxDroneState(droneObj)) return;
+
+    const idxInPayload = (DRAG_PAYLOAD.items || []).findIndex(it => isHavokDesignItem(it));
+    if(idxInPayload < 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const item = DRAG_PAYLOAD.items.splice(idxInPayload, 1)[0];
+    equipDroneDesignOnDrone(tab, idx, item);
+    if(DRAG_PAYLOAD.items && DRAG_PAYLOAD.items.length){
+      autoPlaceDraggedItems(DRAG_PAYLOAD.items);
+    }
+    DRAG_PAYLOAD = null;
+    clearSelection();
+  });
+
+  token.addEventListener('dragstart', (e)=>{
+    const currentDrone = ensureDroneStateObj(tab, idx);
+    const currentDesign = getDroneDesignMeta(currentDrone);
+    if(!currentDesign || !isHavokDesignItem(currentDesign)){
+      e.preventDefault();
+      return;
+    }
+
+    IS_DRAGGING = true;
+    hideTooltip();
+    clearSelection();
+    token.classList.add('selected');
+
+    DRAG_PAYLOAD = {
+      kind: 'drone_design',
+      tab,
+      droneIndex: idx,
+      item: currentDesign,
+      items: [currentDesign]
+    };
+
+    try{
+      e.dataTransfer.setData('text/plain','drone_design');
+      e.dataTransfer.effectAllowed='move';
+    }catch{}
+  });
+
+  token.addEventListener('dragend', ()=>{
+    IS_DRAGGING = false;
+    DRAG_PAYLOAD = null;
+    token.classList.remove('selected');
+    byId('rightPanel').classList.remove('dropActive');
+    byId('invPanel').classList.remove('dropActive');
+  });
+}
+
+function slotRender(item){
+  const f=document.createDocumentFragment();
+  if(!item){ return f; }
+  const box=el('div',{style:'width:100%;height:100%;position:relative;display:flex;align-items:center;justify-content:center'});
+  box.append(el('img',{src:(item.icon||iconForItem(item)||iconFor(item.category,item.type)),alt:item.name||('ID '+item.id),title:''})); // Remove native title
+  
+  let label = 'ITM';
+  if (item.category === 'laser') {
+    label = laserBadge(item.name);
+  } else if (item.category === 'generator') {
+    label = generatorBadge(item.name, +item.type);
+  } else if (item.category === 'drone_design') {
+    label = 'HAV';
+  } else {
+    label = typeBadge(+item.type);
+  }
+  
+  box.append(el('span',{class:'badge'}, label));
+  f.append(box); return f;
+}
+
+function placeInSlot(slotEl,item,opts={}){
+  if (slotEl.dataset.droneDesignIndex !== undefined) {
+    if(!isHavokDesignItem(item)){
+      toast('This slot only accepts a Havok design.');
+      return;
+    }
+    const tab = activeTab();
+    const di = parseInt(slotEl.dataset.droneDesignIndex, 10);
+    const droneObj = ensureDroneStateObj(tab, di);
+    if(isFlaxDroneState(droneObj)){
+      toast('Havok designs can only be equipped on Iris drones.');
+      return;
+    }
+    item = normalizeHavokDesignItem(item);
+    syncDroneDesignAcrossConfigs(tab, di, item);
+  }
+
+  slotEl.classList.add('filled');
+  slotEl.classList.remove('selected');
+  slotEl.innerHTML='';
+  slotEl.append(slotRender(item));
+  slotEl.dataset.item = JSON.stringify({id:item.id,category:item.category,type:item.type,icon:item.icon,name:item.name});
+
+  if (slotEl.dataset.droneIndex !== undefined) {
+    const tab = activeTab();
+    const di = parseInt(slotEl.dataset.droneIndex, 10);
+    const si = parseInt(slotEl.dataset.slotIndex, 10);
+
+    if (!DRONES_STATE[tab]) DRONES_STATE[tab] = [];
+    if (!DRONES_STATE[tab][di] || !Array.isArray(DRONES_STATE[tab][di].slots)) {
+      DRONES_STATE[tab][di] = { slots: [], slot_count: 2, drone_item_id: 3, name: `DRONE ${di+1}` };
+    }
+          const obj = DRONES_STATE[tab][di];
+      const slotCount = Math.max(1, Math.min(2, Number(obj.slot_count || (obj.drone_item_id === 5 ? 1 : 2) || 2)));
+      if (!Array.isArray(obj.slots)) obj.slots = Array.from({length: slotCount}, ()=>0);
+      if (obj.slots.length < slotCount) {
+        while (obj.slots.length < slotCount) obj.slots.push(0);
+      } else if (obj.slots.length > slotCount) {
+        obj.slots = obj.slots.slice(0, slotCount);
+      }
+      if (si >= 0 && si < slotCount) obj.slots[si] = item.id;
+  }
+  bindSlotDnD(slotEl, opts.acceptFn || null);
+}
+
+function clearSlot(slotEl, opts={}){
+  slotEl.classList.remove('filled');
+  slotEl.classList.remove('selected');
+  slotEl.innerHTML='';
+  slotEl.append(slotRender(null));
+  slotEl.dataset.item='';
+  slotEl.draggable = false;
+
+  if (slotEl.dataset.droneDesignIndex !== undefined) {
+    const tab = activeTab();
+    const di = parseInt(slotEl.dataset.droneDesignIndex, 10);
+    syncDroneDesignAcrossConfigs(tab, di, null);
+  }
+
+  if (slotEl.dataset.droneIndex !== undefined) {
+    const tab = activeTab();
+    const di = parseInt(slotEl.dataset.droneIndex, 10);
+    const si = parseInt(slotEl.dataset.slotIndex, 10);
+
+    if (!DRONES_STATE[tab]) DRONES_STATE[tab] = [];
+    if (!DRONES_STATE[tab][di] || !Array.isArray(DRONES_STATE[tab][di].slots)) {
+      DRONES_STATE[tab][di] = { slots: [], slot_count: 2, drone_item_id: 3, name: `DRONE ${di+1}` };
+    }
+          const obj = DRONES_STATE[tab][di];
+      const slotCount = Math.max(1, Math.min(2, Number(obj.slot_count || (obj.drone_item_id === 5 ? 1 : 2) || 2)));
+      if (!Array.isArray(obj.slots)) obj.slots = Array.from({length: slotCount}, ()=>0);
+      if (obj.slots.length < slotCount) {
+        while (obj.slots.length < slotCount) obj.slots.push(0);
+      } else if (obj.slots.length > slotCount) {
+        obj.slots = obj.slots.slice(0, slotCount);
+      }
+      if (si >= 0 && si < slotCount) obj.slots[si] = 0;
+  }
+
+  if(!opts.skipRefresh){
+    refreshInventoryView();
+  }
+}
+
+function bindSlotSelection(cell){
+  if(cell._selBound) return;
+  cell._selBound = true;
+
+  cell.addEventListener('mouseenter', (e) => {
+    if(cell.classList.contains('filled') && cell.dataset.item) {
+        const it = JSON.parse(cell.dataset.item);
+        showTooltip(it, e.clientX, e.clientY);
+    }
+  });
+  cell.addEventListener('mouseleave', () => hideTooltip());
+
+  cell.addEventListener('click', (e)=>{
+    e.preventDefault();
+    e.stopPropagation();
+    if(!cell.classList.contains('filled')){
+      clearSelection();
+      return;
+    }
+    selectOnlySlot(cell);
+    
+    // Also lock tooltip on slot click
+    if(cell.dataset.item) {
+        const it = JSON.parse(cell.dataset.item);
+        const rect = cell.getBoundingClientRect();
+        showTooltip(it, rect.right + 10, rect.top, true);
+    }
+  });
+
+  cell.addEventListener('pointerdown', (e)=>{
+    if(e.button !== 0) return;
+    if(!cell.classList.contains('filled')) return;
+
+    if(!cell.classList.contains('selected')){
+      selectOnlySlot(cell);
+      paintSelecting = true;
+      paintKind = 'slot';
+      setDraggableAllFilledSlots(false);
+      paintDisableDrag = true;
+    }
+  });
+
+  cell.addEventListener('pointerenter', ()=>{
+    if(paintSelecting && paintKind === 'slot'){
+      if(cell.classList.contains('filled')){
+        addSlotToSelection(cell);
+      }
+    }
+  });
+}
+
+function bindSlotDnD(cell, acceptFn){
+  bindSlotSelection(cell);
+
+  cell.draggable = cell.classList.contains('filled');
+
+  if(cell._dndBound) return;
+  cell._dndBound = true;
+
+  cell.addEventListener('dragstart', (e)=>{
+    if(!cell.classList.contains('filled')){
+      e.preventDefault();
+      return;
+    }
+    IS_DRAGGING = true;
+    hideTooltip();
+
+    if(!cell.classList.contains('selected')){
+      selectOnlySlot(cell);
+    }
+
+    const cells = [...Selection.slotCells];
+    const items = cells.map(c=>{
+      const it = c.dataset.item ? JSON.parse(c.dataset.item) : null;
+      return it ? { id:+it.id, category:it.category, type:+it.type, icon:it.icon, name:it.name } : null;
+    }).filter(Boolean);
+
+    DRAG_PAYLOAD = { kind:'slot', cells, items };
+
+    try{
+      e.dataTransfer.setData('text/plain','slot');
+      e.dataTransfer.effectAllowed='move';
+    }catch{}
+  });
+
+  cell.addEventListener('dragend', ()=>{
+    IS_DRAGGING = false;
+    DRAG_PAYLOAD = null;
+    byId('rightPanel').classList.remove('dropActive');
+    byId('invPanel').classList.remove('dropActive');
+  });
+
+  cell.addEventListener('dragover', (e)=>{
+    if(!DRAG_PAYLOAD || DRAG_PAYLOAD.kind !== 'inv') return;
+    if(cell.classList.contains('filled')) return;
+
+    if(acceptFn){
+      const hasOne = DRAG_PAYLOAD.items.some(it => acceptFn(it));
+      if(!hasOne) return;
+    }
+    e.preventDefault();
+    try{ e.dataTransfer.dropEffect='copy'; }catch{}
+  });
+
+  cell.addEventListener('drop', (e)=>{
+    if(!DRAG_PAYLOAD || DRAG_PAYLOAD.kind !== 'inv') return;
+    if(cell.classList.contains('filled')) return;
+    e.preventDefault();
+
+    let idx = -1;
+    if(acceptFn){
+      idx = DRAG_PAYLOAD.items.findIndex(it => acceptFn(it));
+    }else{
+      idx = 0;
+    }
+    if(idx < 0) return;
+
+    const item = DRAG_PAYLOAD.items.splice(idx, 1)[0];
+    placeInSlot(cell, item, { acceptFn });
+    autoPlaceDraggedItems(DRAG_PAYLOAD.items);
+    DRAG_PAYLOAD = null;
+
+    clearSelection();
+    refreshInventoryView();
+  });
+}
+
+function autoPlaceDraggedItems(items){
+  if(!items || !items.length) return { placed:0, skipped:0, noSpace:0 };
+  const mode = activeMode();
+  if(mode === 'ship') return autoPlaceIntoShip(items);
+  return autoPlaceIntoDrones(items);
+}
+
+function autoPlaceIntoShip(items){
+  const tab = activeTab();
+  const mount = (tab==='A') ? byId('cfgA') : byId('cfgB');
+  let placed = 0, skipped = 0, noSpace = 0;
+
+  for(const item of items){
+    const row =
+      item.category === 'laser' ? 'lasers' :
+      item.category === 'generator' ? 'generators' :
+      item.category === 'extra' ? 'extras' : null;
+
+    if(!row){ skipped++; continue; }
+
+    const grid = mount.querySelector(`#grid-${tab}-${row}`);
+    if(!grid){ skipped++; continue; }
+
+    const cell = [...grid.children].find(c => !c.classList.contains('filled'));
+    if(!cell){ noSpace++; continue; }
+
+    const ok =
+      (row==='lasers' && item.category==='laser') ||
+      (row==='generators' && item.category==='generator') ||
+      (row==='extras' && item.category==='extra');
+
+    if(!ok){ skipped++; continue; }
+
+    placeInSlot(cell, item, { acceptFn: null });
+    placed++;
+  }
+  return { placed, skipped, noSpace };
+}
+
+function autoPlaceIntoDrones(items){
+  const tab = activeTab();
+  const allCells = [...document.querySelectorAll('#dronesWrap .slot')].filter(c => c.dataset.droneIndex !== undefined);
+  let placed = 0, skipped = 0, noSpace = 0;
+  const acceptDrone = (it)=> (it.category==='laser') || (it.category==='generator' && +it.type===4);
+
+  for(const item of items){
+    if(!acceptDrone(item)){ skipped++; continue; }
+    const cell = allCells.find(c => !c.classList.contains('filled'));
+    if(!cell){ noSpace++; continue; }
+    placeInSlot(cell, item, { acceptFn: acceptDrone });
+    placed++;
+  }
+  return { placed, skipped, noSpace };
+}
+
+function renderShipConfig(name, mount){
+  const cfg = DATA.configs[name] || {name,lasers_slots:10,gen_slots:4,extras_slots:6,slots:[]};
+  mount.innerHTML='';
+  mount.dataset.cfg = name;
+
+  const slots={lasers:[],generators:[],extras:[]};
+  (cfg.slots||[]).forEach(s=>{
+    const id = Number(s.item_id||0);
+    let meta = null;
+    if(id){
+      meta = DATA.items[id] ? {...DATA.items[id]} : {id, name:s.item_name, category:s.item_category, type:+s.item_type, icon:null};
+      meta.name = meta.name || s.item_name;
+      meta.category = meta.category || s.item_category;
+      meta.type = (meta.type ?? s.item_type);
+      meta.icon = iconForItem(meta) || meta.icon || s.item_icon || iconFor(meta.category, meta.type);
+    }
+    (slots[s.row_name]=slots[s.row_name]||[])[s.slot_index] = meta;
+  });
+
+  function rowUI(title,rowName,max){
+    const head=el('div',{class:'sectionHead'}, el('label',{}, title), el('div'));
+    const grid=el('div',{class:'grid',id:`grid-${name}-${rowName}`});
+
+    const accept = (item)=>{
+      if(rowName==='lasers') return item.category==='laser';
+      if(rowName==='generators') return item.category==='generator';
+      if(rowName==='extras') return item.category==='extra';
+      return false;
+    };
+
+    for(let i=0;i<max;i++){
+      const it=(slots[rowName]||[])[i]||null;
+      const cell=el('div',{class:'slot'+(it?' filled':''),dataset:{ row:rowName, idx:i }});
+      if(it) cell.dataset.item = JSON.stringify(it);
+      cell.append(slotRender(it));
+      bindSlotDnD(cell, accept);
+      grid.appendChild(cell);
+    }
+    mount.append(head,grid);
+  }
+
+  rowUI('Lasers','lasers',cfg.lasers_slots);
+  rowUI('Generators','generators',cfg.gen_slots);
+  rowUI('Extras','extras',cfg.extras_slots);
+
+  mount.collect = () => {
+    const ids = row => [...mount.querySelectorAll(`#grid-${name}-${row} .slot`)].map(c=>{
+      if(!c.classList.contains('filled')) return 0;
+      const it = c.dataset.item ? JSON.parse(c.dataset.item) : null;
+      return it ? it.id : 0;
+    });
+    return { name, slots:{ lasers:ids('lasers'), generators:ids('generators'), extras:ids('extras') } };
+  };
+}
+
+function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+function ensureDronesStateFromList(list){
+  const out = [];
+  (list||[]).forEach((d, i)=>{
+    const droneItemId = Number(d.item_id || d.drone_item_id || d.droneItemId || 0) || 0;
+
+    // slot_count du serveur (fallback si vieille API)
+    let slotCount = Number(d.slot_count || d.slotCount || 0) || 0;
+    if (!slotCount) slotCount = (droneItemId === 5) ? 1 : 2;
+    slotCount = Math.max(1, Math.min(2, slotCount));
+
+    const slots = Array.from({length: slotCount}, ()=>0);
+
+    const rawSlots = Array.isArray(d.slots) ? d.slots : [];
+
+    // ✅ Cas A : slots = [10, 0] (nombres)
+    if (rawSlots.length && typeof rawSlots[0] === 'number') {
+      for (let si = 0; si < slotCount; si++) slots[si] = Number(rawSlots[si] || 0) || 0;
+    } 
+    // ✅ Cas B : slots = [{slot_index:0,item_id:10}, ...] (objets)
+    else {
+      rawSlots.forEach(x=>{
+        const idx = parseInt(x.slot_index ?? x.slotIndex ?? 0,10);
+        const iid = parseInt(x.item_id ?? x.itemId ?? 0,10);
+        if(idx>=0 && idx<slotCount) slots[idx]=iid||0;
+      });
+    }
+
+    out.push({
+      id: Number(d.id || d.drone_id || 0) || 0,
+      name: d.name || `DRONE ${i+1}`,
+      drone_item_id: droneItemId || 3,
+      slot_count: slotCount,
+      design_item_id: Number(d.design_item_id || d.designItemId || 0) || 0,
+      design_code: d.design_code || d.designCode || null,
+      design_name: d.design_name || d.designName || null,
+      design_icon: d.design_icon || d.designIcon || null,
+      slots
+    });
+  });
+  return out;
+}
+
+
+function renderDrones(tabName){
+  const wrap = byId('dronesWrap');
+  wrap.innerHTML = '';
+
+  const state = DRONES_STATE[tabName] || [];
+  const equippedHavoks = getEquippedHavokCount(tabName);
+  const havokDamage = getHavokDamageBonus(equippedHavoks);
+  wrap.append(el('div', {class: 'havok-summary'}, `Havok bonus: ${equippedHavoks}/${HAVOK_SET_SIZE} equipped • +${havokDamage}% drone damage`));
+
+  const list = el('div',{id:'droneList'});
+  wrap.append(list);
+  const accept = (it) => (it.category==='laser') || (it.category==='generator' && +it.type===4);
+
+  // ✅ Compteurs de tiers séparés (prix progressif PAR TYPE)
+  const typeCounters = { 3: 0, 5: 0 }; // 3 = Iris, 5 = Flax
+
+  state.forEach((d, idx) => {
+
+    // ✅ Déterminer Iris/Flax + slotCount
+    const droneItemId = Number(d.drone_item_id || d.item_id || 3) || 3;
+    const isFlax = (droneItemId === 5);
+    const slotCount = Math.max(1, Math.min(2, Number(d.slot_count || (isFlax ? 1 : 2) || 2)));
+    const designMeta = getDroneDesignMeta(d);
+    const hasHavokDesign = !isFlax && !!designMeta && isHavokDesignItem(designMeta);
+
+    // ✅ tier PAR TYPE (avant incrément)
+    const typeTier = (typeCounters[droneItemId] ?? 0);
+    typeCounters[droneItemId] = typeTier + 1;
+
+    // ✅ Sécuriser le tableau de slots
+    if (!Array.isArray(d.slots)) d.slots = [];
+    if (d.slots.length < slotCount) while (d.slots.length < slotCount) d.slots.push(0);
+    if (d.slots.length > slotCount) d.slots = d.slots.slice(0, slotCount);
+
+    // Item virtuel pour tooltip + vente
+    const droneItem = {
+      id: droneItemId,
+      name: d.name || (isFlax ? 'Flax Drone' : 'Iris Drone'),
+      category: 'drone',
+      type: 0,
+      icon: hasHavokDesign ? HAVOK_ICON : ITEMS_ICONS_BASE + (isFlax ? '/flax.png' : '/iris.png'),
+      drone_id: Number(d.id || 0) || 0,
+      havokEquipped: hasHavokDesign,
+
+      // ✅ IMPORTANT : index de prix progressif PAR TYPE
+      priceIndex: typeTier
+    };
+
+    // Token drone
+    const droneToken = el('div', {
+      class: 'token',
+      style: hasHavokDesign ? 'border-color: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.35); margin-right: 10px;' : 'border-color: var(--cyan); box-shadow: 0 0 5px rgba(94, 234, 212, 0.2); margin-right: 10px;',
+      title: ''
+    });
+
+    droneToken.append(
+      el('img', {src: droneItem.icon, alt: 'Drone'}),
+      el('span', {class: 'badge'}, isFlax ? 'FLAX' : (hasHavokDesign ? 'HAV' : 'IRIS'))
+    );
+
+    // Click = lock tooltip
+    droneToken.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      clearSelection();
+      document.querySelectorAll('#dronesWrap .token.selected').forEach(x => x.classList.remove('selected'));
+      droneToken.classList.add('selected');
+
+      const rect = droneToken.getBoundingClientRect();
+      showTooltip(droneItem, rect.right + 10, rect.top, true);
+    });
+
+    // Hover tooltip
+    droneToken.addEventListener('mouseenter', (e) => showTooltip(droneItem, e.clientX, e.clientY));
+    droneToken.addEventListener('mouseleave', () => hideTooltip());
+
+    bindDroneTokenDesignDnD(droneToken, tabName, idx, d, hasHavokDesign, designMeta);
+
+    // Header
+    const headerContent = el('div', {style: 'display:flex; align-items:center;'},
+      droneToken,
+      el('label', {style:'cursor:pointer'}, d.name || `DRONE ${idx+1}`)
+    );
+
+    const rowTitle = el('div',{class:'sectionHead'}, headerContent);
+    const row = el('div',{class:'drone-row'});
+
+    // ✅ Slots drone (1 pour Flax, 2 pour Iris)
+    for (let si = 0; si < slotCount; si++) {
+      const itemId = (d.slots||[])[si] || 0;
+      const meta = itemId
+        ? (DATA.items[itemId] || {id:itemId,category:'laser',type:0,icon:iconFor('laser',0),name:'Item '+itemId})
+        : null;
+
+      const cell = el('div', {
+        class: 'slot' + (meta ? ' filled':''), 
+        dataset: { droneIndex: idx, slotIndex: si }
+      });
+
+      if(meta) cell.dataset.item = JSON.stringify(meta);
+      cell.append(slotRender(meta));
+      bindSlotDnD(cell, accept);
+      row.append(cell);
+    }
+
+    const block = el('div',{class:'droneBlock' + (hasHavokDesign ? ' havokBlock' : '')});
+    block.append(rowTitle, row);
+    list.append(block);
+  });
+}
+
+
+async function loadAll(){
+  let res = null;
+  let data = null;
+  let raw = '';
+
+  try {
+    res = await fetch(`${API_PREFIX}/config_load.php`, {
+      credentials: 'same-origin',
+      cache: 'no-store'
+    });
+
+    raw = await res.text();
+    try { data = JSON.parse(raw); } catch { data = null; }
+
+    if (!res.ok) {
+      const msg = (data && (data.message || data.error))
+        ? (data.message || data.error)
+        : (raw || `${res.status} ${res.statusText}`);
+
+      if (res.status === 401) {
+        toast('Load error: session expired (please login again)');
+      } else {
+        toast(`Load error: ${msg}`);
+      }
+      console.error('config_load failed', { status: res.status, statusText: res.statusText, data, raw });
+      return;
+    }
+
+    if (!data) {
+      toast('Load error: invalid server response');
+      console.error('config_load invalid JSON', { status: res.status, raw });
+      return;
+    }
+  } catch (e) {
+    toast(`Load error: ${e.message}`);
+    console.error('config_load fetch failed', e);
+    return;
+  }
+
+  SHIP_DESIGN_ID = Number(data.ship_design_id || 1);
+  updateShipPreview();
+  AVAILABLE_SKINS = Array.isArray(data.available_skins) ? data.available_skins : [];
+  SELECTED_DESIGN_ID = Number(data.current_skin_id || data.ship_design_id || 1);
+  if (!SELECTED_DESIGN_ID) SELECTED_DESIGN_ID = SHIP_DESIGN_ID;
+
+  if(!data.configs || !data.configs.length){
+    data.configs=[{name:'A',lasers_slots:10,gen_slots:4,extras_slots:6,slots:[]},
+                  {name:'B',lasers_slots:10,gen_slots:4,extras_slots:6,slots:[]}];
+  }
+
+  INVENTORY_TOTAL = (data.inventory||[]).map(it=>({...it,icon:iconForItem(it)}));
+  DATA.items = {};
+  for (const it of INVENTORY_TOTAL) DATA.items[it.id] = it;
+  DATA.configs={}; (data.configs||[]).forEach(c=>DATA.configs[c.name]=c);
+
+  const listA = data.dronesA || data.drones || [];
+  const listB = data.dronesB || null;
+  DATA.drones = listA;
+
+  DRONES_STATE.A = ensureDronesStateFromList(listA);
+  DRONES_STATE.B = listB ? ensureDronesStateFromList(listB) : deepClone(DRONES_STATE.A);
+
+  renderShipConfig('A',byId('cfgA'));
+  renderShipConfig('B',byId('cfgB'));
+
+  clearSelection();
+  refreshInventoryView();
+
+  renderDrones(activeTab());
+  enableDropZones();
+}
+
+async function saveAll(){
+  clearSelection();
+  const tab = activeTab();
+  const rows = [...document.querySelectorAll('#dronesWrap .drone-row')];
+
+  const state = (DRONES_STATE[tab] || []).slice(0);
+  state.length = rows.length;
+
+  rows.forEach((r, idx)=>{
+    const ids = [...r.children].map(c=>{
+  if(!c.classList.contains('filled')) return 0;
+  const it = c.dataset.item ? JSON.parse(c.dataset.item) : null;
+  return it ? (parseInt(it.id || 0, 10) || 0) : 0;
+});
+
+    if(!state[idx]){
+      state[idx] = {
+        id: 0,
+        name: `DRONE ${idx+1}`,
+        drone_item_id: 3,
+        slot_count: ids.length || 2,
+        slots: ids
+      };
+    } else {
+      state[idx].slots = ids;
+      state[idx].slot_count = ids.length || state[idx].slot_count || 2;
+    }
+  });
+
+  DRONES_STATE[tab] = state;
+
+  const cfgA = byId('cfgA')?.collect ? byId('cfgA').collect() : {name:'A',slots:{lasers:[],generators:[],extras:[]}};
+  const cfgB = byId('cfgB')?.collect ? byId('cfgB').collect() : {name:'B',slots:{lasers:[],generators:[],extras:[]}};
+  const payload = {
+  configs:[cfgA, cfgB],
+  dronesA: DRONES_STATE.A,
+  dronesB: DRONES_STATE.B,
+  design_id: Number(SELECTED_DESIGN_ID || SHIP_DESIGN_ID || 1)
+};
+
+  try{
+    const r = await fetch(`${API_PREFIX}/config_save.php`, {
+      method:'POST',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    let data = null;
+    try { data = await r.json(); } catch {}
+    if (r.ok && data && data.ok) {
+      toast('Saved successfully', true);
+      await loadAll();
+    } else {
+      if (data && data.error === 'in_combat') {
+        const rem = Number(data.remaining || 0);
+        toast(`Cannot save during combat (${rem}s)`);
+      } else {
+        const msg = (data && (data.message || data.error)) || `${r.status} ${r.statusText}`;
+        toast(`Save failed: ${msg}`);
+      }
+    }
+  } catch (e){
+    toast(`Save failed: ${e.message}`);
+    console.error(e);
+  }
+}
+
+function enableDropZones(){
+  const rightPanel = byId('rightPanel');
+  const invPanel   = byId('invPanel');
+
+  rightPanel.addEventListener('dragover', (e)=>{
+    if(!DRAG_PAYLOAD || DRAG_PAYLOAD.kind !== 'inv') return;
+    e.preventDefault();
+    rightPanel.classList.add('dropActive');
+    try{ e.dataTransfer.dropEffect='copy'; }catch{}
+  });
+
+  rightPanel.addEventListener('dragleave', ()=>{ rightPanel.classList.remove('dropActive'); });
+
+  rightPanel.addEventListener('drop', (e)=>{
+    if(!DRAG_PAYLOAD || DRAG_PAYLOAD.kind !== 'inv') return;
+    e.preventDefault();
+    rightPanel.classList.remove('dropActive');
+
+    const items = DRAG_PAYLOAD.items || [];
+    const {placed, skipped, noSpace} = autoPlaceDraggedItems(items);
+
+    DRAG_PAYLOAD = null;
+    clearSelection();
+    refreshInventoryView();
+
+    if(placed > 0){
+      toast(`Equipped: ${placed} ✅`, true);
+    }else{
+      toast(`No free slots or incompatible item.`);
+    }
+  });
+
+  invPanel.addEventListener('dragover', (e)=>{
+    if(!DRAG_PAYLOAD || (DRAG_PAYLOAD.kind !== 'slot' && DRAG_PAYLOAD.kind !== 'drone_design')) return;
+    e.preventDefault();
+    invPanel.classList.add('dropActive');
+    try{ e.dataTransfer.dropEffect='move'; }catch{}
+  });
+
+  invPanel.addEventListener('dragleave', ()=>{ invPanel.classList.remove('dropActive'); });
+
+  invPanel.addEventListener('drop', (e)=>{
+    if(!DRAG_PAYLOAD || (DRAG_PAYLOAD.kind !== 'slot' && DRAG_PAYLOAD.kind !== 'drone_design')) return;
+    e.preventDefault();
+    invPanel.classList.remove('dropActive');
+
+    if(DRAG_PAYLOAD.kind === 'drone_design'){
+      const sourceTab = DRAG_PAYLOAD.tab || activeTab();
+      const sourceIdx = Number(DRAG_PAYLOAD.droneIndex);
+      DRAG_PAYLOAD = null;
+      clearSelection();
+      if(Number.isInteger(sourceIdx) && sourceIdx >= 0){
+        unequipDroneDesignFromDrone(sourceTab, sourceIdx);
+      }
+      return;
+    }
+
+    const cells = DRAG_PAYLOAD.cells || [];
+    for(const c of cells){
+      clearSlot(c, { skipRefresh:true });
+    }
+
+    DRAG_PAYLOAD = null;
+    clearSelection();
+    refreshInventoryView();
+    toast(`Unequipped: ${cells.length} ✅`, true);
+  });
+}
+
+function currentMount(){ const t=activeTab(); return t==='A'?byId('cfgA'):byId('cfgB'); }
+
+function equipAllShip(mount, row, filterFn=()=>true){
+  clearSelection();
+  const grid = mount.querySelector(`#grid-${mount.dataset.cfg}-${row}`);
+  if(!grid) return;
+
+  const free = [...grid.children].filter(c=>!c.classList.contains('filled'));
+  let pool=[];
+  if(row==='lasers')           pool = expandPool(DATA.inventory.filter(x=>x.category==='laser'));
+  else if(row==='generators')  pool = expandPool(DATA.inventory.filter(x=>x.category==='generator').filter(x=>filterFn(x)));
+  else                         pool = expandPool(DATA.inventory.filter(x=>x.category==='extra'));
+
+  if(!pool.length){ toast('No items available.'); return; }
+
+  let i=0;
+  for(const cell of free){
+    if(i>=pool.length) break;
+    placeInSlot(cell, pool[i]);
+    i++;
+  }
+  refreshInventoryView();
+}
+
+function removeAllShip(mount, row, filterFn=()=>true){
+  clearSelection();
+  const grid = mount.querySelector(`#grid-${mount.dataset.cfg}-${row}`);
+  if(!grid) return;
+
+  const filled = [...grid.children].filter(c=>c.classList.contains('filled'));
+  for(const cell of filled){
+    const it = cell.dataset.item ? JSON.parse(cell.dataset.item) : null;
+    if(it && filterFn(it)) clearSlot(cell, { skipRefresh:true });
+  }
+  refreshInventoryView();
+}
+
+document.addEventListener('click',(ev)=>{
+  if(!ev.target.classList.contains('tab')) return;
+  clearSelection();
+
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  ev.target.classList.add('active');
+
+  const n=ev.target.dataset.tab;
+  byId('cfgA').style.display=(n==='A')?'block':'none';
+  byId('cfgB').style.display=(n==='B')?'block':'none';
+
+  renderDrones(n);
+  refreshInventoryView();
+});
+
+byId('saveAll').addEventListener('click', saveAll);
+byId('btnDesign')?.addEventListener('click', openDesignModal);
+byId('designModalClose')?.addEventListener('click', closeDesignModal);
+byId('designModal')?.addEventListener('click', (e)=>{
+  if(e.target && e.target.id === 'designModal') closeDesignModal();
+});
+byId('inv-equip-lasers').addEventListener('click',()=>equipAllShip(currentMount(),'lasers'));
+byId('inv-remove-lasers').addEventListener('click',()=>removeAllShip(currentMount(),'lasers'));
+byId('inv-equip-speed').addEventListener('click',()=>equipAllShip(currentMount(),'generators',it=>+it.type===3));
+byId('inv-remove-speed').addEventListener('click',()=>removeAllShip(currentMount(),'generators',it=>+it.type===3));
+byId('inv-equip-shield').addEventListener('click',()=>equipAllShip(currentMount(),'generators',it=>+it.type===4));
+byId('inv-remove-shield').addEventListener('click',()=>removeAllShip(currentMount(),'generators',it=>+it.type===4));
+
+(function(){
+  const shipSection = byId('shipSection');
+  const dronesSection = byId('dronesSection');
+
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    if(t.classList.contains('modeTab')){
+      clearSelection();
+      document.querySelectorAll('.modeTab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const mode = t.dataset.mode;
+      if(mode === 'ship'){
+        shipSection.style.display = 'block';
+        dronesSection.style.display = 'none';
+      } else {
+        shipSection.style.display = 'none';
+        dronesSection.style.display = 'block';
+        renderDrones(activeTab());
+      }
+      refreshInventoryView();
+    }
+
+    if(t.classList.contains('invTab')){
+      clearSelection();
+      document.querySelectorAll('.invTab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const cat = t.dataset.cat;
+      document.querySelectorAll('#invPanel .invCat').forEach(box => {
+        if(cat === 'all'){
+          box.style.display = 'block';
+        } else {
+          box.style.display = (box.dataset.cat === cat) ? 'block' : 'none';
+        }
+      });
+    }
+  });
+
+  document.querySelectorAll('#invPanel .invCat').forEach(box => {
+    box.style.display = 'block';
+  });
+})();
+
+loadAll();
+</script>
+</body>
+</html>

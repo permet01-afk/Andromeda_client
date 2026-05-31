@@ -1,0 +1,93 @@
+/* --- Structure globale (copiée du style User) --- */
+.shop-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.shop-hub {
+    width: min(1180px, 100%);
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+/* Titre principal du Shop */
+.shop-hero {
+    background: rgba(8, 14, 26, 0.84);
+    border: 1px solid rgba(94, 234, 212, 0.18);
+    border-radius: var(--radius-lg, 8px); /* Fallback si la variable n'existe pas */
+    padding: 1.6rem 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.shop-hero h1 {
+    margin: 0 0 0.5rem;
+    color: #81B7F2; /* Ta couleur originale */
+}
+
+/* --- La mise en page en 2 colonnes (Menu gauche / Contenu droite) --- */
+.shop-layout {
+    display: grid;
+    gap: 1.5rem;
+    /* La colonne de gauche fait min 240px, le reste prend la place */
+    grid-template-columns: minmax(240px, 1fr) 3.2fr;
+    align-items: start;
+}
+
+/* --- Le menu latéral (Sidebar) --- */
+.shop-nav {
+    background: rgba(8, 14, 26, 0.84);
+    border: 1px solid rgba(94, 234, 212, 0.16);
+    border-radius: var(--radius-lg, 8px);
+    padding: 1rem;
+}
+
+.shop-menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.shop-menu-link {
+    display: block;
+    padding: 1rem;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    background: rgba(18, 28, 48, 0.55);
+    border: 1px solid rgba(94, 234, 212, 0.14);
+    transition: all 0.2s ease;
+}
+
+.shop-menu-link:hover {
+    transform: translateY(-2px);
+    background: rgba(94, 234, 212, 0.1);
+}
+
+/* Style de l'onglet actif */
+.shop-menu-link.is-active {
+    background: linear-gradient(135deg, rgba(94, 234, 212, 0.18), rgba(34, 211, 238, 0.16));
+    border-color: rgba(94, 234, 212, 0.6);
+    box-shadow: 0 4px 12px rgba(94, 234, 212, 0.2);
+    font-weight: bold;
+}
+
+/* --- La zone de contenu à droite --- */
+.shop-content {
+    background: rgba(8, 14, 26, 0.86);
+    border: 1px solid rgba(94, 234, 212, 0.16);
+    border-radius: var(--radius-lg, 8px);
+    padding: 2rem;
+    min-height: 400px; /* Pour éviter que ce soit plat si vide */
+}
+
+/* Responsive pour mobile */
+@media (max-width: 960px) {
+    .shop-layout {
+        grid-template-columns: 1fr; /* Une seule colonne sur mobile */
+    }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "Andromeda",
+  "short_name": "Andromeda",
+  "description": "Andromeda command center and HTML5 space client.",
+  "id": "./spacemap_html5/spacemap.php?mobile=1",
+  "start_url": "./spacemap_html5/spacemap.php?mobile=1",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "orientation": "landscape",
+  "background_color": "#000000",
+  "theme_color": "#03111f",
+  "icons": [
+    {
+      "src": "img/andro_pwa_icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/andro_pwa_icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

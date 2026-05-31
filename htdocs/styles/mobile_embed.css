@@ -1,0 +1,389 @@
+/* Andromeda mobile site embed. Loaded only with view.php?...&mobile_embed=1. */
+html,
+body.mobile-embed {
+    min-height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #02070d;
+    color: #e7f7ff;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+body.mobile-embed * {
+    box-sizing: border-box;
+}
+body.mobile-embed {
+    font: 12px/1.32 Arial, Helvetica, sans-serif;
+}
+body.mobile-embed .mobile-embed-shell,
+body.mobile-embed .mobile-embed-main,
+body.mobile-embed .mobile-embed-content,
+body.mobile-embed .app-content {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+}
+body.mobile-embed .mobile-embed-content {
+    padding: 8px;
+}
+body.mobile-embed .app-header,
+body.mobile-embed .app-nav,
+body.mobile-embed .app-footer,
+body.mobile-embed .pilot-strip,
+body.mobile-embed .user-hub__hero,
+body.mobile-embed .shop-hero,
+body.mobile-embed .home-hero,
+body.mobile-embed .hero,
+body.mobile-embed .page-hero,
+body.mobile-embed .slider,
+body.mobile-embed .carousel,
+body.mobile-embed [data-mobile-play],
+body.mobile-embed .nav-item.cta,
+body.mobile-embed .play-button,
+body.mobile-embed .btn-play {
+    display: none !important;
+}
+body.mobile-embed h1,
+body.mobile-embed h2,
+body.mobile-embed h3,
+body.mobile-embed p {
+    margin-top: 0;
+}
+body.mobile-embed h1 { font-size: 20px; line-height: 1.15; margin-bottom: 8px; }
+body.mobile-embed h2 { font-size: 16px; line-height: 1.2; margin-bottom: 7px; }
+body.mobile-embed h3 { font-size: 14px; line-height: 1.2; margin-bottom: 6px; }
+body.mobile-embed p { margin-bottom: 7px; color: rgba(221, 240, 255, .78); }
+body.mobile-embed img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+body.mobile-embed a {
+    color: #8ee7ff;
+}
+body.mobile-embed button,
+body.mobile-embed .btn,
+body.mobile-embed .button,
+body.mobile-embed input,
+body.mobile-embed select,
+body.mobile-embed textarea {
+    font: inherit;
+    min-height: 34px;
+}
+body.mobile-embed button,
+body.mobile-embed .btn,
+body.mobile-embed .button,
+body.mobile-embed input[type="submit"],
+body.mobile-embed input[type="button"],
+body.mobile-embed .buy-btn,
+body.mobile-embed .shop-button,
+body.mobile-embed .action-btn {
+    border-radius: 10px !important;
+    border: 1px solid rgba(93, 211, 255, .36) !important;
+    background: linear-gradient(180deg, rgba(20, 52, 75, .95), rgba(7, 17, 28, .95)) !important;
+    color: #f0fbff !important;
+    padding: 7px 10px !important;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+body.mobile-embed input[type="text"],
+body.mobile-embed input[type="email"],
+body.mobile-embed input[type="password"],
+body.mobile-embed input[type="number"],
+body.mobile-embed select,
+body.mobile-embed textarea {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 10px !important;
+    border: 1px solid rgba(93, 211, 255, .30) !important;
+    background: rgba(0, 8, 16, .70) !important;
+    color: #fff !important;
+    padding: 8px 10px !important;
+    outline: none;
+}
+body.mobile-embed textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+body.mobile-embed .CMSContent,
+body.mobile-embed .user-hub-wrapper,
+body.mobile-embed .user-hub,
+body.mobile-embed .shop-page,
+body.mobile-embed .auction-page,
+body.mobile-embed .lottery-wrapper,
+body.mobile-embed .settings-wrapper,
+body.mobile-embed .clan-page,
+body.mobile-embed .container,
+body.mobile-embed .content,
+body.mobile-embed .page-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+body.mobile-embed .user-hub__layout,
+body.mobile-embed .shop-layout,
+body.mobile-embed .auction-layout,
+body.mobile-embed .settings-layout,
+body.mobile-embed .clan-layout {
+    display: block !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
+}
+body.mobile-embed .user-hub__nav,
+body.mobile-embed .clan-subnav,
+body.mobile-embed .shop-sidebar,
+body.mobile-embed .shop-categories,
+body.mobile-embed .category-list,
+body.mobile-embed .auction-tabs,
+body.mobile-embed .settings-tabs,
+body.mobile-embed .gate-tabs {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    margin: 0 0 8px !important;
+    padding: 0 0 4px !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+body.mobile-embed .user-hub__nav::-webkit-scrollbar,
+body.mobile-embed .clan-subnav::-webkit-scrollbar,
+body.mobile-embed .gate-tabs::-webkit-scrollbar {
+    display: none;
+}
+body.mobile-embed .user-hub__menu {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    width: max-content !important;
+    min-width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+}
+body.mobile-embed .user-hub__menu-item,
+body.mobile-embed .clan-subnav a,
+body.mobile-embed .shop-tab,
+body.mobile-embed .tab,
+body.mobile-embed .category-item,
+body.mobile-embed .category-link,
+body.mobile-embed .auction-tab,
+body.mobile-embed .settings-tab,
+body.mobile-embed .gate-tab {
+    flex: 0 0 auto !important;
+    min-width: 96px !important;
+    min-height: 34px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 11px !important;
+    border: 1px solid rgba(93, 211, 255, .30) !important;
+    background: rgba(8, 24, 39, .92) !important;
+    color: #eaf8ff !important;
+    text-decoration: none !important;
+    overflow: hidden;
+}
+body.mobile-embed .user-hub__menu-item.is-active,
+body.mobile-embed .clan-subnav a.is-active,
+body.mobile-embed .gate-tab.active,
+body.mobile-embed .auction-tab.is-active,
+body.mobile-embed .settings-tab.is-active {
+    border-color: rgba(255, 213, 104, .78) !important;
+    box-shadow: 0 0 12px rgba(255, 196, 64, .14) !important;
+}
+body.mobile-embed .user-hub__menu-link,
+body.mobile-embed .clan-subnav a {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-height: 34px !important;
+    padding: 6px 9px !important;
+}
+body.mobile-embed .user-hub__menu-title {
+    font-size: 12px !important;
+    line-height: 1.05 !important;
+}
+body.mobile-embed .user-hub__menu-subtitle {
+    display: none !important;
+}
+body.mobile-embed .user-hub__content,
+body.mobile-embed .shop-content,
+body.mobile-embed .auction-content,
+body.mobile-embed .settings-content,
+body.mobile-embed .clan-content,
+body.mobile-embed .lottery-content {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+body.mobile-embed .card,
+body.mobile-embed .shop-card,
+body.mobile-embed .item-card,
+body.mobile-embed .auction-card,
+body.mobile-embed .user-card,
+body.mobile-embed .user-hub__card,
+body.mobile-embed .settings-card,
+body.mobile-embed .category-card,
+body.mobile-embed .set-card,
+body.mobile-embed .modal,
+body.mobile-embed .app-feedback,
+body.mobile-embed .user-hub__empty {
+    border-radius: 14px !important;
+    border: 1px solid rgba(93, 211, 255, .22) !important;
+    background: rgba(7, 18, 30, .92) !important;
+    box-shadow: none !important;
+    color: #eaf8ff !important;
+    padding: 10px !important;
+    margin: 0 0 8px !important;
+}
+body.mobile-embed .shop-grid,
+body.mobile-embed .items-grid,
+body.mobile-embed .cards-grid,
+body.mobile-embed .inventory-grid,
+body.mobile-embed .user-hub__cards,
+body.mobile-embed .settings-grid,
+body.mobile-embed .profile-stats,
+body.mobile-embed .grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+}
+body.mobile-embed .settings-grid,
+body.mobile-embed .profile-stats {
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+}
+body.mobile-embed .profile-full {
+    grid-column: auto !important;
+}
+body.mobile-embed .set-header,
+body.mobile-embed .set-body {
+    padding: 10px !important;
+}
+body.mobile-embed .set-form {
+    gap: 8px !important;
+}
+body.mobile-embed table {
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 8px !important;
+}
+body.mobile-embed thead {
+    display: none !important;
+}
+body.mobile-embed tbody,
+body.mobile-embed tr,
+body.mobile-embed td,
+body.mobile-embed th {
+    display: block !important;
+    width: 100% !important;
+}
+body.mobile-embed tr {
+    border: 1px solid rgba(93, 211, 255, .22) !important;
+    border-radius: 14px !important;
+    background: rgba(7, 18, 30, .92) !important;
+    padding: 8px !important;
+    margin: 0 0 8px !important;
+    overflow: hidden;
+}
+body.mobile-embed td,
+body.mobile-embed th {
+    border: 0 !important;
+    padding: 4px 0 !important;
+    font-size: 12px !important;
+    color: #eaf8ff !important;
+}
+body.mobile-embed td::before {
+    content: attr(data-label);
+    display: block;
+    color: rgba(200, 232, 255, .62);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 2px;
+}
+body.mobile-embed .auction-table-wrap,
+body.mobile-embed .table-wrap,
+body.mobile-embed .data-table-wrap {
+    overflow: visible !important;
+    width: 100% !important;
+}
+body.mobile-embed .auction-table {
+    min-width: 0 !important;
+}
+body.mobile-embed .auction-header,
+body.mobile-embed .auction-shell,
+body.mobile-embed .auction-panel,
+body.mobile-embed .auction-table-wrap {
+    width: 100% !important;
+    max-width: none !important;
+}
+body.mobile-embed .auction-lot-row,
+body.mobile-embed .auction-item,
+body.mobile-embed .lot-row {
+    border-radius: 14px !important;
+    background: rgba(7, 18, 30, .92) !important;
+}
+body.mobile-embed .lottery-wrapper {
+    display: block !important;
+    padding-top: 0 !important;
+}
+body.mobile-embed .shop-card.lottery-card {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    border-radius: 14px !important;
+}
+body.mobile-embed .left-zone {
+    border-right: 0 !important;
+}
+body.mobile-embed .visual-container {
+    height: 220px !important;
+}
+body.mobile-embed .gate-spinner {
+    width: 170px !important;
+    height: 170px !important;
+}
+body.mobile-embed #popup_box,
+body.mobile-embed .modal-wrap {
+    max-width: calc(100vw - 16px) !important;
+    z-index: 1000 !important;
+}
+@media (max-height: 430px), (orientation: landscape) {
+    body.mobile-embed .mobile-embed-content { padding: 6px; }
+    body.mobile-embed h1 { font-size: 17px; margin-bottom: 6px; }
+    body.mobile-embed h2 { font-size: 14px; margin-bottom: 5px; }
+    body.mobile-embed .card,
+    body.mobile-embed .shop-card,
+    body.mobile-embed .item-card,
+    body.mobile-embed .auction-card,
+    body.mobile-embed .user-card,
+    body.mobile-embed .user-hub__card,
+    body.mobile-embed .settings-card,
+    body.mobile-embed .category-card,
+    body.mobile-embed .set-card {
+        padding: 8px !important;
+        margin-bottom: 6px !important;
+    }
+    body.mobile-embed .shop-grid,
+    body.mobile-embed .items-grid,
+    body.mobile-embed .cards-grid,
+    body.mobile-embed .inventory-grid,
+    body.mobile-embed .user-hub__cards,
+    body.mobile-embed .grid {
+        grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)) !important;
+        gap: 6px !important;
+    }
+    body.mobile-embed .visual-container { height: 170px !important; }
+    body.mobile-embed .gate-spinner { width: 130px !important; height: 130px !important; }
+}

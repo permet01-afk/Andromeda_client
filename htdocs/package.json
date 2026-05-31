@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.7",
+    "javascript-obfuscator": "^5.4.3"
+  }
+}
