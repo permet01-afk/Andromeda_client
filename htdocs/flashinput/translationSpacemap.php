@@ -794,7 +794,7 @@ Return to a safe zone before you're destroyed.]]></item>
 <item id='lab_alert'><![CDATA[Upgrading with this resource will result in the loss of any other recently completed upgrades.]]></item>
 <item id='lab_effect_prometid'><![CDATA[5% increase in firepower]]></item>
 <item id='lab_effect_duranium'><![CDATA[Speed +15 / Shield +15%]]></item>
-<item id='lab_effect_promerium'><![CDATA[Firepower +10% / Speed +30 / Shield +30%]]></item>
+<item id='lab_effect_promerium'><![CDATA[Firepower +30% / Speed +30 / Shield +30%]]></item>
 <item id='lab_warning'><![CDATA[Warning]]></item>
 <item id='lab_update'><![CDATA[Upgrade]]></item>
 <item id='lab_cancel'><![CDATA[Cancel]]></item>

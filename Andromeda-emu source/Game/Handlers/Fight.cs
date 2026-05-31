@@ -742,7 +742,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (session.CharacterInfo.LabInfos.Rocket[0] == 11)
                     multiplier = 1.05;
                 else if (session.CharacterInfo.LabInfos.Rocket[0] == 13)
-                    multiplier = 1.1;
+                    multiplier = 1.3;
                 else if (session.CharacterInfo.LabInfos.Rocket[0] == 14)
                     multiplier = 1.6;
 
@@ -2832,7 +2832,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         if (session.CharacterInfo.LabInfos.Rocket[0] == 11)
                             damage = (int)(damage * 1.05);
                         else if (session.CharacterInfo.LabInfos.Rocket[0] == 13)
-                            damage = (int)(damage * 1.1);
+                            damage = (int)(damage * 1.3);
                         else if (session.CharacterInfo.LabInfos.Rocket[0] == 14)
                             damage = (int)(damage * 1.6);
 
@@ -2879,7 +2879,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     if (session.CharacterInfo.LabInfos.Rocket[0] == 11)
                         damage = (int)(damage * 1.05);
                     else if (session.CharacterInfo.LabInfos.Rocket[0] == 13)
-                        damage = (int)(damage * 1.1);
+                        damage = (int)(damage * 1.3);
                     else if (session.CharacterInfo.LabInfos.Rocket[0] == 14)
                         damage = (int)(damage * 1.6);
 
@@ -3304,7 +3304,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (Session.CharacterInfo.LabInfos.Laser[0] == 11)
                     num2 = (int)((double)num2 * 1.05);
                 else if (Session.CharacterInfo.LabInfos.Laser[0] == 13)
-                    num2 = (int)((double)num2 * 1.1);
+                    num2 = (int)((double)num2 * 1.3);
                 else if (Session.CharacterInfo.LabInfos.Laser[0] == 14)
                     num2 = (int)((double)num2 * 1.6);
 
@@ -3538,7 +3538,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (Session.CharacterInfo.LabInfos.Laser[0] == 11)
                     num2 = (int)((double)num2 * 1.05);
                 else if (Session.CharacterInfo.LabInfos.Laser[0] == 13)
-                    num2 = (int)((double)num2 * 1.1);
+                    num2 = (int)((double)num2 * 1.3);
                 else if (Session.CharacterInfo.LabInfos.Laser[0] == 14)
                     num2 = (int)((double)num2 * 1.6);
 
