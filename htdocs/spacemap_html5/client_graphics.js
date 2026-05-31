@@ -1913,6 +1913,9 @@ function formatMinimapMapId(mapId) {
       case 28:
         return "3-8";
 
+      case 29:
+        return "4-5";
+
       case 51:
         return "GGA";
 

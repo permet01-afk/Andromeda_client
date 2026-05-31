@@ -390,7 +390,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             int limitX = 22000;
             int limitY = 14000;
 
-            if (Session.CharacterInfo.MapId == 16)
+            if (Session.CharacterInfo.MapId == 16 || Session.CharacterInfo.MapId == 29)
             {
                 limitX = 43000;
                 limitY = 28000;
