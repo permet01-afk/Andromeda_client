@@ -2581,6 +2581,10 @@ function handlePacket_n(parts, i) {
         const owner = parseInt(parts[i + 1], 10);
         const speed = parseInt(parts[i + 2], 10);
         updateSpaceballHUD(null, null, null, speed, owner);
+    } else if (sub === "sse") {
+        if (typeof endSpaceballScoreboard === "function") {
+            endSpaceballScoreboard();
+        }
     } else if (sub === "d") {
         const targetId = parseInt(parts[i + 1], 10);
         const droneStr = parts[i + 2] || "";

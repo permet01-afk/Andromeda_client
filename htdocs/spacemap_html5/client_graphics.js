@@ -5667,6 +5667,33 @@ function setSpaceballScoreboardData(mmo, eic, vru, speed, owner) {
 
 window.updateSpaceballScoreboard = setSpaceballScoreboardData;
 
+function endSpaceballScoreboard() {
+    if (!__spaceballScoreboardState || typeof __spaceballScoreboardState !== "object") {
+        __spaceballScoreboardState = {
+            active: false,
+            scores: {
+                1: 0,
+                2: 0,
+                3: 0
+            },
+            owner: 0,
+            speed: 0
+        };
+    }
+    __spaceballScoreboardState.active = false;
+    __spaceballScoreboardState.owner = 0;
+    __spaceballScoreboardState.speed = 0;
+    spaceballAutoClosed = true;
+    if (typeof windowStates !== "undefined" && windowStates && Object.prototype.hasOwnProperty.call(windowStates, "spaceball")) {
+        windowStates.spaceball = false;
+    }
+    if (typeof refreshWindowsVisibility === "function") {
+        refreshWindowsVisibility();
+    }
+}
+
+window.endSpaceballScoreboard = endSpaceballScoreboard;
+
 window.getBoosterStatus = () => boosterStatus.slice();
 
 let logoutWindowElement = null;

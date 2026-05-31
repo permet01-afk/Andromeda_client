@@ -36,9 +36,17 @@ namespace OrbitReborn_Emulator.Game.Event
         private const int WinScore = 10;
         private const int SpeedMultiplierOnHit = 2;
         private const int MaxLootBoxesPerGoal = 20;
+        private const int EventDurationMinutes = 60;
+        private const int FinalRewardUridium = 30000;
+        private const int FinalRewardBoosterHours = 3;
+        private const int FinalRewardUcb100 = 7000;
+        private const int FinalRewardRsb75 = 4000;
+        private const string ScheduleTimeZoneIana = "Europe/Zurich";
+        private const string ScheduleTimeZoneWindows = "W. Europe Standard Time";
 
         private static Npc mNpc;
         private static bool mActive;
+        private static bool mFinalRewardGranted;
         private static int mMMOScore;
         private static int mEICScore;
         private static int mVRUScore;
@@ -53,7 +61,10 @@ namespace OrbitReborn_Emulator.Game.Event
         private static long mTotalDamageEIC;
         private static long mTotalDamageVRU;
         private static Timer mPerformUpdate;
-        private static Timer mAuto;
+        private static Timer mScheduleTimer;
+        private static Timer mStopTimer;
+        private static TimeZoneInfo mScheduleTimeZone;
+        private static readonly object mRewardSyncRoot = new object();
 
         public static void Initialize()
         {
@@ -62,6 +73,7 @@ namespace OrbitReborn_Emulator.Game.Event
             Spaceball.mMMOScore = 0;
             Spaceball.mEICScore = 0;
             Spaceball.mVRUScore = 0;
+            Spaceball.mFinalRewardGranted = false;
             Spaceball.mMoveToFirm = 0;
             Spaceball.mBallSpeed = 0;
             Spaceball.mLastMoveToFirm = 0;
@@ -77,6 +89,8 @@ namespace OrbitReborn_Emulator.Game.Event
             {
                 client.ExecuteNonQuery("UPDATE event_information SET isActif=0 WHERE id = 3");
             }
+            Spaceball.mScheduleTimeZone = Spaceball.ResolveScheduleTimeZone();
+            Spaceball.ScheduleNextAutomaticStart();
         }
 
         public static void ShowHud(Session Session)
@@ -126,6 +140,201 @@ namespace OrbitReborn_Emulator.Game.Event
             if (FactionId != 0)
                 return;
             SessionManager.BroadcastToUser(PacketComposer.Compose("n", "sss|0|" + (object)Spaceball.mBallSpeed));
+        }
+
+        private static TimeZoneInfo ResolveScheduleTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(ScheduleTimeZoneIana);
+            }
+            catch
+            {
+            }
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(ScheduleTimeZoneWindows);
+            }
+            catch
+            {
+            }
+            return TimeZoneInfo.Local;
+        }
+
+        private static DateTime GetScheduleNow()
+        {
+            TimeZoneInfo timeZone = Spaceball.mScheduleTimeZone ?? TimeZoneInfo.Local;
+            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
+        }
+
+        private static DateTime GetNextScheduledStart(DateTime now)
+        {
+            DateTime nextWednesday = Spaceball.GetNextWeeklySlot(now, DayOfWeek.Wednesday, 19, 0);
+            DateTime nextSunday = Spaceball.GetNextWeeklySlot(now, DayOfWeek.Sunday, 17, 0);
+            return nextWednesday <= nextSunday ? nextWednesday : nextSunday;
+        }
+
+        private static DateTime GetNextWeeklySlot(DateTime now, DayOfWeek day, int hour, int minute)
+        {
+            int daysUntil = ((int)day - (int)now.DayOfWeek + 7) % 7;
+            DateTime slot = now.Date.AddDays(daysUntil).AddHours(hour).AddMinutes(minute);
+            if (slot <= now)
+                slot = slot.AddDays(7);
+            return slot;
+        }
+
+        private static void ScheduleNextAutomaticStart()
+        {
+            DateTime now = Spaceball.GetScheduleNow();
+            DateTime nextStart = Spaceball.GetNextScheduledStart(now);
+            TimeSpan delay = nextStart - now;
+            if (delay < TimeSpan.FromSeconds(1.0))
+                delay = TimeSpan.FromSeconds(1.0);
+            if (Spaceball.mScheduleTimer != null)
+                Spaceball.mScheduleTimer.Dispose();
+            Spaceball.mScheduleTimer = new Timer(new TimerCallback(Spaceball.CbAutomaticStartSpaceball), (object)null, Convert.ToInt64(delay.TotalMilliseconds), Timeout.Infinite);
+        }
+
+        private static void CbAutomaticStartSpaceball(object state)
+        {
+            if (!Spaceball.mActive)
+                Spaceball.StartSpaceball();
+            else
+                Spaceball.ScheduleNextAutomaticStart();
+        }
+
+        private static void ScheduleEventStop()
+        {
+            if (Spaceball.mStopTimer != null)
+                Spaceball.mStopTimer.Dispose();
+            Spaceball.mStopTimer = new Timer(new TimerCallback(Spaceball.CbStopSpaceball), (object)null, Convert.ToInt64(TimeSpan.FromMinutes(EventDurationMinutes).TotalMilliseconds), Timeout.Infinite);
+        }
+
+        private static void BroadcastSpaceballLog(string message)
+        {
+            if (string.IsNullOrEmpty(message))
+                return;
+            SessionManager.BroadcastToUser(PacketComposer.Compose("A", "STD|" + message));
+        }
+
+        private static string GetCompanyName(int factionId)
+        {
+            if (factionId == 1)
+                return "MMO";
+            if (factionId == 2)
+                return "EIC";
+            if (factionId == 3)
+                return "VRU";
+            return "Unknown";
+        }
+
+        private static string GetFinalRewardMessage()
+        {
+            return "Spaceball victory reward: +30000 Uridium, +3h DMG/HP/SHD boosters, +7000 UCB-100, +4000 RSB-75.";
+        }
+
+        private static string GetExcludedOnlineUserClause(List<int> onlineCharacterIds)
+        {
+            if (onlineCharacterIds == null || onlineCharacterIds.Count == 0)
+                return string.Empty;
+            List<string> ids = new List<string>();
+            foreach (int id in onlineCharacterIds)
+            {
+                if (id > 0)
+                    ids.Add(id.ToString());
+            }
+            if (ids.Count == 0)
+                return string.Empty;
+            return " AND id NOT IN (" + string.Join(",", ids.ToArray()) + ")";
+        }
+
+        private static List<Session> GetConnectedFactionSessions(int factionId, List<int> onlineCharacterIds)
+        {
+            List<Session> result = new List<Session>();
+            HashSet<int> seen = new HashSet<int>();
+            CList<Session> sessionsUser = SessionManager.SessionsUser;
+            foreach (Session session in (IEnumerable<Session>)sessionsUser)
+            {
+                if (session == null || session.CharacterInfo == null)
+                    continue;
+                int characterId = session.CharacterInfo.Id;
+                if (characterId <= 0 || seen.Contains(characterId))
+                    continue;
+                if (session.CharacterInfo.FactionId != factionId)
+                    continue;
+                seen.Add(characterId);
+                result.Add(session);
+                if (onlineCharacterIds != null)
+                    onlineCharacterIds.Add(characterId);
+            }
+            return result;
+        }
+
+        private static void GrantOfflineWinningFactionReward(SqlDatabaseClient client, int factionId, List<int> onlineCharacterIds, string message)
+        {
+            int now = Convert.ToInt32(Math.Floor(UnixTimestamp.GetCurrent()));
+            int boosterSeconds = FinalRewardBoosterHours * 3600;
+            string excludeOnline = Spaceball.GetExcludedOnlineUserClause(onlineCharacterIds);
+            client.ClearParameters();
+            client.SetParameter("factionId", (object)factionId);
+            client.SetParameter("now", (object)now);
+            client.SetParameter("boosterSeconds", (object)boosterSeconds);
+            client.ExecuteNonQuery(
+                "UPDATE users SET " +
+                "uridium = uridium + " + (object)FinalRewardUridium + ", " +
+                "booster_dmg_time = IF(booster_dmg_time > @now, booster_dmg_time + @boosterSeconds, @now + @boosterSeconds), " +
+                "booster_hp_time = IF(booster_hp_time > @now, booster_hp_time + @boosterSeconds, @now + @boosterSeconds), " +
+                "booster_shd_time = IF(booster_shd_time > @now, booster_shd_time + @boosterSeconds, @now + @boosterSeconds), " +
+                "ammo_ucb100 = ammo_ucb100 + " + (object)FinalRewardUcb100 + ", " +
+                "ammo_rsb75 = ammo_rsb75 + " + (object)FinalRewardRsb75 + " " +
+                "WHERE factionid = @factionId" + excludeOnline
+            );
+            client.ClearParameters();
+            client.SetParameter("factionId", (object)factionId);
+            client.SetParameter("message", (object)message);
+            client.ExecuteNonQuery("INSERT INTO users_log (playerid, message) SELECT id, @message FROM users WHERE factionid = @factionId" + excludeOnline);
+        }
+
+        private static void GrantConnectedWinningFactionReward(Session session, string message)
+        {
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            {
+                session.CharacterInfo.AddReward(client, 0, FinalRewardUridium, 0, true);
+                session.CharacterInfo.AddLog(client, message);
+                client.ClearParameters();
+                client.SetParameter("id", (object)session.CharacterInfo.Id);
+                client.ExecuteNonQuery("UPDATE users SET ammo_ucb100 = ammo_ucb100 + " + (object)FinalRewardUcb100 + ", ammo_rsb75 = ammo_rsb75 + " + (object)FinalRewardRsb75 + " WHERE id=@id LIMIT 1");
+                session.CharacterInfo.AmmoUcb100 += (long)FinalRewardUcb100;
+                session.CharacterInfo.AmmoRsb75 += (long)FinalRewardRsb75;
+            }
+            session.CharacterInfo.AddBoosterReward("dmg", FinalRewardBoosterHours);
+            session.CharacterInfo.AddBoosterReward("hp", FinalRewardBoosterHours);
+            session.CharacterInfo.AddBoosterReward("shd", FinalRewardBoosterHours);
+            session.SendData(PacketComposer.Compose("y", "URI|" + (object)FinalRewardUridium + "|" + (object)session.CharacterInfo.Uridium));
+            session.SendData(PacketComposer.Compose("A", "STD|" + message));
+        }
+
+        private static void GrantWinningFactionReward(int factionId)
+        {
+            if (factionId < 1 || factionId > 3)
+                return;
+            lock (Spaceball.mRewardSyncRoot)
+            {
+                if (Spaceball.mFinalRewardGranted)
+                    return;
+                Spaceball.mFinalRewardGranted = true;
+            }
+            string message = Spaceball.GetFinalRewardMessage();
+            List<int> onlineCharacterIds = new List<int>();
+            List<Session> connectedWinners = Spaceball.GetConnectedFactionSessions(factionId, onlineCharacterIds);
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            {
+                Spaceball.GrantOfflineWinningFactionReward(client, factionId, onlineCharacterIds, message);
+            }
+            foreach (Session session in connectedWinners)
+            {
+                Spaceball.GrantConnectedWinningFactionReward(session, message);
+            }
         }
 
         public static void ResetBall()
@@ -219,9 +428,11 @@ namespace OrbitReborn_Emulator.Game.Event
             Spaceball.mMMOScore = 0;
             Spaceball.mEICScore = 0;
             Spaceball.mVRUScore = 0;
+            Spaceball.mFinalRewardGranted = false;
             Spaceball.ResetBall();
             Spaceball.mActive = true;
             SessionManager.BroadcastToUser(PacketComposer.Compose("n", "ssi|" + (object)Spaceball.mMMOScore + "|" + (object)Spaceball.mEICScore + "|" + (object)Spaceball.mVRUScore + "|" + (object)Spaceball.mBallSpeed + "|" + (object)Spaceball.mMoveToFirm));
+            Spaceball.BroadcastSpaceballLog("Spaceball event has started on 4-4.");
             MapInfo mapInfo = MapInfoLoader.GetMapInfo(SpaceballMapId);
             if (!MapManager.InstanceIsLoadedForMap(mapInfo.Id))
                 MapManager.TryLoadMapInstance(mapInfo.Id);
@@ -232,16 +443,7 @@ namespace OrbitReborn_Emulator.Game.Event
             if (Spaceball.mPerformUpdate != null)
                 Spaceball.mPerformUpdate.Dispose();
             Spaceball.mPerformUpdate = new Timer(new TimerCallback(Spaceball.CbPerformUpdate), (object)Spaceball.mNpc, 0, 2000);
-        }
-
-        private static void CbStartSpaceball(object state)
-        {
-            if (Spaceball.mActive)
-                return;
-            Spaceball.StartSpaceball();
-            if (Spaceball.mAuto != null)
-                Spaceball.mAuto.Dispose();
-            Spaceball.mAuto = new Timer(new TimerCallback(Spaceball.CbStopSpaceball), (object)null, Convert.ToInt64(TimeSpan.FromHours(1.0).TotalMilliseconds), 0L);
+            Spaceball.ScheduleEventStop();
         }
 
         public static void StopSpaceball()
@@ -249,6 +451,10 @@ namespace OrbitReborn_Emulator.Game.Event
             if (Spaceball.mPerformUpdate != null)
                 Spaceball.mPerformUpdate.Dispose();
             Spaceball.mPerformUpdate = (Timer)null;
+            if (Spaceball.mStopTimer != null)
+                Spaceball.mStopTimer.Dispose();
+            Spaceball.mStopTimer = (Timer)null;
+            bool wasActive = Spaceball.mActive;
             if (Spaceball.mActive)
             {
                 Spaceball.mBallSpeed = 0;
@@ -256,6 +462,8 @@ namespace OrbitReborn_Emulator.Game.Event
             }
             Spaceball.mActive = false;
             Spaceball.ResetBall();
+            if (wasActive)
+                SessionManager.BroadcastToUser(PacketComposer.Compose("n", "sse"));
             MapInstance instanceByMapId = MapManager.GetInstanceByMapId(SpaceballMapId);
             if (instanceByMapId != null)
             {
@@ -271,6 +479,9 @@ namespace OrbitReborn_Emulator.Game.Event
             {
                 client.ExecuteNonQuery("UPDATE event_information SET isActif=0 WHERE id = 3");
             }
+            if (wasActive)
+                Spaceball.BroadcastSpaceballLog("Spaceball event has ended.");
+            Spaceball.ScheduleNextAutomaticStart();
         }
 
         private static void CbStopSpaceball(object state)
@@ -432,8 +643,12 @@ namespace OrbitReborn_Emulator.Game.Event
             Spaceball.mTotalDamageMMO = 0L;
             Spaceball.mTotalDamageEIC = 0L;
             Spaceball.mTotalDamageVRU = 0L;
+            Spaceball.BroadcastSpaceballLog("Spaceball goal for " + Spaceball.GetCompanyName(Spaceball.mMoveToFirm) + ". Score: MMO " + (object)Spaceball.mMMOScore + " - EIC " + (object)Spaceball.mEICScore + " - VRU " + (object)Spaceball.mVRUScore + ".");
             if (Spaceball.mMMOScore >= WinScore || Spaceball.mEICScore >= WinScore || Spaceball.mVRUScore >= WinScore)
             {
+                int winningFactionId = Spaceball.mMoveToFirm;
+                Spaceball.BroadcastSpaceballLog(Spaceball.GetCompanyName(winningFactionId) + " has won the Spaceball event.");
+                Spaceball.GrantWinningFactionReward(winningFactionId);
                 Spaceball.StopSpaceball();
                 return;
             }
@@ -469,16 +684,5 @@ namespace OrbitReborn_Emulator.Game.Event
             }
         }
 
-        private static void ScheduleNextStartAt20()
-        {
-            if (Spaceball.mAuto != null)
-                Spaceball.mAuto.Dispose();
-            DateTime now = DateTime.Now;
-            DateTime dateTime = DateTime.Today.AddHours(20.0);
-            if (dateTime <= now)
-                dateTime = dateTime.AddDays(1.0);
-            double totalMilliseconds = (dateTime - now).TotalMilliseconds;
-            Spaceball.mAuto = new Timer(new TimerCallback(Spaceball.CbStartSpaceball), (object)null, Convert.ToInt64(totalMilliseconds), 0L);
-        }
     }
 }

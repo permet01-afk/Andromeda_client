@@ -58,6 +58,58 @@ if (!function_exists('homeRenderClanLeaderboardRows')) {
     }
 }
 
+if (!function_exists('homeGetNextSpaceballStart')) {
+    function homeGetNextSpaceballStart(DateTimeImmutable $now)
+    {
+        $slots = [
+            ['day' => 3, 'time' => '19:00:00'],
+            ['day' => 0, 'time' => '17:00:00'],
+        ];
+        $next = null;
+
+        foreach ($slots as $slot) {
+            $daysUntil = ((int)$slot['day'] - (int)$now->format('w') + 7) % 7;
+            $candidate = $now->setTime(0, 0, 0)->modify('+' . $daysUntil . ' days');
+            $timeParts = array_map('intval', explode(':', $slot['time']));
+            $hour = $timeParts[0] ?? 0;
+            $minute = $timeParts[1] ?? 0;
+            $second = $timeParts[2] ?? 0;
+            $candidate = $candidate->setTime($hour, $minute, $second);
+            if ($candidate <= $now) {
+                $candidate = $candidate->modify('+7 days');
+            }
+            if ($next === null || $candidate < $next) {
+                $next = $candidate;
+            }
+        }
+
+        return $next;
+    }
+}
+
+if (!function_exists('homeFormatCountdown')) {
+    function homeFormatCountdown($seconds)
+    {
+        $seconds = max(0, (int)$seconds);
+        $days = intdiv($seconds, 86400);
+        $seconds %= 86400;
+        $hours = intdiv($seconds, 3600);
+        $seconds %= 3600;
+        $minutes = intdiv($seconds, 60);
+
+        $parts = [];
+        if ($days > 0) {
+            $parts[] = $days . 'd';
+        }
+        if ($hours > 0 || $days > 0) {
+            $parts[] = $hours . 'h';
+        }
+        $parts[] = $minutes . 'm';
+
+        return implode(' ', $parts);
+    }
+}
+
 $playerId = (int)($_SESSION['player_id'] ?? 0);
 
 $sth = $db->prepare('
@@ -95,6 +147,20 @@ $top10Clans = $leaderboards['clans'] ?? [];
 
 $registeredPlayers = number_format(HomeLeaderboardService::getRegisteredPlayerCount($db));
 $serverStats = HomeLeaderboardService::getServerStats($db);
+
+$spaceballTimezone = new DateTimeZone('Europe/Zurich');
+$spaceballNow = new DateTimeImmutable('now', $spaceballTimezone);
+$spaceballNextStart = homeGetNextSpaceballStart($spaceballNow);
+$spaceballCountdownSeconds = $spaceballNextStart !== null ? $spaceballNextStart->getTimestamp() - $spaceballNow->getTimestamp() : 0;
+$spaceballCountdown = homeFormatCountdown($spaceballCountdownSeconds);
+$spaceballNextLabel = $spaceballNextStart !== null ? $spaceballNextStart->format('l, d M H:i T') : 'Not scheduled';
+$spaceballActive = false;
+$spaceballEventStatement = $db->prepare('SELECT isActif FROM event_information WHERE id = 3 LIMIT 1');
+$spaceballEventStatement->execute();
+$spaceballEventRow = $spaceballEventStatement->fetch(PDO::FETCH_ASSOC);
+if ($spaceballEventRow) {
+    $spaceballActive = ((int)($spaceballEventRow['isActif'] ?? 0)) === 1;
+}
 
 $username = htmlspecialchars(homeDecodeLegacyHtmlEntitiesForDisplay($currentUser['username'] ?? ''), ENT_QUOTES, 'UTF-8');
 $clanLabel = '';
@@ -228,6 +294,38 @@ $companyCounts = [
                     </article>
                 </div>
             </section>
+        </section>
+
+        <section class="dashboard-card events-card">
+            <header class="card-header">
+                <h2>Events</h2>
+            </header>
+
+            <div class="event-panel <?php echo $spaceballActive ? 'is-active' : 'is-scheduled'; ?>">
+                <div class="event-title-row">
+                    <span class="event-name">Spaceball</span>
+                    <span class="event-status"><?php echo $spaceballActive ? 'Active' : 'Scheduled'; ?></span>
+                </div>
+
+                <dl class="event-details">
+                    <div>
+                        <dt>Status</dt>
+                        <dd><?php echo $spaceballActive ? 'Active now on 4-4' : 'Next battle on 4-4'; ?></dd>
+                    </div>
+                    <div>
+                        <dt>Schedule</dt>
+                        <dd>Wednesday 19:00 / Sunday 17:00</dd>
+                    </div>
+                    <div>
+                        <dt>Next start</dt>
+                        <dd><?php echo htmlspecialchars($spaceballNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+                    </div>
+                    <div>
+                        <dt>Countdown</dt>
+                        <dd><?php echo htmlspecialchars($spaceballCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
+                    </div>
+                </dl>
+            </div>
         </section>
 
         <section class="dashboard-card hof-card">
