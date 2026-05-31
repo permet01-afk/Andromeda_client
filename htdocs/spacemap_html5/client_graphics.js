@@ -7238,8 +7238,8 @@ function initRefiningButton() {
 }
 
 const FLASH_SPACEMAP_PAGE_MAPS = {
-    0: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ],
-    1: [ 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29 ]
+    0: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16 ],
+    1: [ 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29 ]
 };
 
 const FLASH_SPACEMAP_MAP_POSITIONS = {
@@ -7292,21 +7292,13 @@ const FLASH_SPACEMAP_MAP_POSITIONS = {
             "x": 302,
             "y": 284
         },
-        "13": {
-            "x": 303,
-            "y": 183
-        },
-        "14": {
-            "x": 399,
-            "y": 152
-        },
-        "15": {
-            "x": 402,
-            "y": 220
+        "16": {
+            "x": 318,
+            "y": 171
         }
     },
     "1": {
-        "16": {
+        "29": {
             "x": 210,
             "y": 108
         },
@@ -7357,10 +7349,6 @@ const FLASH_SPACEMAP_MAP_POSITIONS = {
         "28": {
             "x": 352,
             "y": 378
-        },
-        "29": {
-            "x": 180,
-            "y": 232
         }
     }
 };
@@ -7485,16 +7473,16 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         },
         {
             "fromMap": 4,
-            "toMap": 13,
+            "toMap": 16,
             "fromPortal": {
                 "id": 11,
                 "x": 190,
                 "y": 65
             },
             "toPortal": {
-                "id": 12,
-                "x": 20,
-                "y": 65
+                "id": 41,
+                "x": 198,
+                "y": 150
             }
         },
         {
@@ -7569,16 +7557,16 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         },
         {
             "fromMap": 8,
-            "toMap": 14,
+            "toMap": 16,
             "fromPortal": {
                 "id": 24,
                 "x": 105,
                 "y": 110
             },
             "toPortal": {
-                "id": 25,
-                "x": 105,
-                "y": 20
+                "id": 45,
+                "x": 210,
+                "y": 130
             }
         },
         {
@@ -7639,104 +7627,20 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         },
         {
             "fromMap": 12,
-            "toMap": 15,
+            "toMap": 16,
             "fromPortal": {
                 "id": 31,
                 "x": 105,
                 "y": 20
             },
             "toPortal": {
-                "id": 38,
-                "x": 190,
-                "y": 65
-            }
-        },
-        {
-            "fromMap": 14,
-            "toMap": 13,
-            "fromPortal": {
-                "id": 104,
-                "x": 20,
-                "y": 110
-            },
-            "toPortal": {
-                "id": 105,
-                "x": 190,
-                "y": 20
-            }
-        },
-        {
-            "fromMap": 15,
-            "toMap": 13,
-            "fromPortal": {
-                "id": 44,
-                "x": 20,
-                "y": 110
-            },
-            "toPortal": {
-                "id": 106,
-                "x": 190,
-                "y": 110
-            }
-        },
-        {
-            "fromMap": 15,
-            "toMap": 14,
-            "fromPortal": {
-                "id": 37,
-                "x": 20,
-                "y": 20
-            },
-            "toPortal": {
-                "id": 42,
-                "x": 190,
-                "y": 110
+                "id": 302,
+                "x": 222,
+                "y": 150
             }
         }
     ],
     "1": [
-        {
-            "fromMap": 16,
-            "toMap": 17,
-            "fromPortal": {
-                "id": 46,
-                "x": 40,
-                "y": 130
-            },
-            "toPortal": {
-                "id": 52,
-                "x": 190,
-                "y": 65
-            }
-        },
-        {
-            "fromMap": 16,
-            "toMap": 21,
-            "fromPortal": {
-                "id": 48,
-                "x": 380,
-                "y": 40
-            },
-            "toPortal": {
-                "id": 49,
-                "x": 20,
-                "y": 110
-            }
-        },
-        {
-            "fromMap": 16,
-            "toMap": 25,
-            "fromPortal": {
-                "id": 50,
-                "x": 380,
-                "y": 220
-            },
-            "toPortal": {
-                "id": 51,
-                "x": 20,
-                "y": 20
-            }
-        },
         {
             "fromMap": 17,
             "toMap": 18,
@@ -7911,7 +7815,7 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
             "fromPortal": {
                 "id": 407,
                 "x": 105,
-                "y": 120
+                "y": 110
             },
             "toPortal": {
                 "id": 408,
@@ -7945,20 +7849,6 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
                 "id": 412,
                 "x": 380,
                 "y": 131
-            }
-        },
-        {
-            "fromMap": 29,
-            "toMap": 16,
-            "fromPortal": {
-                "id": 413,
-                "x": 210,
-                "y": 131
-            },
-            "toPortal": {
-                "id": 45,
-                "x": 210,
-                "y": 130
             }
         }
     ]

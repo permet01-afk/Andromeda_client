@@ -1,0 +1,59 @@
+UPDATE users
+SET mapid = 16,
+    locx = 19800,
+    locy = 15000,
+    oldlocx = 19800,
+    oldlocy = 15000
+WHERE mapid = 13;
+
+UPDATE users
+SET mapid = 16,
+    locx = 21000,
+    locy = 13000,
+    oldlocx = 21000,
+    oldlocy = 13000
+WHERE mapid = 14;
+
+UPDATE users
+SET mapid = 16,
+    locx = 22200,
+    locy = 15000,
+    oldlocx = 22200,
+    oldlocy = 15000
+WHERE mapid = 15;
+
+UPDATE portals
+SET arrive_id = 41
+WHERE id = 11
+  AND map_id = 4
+  AND arrive_id = 12;
+
+UPDATE portals
+SET arrive_id = 45
+WHERE id = 24
+  AND map_id = 8
+  AND arrive_id = 25;
+
+UPDATE portals
+SET arrive_id = 302
+WHERE id = 31
+  AND map_id = 12
+  AND arrive_id = 38;
+
+UPDATE portals
+SET arrive_id = 11
+WHERE id = 41
+  AND map_id = 16
+  AND arrive_id = 40;
+
+UPDATE portals
+SET arrive_id = 24
+WHERE id = 45
+  AND map_id = 16
+  AND arrive_id = 107;
+
+UPDATE portals
+SET arrive_id = 31
+WHERE id = 302
+  AND map_id = 16
+  AND arrive_id = 301;
