@@ -1882,7 +1882,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             int spawnX;
             int spawnY;
-            NpcAI.GetRandomNpcPosition(this.MapId, out spawnX, out spawnY);
+            if (NpcAI.IsMap45BossCubikon(this.Name, this.MapId))
+                NpcAI.GetMap45BossCubikonPosition(out spawnX, out spawnY);
+            else
+                NpcAI.GetRandomNpcPosition(this.MapId, out spawnX, out spawnY);
 
             this.LocX = spawnX;
             this.LocY = spawnY;

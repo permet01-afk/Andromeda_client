@@ -44,6 +44,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private const int PORTAL_MOVEMENT_EXIT_PADDING = 120;
 
         private const double CUBIKON_PROTEGIT_LEASH_DISTANCE = 900.0;
+        private const int MAP45_ID = 29;
+        private const int MAP45_BOSS_CUBIKON_MIN_X = 14000;
+        private const int MAP45_BOSS_CUBIKON_MAX_X = 28000;
+        private const int MAP45_BOSS_CUBIKON_MIN_Y = 19000;
+        private const int MAP45_BOSS_CUBIKON_MAX_Y = 23500;
 
         private const int AGGRESSIVE_DETECT_RANGE = 600;
         private const double IDLE_MAP_COMBAT_GRACE_SECONDS = 12.0;
@@ -157,6 +162,41 @@ namespace OrbitReborn_Emulator.Game.Npcs
             minY = Math.Max(NPC_MIN_COORD, safeMinY + NPC_MIN_COORD);
             maxX = Math.Max(minX + 1, safeMaxX);
             maxY = Math.Max(minY + 1, safeMaxY);
+        }
+
+        public static bool IsMap45BossCubikon(string npcName, int mapId)
+        {
+            return mapId == MAP45_ID && npcName == "-=[ Boss Cubikon ]=-";
+        }
+
+        private static bool IsMap45BossCubikon(Npc npc)
+        {
+            return npc != null && IsMap45BossCubikon(npc.Name, npc.MapId);
+        }
+
+        private static void ClampMap45BossCubikonPosition(ref int x, ref int y)
+        {
+            x = Math.Max(MAP45_BOSS_CUBIKON_MIN_X, Math.Min(MAP45_BOSS_CUBIKON_MAX_X, x));
+            y = Math.Max(MAP45_BOSS_CUBIKON_MIN_Y, Math.Min(MAP45_BOSS_CUBIKON_MAX_Y, y));
+        }
+
+        public static void GetMap45BossCubikonPosition(out int x, out int y)
+        {
+            for (int attempt = 0; attempt < PORTAL_RANDOM_POSITION_ATTEMPTS; ++attempt)
+            {
+                int candidateX = NpcAI.RandomPos.Next(MAP45_BOSS_CUBIKON_MIN_X, MAP45_BOSS_CUBIKON_MAX_X + 1);
+                int candidateY = NpcAI.RandomPos.Next(MAP45_BOSS_CUBIKON_MIN_Y, MAP45_BOSS_CUBIKON_MAX_Y + 1);
+
+                if (!IsInsidePortalRadius(MAP45_ID, candidateX, candidateY, PORTAL_SPAWN_EXCLUSION_RADIUS))
+                {
+                    x = candidateX;
+                    y = candidateY;
+                    return;
+                }
+            }
+
+            x = (MAP45_BOSS_CUBIKON_MIN_X + MAP45_BOSS_CUBIKON_MAX_X) / 2;
+            y = (MAP45_BOSS_CUBIKON_MIN_Y + MAP45_BOSS_CUBIKON_MAX_Y) / 2;
         }
 
         private static bool IsInsidePortalRadius(int mapId, int x, int y, int radius)
@@ -361,6 +401,35 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 RedirectPatrolAwayFromPortal(blockingPortal, currentX, currentY, ref x, ref y, PORTAL_MOVEMENT_EXCLUSION_RADIUS, minX, maxX, minY, maxY);
             }
+        }
+
+        private static void NormalizeMap45BossCubikonDestination(int currentX, int currentY, ref int x, ref int y)
+        {
+            currentX = Math.Max(MAP45_BOSS_CUBIKON_MIN_X, Math.Min(MAP45_BOSS_CUBIKON_MAX_X, currentX));
+            currentY = Math.Max(MAP45_BOSS_CUBIKON_MIN_Y, Math.Min(MAP45_BOSS_CUBIKON_MAX_Y, currentY));
+            ClampMap45BossCubikonPosition(ref x, ref y);
+
+            PortalInfo blockingPortal;
+            if (TryFindPortalContainingPoint(MAP45_ID, currentX, currentY, PORTAL_MOVEMENT_EXCLUSION_RADIUS, out blockingPortal))
+            {
+                RedirectPatrolAwayFromPortal(blockingPortal, currentX, currentY, ref x, ref y, PORTAL_MOVEMENT_EXCLUSION_RADIUS, MAP45_BOSS_CUBIKON_MIN_X, MAP45_BOSS_CUBIKON_MAX_X, MAP45_BOSS_CUBIKON_MIN_Y, MAP45_BOSS_CUBIKON_MAX_Y);
+                return;
+            }
+
+            PushOutOfPortalRadius(MAP45_ID, ref x, ref y, PORTAL_MOVEMENT_EXCLUSION_RADIUS, MAP45_BOSS_CUBIKON_MIN_X, MAP45_BOSS_CUBIKON_MAX_X, MAP45_BOSS_CUBIKON_MIN_Y, MAP45_BOSS_CUBIKON_MAX_Y);
+
+            for (int attempt = 0; attempt < 3; ++attempt)
+            {
+                if (!TryFindPortalBlockingPatrolSegment(MAP45_ID, currentX, currentY, x, y, PORTAL_MOVEMENT_EXCLUSION_RADIUS, out blockingPortal))
+                    break;
+
+                RedirectPatrolAwayFromPortal(blockingPortal, currentX, currentY, ref x, ref y, PORTAL_MOVEMENT_EXCLUSION_RADIUS, MAP45_BOSS_CUBIKON_MIN_X, MAP45_BOSS_CUBIKON_MAX_X, MAP45_BOSS_CUBIKON_MIN_Y, MAP45_BOSS_CUBIKON_MAX_Y);
+            }
+        }
+
+        private static void NormalizeMap45BossCubikonDestination(ref int x, ref int y)
+        {
+            NormalizeMap45BossCubikonDestination(x, y, ref x, ref y);
         }
 
         private static void NormalizeNpcPatrolDestination(int mapId, ref int x, ref int y)
@@ -580,13 +649,22 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 int LocY;
                 int randomLocX = 0;
                 int randomLocY = 0;
+                bool isMap45BossCubikon = IsMap45BossCubikon(npc[0], mapId);
 
                 if (!(npc[2] != "0") || !(npc[3] != "0"))
-                    NpcAI.GetRandomNpcPosition(mapId, out randomLocX, out randomLocY);
+                {
+                    if (isMap45BossCubikon)
+                        NpcAI.GetMap45BossCubikonPosition(out randomLocX, out randomLocY);
+                    else
+                        NpcAI.GetRandomNpcPosition(mapId, out randomLocX, out randomLocY);
+                }
 
                 LocX = !(npc[2] != "0") ? randomLocX : Convert.ToInt32(npc[2]);
                 LocY = !(npc[3] != "0") ? randomLocY : Convert.ToInt32(npc[3]);
-                NormalizeNpcPatrolDestination(mapId, ref LocX, ref LocY);
+                if (isMap45BossCubikon)
+                    NormalizeMap45BossCubikonDestination(ref LocX, ref LocY);
+                else
+                    NormalizeNpcPatrolDestination(mapId, ref LocX, ref LocY);
 
                 Npc newInstance = NpcManager.CreateNewInstance(
                     npc[0], mapId, LocX, LocY, Convert.ToInt32(npc[4]), Convert.ToInt32(npc[5]), Convert.ToInt32(npc[6]),
@@ -1363,8 +1441,16 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 StopCurrentMovement(item_1);
                                 WasOutOfRange[item_1.Id] = true;
 
-                                GetRandomNpcPosition(item_1.MapId, out local_2, out local_3);
-                                NormalizeNpcPatrolDestination(item_1.MapId, item_1.LocX, item_1.LocY, ref local_2, ref local_3);
+                                if (IsMap45BossCubikon(item_1))
+                                {
+                                    GetMap45BossCubikonPosition(out local_2, out local_3);
+                                    NormalizeMap45BossCubikonDestination(item_1.LocX, item_1.LocY, ref local_2, ref local_3);
+                                }
+                                else
+                                {
+                                    GetRandomNpcPosition(item_1.MapId, out local_2, out local_3);
+                                    NormalizeNpcPatrolDestination(item_1.MapId, item_1.LocX, item_1.LocY, ref local_2, ref local_3);
+                                }
                                 shouldMove = true;
                                 droppedForCombatIdle = true;
                                 local_4 = null;
@@ -1447,6 +1533,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                     local_2 = parentX + random.Next(-200, 200);
                                     local_3 = parentY + random.Next(-200, 200);
                                 }
+                                else if (IsMap45BossCubikon(item_1))
+                                {
+                                    GetMap45BossCubikonPosition(out local_2, out local_3);
+                                }
                                 else
                                 {
                                     GetRandomNpcPosition(item_1.MapId, out local_2, out local_3);
@@ -1489,6 +1579,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                         if (item_1.TargetId != 0)
                             ClampNpcDestinationToMapBounds(item_1.MapId, ref local_2, ref local_3);
+                        else if (IsMap45BossCubikon(item_1))
+                            NormalizeMap45BossCubikonDestination(item_1.LocX, item_1.LocY, ref local_2, ref local_3);
                         else
                             NormalizeNpcPatrolDestination(item_1.MapId, item_1.LocX, item_1.LocY, ref local_2, ref local_3);
 
