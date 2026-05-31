@@ -302,6 +302,18 @@
 	  <lensflare id ="0" x="1290" y="404" pFactor="10" star="false"/>
 	</lensflares>
 </map>
+<map id="29" name="4-5" scaleFactor="2" music="0">
+	<gameserverIP>212.83.131.73</gameserverIP>
+	<starfield>true</starfield>
+	<backgrounds>
+		<background typeID="29" layer="0"/>
+	</backgrounds>
+	<planets>
+		<planet typeID="48" x="1190" y="1340" pFactor="1" layer="1"/>
+		<planet typeID="48" x="2470" y="642" pFactor="1" layer="2"/>
+		<planet typeID="48" x="2470" y="2084" pFactor="1" layer="3"/>
+	</planets>
+</map>
 <map id="80" name="Survivor" music="0">
 	<gameserverIP>127.0.0.1</gameserverIP>
 	<starfield>true</starfield>

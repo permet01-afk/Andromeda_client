@@ -7236,7 +7236,7 @@ function initRefiningButton() {
 
 const FLASH_SPACEMAP_PAGE_MAPS = {
     0: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ],
-    1: [ 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28 ]
+    1: [ 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29 ]
 };
 
 const FLASH_SPACEMAP_MAP_POSITIONS = {
@@ -7354,6 +7354,10 @@ const FLASH_SPACEMAP_MAP_POSITIONS = {
         "28": {
             "x": 352,
             "y": 378
+        },
+        "29": {
+            "x": 180,
+            "y": 232
         }
     }
 };
@@ -7386,7 +7390,8 @@ const FLASH_SPACEMAP_MAP_LABELS = {
     "25": "3-5",
     "26": "3-6",
     "27": "3-7",
-    "28": "3-8"
+    "28": "3-8",
+    "29": "4-5"
 };
 
 const FLASH_SPACEMAP_PORTAL_EDGES = {
@@ -7896,6 +7901,62 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
                 "x": 190,
                 "y": 110
             }
+        },
+        {
+            "fromMap": 17,
+            "toMap": 29,
+            "fromPortal": {
+                "id": 407,
+                "x": 105,
+                "y": 120
+            },
+            "toPortal": {
+                "id": 408,
+                "x": 40,
+                "y": 131
+            }
+        },
+        {
+            "fromMap": 21,
+            "toMap": 29,
+            "fromPortal": {
+                "id": 409,
+                "x": 190,
+                "y": 65
+            },
+            "toPortal": {
+                "id": 410,
+                "x": 210,
+                "y": 40
+            }
+        },
+        {
+            "fromMap": 25,
+            "toMap": 29,
+            "fromPortal": {
+                "id": 411,
+                "x": 190,
+                "y": 20
+            },
+            "toPortal": {
+                "id": 412,
+                "x": 380,
+                "y": 131
+            }
+        },
+        {
+            "fromMap": 29,
+            "toMap": 16,
+            "fromPortal": {
+                "id": 413,
+                "x": 210,
+                "y": 131
+            },
+            "toPortal": {
+                "id": 45,
+                "x": 210,
+                "y": 130
+            }
         }
     ]
 };
@@ -7937,11 +7998,11 @@ function getFlashSpacemapMapLabel(mapId) {
 }
 
 function getFlashSpacemapMapSize(mapId) {
-    return mapId === 16 ? { width: 170, height: 106 } : { width: 80, height: 50 };
+    return mapId === 16 || mapId === 29 ? { width: 170, height: 106 } : { width: 80, height: 50 };
 }
 
 function getFlashSpacemapPortalBaseSize(mapId) {
-    return mapId === 16 ? { width: 420, height: 260 } : { width: 210, height: 130 };
+    return mapId === 16 || mapId === 29 ? { width: 420, height: 260 } : { width: 210, height: 130 };
 }
 
 function getFlashSpacemapMapPosition(pageIndex, mapId) {
@@ -8033,7 +8094,9 @@ function renderFlashSpacemapPageNodes(pageIndex, currentMapId) {
         const size = getFlashSpacemapMapSize(mapId);
         const classes = [ "flashSpacemapMapNode" ];
         if (mapId === currentMapId) classes.push("is-current");
-        return `<div class="${classes.join(" ")}" data-map-id="${mapId}" style="left:${pos.x}px;top:${pos.y}px;width:${size.width}px;height:${size.height}px;" title="${getFlashSpacemapMapLabel(mapId)}"><span class="flashSpacemapMapArt" style="background-image:url('${getFlashSpacemapAssetUrl(`map_${mapId}.png`)}')"></span><span class="flashSpacemapMapMarkerCurrent"></span></div>`;
+        const artPath = getFlashSpacemapAssetUrl(`map_${mapId}.png`);
+        const artBackground = typeof getUiCssUrl === "function" ? getUiCssUrl(artPath) : `url('${artPath}')`;
+        return `<div class="${classes.join(" ")}" data-map-id="${mapId}" style="left:${pos.x}px;top:${pos.y}px;width:${size.width}px;height:${size.height}px;" title="${getFlashSpacemapMapLabel(mapId)}"><span class="flashSpacemapMapArt" style="background-image:${artBackground}"></span><span class="flashSpacemapMapMarkerCurrent"></span></div>`;
     }).join("");
 }
 

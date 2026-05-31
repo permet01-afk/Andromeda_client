@@ -34,10 +34,45 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private const int LOGOUT_COUNTDOWN_SECONDS = 5;
         private const double LOGOUT_DAMAGE_CANCEL_SECONDS = 10.0;
+        private const int MAP_45_TO_44_PORTAL_ID = 413;
+        private const int MAP_44_ID = 16;
+
+        private static readonly object Map45To44ArrivalSync = new object();
+        private static readonly Random Map45To44ArrivalRandom = new Random();
+        private static readonly int[][] Map45To44SafeArrivals = new int[][]
+        {
+            new int[] { 12000, 9000 },
+            new int[] { 18000, 11000 },
+            new int[] { 24000, 15000 },
+            new int[] { 30000, 17000 },
+            new int[] { 21000, 19000 },
+            new int[] { 26000, 8000 }
+        };
 
         private static bool IsPvpMap(int mapId)
         {
-            return mapId == 13 || mapId == 14 || mapId == 15 || mapId == 16;
+            return mapId == 13 || mapId == 14 || mapId == 15 || mapId == 16 || mapId == 29;
+        }
+
+        private static bool UsesPvpPortalCombatBlock(int mapId, int portalId)
+        {
+            return IsPvpMap(mapId)
+                || portalId == 407
+                || portalId == 409
+                || portalId == 411;
+        }
+
+        private static PortalInfo CreateMap45To44SafeArrivalPortal()
+        {
+            int index;
+
+            lock (Map45To44ArrivalSync)
+            {
+                index = Map45To44ArrivalRandom.Next(0, Map45To44SafeArrivals.Length);
+            }
+
+            int[] point = Map45To44SafeArrivals[index];
+            return new PortalInfo(null, MAP_45_TO_44_PORTAL_ID, point[0], point[1], MAP_44_ID, 0, 1);
         }
 
         private static void DisposePortalJumpTimer(Session session)
@@ -607,10 +642,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 portalById2 = PortalManager.GetPortalById(portalById1.LinkedId);
             }
 
+            if (portalById2 == null && Session.CharacterInfo.CurrentPortal == MAP_45_TO_44_PORTAL_ID)
+                portalById2 = CreateMap45To44SafeArrivalPortal();
+
             if (portalById1 == null || portalById2 == null)
                 return;
 
-            bool isPvpMap = IsPvpMap(Session.CharacterInfo.MapId);
+            bool isPvpMap = UsesPvpPortalCombatBlock(Session.CharacterInfo.MapId, Session.CharacterInfo.CurrentPortal);
 
             const double PVP_PORTAL_COMBAT_BLOCK_SECONDS = 5.0;
             bool underAttack = (UnixTimestamp.GetCurrent() - Session.CharacterInfo.LastAttackByAttackerReceived < PVP_PORTAL_COMBAT_BLOCK_SECONDS);
@@ -704,7 +742,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            bool isPvpMap = IsPvpMap(session.CharacterInfo.MapId);
+            bool isPvpMap = UsesPvpPortalCombatBlock(session.CharacterInfo.MapId, session.CharacterInfo.CurrentPortal);
 
             const double PVP_PORTAL_COMBAT_BLOCK_SECONDS = 5.0;
             bool underAttack = (UnixTimestamp.GetCurrent() - session.CharacterInfo.LastAttackByAttackerReceived < PVP_PORTAL_COMBAT_BLOCK_SECONDS);
@@ -732,6 +770,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (p1 != null)
                     portalById = PortalManager.GetPortalById(p1.LinkedId);
             }
+
+            if (session.CharacterInfo.CurrentPortal == MAP_45_TO_44_PORTAL_ID)
+                portalById = CreateMap45To44SafeArrivalPortal();
 
             if (portalById == null && !Others.invasionPortal.Contains(session.CharacterInfo.CurrentPortal))
             {

@@ -4111,7 +4111,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         sessionByCharacterId2.CharacterInfo.PlayerInRange.Remove(Session.CharacterInfo.Id);
                 }
 
-                bool respawnToX8 = (deathMapId == 16) || (deathMapId >= 17 && deathMapId <= 28);
+                bool respawnToX8 = (deathMapId == 16) || deathMapId == 29 || (deathMapId >= 17 && deathMapId <= 28);
 
                 int targetMapId = 0;
 

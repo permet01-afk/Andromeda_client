@@ -1182,6 +1182,13 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (!string.IsNullOrEmpty(npcName) && FlashAttackPeriodByNpcName.TryGetValue(npcName, out periodMs) && periodMs > 0)
                 return periodMs;
 
+            string sourceName;
+            int multiplier;
+            if (TryGetDerivedBalanceSource(npcName, out sourceName, out multiplier)
+                && FlashAttackPeriodByNpcName.TryGetValue(sourceName, out periodMs)
+                && periodMs > 0)
+                return periodMs;
+
             return LEGACY_ATTACK_PERIOD_MS;
         }
 
@@ -1204,38 +1211,105 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private void ApplyBalance2010IfExists()
         {
             NpcBalance2010 bal;
+            int multiplier = 1;
+
             if (!Balance2010.TryGetValue(this.mName, out bal))
-                return;
+            {
+                string sourceName;
+                if (!TryGetDerivedBalanceSource(this.mName, out sourceName, out multiplier) || !Balance2010.TryGetValue(sourceName, out bal))
+                    return;
+            }
 
-            this.mShipMaxHp = bal.Hp;
-            this.mShipHp = bal.Hp;
+            this.mShipMaxHp = bal.Hp * multiplier;
+            this.mShipHp = this.mShipMaxHp;
 
-            this.mShipMaxShield = bal.Shield;
-            this.mShipShield = bal.Shield;
+            this.mShipMaxShield = bal.Shield * multiplier;
+            this.mShipShield = this.mShipMaxShield;
 
             if (bal.Speed > 0)
                 this.mShipSpeed = bal.Speed;
 
-            this.Credits = bal.Credits;
-            this.Uridium = bal.Uridium;
-            this.ExperienceReward = bal.Xp;
-            this.HonorReward = bal.Honor;
+            this.Credits = bal.Credits * multiplier;
+            this.Uridium = bal.Uridium * multiplier;
+            this.ExperienceReward = bal.Xp * multiplier;
+            this.HonorReward = bal.Honor * multiplier;
 
-            this.DamageMin = bal.DmgMin;
-            this.DamageMax = bal.DmgMax;
+            this.DamageMin = bal.DmgMin * multiplier;
+            this.DamageMax = bal.DmgMax * multiplier;
 
             this.Damages = (bal.DmgMin + bal.DmgMax) / 2;
+            this.Damages *= multiplier;
 
-            this.CargoPrometium = bal.CargoP;
-            this.CargoEndurium = bal.CargoE;
-            this.CargoTerbium = bal.CargoT;
+            this.CargoPrometium = bal.CargoP * multiplier;
+            this.CargoEndurium = bal.CargoE * multiplier;
+            this.CargoTerbium = bal.CargoT * multiplier;
 
-            this.CargoPrometid = bal.CargoPd;
-            this.CargoDuranium = bal.CargoDu;
-            this.CargoPromerium = bal.CargoPr;
-            this.CargoXenomit = bal.CargoXe;
+            this.CargoPrometid = bal.CargoPd * multiplier;
+            this.CargoDuranium = bal.CargoDu * multiplier;
+            this.CargoPromerium = bal.CargoPr * multiplier;
+            this.CargoXenomit = bal.CargoXe * multiplier;
 
             this.CargoPalladium = 0;
+        }
+
+        private static bool TryGetDerivedBalanceSource(string npcName, out string sourceName, out int multiplier)
+        {
+            sourceName = null;
+            multiplier = 1;
+
+            switch (npcName)
+            {
+                case "-=[ Uber Streuner ]=-":
+                    sourceName = "-=[ Streuner ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber Lordakia ]=-":
+                    sourceName = "-=[ Lordakia ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber Saimon ]=-":
+                    sourceName = "-=[ Saimon ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber Mordon ]=-":
+                    sourceName = "-=[ Mordon ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber Devolarium ]=-":
+                    sourceName = "-=[ Devolarium ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber Sibelon ]=-":
+                    sourceName = "-=[ Sibelon ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber Sibelonit ]=-":
+                    sourceName = "-=[ Sibelonit ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber Lordakium ]=-":
+                    sourceName = "-=[ Lordakium ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber Kristallin ]=-":
+                    sourceName = "-=[ Kristallin ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber Kristallon ]=-":
+                    sourceName = "-=[ Kristallon ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Uber StreuneR ]=-":
+                    sourceName = "-=[ StreuneR ]=-";
+                    multiplier = 3;
+                    break;
+                case "-=[ Boss Protegit ]=-":
+                    sourceName = "-=[ Protegit ]=-";
+                    multiplier = 3;
+                    break;
+            }
+
+            return sourceName != null;
         }
 
         private void ApplyGalaxyGateMultiplierIfNeeded()
@@ -1607,7 +1681,17 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (nextOwnerId > 0)
                 SetNewOwner(nextOwnerId, GetTrackedDamage(nextOwnerId));
             else
-                ResetOwnerClaim(this.ShipId == 80);
+                ResetOwnerClaim(UsesCubikonRewardModel());
+        }
+
+        private bool IsMap29BossCubikon()
+        {
+            return this.mMapId == 29 && this.mName == "-=[ Boss Cubikon ]=-";
+        }
+
+        private bool UsesCubikonRewardModel()
+        {
+            return this.ShipId == 80 || IsMap29BossCubikon();
         }
 
         public void UpdateAttackers(int attacker, int damages)
@@ -1616,7 +1700,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 return;
 
             double now = UnixTimestamp.GetCurrent();
-            bool isCubikon = (this.ShipId == 80);
+            bool isCubikon = UsesCubikonRewardModel();
             bool isAggressiveNpc = (this.ParentNpcId == 0 && !isCubikon && NpcAI.IsAggressiveNpcName(this.Name));
 
             this.LastAttackReceived = now;
@@ -1696,9 +1780,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
                         {
                             int offsetX = NpcAI.RandomPos.Next(-600, 600);
                             int offsetY = NpcAI.RandomPos.Next(-600, 600);
+                            bool spawnBossProtegit = IsMap29BossCubikon();
 
                             Npc protegit = NpcManager.CreateNewInstance(
-                                "-=[ Protegit ]=-",
+                                spawnBossProtegit ? "-=[ Boss Protegit ]=-" : "-=[ Protegit ]=-",
                                 this.MapId,
                                 this.LocX + offsetX,
                                 this.LocY + offsetY,
@@ -1708,7 +1793,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 0, 0, 0,
                                 "",
                                 0, 0, 0, 0,
-                                15,
+                                spawnBossProtegit ? 45 : 15,
                                 3000
                             );
 
@@ -1823,7 +1908,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             GalaxyGateWaveService.OnNpcDestroyed(this.MapId, this.Id);
 
-            if (this.ShipId == 80)
+            if (UsesCubikonRewardModel())
             {
                 MapInstance currentMap = MapManager.GetInstanceByMapId(this.MapId);
                 if (currentMap != null)
@@ -1915,7 +2000,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 ownerSession = (ownerId > 0) ? SessionManager.GetSessionByCharacterId(ownerId) : null;
             }
 
-            bool useSharedDamageRewards = (this.ShipId == 80);
+            bool useSharedDamageRewards = UsesCubikonRewardModel();
             HashSet<int> eligible = new HashSet<int>();
 
             if (useSharedDamageRewards)

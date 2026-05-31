@@ -64,7 +64,15 @@ namespace OrbitReborn_Emulator.Game.Npcs
             "-=[ Boss Kristallin ]=-",
             "-=[ Mordon ]=-",
             "-=[ Boss Mordon ]=-",
-            "-=[ Protegit ]=-"
+            "-=[ Protegit ]=-",
+            "-=[ Uber Lordakia ]=-",
+            "-=[ Uber Saimon ]=-",
+            "-=[ Uber Devolarium ]=-",
+            "-=[ Uber Sibelonit ]=-",
+            "-=[ Uber Sibelon ]=-",
+            "-=[ Uber Kristallin ]=-",
+            "-=[ Uber Mordon ]=-",
+            "-=[ Boss Protegit ]=-"
         };
 
         private static readonly Dictionary<int, bool> WasOutOfRange = new Dictionary<int, bool>();
@@ -416,6 +424,17 @@ namespace OrbitReborn_Emulator.Game.Npcs
             return null;
         }
 
+        private static void AddDerivedNpcTemplate(string name, string sourceName, int npcPoints)
+        {
+            if (NpcAI.RegisteredNpc.ContainsKey(name) || !NpcAI.RegisteredNpc.ContainsKey(sourceName))
+                return;
+
+            List<string> template = new List<string>(NpcAI.RegisteredNpc[sourceName]);
+            template[0] = name;
+            template[20] = npcPoints.ToString();
+            NpcAI.RegisteredNpc.Add(name, template);
+        }
+
         public static void PreloadNpcs()
         {
             NpcAI.RegisteredNpc = new CDictionnary<string, List<string>>();
@@ -446,6 +465,19 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (!NpcAI.RegisteredNpc.ContainsKey("-=[ Protegit ]=-")) NpcAI.RegisteredNpc.Add("-=[ Protegit ]=-", new List<string>() { "-=[ Protegit ]=-", "1", "0", "0", "81", "60000", "60000", "50000", "50000", "500", "12800", "16", "0", "0", "0", "", "0", "0", "0", "0", "15", "1225" });
             if (!NpcAI.RegisteredNpc.ContainsKey("-=[ StreuneR ]=-")) NpcAI.RegisteredNpc.Add("-=[ StreuneR ]=-", new List<string>() { "-=[ StreuneR ]=-", "1", "0", "0", "85", "20000", "20000", "10000", "10000", "280", "6400", "8", "0", "0", "0", "", "0", "0", "0", "0", "8", "425" });
             if (!NpcAI.RegisteredNpc.ContainsKey("-=[ Boss StreuneR ]=-")) NpcAI.RegisteredNpc.Add("-=[ Boss StreuneR ]=-", new List<string>() { "-=[ Boss StreuneR ]=-", "1", "0", "0", "34", "80000", "80000", "40000", "40000", "200", "25600", "32", "0", "0", "0", "", "0", "0", "0", "0", "32", "1750" });
+
+            AddDerivedNpcTemplate("-=[ Uber Streuner ]=-", "-=[ Streuner ]=-", 3);
+            AddDerivedNpcTemplate("-=[ Uber Lordakia ]=-", "-=[ Lordakia ]=-", 6);
+            AddDerivedNpcTemplate("-=[ Uber Saimon ]=-", "-=[ Saimon ]=-", 9);
+            AddDerivedNpcTemplate("-=[ Uber Mordon ]=-", "-=[ Mordon ]=-", 24);
+            AddDerivedNpcTemplate("-=[ Uber Devolarium ]=-", "-=[ Devolarium ]=-", 96);
+            AddDerivedNpcTemplate("-=[ Uber Sibelon ]=-", "-=[ Sibelon ]=-", 57);
+            AddDerivedNpcTemplate("-=[ Uber Sibelonit ]=-", "-=[ Sibelonit ]=-", 36);
+            AddDerivedNpcTemplate("-=[ Uber Lordakium ]=-", "-=[ Lordakium ]=-", 60);
+            AddDerivedNpcTemplate("-=[ Uber Kristallin ]=-", "-=[ Kristallin ]=-", 18);
+            AddDerivedNpcTemplate("-=[ Uber Kristallon ]=-", "-=[ Kristallon ]=-", 84);
+            AddDerivedNpcTemplate("-=[ Uber StreuneR ]=-", "-=[ StreuneR ]=-", 24);
+            AddDerivedNpcTemplate("-=[ Boss Protegit ]=-", "-=[ Protegit ]=-", 45);
         }
 
         public static void LaunchAI()
@@ -512,6 +544,19 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Boss StreuneR ]=-"], map, 3, true);
             }
 
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Streuner ]=-"], 29, 10, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Lordakia ]=-"], 29, 10, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Saimon ]=-"], 29, 9, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Mordon ]=-"], 29, 7, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Devolarium ]=-"], 29, 5, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Sibelonit ]=-"], 29, 8, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Sibelon ]=-"], 29, 4, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Lordakium ]=-"], 29, 4, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Kristallin ]=-"], 29, 6, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Kristallon ]=-"], 29, 3, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber StreuneR ]=-"], 29, 4, true);
+            NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Boss Cubikon ]=-"], 29, 2, true);
+
             NpcAI.mPerformUpdate = new Timer(new TimerCallback(NpcAI.PerformUpdate), (object)null, 0, AI_TICK_RATE);
             ++TimerManager.TimerRunning;
         }
@@ -519,6 +564,9 @@ namespace OrbitReborn_Emulator.Game.Npcs
         public static void CreateNpc(List<string> npc, int mapId, int amount = 1, bool bRespawn = true)
         {
             MapInfo mapInfo = MapInfoLoader.GetMapInfo(mapId);
+            if (mapInfo == null)
+                return;
+
             if (!MapManager.InstanceIsLoadedForMap(mapInfo.Id))
                 MapManager.TryLoadMapInstance(mapInfo.Id);
 

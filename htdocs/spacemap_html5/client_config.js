@@ -52,12 +52,14 @@ const MAP_BACKGROUND_TYPES = {
     15: 15,
     16: 16,
     17: 16,
+    29: 29,
     80: 91,
     81: 61
 };
 
 const MAP_SCALE_FACTORS = {
-    16: 2
+    16: 2,
+    29: 2
 };
 
 const DEFAULT_BACKGROUND_PARALLAX = 10;

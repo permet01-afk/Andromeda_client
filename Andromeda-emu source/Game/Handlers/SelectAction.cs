@@ -92,8 +92,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 SelectAction.SendConfigurationRefresh(Session);
 
-                int limitX = (Session.CharacterInfo.MapId == 16) ? 42500 : 22000;
-                int limitY = (Session.CharacterInfo.MapId == 16) ? 28500 : 14000;
+                bool isLargePvpMap = Session.CharacterInfo.MapId == 16 || Session.CharacterInfo.MapId == 29;
+                int limitX = isLargePvpMap ? 42500 : 22000;
+                int limitY = isLargePvpMap ? 28500 : 14000;
 
                 if (Session.CharacterInfo.IsMoving && (Session.CharacterInfo.NewLocX != Session.CharacterInfo.LocX || Session.CharacterInfo.NewLocY != Session.CharacterInfo.LocY))
                 {

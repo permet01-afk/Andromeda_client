@@ -515,7 +515,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             maxX = 21000;
             maxY = 13000;
 
-            if (mapId == 16)
+            if (mapId == 16 || mapId == 29)
             {
                 maxX = 42000;
                 maxY = 26200;
