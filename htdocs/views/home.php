@@ -181,7 +181,7 @@ $companyCounts = [
 ];
 ?>
 
-<link rel="stylesheet" type="text/css" href="styles/home.css?v=5" />
+<link rel="stylesheet" type="text/css" href="styles/home.css?v=6" />
 
 <section class="dashboard">
     <header class="dashboard-hero">
@@ -212,13 +212,6 @@ $companyCounts = [
             </header>
 
             <div class="pilot-card-layout">
-                <div class="pilot-emblem" aria-hidden="true">
-                    <img class="pilot-emblem-grade" src="img/ranks/<?php echo (int)($currentUser['grade'] ?? 0); ?>.png" alt="" />
-                    <span class="pilot-emblem-company">
-                        <img src="img/ranks/company/<?php echo (int)($currentUser['factionid'] ?? 0); ?>.png" alt="" />
-                    </span>
-                </div>
-
                 <dl class="stat-list">
                     <div class="stat-row">
                         <dt>Username</dt>
