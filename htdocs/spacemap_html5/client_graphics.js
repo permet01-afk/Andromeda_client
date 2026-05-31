@@ -7474,6 +7474,8 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         {
             "fromMap": 4,
             "toMap": 16,
+            "fromSide": "right",
+            "toSide": "left",
             "fromPortal": {
                 "id": 11,
                 "x": 190,
@@ -7558,6 +7560,8 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         {
             "fromMap": 8,
             "toMap": 16,
+            "fromSide": "left",
+            "toSide": "right",
             "fromPortal": {
                 "id": 24,
                 "x": 105,
@@ -7614,6 +7618,14 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         {
             "fromMap": 12,
             "toMap": 11,
+            "fromSide": "right",
+            "toSide": "left",
+            "via": [
+                {
+                    "x": 499,
+                    "y": 292
+                }
+            ],
             "fromPortal": {
                 "id": 32,
                 "x": 190,
@@ -7628,6 +7640,8 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         {
             "fromMap": 12,
             "toMap": 16,
+            "fromSide": "right",
+            "toSide": "bottom",
             "fromPortal": {
                 "id": 31,
                 "x": 105,
@@ -7770,6 +7784,8 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         {
             "fromMap": 25,
             "toMap": 27,
+            "fromSide": "right",
+            "toSide": "top",
             "fromPortal": {
                 "id": 73,
                 "x": 190,
@@ -7798,6 +7814,8 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         {
             "fromMap": 28,
             "toMap": 27,
+            "fromSide": "right",
+            "toSide": "bottom",
             "fromPortal": {
                 "id": 71,
                 "x": 20,
@@ -7812,6 +7830,8 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         {
             "fromMap": 17,
             "toMap": 29,
+            "fromSide": "right",
+            "toSide": "left",
             "fromPortal": {
                 "id": 407,
                 "x": 105,
@@ -7826,6 +7846,8 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         {
             "fromMap": 21,
             "toMap": 29,
+            "fromSide": "left",
+            "toSide": "top",
             "fromPortal": {
                 "id": 409,
                 "x": 190,
@@ -7840,6 +7862,14 @@ const FLASH_SPACEMAP_PORTAL_EDGES = {
         {
             "fromMap": 25,
             "toMap": 29,
+            "fromSide": "top",
+            "toSide": "right",
+            "via": [
+                {
+                    "x": 390,
+                    "y": 265
+                }
+            ],
             "fromPortal": {
                 "id": 411,
                 "x": 190,
@@ -7934,6 +7964,18 @@ function getFlashSpacemapPortalAnchor(pageIndex, mapId, portal) {
     };
 }
 
+function getFlashSpacemapEdgeAnchor(pageIndex, mapId, portal, side) {
+    const rect = getFlashSpacemapMapRect(pageIndex, mapId);
+    const base = getFlashSpacemapPortalBaseSize(mapId);
+    const ratioX = Math.min(1, Math.max(0, Number(portal && portal.x) / Math.max(1, base.width)));
+    const ratioY = Math.min(1, Math.max(0, Number(portal && portal.y) / Math.max(0.0001, base.height)));
+    if (side === "left") return { x: rect.x, y: rect.y + ratioY * rect.height };
+    if (side === "right") return { x: rect.x + rect.width, y: rect.y + ratioY * rect.height };
+    if (side === "top") return { x: rect.x + ratioX * rect.width, y: rect.y };
+    if (side === "bottom") return { x: rect.x + ratioX * rect.width, y: rect.y + rect.height };
+    return getFlashSpacemapPortalAnchor(pageIndex, mapId, portal);
+}
+
 function getFlashSpacemapPortalDirection(mapId, portal) {
     const base = getFlashSpacemapPortalBaseSize(mapId);
     const nx = Math.min(1, Math.max(0, Number(portal && portal.x) / Math.max(1, base.width)));
@@ -7947,6 +7989,11 @@ function getFlashSpacemapPortalDirection(mapId, portal) {
     return distances[0] ? distances[0].side : "right";
 }
 
+function getFlashSpacemapEdgeDirection(mapId, portal, side) {
+    if (side === "left" || side === "right" || side === "top" || side === "bottom") return side;
+    return getFlashSpacemapPortalDirection(mapId, portal);
+}
+
 function getFlashSpacemapStubPoint(anchor, direction, distance) {
     const d = Number.isFinite(distance) ? distance : 10;
     if (direction === "left") return { x: anchor.x - d, y: anchor.y };
@@ -7955,26 +8002,48 @@ function getFlashSpacemapStubPoint(anchor, direction, distance) {
     return { x: anchor.x, y: anchor.y + d };
 }
 
-function buildFlashSpacemapEdgePath(startAnchor, startDirection, endAnchor, endDirection) {
+function getFlashSpacemapViaPoints(via) {
+    if (!Array.isArray(via)) return [];
+    return via
+        .map(point => ({
+            x: Number(point && point.x),
+            y: Number(point && point.y)
+        }))
+        .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y));
+}
+
+function formatFlashSpacemapEdgePath(points) {
+    if (!points.length) return "";
+    return points.map((point, index) => {
+        const command = index === 0 ? "M" : "L";
+        return `${command} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+    }).join(" ");
+}
+
+function buildFlashSpacemapEdgePath(startAnchor, startDirection, endAnchor, endDirection, via) {
     const s1 = getFlashSpacemapStubPoint(startAnchor, startDirection, 10);
     const e1 = getFlashSpacemapStubPoint(endAnchor, endDirection, 10);
+    const viaPoints = getFlashSpacemapViaPoints(via);
+    if (viaPoints.length) {
+        return formatFlashSpacemapEdgePath([ startAnchor, s1, ...viaPoints, e1, endAnchor ]);
+    }
     const horizontalDominant = Math.abs(e1.x - s1.x) >= Math.abs(e1.y - s1.y);
     if (horizontalDominant) {
         const midX = Math.round((s1.x + e1.x) / 2);
-        return `M ${startAnchor.x.toFixed(2)} ${startAnchor.y.toFixed(2)} L ${s1.x.toFixed(2)} ${s1.y.toFixed(2)} L ${midX.toFixed(2)} ${s1.y.toFixed(2)} L ${midX.toFixed(2)} ${e1.y.toFixed(2)} L ${e1.x.toFixed(2)} ${e1.y.toFixed(2)} L ${endAnchor.x.toFixed(2)} ${endAnchor.y.toFixed(2)}`;
+        return formatFlashSpacemapEdgePath([ startAnchor, s1, { x: midX, y: s1.y }, { x: midX, y: e1.y }, e1, endAnchor ]);
     }
     const midY = Math.round((s1.y + e1.y) / 2);
-    return `M ${startAnchor.x.toFixed(2)} ${startAnchor.y.toFixed(2)} L ${s1.x.toFixed(2)} ${s1.y.toFixed(2)} L ${s1.x.toFixed(2)} ${midY.toFixed(2)} L ${e1.x.toFixed(2)} ${midY.toFixed(2)} L ${e1.x.toFixed(2)} ${e1.y.toFixed(2)} L ${endAnchor.x.toFixed(2)} ${endAnchor.y.toFixed(2)}`;
+    return formatFlashSpacemapEdgePath([ startAnchor, s1, { x: s1.x, y: midY }, { x: e1.x, y: midY }, e1, endAnchor ]);
 }
 
 function renderFlashSpacemapPageEdges(pageIndex) {
     const pageEdges = FLASH_SPACEMAP_PORTAL_EDGES[String(pageIndex)] || FLASH_SPACEMAP_PORTAL_EDGES[pageIndex] || [];
     const paths = pageEdges.map(edge => {
-        const startAnchor = getFlashSpacemapPortalAnchor(pageIndex, edge.fromMap, edge.fromPortal);
-        const endAnchor = getFlashSpacemapPortalAnchor(pageIndex, edge.toMap, edge.toPortal);
-        const startDirection = getFlashSpacemapPortalDirection(edge.fromMap, edge.fromPortal);
-        const endDirection = getFlashSpacemapPortalDirection(edge.toMap, edge.toPortal);
-        const d = buildFlashSpacemapEdgePath(startAnchor, startDirection, endAnchor, endDirection);
+        const startAnchor = getFlashSpacemapEdgeAnchor(pageIndex, edge.fromMap, edge.fromPortal, edge.fromSide);
+        const endAnchor = getFlashSpacemapEdgeAnchor(pageIndex, edge.toMap, edge.toPortal, edge.toSide);
+        const startDirection = getFlashSpacemapEdgeDirection(edge.fromMap, edge.fromPortal, edge.fromSide);
+        const endDirection = getFlashSpacemapEdgeDirection(edge.toMap, edge.toPortal, edge.toSide);
+        const d = buildFlashSpacemapEdgePath(startAnchor, startDirection, endAnchor, endDirection, edge.via);
         return `<path class="flashSpacemapEdgePath" d="${d}"></path>`;
     }).join("");
     return `<svg class="flashSpacemapEdgeLayer" viewBox="0 0 ${FLASH_SPACEMAP_LAYOUT.canvas.width} ${FLASH_SPACEMAP_LAYOUT.canvas.height}" preserveAspectRatio="none" aria-hidden="true">${paths}</svg>`;
