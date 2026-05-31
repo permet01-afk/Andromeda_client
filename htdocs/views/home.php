@@ -181,12 +181,28 @@ $companyCounts = [
 ];
 ?>
 
-<link rel="stylesheet" type="text/css" href="styles/home.css?v=4" />
+<link rel="stylesheet" type="text/css" href="styles/home.css?v=5" />
 
 <section class="dashboard">
-    <header class="dashboard-header">
-        <h1>Command Center Overview</h1>
-        <p>Stay up to date with your pilot stats, server activity, and the best pilots in the sector.</p>
+    <header class="dashboard-hero">
+        <div class="dashboard-header">
+            <h1>Command Center Overview</h1>
+            <p>Stay up to date with your pilot stats, server activity, and the best pilots in the sector.</p>
+        </div>
+
+        <aside class="discord-card" aria-label="Andromeda Discord">
+            <div class="discord-mark" aria-hidden="true">
+                <svg viewBox="0 0 48 48" focusable="false" role="img">
+                    <path d="M18.2 17.8c1.8-0.8 3.6-1.2 5.8-1.2s4.1 0.4 5.8 1.2l1.4-2.6c3 0.7 5.8 2.1 8.1 4.1 0.1 5.3-1.3 10.1-4.2 14.4-2.1 1.5-4.3 2.5-6.8 3.1l-1.8-3c1-0.3 2-0.8 3-1.4-0.5-0.3-0.9-0.6-1.3-0.9-2.8 1.2-5.6 1.2-8.4 0-0.4 0.3-0.8 0.6-1.3 0.9 0.9 0.6 1.9 1.1 3 1.4l-1.8 3c-2.5-0.6-4.8-1.6-6.8-3.1-2.9-4.3-4.3-9.1-4.2-14.4 2.3-2 5.1-3.4 8.1-4.1l1.4 2.6Zm0.5 9.1c1.2 0 2.1-1.1 2.1-2.4s-0.9-2.4-2.1-2.4-2.1 1.1-2.1 2.4 0.9 2.4 2.1 2.4Zm10.6 0c1.2 0 2.1-1.1 2.1-2.4s-0.9-2.4-2.1-2.4-2.1 1.1-2.1 2.4 0.9 2.4 2.1 2.4Z" />
+                </svg>
+            </div>
+            <div class="discord-copy">
+                <h2>Join our Discord</h2>
+                <p>Chat with pilots, follow events and server news.</p>
+                <a class="discord-link" href="https://discord.gg/BEVpW6H7" target="_blank" rel="noopener noreferrer">discord.gg/BEVpW6H7</a>
+            </div>
+            <a class="discord-cta" href="https://discord.gg/BEVpW6H7" target="_blank" rel="noopener noreferrer">Join Discord</a>
+        </aside>
     </header>
 
     <div class="dashboard-grid">
@@ -195,57 +211,66 @@ $companyCounts = [
                 <h2>Your pilot</h2>
             </header>
 
-            <dl class="stat-list">
-                <div class="stat-row">
-                    <dt>Username</dt>
-                    <dd>
-                        <?php if ($clanLabel !== '') { ?>
-                            <span class="stat-badge"><?php echo $clanLabel; ?></span>
-                        <?php } ?>
-                        <span><?php echo $username; ?></span>
-                    </dd>
+            <div class="pilot-card-layout">
+                <div class="pilot-emblem" aria-hidden="true">
+                    <img class="pilot-emblem-grade" src="img/ranks/<?php echo (int)($currentUser['grade'] ?? 0); ?>.png" alt="" />
+                    <span class="pilot-emblem-company">
+                        <img src="img/ranks/company/<?php echo (int)($currentUser['factionid'] ?? 0); ?>.png" alt="" />
+                    </span>
                 </div>
 
-                <div class="stat-row">
-                    <dt>Company</dt>
-                    <dd class="stat-media">
-                        <img src="img/ranks/company/<?php echo (int)($currentUser['factionid'] ?? 0); ?>.png" alt="Company" />
-                    </dd>
-                </div>
+                <dl class="stat-list">
+                    <div class="stat-row">
+                        <dt>Username</dt>
+                        <dd>
+                            <?php if ($clanLabel !== '') { ?>
+                                <span class="stat-badge"><?php echo $clanLabel; ?></span>
+                            <?php } ?>
+                            <span><?php echo $username; ?></span>
+                        </dd>
+                    </div>
 
-                <div class="stat-row">
-                    <dt>Grade</dt>
-                    <dd class="stat-media">
-                        <img src="img/ranks/<?php echo (int)($currentUser['grade'] ?? 0); ?>.png" alt="Grade <?php echo (int)($currentUser['grade'] ?? 0); ?>" />
-                        <span><?php echo (int)($currentUser['grade'] ?? 0); ?></span>
-                    </dd>
-                </div>
+                    <div class="stat-row">
+                        <dt>Company</dt>
+                        <dd class="stat-media">
+                            <img src="img/ranks/company/<?php echo (int)($currentUser['factionid'] ?? 0); ?>.png" alt="Company" />
+                        </dd>
+                    </div>
 
-                <div class="stat-row">
-                    <dt>Experience</dt>
-                    <dd><?php echo $experience; ?></dd>
-                </div>
+                    <div class="stat-row">
+                        <dt>Grade</dt>
+                        <dd class="stat-media">
+                            <img src="img/ranks/<?php echo (int)($currentUser['grade'] ?? 0); ?>.png" alt="Grade <?php echo (int)($currentUser['grade'] ?? 0); ?>" />
+                            <span><?php echo (int)($currentUser['grade'] ?? 0); ?></span>
+                        </dd>
+                    </div>
 
-                <div class="stat-row">
-                    <dt>Honor</dt>
-                    <dd><?php echo $honor; ?></dd>
-                </div>
+                    <div class="stat-row">
+                        <dt>Experience</dt>
+                        <dd><?php echo $experience; ?></dd>
+                    </div>
 
-                <div class="stat-row">
-                    <dt>Rank points</dt>
-                    <dd><?php echo $rankpoints; ?></dd>
-                </div>
+                    <div class="stat-row">
+                        <dt>Honor</dt>
+                        <dd><?php echo $honor; ?></dd>
+                    </div>
 
-                <div class="stat-row">
-                    <dt>Credits</dt>
-                    <dd><?php echo $credits; ?></dd>
-                </div>
+                    <div class="stat-row">
+                        <dt>Rank points</dt>
+                        <dd><?php echo $rankpoints; ?></dd>
+                    </div>
 
-                <div class="stat-row">
-                    <dt>Uridium</dt>
-                    <dd><?php echo $uridium; ?></dd>
-                </div>
-            </dl>
+                    <div class="stat-row">
+                        <dt>Credits</dt>
+                        <dd><?php echo $credits; ?></dd>
+                    </div>
+
+                    <div class="stat-row">
+                        <dt>Uridium</dt>
+                        <dd><?php echo $uridium; ?></dd>
+                    </div>
+                </dl>
+            </div>
         </section>
 
         <section class="dashboard-card system-card">
