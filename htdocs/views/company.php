@@ -7,57 +7,35 @@ $buymessage = null;
 
 function handleCompanyChange($db, $factionid, $type)
 {
-    
-    $sth = $db->prepare("SELECT tokens FROM users_infos WHERE id = :id LIMIT 1");
-    $sth->execute([':id' => $_SESSION['player_id']]);
-    $dataTokens = $sth->fetch();
-    $tokens = $dataTokens['tokens'] ?? 0;
-    
-    
+    $transferPlans = [
+        1 => ['price' => 35000, 'rankMultiplier' => 0.70, 'honorMultiplier' => 0.70],
+        2 => ['price' => 350000, 'rankMultiplier' => 0.85, 'honorMultiplier' => 0.85],
+        3 => ['price' => 700000, 'rankMultiplier' => 0.95, 'honorMultiplier' => 0.95],
+    ];
+
+    if (!isset($transferPlans[$type])) {
+        return "Invalid transfer type.";
+    }
+
     $sth = $db->prepare("SELECT uridium, rankpoints, honor, clanid, factionid FROM users WHERE id = :id LIMIT 1");
     $sth->execute([':id' => $_SESSION['player_id']]);
     $datauser = $sth->fetch();
 
     if (!$datauser) return "User not found.";
-    
-    
+
     if ($datauser['factionid'] == $factionid) {
         return "You are already in this company.";
     }
 
-    
-    $priceUri = 35000;
+    $plan = $transferPlans[$type];
+    $priceUri = $plan['price'];
 
     if ($datauser['uridium'] < $priceUri) {
         return "Error: Not enough Uridium (Need ".number_format($priceUri)." U).";
     }
-    
-    
-    $costTokens = 0;
-    
-    if ($type == 1) {
-        $newRankpoints = floor($datauser['rankpoints'] * 0.70);
-        $newHonor      = floor($datauser['honor'] * 0.70);
-    } elseif ($type == 2) {
-        $costTokens = 5;
-        $newRankpoints = floor($datauser['rankpoints'] * 0.85);
-        $newHonor      = floor($datauser['honor'] * 0.85);
-    } elseif ($type == 3) {
-        $costTokens = 10;
-        $newRankpoints = floor($datauser['rankpoints'] * 0.95);
-        $newHonor      = floor($datauser['honor'] * 0.95);
-    } else {
-        return "Invalid transfer type.";
-    }
 
-    if ($tokens < $costTokens) {
-        return "Error: Not enough Tokens (Need $costTokens).";
-    }
-
-    if ($costTokens > 0) {
-        $db->prepare('UPDATE users_infos SET tokens = tokens - :t WHERE id = :id')
-           ->execute([':t' => $costTokens, ':id' => $_SESSION['player_id']]);
-    }
+    $newRankpoints = floor($datauser['rankpoints'] * $plan['rankMultiplier']);
+    $newHonor      = floor($datauser['honor'] * $plan['honorMultiplier']);
 
     switch ($factionid) {
         case 1: $newMap = 1; $newX = 2000; $newY = 1100; break;
@@ -66,10 +44,11 @@ function handleCompanyChange($db, $factionid, $type)
         default: return "Invalid Company ID.";
     }
 
-    $req = $db->prepare('UPDATE users SET factionid=:fid, uridium=uridium-:cost, rankpoints=:rp, honor=:hn, locx=:x, locy=:y, mapid=:m WHERE id=:id');
+    $req = $db->prepare('UPDATE users SET factionid=:fid, uridium=uridium-:cost, rankpoints=:rp, honor=:hn, locx=:x, locy=:y, mapid=:m WHERE id=:id AND uridium >= :cost_check');
     $req->execute([
         ':fid' => $factionid,
         ':cost' => $priceUri,
+        ':cost_check' => $priceUri,
         ':rp' => $newRankpoints,
         ':hn' => $newHonor,
         ':x' => $newX,
@@ -77,6 +56,10 @@ function handleCompanyChange($db, $factionid, $type)
         ':m' => $newMap,
         ':id' => $_SESSION['player_id']
     ]);
+
+    if ($req->rowCount() <= 0) {
+        return "Error: Not enough Uridium (Need ".number_format($priceUri)." U).";
+    }
     
     if ($datauser['clanid'] > 0) {
         $clan_id = $datauser['clanid'];
@@ -237,8 +220,8 @@ if(isset($_GET['success'])) {
                         <span class="stat-val neg">-30%</span>
                     </div>
                     <div class="stat-row">
-                        <span>Token Cost</span>
-                        <span class="stat-val">None</span>
+                        <span>Uridium Cost</span>
+                        <span class="stat-val">35,000 U.</span>
                     </div>
                 </div>
                 <div class="company-selector">
@@ -257,7 +240,7 @@ if(isset($_GET['success'])) {
             <div class="plan-card" style="border-color: rgba(94, 234, 212, 0.3);">
                 <div class="plan-header">
                     <div class="plan-title" style="color:#5eead4;">Advanced Transfer</div>
-                    <div class="plan-cost">35k U. + 5 Tokens</div>
+                    <div class="plan-cost">350,000 Uridium</div>
                 </div>
                 <div class="plan-body">
                     <div class="stat-row">
@@ -265,8 +248,8 @@ if(isset($_GET['success'])) {
                         <span class="stat-val neg" style="color:#fbbf24;">-15%</span>
                     </div>
                     <div class="stat-row">
-                        <span>Token Cost</span>
-                        <span class="stat-val">5</span>
+                        <span>Uridium Cost</span>
+                        <span class="stat-val">350,000 U.</span>
                     </div>
                 </div>
                 <div class="company-selector">
@@ -285,7 +268,7 @@ if(isset($_GET['success'])) {
             <div class="plan-card" style="border-color: rgba(167, 139, 250, 0.4);">
                 <div class="plan-header">
                     <div class="plan-title" style="color:#a78bfa;">Elite Transfer</div>
-                    <div class="plan-cost">35k U. + 10 Tokens</div>
+                    <div class="plan-cost">700,000 Uridium</div>
                 </div>
                 <div class="plan-body">
                     <div class="stat-row">
@@ -293,8 +276,8 @@ if(isset($_GET['success'])) {
                         <span class="stat-val neg" style="color:#4ade80;">-5%</span>
                     </div>
                     <div class="stat-row">
-                        <span>Token Cost</span>
-                        <span class="stat-val">10</span>
+                        <span>Uridium Cost</span>
+                        <span class="stat-val">700,000 U.</span>
                     </div>
                 </div>
                 <div class="company-selector">
