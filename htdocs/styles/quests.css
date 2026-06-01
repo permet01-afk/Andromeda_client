@@ -523,3 +523,24 @@
 .havok-quest-card .basic-quest-card__category { color: #ff7b7b; }
 .havok-quest-card { border-color: rgba(239, 68, 68, 0.35); }
 .quest-rewards--havok .quest-reward-item strong { color: #ff9f9f; }
+
+.quest-section__intro--weekly h3,
+.weekly-quest-card .basic-quest-card__category {
+    color: #67e8f9;
+}
+
+.weekly-quest-card {
+    border-color: rgba(34, 211, 238, 0.28);
+}
+
+.weekly-quest-meta {
+    display: block;
+    margin-top: 8px;
+    color: #bae6fd;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.quest-rewards--weekly div {
+    min-height: 34px;
+}

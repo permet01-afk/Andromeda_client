@@ -423,6 +423,31 @@
                 color: #94ffd4;
                 border-color: rgba(91, 194, 137, 0.80);
             }
+
+            .html5QuestSection {
+                margin: 0 0 7px 0;
+            }
+
+            .html5QuestSectionHeader {
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 8px;
+                margin: 0 0 5px 0;
+                padding: 2px 2px 4px 2px;
+                color: #78d9ff;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+            }
+
+            .html5QuestSectionHeader span {
+                color: #b7c7da;
+                font-size: 10px;
+                font-weight: 400;
+                text-transform: none;
+                letter-spacing: 0;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -449,6 +474,7 @@
 
     function questGroup(quest) {
         const raw = String(quest.group || quest.category || "").toLowerCase();
+        if (raw === "weekly") return "weekly";
         if (raw === "pvp") return "pvp";
         if (raw === "havok") return "havok";
         return "basic";
@@ -456,6 +482,7 @@
 
     function groupLabel(quest) {
         const group = questGroup(quest);
+        if (group === "weekly") return "Weekly";
         if (group === "pvp") return "PVP";
         if (group === "havok") return "Havok";
         return "Basic Quest";
@@ -482,18 +509,27 @@
 
     function renderAction(quest) {
         const isReady = !!quest.is_complete;
-        if (isReady) {
-            return `<button class="html5QuestButton" type="button" data-quest-action="claim" data-quest-group="${escapeHtml(questGroup(quest))}" data-quest-code="${escapeHtml(quest.code || "")}">Claim Reward</button>`;
+        const group = questGroup(quest);
+        const status = String(quest.status || "");
+        if (group === "weekly" && status === "claimed") {
+            return '<div class="html5QuestStateText">Claimed</div>';
         }
-        return `<button class="html5QuestButton is-abort" type="button" data-quest-action="abort" data-quest-group="${escapeHtml(questGroup(quest))}" data-quest-code="${escapeHtml(quest.code || "")}">Abort Quest</button>`;
+        if (isReady) {
+            return `<button class="html5QuestButton" type="button" data-quest-action="claim" data-quest-group="${escapeHtml(group)}" data-quest-code="${escapeHtml(quest.code || "")}">Claim Reward</button>`;
+        }
+        if (group === "weekly") {
+            return '<div class="html5QuestStateText">Active</div>';
+        }
+        return `<button class="html5QuestButton is-abort" type="button" data-quest-action="abort" data-quest-group="${escapeHtml(group)}" data-quest-code="${escapeHtml(quest.code || "")}">Abort Quest</button>`;
     }
 
     function renderQuestCase(quest) {
         const isReady = !!quest.is_complete;
+        const isClaimed = String(quest.status || "") === "claimed";
         const objectives = Array.isArray(quest.objectives) ? quest.objectives : [];
         return `
-            <article class="html5QuestCase${isReady ? " is-ready" : ""}">
-                <span class="html5QuestStateIcon ${isReady ? "is-ready" : "is-running"}"></span>
+            <article class="html5QuestCase${isReady && !isClaimed ? " is-ready" : ""}">
+                <span class="html5QuestStateIcon ${isReady || isClaimed ? "is-ready" : "is-running"}"></span>
                 <div class="html5QuestCaseBody">
                     <div class="html5QuestCaseTop">
                         <div class="html5QuestCaseTitle" title="${escapeHtml(quest.title || "")}">${escapeHtml(quest.title || "")}</div>
@@ -630,6 +666,14 @@
         return basic.concat(pvp, havok).filter(q => String(q.status || "") === "in_progress");
     }
 
+    function getWeeklyState(data) {
+        const weekly = data && data.weekly && typeof data.weekly === "object" ? data.weekly : {};
+        return {
+            meta: weekly.meta && typeof weekly.meta === "object" ? weekly.meta : {},
+            missions: Array.isArray(weekly.missions) ? weekly.missions : []
+        };
+    }
+
     function render() {
         const root = getRoot();
         if (!root) return;
@@ -638,6 +682,8 @@
         const currentList = root.querySelector(".html5QuestActiveList");
         const previousScrollTop = currentList ? currentList.scrollTop : 0;
         const activeQuests = getActiveQuests(state.data || {});
+        const weeklyState = getWeeklyState(state.data || {});
+        const weeklyMissions = weeklyState.missions;
         const activeCount = state.data && state.data.activeCount != null ? Number(state.data.activeCount || 0) : activeQuests.length;
         const maxActive = state.data && state.data.maxActive != null ? Number(state.data.maxActive || 5) : 5;
 
@@ -646,13 +692,32 @@
             bodyHtml = `<div class="html5QuestFeedback is-error">${escapeHtml(state.error)}</div>`;
         } else if (state.loading && !state.data) {
             bodyHtml = '<div class="html5QuestLoading">Loading active quests...</div>';
-        } else if (!activeQuests.length) {
+        } else if (!activeQuests.length && !weeklyMissions.length) {
             const doneMessage = state.message ? `${escapeHtml(state.message)}<br>` : "";
             bodyHtml = `<div class="html5QuestEmpty">${doneMessage}No active quests.<br>Accept up to ${formatNumber(maxActive)} Basic, PVP or Havok quests from the Quest page.</div>`;
         } else {
+            const weeklyMeta = weeklyState.meta || {};
+            const weeklyHeader = weeklyMissions.length ? `
+                <section class="html5QuestSection">
+                    <div class="html5QuestSectionHeader">
+                        Weekly Missions
+                        <span>Week ${escapeHtml(weeklyMeta.rotation_group || "-")} | Time remaining: ${escapeHtml(weeklyMeta.time_remaining_text || "-")}</span>
+                    </div>
+                    ${weeklyMissions.map(renderQuestCase).join("")}
+                </section>
+            ` : "";
+            const activeHeader = activeQuests.length ? `
+                <section class="html5QuestSection">
+                    <div class="html5QuestSectionHeader">
+                        Active Quests
+                        <span>${formatNumber(activeCount)} / ${formatNumber(maxActive)}</span>
+                    </div>
+                    ${activeQuests.slice(0, maxActive).map(renderQuestCase).join("")}
+                </section>
+            ` : "";
             bodyHtml = `
                 <div class="html5QuestActiveList" aria-label="Active quests">
-                    ${activeQuests.slice(0, maxActive).map(renderQuestCase).join("")}
+                    ${weeklyHeader}${activeHeader}
                 </div>
             `;
         }

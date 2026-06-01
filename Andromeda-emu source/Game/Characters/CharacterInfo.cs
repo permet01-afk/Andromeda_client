@@ -4069,7 +4069,27 @@ namespace OrbitReborn_Emulator.Game.Characters
                         attackerInfo.AddLog(client, _Message1);
                         victimInfo.AddLog(client, _Message2);
 
-                        if (QuestObjectiveProgress.AddPlayerKillProgress(attackerInfo.Id))
+                        bool questProgressChanged = QuestObjectiveProgress.AddPlayerKillProgress(attackerInfo.Id);
+                        bool sameWeeklyGroup = (attackerInfo.Members != null && attackerInfo.Members.Contains(victimInfo.Id))
+                            || (victimInfo.Members != null && victimInfo.Members.Contains(attackerInfo.Id));
+                        string attackerRemoteAddress = this.Attacker.RemoteAddress;
+                        string victimRemoteAddress = ennemy.RemoteAddress;
+                        bool sameWeeklyRemoteAddress = !string.IsNullOrEmpty(attackerRemoteAddress)
+                            && attackerRemoteAddress == victimRemoteAddress;
+
+                        questProgressChanged = QuestObjectiveProgress.AddWeeklyEligiblePlayerKillProgress(
+                            attackerInfo.Id,
+                            attackerInfo.FactionId,
+                            attackerInfo.ClanId,
+                            victimInfo.FactionId,
+                            victimInfo.ClanId,
+                            victimInfo.Level,
+                            sameWeeklyGroup,
+                            sameWeeklyRemoteAddress,
+                            rewardAsEnemy
+                        ) || questProgressChanged;
+
+                        if (questProgressChanged)
                             this.Attacker.SendData(PacketComposer.Compose("QST", "UPD"));
 
                         if (!_1v1.IsOnMap(attackerInfo.MapId))

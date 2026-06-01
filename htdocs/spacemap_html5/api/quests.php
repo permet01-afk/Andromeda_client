@@ -34,21 +34,32 @@ $csrfToken = (string)$_SESSION['quest_csrf_token'];
 require_once __DIR__ . '/../../libs/Database.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../libs/QuestService.php';
+require_once __DIR__ . '/../../libs/WeeklyMissionService.php';
 
 try {
     $db = new Database(DB_TYPE, DB_HOST, DB_NAME, DB_USER, DB_PASS);
     $questService = new QuestService($db, $playerId);
+    $weeklyMissionService = new WeeklyMissionService($db, $playerId);
 } catch (Exception $e) {
     quest_api_response(['ok' => false, 'error' => 'Quest service unavailable: ' . $e->getMessage()], 500);
 }
 
-function quest_api_payload(QuestService $questService, string $csrfToken, string $message = '', bool $includeCatalog = false, bool $includePlayerState = false): array
+function quest_api_payload(QuestService $questService, WeeklyMissionService $weeklyMissionService, string $csrfToken, string $message = '', bool $includeCatalog = false, bool $includePlayerState = false): array
 {
     if ($includeCatalog) {
         $questService->preparePage();
     }
 
     $activeQuests = $questService->getActiveTrackerQuests();
+    try {
+        $weeklyState = $weeklyMissionService->getWeeklyState();
+    } catch (Exception $e) {
+        $weeklyState = [
+            'meta' => $weeklyMissionService->getWeeklyMeta(),
+            'missions' => [],
+            'error' => 'Weekly Missions SQL is not installed yet.',
+        ];
+    }
 
     $payload = [
         'ok' => true,
@@ -57,6 +68,7 @@ function quest_api_payload(QuestService $questService, string $csrfToken, string
         'activeCount' => $questService->getActiveQuestCount(),
         'maxActive' => $questService->getMaxActiveQuestCount(),
         'activeQuests' => $activeQuests,
+        'weekly' => $weeklyState,
     ];
 
     if ($includeCatalog) {
@@ -85,11 +97,11 @@ try {
     }
 
     if ($action === 'list') {
-        quest_api_response(quest_api_payload($questService, $csrfToken, '', true));
+        quest_api_response(quest_api_payload($questService, $weeklyMissionService, $csrfToken, '', true));
     }
 
     if ($action === 'list_active') {
-        quest_api_response(quest_api_payload($questService, $csrfToken));
+        quest_api_response(quest_api_payload($questService, $weeklyMissionService, $csrfToken));
     }
 
     if ($action === 'accept') {
@@ -105,10 +117,12 @@ try {
             $message = $questService->acceptPvpQuest($code);
         } elseif ($group === 'havok') {
             $message = $questService->acceptHavokQuest($code);
+        } elseif ($group === 'weekly') {
+            throw new Exception('Weekly Missions are activated automatically.');
         } else {
             $message = $questService->acceptBasicQuest($code);
         }
-        quest_api_response(quest_api_payload($questService, $csrfToken, $message));
+        quest_api_response(quest_api_payload($questService, $weeklyMissionService, $csrfToken, $message));
     }
 
     if ($action === 'claim') {
@@ -124,10 +138,12 @@ try {
             $message = $questService->claimPvpQuest($code);
         } elseif ($group === 'havok') {
             $message = $questService->claimHavokQuest($code);
+        } elseif ($group === 'weekly') {
+            $message = $weeklyMissionService->claimWeeklyMission($code);
         } else {
             $message = $questService->claimBasicQuest($code);
         }
-        quest_api_response(quest_api_payload($questService, $csrfToken, $message, false, true));
+        quest_api_response(quest_api_payload($questService, $weeklyMissionService, $csrfToken, $message, false, true));
     }
 
     if ($action === 'abort') {
@@ -143,10 +159,12 @@ try {
             $message = $questService->abortPvpQuest($code);
         } elseif ($group === 'havok') {
             $message = $questService->abortHavokQuest($code);
+        } elseif ($group === 'weekly') {
+            throw new Exception('Weekly Missions cannot be aborted.');
         } else {
             $message = $questService->abortBasicQuest($code);
         }
-        quest_api_response(quest_api_payload($questService, $csrfToken, $message));
+        quest_api_response(quest_api_payload($questService, $weeklyMissionService, $csrfToken, $message));
     }
 
     throw new Exception('Unknown action.');

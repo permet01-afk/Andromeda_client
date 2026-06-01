@@ -1,8 +1,9 @@
 <?php
 require_once 'libs/QuestService.php';
+require_once 'libs/WeeklyMissionService.php';
 
 $section = isset($_GET['section']) ? (string)$_GET['section'] : 'contracts';
-$allowedSections = ['contracts', 'basic', 'pvp', 'havok'];
+$allowedSections = ['contracts', 'basic', 'pvp', 'havok', 'weekly'];
 if (!in_array($section, $allowedSections, true)) {
     $section = 'contracts';
 }
@@ -10,14 +11,17 @@ if (!in_array($section, $allowedSections, true)) {
 $playerId = (int)($_SESSION['player_id'] ?? 0);
 $questToken = $questCsrfToken ?? ($_SESSION['quest_csrf_token'] ?? '');
 $questService = new QuestService($db, $playerId);
+$weeklyMissionService = new WeeklyMissionService($db, $playerId);
 $questError = '';
 $questNotice = '';
+$weeklyError = '';
 
 $noticeMap = [
     'accepted' => 'Quest accepted.',
     'claimed' => 'Quest reward claimed.',
     'aborted' => 'Quest aborted.',
     'contract_claimed' => 'Hunting contract reward claimed.',
+    'weekly_claimed' => 'Weekly mission reward claimed.',
 ];
 if (isset($_GET['quest_msg']) && isset($noticeMap[$_GET['quest_msg']])) {
     $questNotice = $noticeMap[$_GET['quest_msg']];
@@ -79,6 +83,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quest_action'])) {
             exit;
         }
 
+        if ($action === 'claim_weekly') {
+            $weeklyMissionService->claimWeeklyMission((string)($_POST['quest_code'] ?? ''));
+            header('Location: view.php?page=user&tab=quests&section=weekly&quest_msg=weekly_claimed');
+            exit;
+        }
+
         if ($action === 'abort_havok') {
             $questService->abortHavokQuest((string)($_POST['quest_code'] ?? ''));
             header('Location: view.php?page=user&tab=quests&section=havok&quest_msg=aborted');
@@ -101,6 +111,15 @@ try {
     $basicQuests = $questService->getBasicQuests();
     $pvpQuests = $questService->getPvpQuests();
     $havokQuests = $questService->getHavokQuests();
+    try {
+        $weeklyState = $weeklyMissionService->getWeeklyState();
+        $weeklyMissions = $weeklyState['missions'] ?? [];
+        $weeklyMeta = $weeklyState['meta'] ?? [];
+    } catch (Exception $weeklyException) {
+        $weeklyMissions = [];
+        $weeklyMeta = $weeklyMissionService->getWeeklyMeta();
+        $weeklyError = 'Weekly Missions SQL is not installed yet.';
+    }
     $activeQuestCount = $questService->getActiveQuestCount();
     $maxActiveQuestCount = $questService->getMaxActiveQuestCount();
 } catch (Exception $e) {
@@ -108,6 +127,9 @@ try {
     $basicQuests = [];
     $pvpQuests = [];
     $havokQuests = [];
+    $weeklyMissions = [];
+    $weeklyMeta = [];
+    $weeklyError = '';
     $activeQuestCount = 0;
     $maxActiveQuestCount = QuestService::MAX_ACTIVE_SITE_QUESTS;
     $questError = $questError !== '' ? $questError : $e->getMessage();
@@ -122,7 +144,7 @@ function quest_status_data(array $quest): array
 {
     $status = (string)($quest['status'] ?? 'available');
     $isAccepted = $status === 'in_progress';
-    $isCompleted = $status === 'completed';
+    $isCompleted = $status === 'completed' || $status === 'claimed';
     $isReady = $isAccepted && !empty($quest['is_complete']);
 
     return [
@@ -130,7 +152,7 @@ function quest_status_data(array $quest): array
         'isCompleted' => $isCompleted,
         'isReady' => $isReady,
         'class' => $isCompleted ? 'quest-status--completed' : ($isReady ? 'quest-status--ready' : ($isAccepted ? 'quest-status--progress' : 'quest-status--available')),
-        'label' => $isCompleted ? 'Completed' : ($isReady ? 'Ready' : ($isAccepted ? 'In progress' : 'Available')),
+        'label' => $status === 'claimed' ? 'Claimed' : ($isCompleted ? 'Completed' : ($isReady ? 'Ready' : ($isAccepted ? 'In progress' : 'Available'))),
     ];
 }
 
@@ -196,7 +218,7 @@ function quest_card_dom_id(string $prefix, array $quest): string
     <header class="quest-page__header">
         <div>
             <h2>Quest</h2>
-            <p>Complete hunting contracts, basic assignments, PvP missions and Havok trials to earn rewards.</p>
+            <p>Complete hunting contracts, basic assignments, PvP missions, Havok trials and Weekly Missions to earn rewards.</p>
         </div>
     </header>
 
@@ -205,6 +227,7 @@ function quest_card_dom_id(string $prefix, array $quest): string
         <a class="quest-tab<?php echo $section === 'basic' ? ' is-active' : ''; ?>" href="view.php?page=user&amp;tab=quests&amp;section=basic" data-quest-tab="basic" role="tab" aria-selected="<?php echo $section === 'basic' ? 'true' : 'false'; ?>">Basic Quests</a>
         <a class="quest-tab<?php echo $section === 'pvp' ? ' is-active' : ''; ?>" href="view.php?page=user&amp;tab=quests&amp;section=pvp" data-quest-tab="pvp" role="tab" aria-selected="<?php echo $section === 'pvp' ? 'true' : 'false'; ?>">PVP</a>
         <a class="quest-tab<?php echo $section === 'havok' ? ' is-active' : ''; ?>" href="view.php?page=user&amp;tab=quests&amp;section=havok" data-quest-tab="havok" role="tab" aria-selected="<?php echo $section === 'havok' ? 'true' : 'false'; ?>">Havok Quests</a>
+        <a class="quest-tab<?php echo $section === 'weekly' ? ' is-active' : ''; ?>" href="view.php?page=user&amp;tab=quests&amp;section=weekly" data-quest-tab="weekly" role="tab" aria-selected="<?php echo $section === 'weekly' ? 'true' : 'false'; ?>">Weekly Missions</a>
     </nav>
 
     <?php if ($questNotice !== '') { ?>
@@ -230,6 +253,10 @@ function quest_card_dom_id(string $prefix, array $quest): string
 
         <div class="quest-panel<?php echo $section === 'havok' ? ' is-active' : ''; ?>" data-quest-section="havok" role="tabpanel"<?php echo $section === 'havok' ? '' : ' hidden'; ?>>
             <?php include __DIR__ . '/questSections/havok_quests.php'; ?>
+        </div>
+
+        <div class="quest-panel<?php echo $section === 'weekly' ? ' is-active' : ''; ?>" data-quest-section="weekly" role="tabpanel"<?php echo $section === 'weekly' ? '' : ' hidden'; ?>>
+            <?php include __DIR__ . '/questSections/weekly_missions.php'; ?>
         </div>
     </div>
 </div>
