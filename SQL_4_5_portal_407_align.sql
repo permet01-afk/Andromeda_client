@@ -1,5 +1,0 @@
-UPDATE portals
-SET pos_y = 110
-WHERE id = 407
-  AND map_id = 17
-  AND arrive_id = 408;
