@@ -1450,12 +1450,12 @@
     }
 }
 
-.titles-panel,
 .titles-panel button,
 .titles-panel label,
 .titles-panel .title-card,
 .titles-panel .titles-summary-card,
-.titles-panel .titles-action-bar {
+.titles-panel .titles-action-bar,
+.titles-panel .titles-badge {
     -webkit-user-select: none;
     user-select: none;
 }
@@ -1500,7 +1500,7 @@
 
 .titles-summary-card {
     min-height: 106px;
-    max-width: 520px;
+    max-width: none;
 }
 
 .titles-summary-card__icon,

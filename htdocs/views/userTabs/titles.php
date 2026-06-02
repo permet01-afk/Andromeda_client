@@ -81,9 +81,11 @@ try {
             $stateBeforeRemove = $titleService->getState();
             if (!empty($stateBeforeRemove['has_temporary'])) {
                 $titleService->removeTemporaryTitle();
+                $titleMessage = 'Temporary title removed.';
+            } else {
+                $titleService->removePermanentTitle();
+                $titleMessage = 'Permanent title removed.';
             }
-            $titleService->removePermanentTitle();
-            $titleMessage = 'Title removed.';
         } elseif ($action === 'remove_temporary') {
             $titleService->removeTemporaryTitle();
             $titleMessage = 'Temporary title abandoned.';
@@ -188,12 +190,7 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
 
     <?php if ($hasTemporary) { ?>
         <div class="titles-temporary-warning">
-            <span>A temporary title is active. It overrides your selected permanent title.</span>
-            <form method="post" class="titles-inline-form">
-                <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
-                <input type="hidden" name="title_action" value="remove_displayed" />
-                <button class="titles-button titles-button--danger" type="submit">Abandon title</button>
-            </form>
+            <span>A temporary title is active. It overrides your selected permanent title. Use Remove to abandon it before changing your permanent title.</span>
         </div>
     <?php } ?>
 
@@ -219,11 +216,9 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
             <?php foreach (($titleState['temporary_titles'] ?? []) as $card) { ?>
                 <?php
                 $temporaryActive = ($card['status'] ?? '') === 'Active';
-                $temporaryClass = 'title-card title-card--temporary title-card--' . $escapeTitle($titleVisualClass($card['title_key'] ?? '')) . ($temporaryActive ? ' is-active' : '');
+                $temporaryClass = 'title-card title-card--temporary title-card--' . $escapeTitle($titleVisualClass($card['title_key'] ?? '')) . ($temporaryActive ? ' is-active' : ' is-disabled');
                 ?>
-                <label class="title-card-option title-card-option--temporary">
-                    <input class="title-card__radio title-card__radio--temporary" type="radio" name="title_selection" value="temporary"<?php echo $temporaryActive ? ' checked' : ''; ?> />
-                    <span class="<?php echo $temporaryClass; ?>">
+                <article class="<?php echo $temporaryClass; ?>">
                     <div class="title-card__emblem" aria-hidden="true">
                         <img src="<?php echo $escapeTitle($titleIcon($card['title_key'] ?? '')); ?>" alt="" loading="lazy" />
                     </div>
@@ -238,8 +233,7 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
                             <div class="title-card__progress-text">Expires: <?php echo $escapeTitle($card['expires_at']); ?></div>
                         <?php } ?>
                     </div>
-                    </span>
-                </label>
+                </article>
             <?php } ?>
         </div>
     </section>
@@ -282,7 +276,6 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
 (function () {
     var saveButton = document.querySelector('.titles-button--primary[form="titles-save-form"]');
     var permanentRadios = document.querySelectorAll('.title-card__radio[name="title_key"]');
-    var temporaryRadios = document.querySelectorAll('.title-card__radio--temporary');
 
     function selectPermanent() {
         if (saveButton) {
@@ -290,18 +283,8 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
         }
     }
 
-    function selectTemporary() {
-        if (saveButton) {
-            saveButton.disabled = true;
-        }
-    }
-
     permanentRadios.forEach(function (radio) {
         radio.addEventListener('change', selectPermanent);
-    });
-
-    temporaryRadios.forEach(function (radio) {
-        radio.addEventListener('change', selectTemporary);
     });
 })();
 </script>
