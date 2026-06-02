@@ -532,6 +532,7 @@ function ensureEntity(id) {
             expansionTypeId: 0,
             laserSalvoIndex: 0,
             name: "",
+            gameTitleKey: "",
             clanTag: "",
             factionId: 0,
             rankId: 0,
@@ -581,6 +582,7 @@ function ensureEntity(id) {
         if (!("shipId" in ent)) ent.shipId = null;
         if (!("expansionTypeId" in ent)) ent.expansionTypeId = 0;
         if (!("laserSalvoIndex" in ent)) ent.laserSalvoIndex = 0;
+        if (!("gameTitleKey" in ent)) ent.gameTitleKey = "";
         if (!("maxHp" in ent)) ent.maxHp = null;
         if (!("maxShield" in ent)) ent.maxShield = null;
         if (!("cargo" in ent)) ent.cargo = null;

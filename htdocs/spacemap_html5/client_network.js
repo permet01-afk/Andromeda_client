@@ -2443,6 +2443,18 @@ function handlePacket_n(parts, i) {
         }
         return;
     }
+    if (sub === "pt") {
+        const targetId = parseInt(parts[i + 1], 10);
+        const titleKey = (parts[i + 2] || "").trim();
+        if (!isNaN(targetId)) {
+            if (targetId === heroId) {
+                window.heroGameTitleKey = titleKey;
+            }
+            const ent = ensureEntity(targetId);
+            ent.gameTitleKey = titleKey;
+        }
+        return;
+    }
     if (sub && sub.toUpperCase() === "EMP") {
         const targetId = parseInt(parts[i + 1], 10);
         if (!isNaN(targetId)) {

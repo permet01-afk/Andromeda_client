@@ -1203,7 +1203,17 @@ function buildNameplateTextFieldBitmap(value, color, fontSpec, fontSizePx) {
     return canvas;
 }
 
-function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, clanTagColor, rankId = 0, factionId = 0, achievementId = 0) {
+function resolveGameTitleText(titleKey) {
+    const safeKey = titleKey == null ? "" : String(titleKey).trim();
+    if (!safeKey) return "";
+    if (typeof flashLocaleText === "function") {
+        const localized = flashLocaleText(safeKey, "");
+        if (localized && localized.trim()) return localized.trim();
+    }
+    return safeKey;
+}
+
+function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, clanTagColor, rankId = 0, factionId = 0, achievementId = 0, gameTitleKey = "") {
     if (!name) return null;
     const safeName = String(name).trim();
     if (!safeName) return null;
@@ -1217,6 +1227,9 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
     const clanText = trimmedClanTag ? `[${trimmedClanTag}]` : "";
     const fontSizePx = 16;
     const fontSpec = `${fontSizePx}px ${FLASH_NAMEPLATE_FONT_FAMILIES}`;
+    const titleText = resolveGameTitleText(gameTitleKey);
+    const titleFontSizePx = 13;
+    const titleFontSpec = `${titleFontSizePx}px ${FLASH_NAMEPLATE_FONT_FAMILIES}`;
     const rawRankW = rankReady ? rankImg.width : 0;
     const rankH = rankReady ? rankImg.height : 0;
     const factionW = factionReady ? factionImg.width : 0;
@@ -1237,41 +1250,55 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
     const rankDrawX = 0;
     const clanFieldBitmap = clanText ? buildNameplateTextFieldBitmap(clanText, clanTagColor || fillStyle, fontSpec, fontSizePx) : null;
     const nameFieldBitmap = buildNameplateTextFieldBitmap(safeName, fillStyle, fontSpec, fontSizePx);
+    const titleFieldBitmap = titleText ? buildNameplateTextFieldBitmap(titleText, "#ffd76a", titleFontSpec, titleFontSizePx) : null;
     const clanFieldWidth = clanFieldBitmap ? clanFieldBitmap.width : 0;
     const nameFieldWidth = nameFieldBitmap ? nameFieldBitmap.width : 0;
+    const titleFieldWidth = titleFieldBitmap ? titleFieldBitmap.width : 0;
+    const titleFieldHeight = titleFieldBitmap ? titleFieldBitmap.height : 0;
     let totalWidth = rankLogicalW + clanFieldWidth + nameFieldWidth + factionW + factionSpacing;
     totalWidth = Math.max(1, totalWidth);
     const visualWidth = Math.max(1, totalWidth + rankVisualOverflowLeft + rankVisualOverflowRight + rank23LeftAlignShift);
     const bitmapHeight = Math.max(1, rankReady ? rankY + rankH : 0, factionReady ? factionY + factionH : 0, clanFieldBitmap ? clanFieldBitmap.height + textFieldY + 1 : 0, nameFieldBitmap ? nameFieldBitmap.height + textFieldY + 1 : 0);
-    const startX = Math.round(centerX - totalWidth / 2) + drawOffsetX - rankVisualOverflowLeft - rank23LeftAlignShift;
+    const titleGap = titleFieldBitmap ? 1 : 0;
+    const compositeHeight = bitmapHeight + titleGap + titleFieldHeight;
+    const visualStartX = Math.round(centerX - totalWidth / 2) + drawOffsetX - rankVisualOverflowLeft - rank23LeftAlignShift;
+    const titleStartX = titleFieldBitmap ? Math.round(centerX - titleFieldWidth / 2) : visualStartX;
+    const startX = Math.min(visualStartX, titleStartX);
+    const compositeWidth = Math.max(1, Math.max(visualStartX + visualWidth, titleStartX + titleFieldWidth) - startX);
+    const nameLineX = visualStartX - startX;
+    const titleLineX = titleFieldBitmap ? titleStartX - startX : 0;
+    const titleLineY = bitmapHeight + titleGap;
     const startY = Math.round(baseY + drawOffsetY);
     const rankSignature = rankReady ? `${rankId}:${rankImg.width}x${rankImg.height}` : "none";
     const factionSignature = factionReady ? `${factionId}:${factionImg.width}x${factionImg.height}` : "none";
-    const compositeCacheKey = "flashNPv1|" + flashNameplateFontCacheRevision + "|" + safeName + "|" + clanText + "|" + fillStyle + "|" + (clanTagColor || fillStyle) + "|" + rankSignature + "|" + factionSignature + "|" + clanFieldWidth + "|" + nameFieldWidth + "|" + totalWidth + "|" + visualWidth + "|" + bitmapHeight + "|" + rankVisualOverflowLeft + "|" + rankVisualOverflowRight + "|" + rank23LeftAlignShift;
+    const compositeCacheKey = "flashNPv2|" + flashNameplateFontCacheRevision + "|" + safeName + "|" + clanText + "|" + titleText + "|" + fillStyle + "|" + (clanTagColor || fillStyle) + "|" + rankSignature + "|" + factionSignature + "|" + clanFieldWidth + "|" + nameFieldWidth + "|" + titleFieldWidth + "|" + totalWidth + "|" + visualWidth + "|" + compositeWidth + "|" + compositeHeight + "|" + bitmapHeight + "|" + rankVisualOverflowLeft + "|" + rankVisualOverflowRight + "|" + rank23LeftAlignShift;
     let compositeCanvas = nameplateCompositeBitmapCache.get(compositeCacheKey);
     if (compositeCanvas) {
         touchNameplateCompositeBitmapCacheKey(compositeCacheKey, compositeCanvas);
     }
     if (!compositeCanvas) {
         compositeCanvas = document.createElement("canvas");
-        compositeCanvas.width = visualWidth;
-        compositeCanvas.height = bitmapHeight;
+        compositeCanvas.width = compositeWidth;
+        compositeCanvas.height = compositeHeight;
         const sctx = compositeCanvas.getContext("2d");
         sctx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
         sctx.imageSmoothingEnabled = true;
         if (rankReady) {
-            sctx.drawImage(rankImg, rankDrawX, rankY);
+            sctx.drawImage(rankImg, nameLineX + rankDrawX, rankY);
         }
         if (factionReady) {
-            sctx.drawImage(factionImg, rankVisualOverflowLeft + totalWidth - factionW + rank23LeftAlignShift, factionY);
+            sctx.drawImage(factionImg, nameLineX + rankVisualOverflowLeft + totalWidth - factionW + rank23LeftAlignShift, factionY);
         }
-        let cursorX = rankVisualOverflowLeft + rankLogicalW + rank23LeftAlignShift;
+        let cursorX = nameLineX + rankVisualOverflowLeft + rankLogicalW + rank23LeftAlignShift;
         if (clanFieldBitmap) {
             sctx.drawImage(clanFieldBitmap, cursorX, textFieldY);
             cursorX += clanFieldWidth;
         }
         if (nameFieldBitmap) {
             sctx.drawImage(nameFieldBitmap, cursorX, textFieldY);
+        }
+        if (titleFieldBitmap) {
+            sctx.drawImage(titleFieldBitmap, titleLineX, titleLineY);
         }
         nameplateCompositeBitmapCache.set(compositeCacheKey, compositeCanvas);
         pruneNameplateCompositeBitmapCache();
@@ -1282,16 +1309,17 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
     if (achievementReady) {
-        ctx.drawImage(achievementImg, startX + rank23LeftAlignShift - 2, startY - 14);
+        ctx.drawImage(achievementImg, startX + nameLineX + rank23LeftAlignShift - 2, startY - 14);
     }
     ctx.drawImage(compositeCanvas, startX, startY);
     ctx.restore();
     return {
         startX: startX,
         startY: startY,
-        bitmapWidth: totalWidth,
-        bitmapHeight: bitmapHeight,
-        rankWidth: rankVisualOverflowLeft + rankLogicalW + rank23LeftAlignShift
+        bitmapWidth: compositeWidth,
+        bitmapHeight: compositeHeight,
+        rankWidth: nameLineX + rankVisualOverflowLeft + rankLogicalW + rank23LeftAlignShift,
+        simpleDroneY: titleFieldBitmap ? startY + compositeHeight + 1 : startY + 24
     };
 }
 
@@ -1359,7 +1387,7 @@ function drawSimpleDroneDisplayUnderNameplate(ctx, nameplateLayout, counts) {
     const droneDisplayBitmap = buildSimpleDroneDisplayBitmap(flax, iris);
     if (!droneDisplayBitmap) return;
     const drawX = Math.round(nameplateLayout.startX + nameplateLayout.rankWidth + 2);
-    const drawY = Math.round(nameplateLayout.startY + 24);
+    const drawY = Math.round(Number.isFinite(nameplateLayout.simpleDroneY) ? nameplateLayout.simpleDroneY : nameplateLayout.startY + 24);
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(droneDisplayBitmap, drawX, drawY);
@@ -3380,7 +3408,7 @@ function drawShip() {
         const baseY = computeNameplateY(sy, shipDrawnHeight, heroShipId, entityScale);
         const clanTagColor = heroClanTag ? getClanTagColor(0) : null;
         const heroNameplateColor = typeof getGameXmlColorPattern === "function" ? getGameXmlColorPattern("neutral", "#ffffff") : "#ffffff";
-        const heroNameplateLayout = drawNameplateWithIcons(ctx, heroName, heroClanTag, shipScreenX, baseY, heroNameplateColor, clanTagColor, heroRankId, window.heroFactionId || 0, heroGalaxyGatesFinished || 0);
+        const heroNameplateLayout = drawNameplateWithIcons(ctx, heroName, heroClanTag, shipScreenX, baseY, heroNameplateColor, clanTagColor, heroRankId, window.heroFactionId || 0, heroGalaxyGatesFinished || 0, window.heroGameTitleKey || "");
         if (!setting_show_drones) {
             const heroDroneDisplayCounts = getSimpleDroneDisplayCounts(window.heroDrones, window.heroDroneDisplayCounts || null);
             drawSimpleDroneDisplayUnderNameplate(ctx, heroNameplateLayout, heroDroneDisplayCounts);
@@ -3934,7 +3962,7 @@ function drawEntities() {
             const rankId = e.rankId || (e.id === heroId ? heroRankId : 0);
             const achievementId = e.galaxyGatesFinished || (e.id === heroId ? heroGalaxyGatesFinished : 0);
             const clanTagColor = e.kind === "player" && e.clanTag ? getClanTagColor(e.clanDiplomacy) : null;
-            const entityNameplateLayout = drawNameplateWithIcons(ctx, e.name, e.kind === "player" ? e.clanTag : null, entityScreenX, baseY, getNameplateColor(e), clanTagColor, rankId, e.factionId || 0, achievementId);
+            const entityNameplateLayout = drawNameplateWithIcons(ctx, e.name, e.kind === "player" ? e.clanTag : null, entityScreenX, baseY, getNameplateColor(e), clanTagColor, rankId, e.factionId || 0, achievementId, e.gameTitleKey || "");
             if (!setting_show_drones && e.kind === "player") {
                 const entityDroneDisplayCounts = getSimpleDroneDisplayCounts(e.drones, e.droneDisplayCounts || null);
                 drawSimpleDroneDisplayUnderNameplate(ctx, entityNameplateLayout, entityDroneDisplayCounts);
