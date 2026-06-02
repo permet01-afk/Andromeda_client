@@ -31,6 +31,21 @@ $badgeClass = function ($status) {
     return '';
 };
 
+$titleVisualClass = function ($titleKey) {
+    $map = [
+        'title_14' => 'most-wanted',
+        'title_400' => 'spaceball',
+        'title_401' => 'uber',
+        'title_402' => 'boss',
+        'title_403' => 'protegit',
+        'title_404' => 'pvp',
+        'title_405' => 'weekly',
+        'title_406' => 'elite',
+        'title_5' => 'beginner',
+    ];
+    return $map[(string)$titleKey] ?? 'standard';
+};
+
 try {
     $titleService = new TitleService($db, (int)$sessionPlayerId);
 
@@ -63,11 +78,12 @@ $temporaryLabel = !empty($titleState['temporary']) ? $titleState['temporary']['l
 $selectedLabel = $titleState['selected_label'] !== '' ? $titleState['selected_label'] : 'None selected';
 $hasTemporary = !empty($titleState['has_temporary']);
 
-$renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $hasTemporary, $badgeClass) {
+$renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $hasTemporary, $badgeClass, $titleVisualClass) {
     $label = $card['label'] ?? 'Unknown title';
     $type = $card['type'] ?? '';
     $status = $card['status'] ?? '';
     $condition = $card['condition'] ?? '';
+    $visualClass = $titleVisualClass($card['title_key'] ?? '');
     $progressPercent = isset($card['progress_percent']) ? max(0, min(100, (int)$card['progress_percent'])) : 0;
     $progressText = (string)($card['progress_text'] ?? '');
     $canEquip = !empty($card['can_equip']);
@@ -75,36 +91,39 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
     $isEquipped = !empty($card['is_equipped']);
     $isLocked = !empty($card['is_locked']);
     ?>
-    <article class="title-card<?php echo $isEquipped ? ' is-equipped' : ''; ?><?php echo $isLocked ? ' is-locked' : ''; ?>">
-        <div class="title-card__topline">
-            <span class="titles-badge titles-badge--type"><?php echo $escapeTitle($type); ?></span>
-            <span class="titles-badge<?php echo $badgeClass($status); ?>"><?php echo $escapeTitle($status); ?></span>
-        </div>
-        <h3><?php echo $escapeTitle($label); ?></h3>
-        <p><?php echo $escapeTitle($condition); ?></p>
-        <?php if ($progressText !== '') { ?>
-            <div class="title-progress" aria-label="<?php echo $escapeTitle($progressText); ?>">
-                <span style="width: <?php echo $progressPercent; ?>%"></span>
+    <article class="title-card title-card--<?php echo $escapeTitle($visualClass); ?><?php echo $isEquipped ? ' is-equipped' : ''; ?><?php echo $isLocked ? ' is-locked' : ''; ?>">
+        <div class="title-card__emblem" aria-hidden="true"><span></span></div>
+        <div class="title-card__content">
+            <div class="title-card__topline">
+                <span class="titles-badge titles-badge--type"><?php echo $escapeTitle($type); ?></span>
+                <span class="titles-badge<?php echo $badgeClass($status); ?>"><?php echo $escapeTitle($status); ?></span>
             </div>
-            <div class="title-card__progress-text"><?php echo $escapeTitle($progressText); ?></div>
-        <?php } ?>
-        <div class="title-card__actions">
-            <?php if ($isEquipped) { ?>
-                <button class="titles-button" type="button" disabled>Equipped</button>
-            <?php } elseif ($canEquip) { ?>
-                <form method="post">
-                    <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
-                    <input type="hidden" name="title_action" value="equip" />
-                    <input type="hidden" name="title_key" value="<?php echo $escapeTitle($card['title_key'] ?? ''); ?>" />
-                    <button class="titles-button" type="submit">Equip</button>
-                </form>
-            <?php } elseif ($disabledByTemporary) { ?>
-                <button class="titles-button titles-button--disabled" type="button" disabled>Temporary active</button>
-            <?php } elseif ($isLocked) { ?>
-                <span class="title-card__hint">Unlock this title to equip it.</span>
-            <?php } else { ?>
-                <span class="title-card__hint">Not selectable.</span>
+            <h3><?php echo $escapeTitle($label); ?></h3>
+            <p><?php echo $escapeTitle($condition); ?></p>
+            <?php if ($progressText !== '') { ?>
+                <div class="title-progress" aria-label="<?php echo $escapeTitle($progressText); ?>">
+                    <span style="width: <?php echo $progressPercent; ?>%"></span>
+                </div>
+                <div class="title-card__progress-text"><?php echo $escapeTitle($progressText); ?></div>
             <?php } ?>
+            <div class="title-card__actions">
+                <?php if ($isEquipped) { ?>
+                    <button class="titles-button" type="button" disabled>Equipped</button>
+                <?php } elseif ($canEquip) { ?>
+                    <form method="post">
+                        <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
+                        <input type="hidden" name="title_action" value="equip" />
+                        <input type="hidden" name="title_key" value="<?php echo $escapeTitle($card['title_key'] ?? ''); ?>" />
+                        <button class="titles-button" type="submit">Equip</button>
+                    </form>
+                <?php } elseif ($disabledByTemporary) { ?>
+                    <button class="titles-button titles-button--disabled" type="button" disabled>Temporary active</button>
+                <?php } elseif ($isLocked) { ?>
+                    <span class="title-card__hint">Unlock this title to equip it.</span>
+                <?php } else { ?>
+                    <span class="title-card__hint">Not selectable.</span>
+                <?php } ?>
+            </div>
         </div>
     </article>
     <?php
@@ -112,16 +131,19 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
 ?>
 
 <div class="user-tab-panel titles-panel">
-    <div class="user-tab-panel__header titles-header">
-        <div>
-            <h2>Titles</h2>
+    <div class="titles-hero">
+        <div class="titles-hero__copy">
+            <span class="titles-kicker">Pilot identity</span>
+            <h2>TITLES</h2>
             <p>Titles appear under your pilot name in-game. Temporary titles always override your selected permanent title.</p>
+            <form method="post" class="titles-remove-form">
+                <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
+                <input type="hidden" name="title_action" value="remove" />
+                <button class="titles-button titles-button--ghost" type="submit"<?php echo $titleState['selected_label'] === '' ? ' disabled' : ''; ?>>Remove permanent title</button>
+            </form>
         </div>
-        <form method="post" class="titles-remove-form">
-            <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
-            <input type="hidden" name="title_action" value="remove" />
-            <button class="titles-button titles-button--ghost" type="submit"<?php echo $titleState['selected_label'] === '' ? ' disabled' : ''; ?>>Remove permanent title</button>
-        </form>
+        <div class="titles-hero__planet" aria-hidden="true"></div>
+        <div class="titles-hero__ship" aria-hidden="true"></div>
     </div>
 
     <?php if ($titleMessage !== '') { ?>
@@ -139,16 +161,22 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
     <?php } ?>
 
     <div class="titles-summary-grid">
-        <section class="titles-summary-card">
-            <span class="titles-summary-label">Current Displayed Title</span>
-            <strong><?php echo $escapeTitle($currentLabel); ?></strong>
-            <p>Shown in-game now.</p>
+        <section class="titles-summary-card titles-summary-card--current">
+            <div class="titles-summary-card__icon" aria-hidden="true"><span></span></div>
+            <div>
+                <span class="titles-summary-label">Current Displayed Title</span>
+                <strong><?php echo $escapeTitle($currentLabel); ?></strong>
+                <p>Shown in-game now.</p>
+            </div>
         </section>
 
         <section class="titles-summary-card titles-summary-card--temporary">
-            <span class="titles-summary-label">Temporary Override</span>
-            <strong><?php echo $escapeTitle($temporaryLabel); ?></strong>
-            <p>Temporary titles override permanent titles.</p>
+            <div class="titles-summary-card__icon" aria-hidden="true"><span></span></div>
+            <div>
+                <span class="titles-summary-label">Temporary Override</span>
+                <strong><?php echo $escapeTitle($temporaryLabel); ?></strong>
+                <p>Temporary titles override permanent titles.</p>
+            </div>
             <?php if ($hasTemporary) { ?>
                 <form method="post" class="titles-inline-form">
                     <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
@@ -158,10 +186,13 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
             <?php } ?>
         </section>
 
-        <section class="titles-summary-card">
-            <span class="titles-summary-label">Selected Permanent Title</span>
-            <strong><?php echo $escapeTitle($selectedLabel); ?></strong>
-            <p>Returns automatically when a temporary title expires or is removed.</p>
+        <section class="titles-summary-card titles-summary-card--permanent">
+            <div class="titles-summary-card__icon" aria-hidden="true"><span></span></div>
+            <div>
+                <span class="titles-summary-label">Selected Permanent Title</span>
+                <strong><?php echo $escapeTitle($selectedLabel); ?></strong>
+                <p>Returns automatically when a temporary title expires or is removed.</p>
+            </div>
         </section>
     </div>
 
@@ -172,16 +203,19 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
         </div>
         <div class="titles-card-grid titles-card-grid--two">
             <?php foreach (($titleState['temporary_titles'] ?? []) as $card) { ?>
-                <article class="title-card title-card--temporary<?php echo ($card['status'] ?? '') === 'Active' ? ' is-active' : ''; ?>">
-                    <div class="title-card__topline">
-                        <span class="titles-badge titles-badge--type"><?php echo $escapeTitle($card['type'] ?? 'Temporary'); ?></span>
-                        <span class="titles-badge<?php echo $badgeClass($card['status'] ?? ''); ?>"><?php echo $escapeTitle($card['status'] ?? ''); ?></span>
+                <article class="title-card title-card--temporary title-card--<?php echo $escapeTitle($titleVisualClass($card['title_key'] ?? '')); ?><?php echo ($card['status'] ?? '') === 'Active' ? ' is-active' : ''; ?>">
+                    <div class="title-card__emblem" aria-hidden="true"><span></span></div>
+                    <div class="title-card__content">
+                        <div class="title-card__topline">
+                            <span class="titles-badge titles-badge--type"><?php echo $escapeTitle($card['type'] ?? 'Temporary'); ?></span>
+                            <span class="titles-badge<?php echo $badgeClass($card['status'] ?? ''); ?>"><?php echo $escapeTitle($card['status'] ?? ''); ?></span>
+                        </div>
+                        <h3><?php echo $escapeTitle($card['label'] ?? 'Unknown title'); ?></h3>
+                        <p><?php echo $escapeTitle($card['condition'] ?? ''); ?></p>
+                        <?php if (!empty($card['expires_at'])) { ?>
+                            <div class="title-card__progress-text">Expires: <?php echo $escapeTitle($card['expires_at']); ?></div>
+                        <?php } ?>
                     </div>
-                    <h3><?php echo $escapeTitle($card['label'] ?? 'Unknown title'); ?></h3>
-                    <p><?php echo $escapeTitle($card['condition'] ?? ''); ?></p>
-                    <?php if (!empty($card['expires_at'])) { ?>
-                        <div class="title-card__progress-text">Expires: <?php echo $escapeTitle($card['expires_at']); ?></div>
-                    <?php } ?>
                 </article>
             <?php } ?>
         </div>
