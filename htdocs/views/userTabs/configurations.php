@@ -5,10 +5,12 @@
 <style>
     
     .config-card {
-        background: var(--color-surface, #0b1221);
-        border: 1px solid var(--color-border, #1e293b);
-        border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        background:
+            radial-gradient(circle at 18% 0%, rgba(34, 211, 238, 0.12), transparent 34%),
+            linear-gradient(145deg, rgba(8, 16, 31, 0.98), rgba(2, 7, 17, 0.98));
+        border: 1px solid rgba(56, 189, 248, 0.24);
+        border-radius: 10px;
+        box-shadow: 0 18px 45px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
         overflow: hidden;
         width: 100%;
         max-width: 1300px;
@@ -18,17 +20,30 @@
     }
 
     .config-header {
-        background: rgba(8, 14, 26, 0.6);
-        border-bottom: 1px solid var(--color-border, #1e293b);
-        padding: 0.8rem 1.5rem;
+        background:
+            linear-gradient(90deg, rgba(15, 23, 42, 0.92), rgba(8, 47, 73, 0.38), rgba(15, 23, 42, 0.86));
+        border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+        padding: 1rem 1.5rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
         flex-shrink: 0;
+        position: relative;
+    }
+
+    .config-header::after {
+        content: "";
+        position: absolute;
+        left: 1.5rem;
+        right: 1.5rem;
+        bottom: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.55), transparent);
+        opacity: 0.75;
     }
 
     .config-title {
-        color: var(--color-accent, #5eead4);
+        color: #e6fbff;
         font-weight: 700;
         text-transform: uppercase;
         font-size: 1.1rem;
@@ -39,18 +54,22 @@
     }
 
     .config-icon {
-        height: 24px; width: auto; opacity: 0.8;
+        height: 24px; width: auto; opacity: 0.95;
+        color: #5eead4;
         filter: drop-shadow(0 0 5px rgba(94, 234, 212, 0.4));
     }
 
     .config-subtitle {
-        color: #94a3b8; font-size: 0.85rem; font-weight: 500;
+        color: #9fb4cc; font-size: 0.85rem; font-weight: 600;
+        letter-spacing: 0.02em;
     }
 
     
     .andromeda-config-frameWrap {
         width: 100%;
-        background: rgba(0, 0, 0, 0.2);
+        background:
+            radial-gradient(circle at 78% 18%, rgba(59, 130, 246, 0.1), transparent 30%),
+            rgba(0, 0, 0, 0.24);
         height: 780px; 
         position: relative; 
     }
