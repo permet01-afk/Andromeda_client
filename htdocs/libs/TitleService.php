@@ -246,13 +246,17 @@ class TitleService
                AND title_scope = :title_scope
                AND revoked_at IS NULL
                AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())
-               AND title_key IN ('title_14', 'title_400')
-             ORDER BY CASE title_key WHEN 'title_14' THEN 1 WHEN 'title_400' THEN 2 ELSE 3 END
+               AND title_key IN (:most_wanted_filter, :spaceball_filter)
+             ORDER BY CASE title_key WHEN :most_wanted_order THEN 1 WHEN :spaceball_order THEN 2 ELSE 3 END
              LIMIT 1'
         );
         $stmt->execute([
             ':player_id' => $this->playerId,
             ':title_scope' => 'temporary',
+            ':most_wanted_filter' => self::MOST_WANTED_TITLE,
+            ':spaceball_filter' => self::SPACEBALL_CHAMPION_TITLE,
+            ':most_wanted_order' => self::MOST_WANTED_TITLE,
+            ':spaceball_order' => self::SPACEBALL_CHAMPION_TITLE,
         ]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$row) {
