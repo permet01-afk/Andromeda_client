@@ -23,6 +23,11 @@ $tabs = [
         'description' => 'Complete hunting contracts, basic quests, and PVP missions.',
         'href' => 'view.php?page=user&amp;tab=quests',
     ],
+    'titles' => [
+        'label' => 'Titles',
+        'description' => 'Equip unlocked titles shown under your pilot name.',
+        'href' => 'view.php?page=user&amp;tab=titles',
+    ],
     'configurations' => [
         'label' => 'Configurations',
         'description' => 'Fine-tune your ship layouts and presets.',
@@ -54,7 +59,7 @@ $tabs = [
             </nav>
             <section class="user-hub__content" aria-live="polite">
                 <?php
-                $allowed = ['infos', 'upgrades', 'quests', 'configurations'];
+                $allowed = ['infos', 'upgrades', 'quests', 'titles', 'configurations'];
                 if (in_array($displayPage, $allowed, true)) {
                     include 'views/userTabs/' . $displayPage . '.php';
                 } else {

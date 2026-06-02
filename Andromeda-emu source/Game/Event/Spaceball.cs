@@ -4,6 +4,7 @@ using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Maps.Collectables;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Titles;
 using OrbitReborn_Emulator.Util;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
@@ -335,6 +336,7 @@ namespace OrbitReborn_Emulator.Game.Event
             {
                 Spaceball.GrantConnectedWinningFactionReward(session, message);
             }
+            TitleService.GrantSpaceballChampionToOnlineWinners(factionId, SpaceballMapId);
         }
 
         public static void ResetBall()
@@ -420,6 +422,7 @@ namespace OrbitReborn_Emulator.Game.Event
         {
             if (Spaceball.mActive)
                 return;
+            TitleService.RevokeSpaceballChampionTitles();
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
                 client.ExecuteNonQuery("UPDATE event_information SET isActif=1 WHERE id = 3");

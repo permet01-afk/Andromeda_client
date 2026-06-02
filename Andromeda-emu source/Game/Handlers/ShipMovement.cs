@@ -811,6 +811,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     {
                         session.CharacterInfo.NpcInRange.Add(referenceObject.Id);
                         session.SendData(PacketComposer.Compose("C", referenceObject.Id.ToString() + "|" + (object)referenceObject.ShipId + "|0|" + referenceObject.ClanTag + "|" + referenceObject.Name + "|" + (object)referenceObject.LocX + "|" + (object)referenceObject.LocY + "|" + (object)referenceObject.FactionId + "|" + (object)referenceObject.IsClanMember + "|" + (object)referenceObject.Rank + "|" + (object)referenceObject.IsBoss + "|" + (object)referenceObject.IsClanMember + "|" + (object)referenceObject.GalaxyGatesRings));
+                        if (!string.IsNullOrEmpty(referenceObject.GameTitle))
+                            session.SendData(PacketComposer.Compose("n", "pt|" + referenceObject.Id + "|" + referenceObject.GameTitle));
                         ServerMessage Message = MapUserMovementListComposer.ComposeIA(new CList<MapActor>() { key });
                         session.SendData(Message);
                         if (referenceObject.Drones == 1)

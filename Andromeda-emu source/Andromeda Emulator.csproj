@@ -141,6 +141,7 @@
     <Compile Include="Game\Npcs\Npc.cs" />
     <Compile Include="Game\Npcs\NpcAI.cs" />
     <Compile Include="Game\Npcs\NpcManager.cs" />
+    <Compile Include="Game\Titles\TitleService.cs" />
     <Compile Include="Game\Portal\PortalInfo.cs" />
     <Compile Include="Game\Portal\PortalManager.cs" />
     <Compile Include="Game\Sessions\Session.cs" />

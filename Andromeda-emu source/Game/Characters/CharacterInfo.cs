@@ -19,6 +19,7 @@ using System.Net;
 using System.Threading;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.GalaxyGates;
+using OrbitReborn_Emulator.Game.Titles;
 
 namespace OrbitReborn_Emulator.Game.Characters
 {
@@ -3330,7 +3331,6 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             if (this.mRankPoints < 25000L && canBeginner == 1)
             {
-                this.mGameTitle = "title_5";
                 this.IsBeginner = true;
             }
             if (canBeginner == 1 && this.mRankPoints >= 25000L)
@@ -3341,6 +3341,8 @@ namespace OrbitReborn_Emulator.Game.Characters
                 MySqlClient.SetParameter("beginner", 0);
                 MySqlClient.ExecuteNonQuery("UPDATE users SET canBeginner = @beginner WHERE id = @id");
             }
+
+            TitleService.RefreshDisplayedTitle(this);
 
             int ringsDb = 0;
             ringsDb = getInt32("gg_rings", 0);
@@ -4089,7 +4091,9 @@ namespace OrbitReborn_Emulator.Game.Characters
                             rewardAsEnemy
                         ) || questProgressChanged;
 
-                        if (questProgressChanged)
+                        bool titleProgressChanged = TitleService.TrackEligiblePvpKill(this.Attacker, ennemy, rewardAsEnemy);
+
+                        if (questProgressChanged || titleProgressChanged)
                             this.Attacker.SendData(PacketComposer.Compose("QST", "UPD"));
 
                         if (!_1v1.IsOnMap(attackerInfo.MapId))

@@ -20,6 +20,10 @@ if (empty($_SESSION['quest_csrf_token'])) {
     $_SESSION['quest_csrf_token'] = bin2hex(random_bytes(32));
 }
 $questCsrfToken = $_SESSION['quest_csrf_token'];
+if (empty($_SESSION['title_csrf_token'])) {
+    $_SESSION['title_csrf_token'] = bin2hex(random_bytes(32));
+}
+$titleCsrfToken = $_SESSION['title_csrf_token'];
 session_write_close();
 
 ob_start();
@@ -148,6 +152,7 @@ $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
                     <li><a class="submenu-link" href="view.php?page=user&amp;tab=upgrades">Upgrades</a></li>
                     <li><a class="submenu-link" href="view.php?page=user&amp;tab=configurations">Configurations</a></li>
                     <li><a class="submenu-link" href="view.php?page=user&amp;tab=quests">Quest</a></li>
+                    <li><a class="submenu-link" href="view.php?page=user&amp;tab=titles">Titles</a></li>
                 </ul>
             </li>
 

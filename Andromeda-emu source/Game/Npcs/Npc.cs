@@ -7,6 +7,7 @@ using OrbitReborn_Emulator.Game.Maps.Collectables;
 using OrbitReborn_Emulator.Game.Misc;
 using OrbitReborn_Emulator.Game.Quests;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Titles;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Specialized;
 using OrbitReborn_Emulator.Storage;
@@ -70,6 +71,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private double mTimeTaken;
 
         private string mName;
+        private string mGameTitle = string.Empty;
 
         private int mShipId;
         private int mShipHp;
@@ -289,6 +291,12 @@ namespace OrbitReborn_Emulator.Game.Npcs
         public int RewardOwnerId
         {
             get { return this.mRewardOwnerId; }
+        }
+
+        public string GameTitle
+        {
+            get { return this.mGameTitle; }
+            set { this.mGameTitle = value ?? string.Empty; }
         }
 
         public double RewardOwnerLastHit
@@ -2135,10 +2143,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 }
 
                 questProgressChanged = QuestObjectiveProgress.AddNpcKillProgress(sessionByCharacterId.CharacterInfo.Id, this.Name, this.MapId);
+                bool titleProgressChanged = TitleService.TrackNpcKill(sessionByCharacterId, this.Name, this.MapId);
 
                 sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|Target destroyed."));
 
-                if (questProgressChanged)
+                if (questProgressChanged || titleProgressChanged)
                     sessionByCharacterId.SendData(PacketComposer.Compose("QST", "UPD"));
 
                 if (sessionByCharacterId.CharacterInfo.SelectedPlayer == this.Id)
@@ -2164,6 +2173,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 if (leveledUp)
                     sessionByCharacterId.SendData(PacketComposer.Compose("A", $"LUP|{levelNow}|1"));
             }
+
+            TitleService.OnNpcDestroyed(this);
 
             StopNpcAttack();
             this.Loot();

@@ -7,6 +7,7 @@ using OrbitReborn_Emulator.Game.Sessions;
 using System.Collections.Generic;
 using System.Threading;
 using OrbitReborn_Emulator.Game.GalaxyGates;
+using OrbitReborn_Emulator.Game.Titles;
 
 namespace OrbitReborn_Emulator.Game.Maps
 {
@@ -37,6 +38,7 @@ namespace OrbitReborn_Emulator.Game.Maps
             Session.AbsoluteMapId = mapInfo.Id;
             Session.MapAuthed = true;
             Session.MapJoined = true;
+            TitleService.RefreshDisplayedTitle(Session, false);
 
             Session.SendData(PacketComposer.Compose("i", Session.CharacterInfo.MapId.ToString()));
             Session.SendData(UserDataComposer.Compose(Session));
@@ -52,8 +54,7 @@ namespace OrbitReborn_Emulator.Game.Maps
                 Session.SendData(PacketComposer.Compose("n", "e|" + (object)Session.CharacterId + "|" + (object)flax + "/" + (object)iris));
             }
 
-            if (Session.CharacterInfo.GameTitle != "")
-                Session.SendData(PacketComposer.Compose("n", "pt|" + (object)Session.CharacterId + "|" + Session.CharacterInfo.GameTitle));
+            Session.SendData(PacketComposer.Compose("n", "pt|" + (object)Session.CharacterId + "|" + Session.CharacterInfo.GameTitle));
 
             Session.CharacterInfo.ClientPortalIds = null;
             Session.SendData(PacketComposer.Compose("N", "-1"));
@@ -142,6 +143,7 @@ namespace OrbitReborn_Emulator.Game.Maps
             {
                 Session.MapAuthed = true;
                 Session.MapJoined = true;
+                TitleService.RefreshDisplayedTitle(Session, false);
                 if (LinkedPortal != null)
                 {
                     Session.CharacterInfo.LocX = LinkedPortal.PosX;
@@ -161,8 +163,7 @@ namespace OrbitReborn_Emulator.Game.Maps
 
                         Session.SendData(PacketComposer.Compose("n", "e|" + (object)Session.CharacterId + "|" + (object)flax + "/" + (object)iris));
                     }
-                    if (Session.CharacterInfo.GameTitle != "")
-                        Session.SendData(PacketComposer.Compose("n", "pt|" + (object)Session.CharacterId + "|" + Session.CharacterInfo.GameTitle));
+                    Session.SendData(PacketComposer.Compose("n", "pt|" + (object)Session.CharacterId + "|" + Session.CharacterInfo.GameTitle));
                     Session.CharacterInfo.CurrentPortal = LinkedPortal.Id;
                 }
                 else
@@ -180,8 +181,7 @@ namespace OrbitReborn_Emulator.Game.Maps
 
                         Session.SendData(PacketComposer.Compose("n", "e|" + (object)Session.CharacterId + "|" + (object)flax + "/" + (object)iris));
                     }
-                    if (Session.CharacterInfo.GameTitle != "")
-                        Session.SendData(PacketComposer.Compose("n", "pt|" + (object)Session.CharacterId + "|" + Session.CharacterInfo.GameTitle));
+                    Session.SendData(PacketComposer.Compose("n", "pt|" + (object)Session.CharacterId + "|" + Session.CharacterInfo.GameTitle));
                 }
 
                 Session.CharacterInfo.Attacker = (Session)null;

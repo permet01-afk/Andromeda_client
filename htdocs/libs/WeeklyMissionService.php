@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/TitleService.php';
+
 class WeeklyMissionService
 {
     const WEEKLY_TIMEZONE = 'Europe/Zurich';
@@ -127,6 +129,8 @@ class WeeklyMissionService
                 ':mission_id' => (int)$mission['id'],
                 ':week_key' => $meta['week_key'],
             ]);
+
+            TitleService::trackWeeklyMissionClaim($this->db, $this->playerId);
 
             $this->db->commit();
             return 'Weekly mission reward claimed.';

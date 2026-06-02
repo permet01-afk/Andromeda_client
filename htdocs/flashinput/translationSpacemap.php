@@ -1552,6 +1552,13 @@ Increases you shield power by 10% and your hit points by 20%. Reduces, however, 
 <item id='title_21'><![CDATA[Spring Fighter MMO 2]]></item>
 <item id='title_22'><![CDATA[Spring Fighter EIC 2]]></item>
 <item id='title_23'><![CDATA[Spring Fighter VRU 2]]></item>
+<item id='title_400'><![CDATA[Spaceball Champion]]></item>
+<item id='title_401'><![CDATA[Uber Hunter]]></item>
+<item id='title_402'><![CDATA[Boss Slayer]]></item>
+<item id='title_403'><![CDATA[Protegit Breaker]]></item>
+<item id='title_404'><![CDATA[PvP Hunter]]></item>
+<item id='title_405'><![CDATA[Weekly Grinder]]></item>
+<item id='title_406'><![CDATA[Andromeda Elite]]></item>
 <item id='title_100'><![CDATA[Spring Fighter MMO]]></item>
 <item id='title_101'><![CDATA[Spring Fighter VRU]]></item>
 <item id='title_102'><![CDATA[Spring Fighter EIC]]></item>

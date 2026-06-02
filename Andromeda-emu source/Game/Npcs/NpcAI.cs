@@ -4,6 +4,7 @@ using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Titles;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Specialized;
 using System;
@@ -625,6 +626,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
             NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber Kristallon ]=-"], 29, 3, true);
             NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Uber StreuneR ]=-"], 29, 4, true);
             NpcAI.CreateNpc(NpcAI.RegisteredNpc["-=[ Boss Cubikon ]=-"], 29, 2, true);
+
+            TitleService.StartRuntime();
 
             NpcAI.mPerformUpdate = new Timer(new TimerCallback(NpcAI.PerformUpdate), (object)null, 0, AI_TICK_RATE);
             ++TimerManager.TimerRunning;
