@@ -19,7 +19,7 @@ $escapeTitle = function ($value) {
 
 $badgeClass = function ($status) {
     $status = strtolower((string)$status);
-    if ($status === 'active' || $status === 'equipped' || $status === 'unlocked') {
+    if ($status === 'active' || $status === 'equipped' || $status === 'selected' || $status === 'unlocked') {
         return ' titles-badge--good';
     }
     if ($status === 'locked') {
@@ -64,7 +64,7 @@ try {
             $titleMessage = 'Permanent title removed.';
         } elseif ($action === 'remove_temporary') {
             $titleService->removeTemporaryTitle();
-            $titleMessage = 'Temporary title removed.';
+            $titleMessage = 'Temporary title abandoned.';
         }
     }
 
@@ -78,11 +78,13 @@ $temporaryLabel = !empty($titleState['temporary']) ? $titleState['temporary']['l
 $selectedLabel = $titleState['selected_label'] !== '' ? $titleState['selected_label'] : 'None selected';
 $hasTemporary = !empty($titleState['has_temporary']);
 
-$renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $hasTemporary, $badgeClass, $titleVisualClass) {
+$renderTitleCard = function (array $card, bool $selectionMode = false) use ($escapeTitle, $hasTemporary, $badgeClass, $titleVisualClass) {
     $label = $card['label'] ?? 'Unknown title';
     $type = $card['type'] ?? '';
     $status = $card['status'] ?? '';
+    $displayStatus = !empty($card['is_equipped']) ? 'Selected' : $status;
     $condition = $card['condition'] ?? '';
+    $titleKey = (string)($card['title_key'] ?? '');
     $visualClass = $titleVisualClass($card['title_key'] ?? '');
     $progressPercent = isset($card['progress_percent']) ? max(0, min(100, (int)$card['progress_percent'])) : 0;
     $progressText = (string)($card['progress_text'] ?? '');
@@ -90,13 +92,22 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
     $disabledByTemporary = !empty($card['disabled_by_temporary']);
     $isEquipped = !empty($card['is_equipped']);
     $isLocked = !empty($card['is_locked']);
+    $isSelectable = $selectionMode && $canEquip && !$hasTemporary;
+    $isDisabledSelectable = $selectionMode && !$isEquipped && ($disabledByTemporary || $isLocked || !$canEquip);
+    $cardClass = 'title-card title-card--' . $escapeTitle($visualClass) . ($isEquipped ? ' is-equipped' : '') . ($isLocked ? ' is-locked' : '') . ($isDisabledSelectable ? ' is-disabled' : '');
     ?>
-    <article class="title-card title-card--<?php echo $escapeTitle($visualClass); ?><?php echo $isEquipped ? ' is-equipped' : ''; ?><?php echo $isLocked ? ' is-locked' : ''; ?>">
+    <?php if ($selectionMode && ($isSelectable || ($isEquipped && !$hasTemporary))) { ?>
+        <label class="title-card-option">
+            <input class="title-card__radio" type="radio" name="title_key" value="<?php echo $escapeTitle($titleKey); ?>"<?php echo $isEquipped ? ' checked' : ''; ?> />
+            <span class="<?php echo $cardClass; ?>">
+    <?php } else { ?>
+        <article class="<?php echo $cardClass; ?>">
+    <?php } ?>
         <div class="title-card__emblem" aria-hidden="true"><span></span></div>
         <div class="title-card__content">
             <div class="title-card__topline">
                 <span class="titles-badge titles-badge--type"><?php echo $escapeTitle($type); ?></span>
-                <span class="titles-badge<?php echo $badgeClass($status); ?>"><?php echo $escapeTitle($status); ?></span>
+                <span class="titles-badge<?php echo $badgeClass($displayStatus); ?>"><?php echo $escapeTitle($displayStatus); ?></span>
             </div>
             <h3><?php echo $escapeTitle($label); ?></h3>
             <p><?php echo $escapeTitle($condition); ?></p>
@@ -108,16 +119,11 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
             <?php } ?>
             <div class="title-card__actions">
                 <?php if ($isEquipped) { ?>
-                    <button class="titles-button" type="button" disabled>Equipped</button>
-                <?php } elseif ($canEquip) { ?>
-                    <form method="post">
-                        <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
-                        <input type="hidden" name="title_action" value="equip" />
-                        <input type="hidden" name="title_key" value="<?php echo $escapeTitle($card['title_key'] ?? ''); ?>" />
-                        <button class="titles-button" type="submit">Equip</button>
-                    </form>
+                    <span class="title-card__hint title-card__hint--selected">Currently selected</span>
+                <?php } elseif ($isSelectable) { ?>
+                    <span class="title-card__hint">Click to select, then save.</span>
                 <?php } elseif ($disabledByTemporary) { ?>
-                    <button class="titles-button titles-button--disabled" type="button" disabled>Temporary active</button>
+                    <span class="title-card__hint">Temporary title active.</span>
                 <?php } elseif ($isLocked) { ?>
                     <span class="title-card__hint">Unlock this title to equip it.</span>
                 <?php } else { ?>
@@ -125,7 +131,12 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
                 <?php } ?>
             </div>
         </div>
-    </article>
+    <?php if ($selectionMode && ($isSelectable || ($isEquipped && !$hasTemporary))) { ?>
+            </span>
+        </label>
+    <?php } else { ?>
+        </article>
+    <?php } ?>
     <?php
 };
 ?>
@@ -135,12 +146,7 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
         <div class="titles-hero__copy">
             <span class="titles-kicker">Pilot identity</span>
             <h2>TITLES</h2>
-            <p>Titles appear under your pilot name in-game. Temporary titles always override your selected permanent title.</p>
-            <form method="post" class="titles-remove-form">
-                <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
-                <input type="hidden" name="title_action" value="remove" />
-                <button class="titles-button titles-button--ghost" type="submit"<?php echo $titleState['selected_label'] === '' ? ' disabled' : ''; ?>>Remove permanent title</button>
-            </form>
+            <p>Temporary titles always override your selected permanent title.</p>
         </div>
         <div class="titles-hero__planet" aria-hidden="true"></div>
         <div class="titles-hero__ship" aria-hidden="true"></div>
@@ -155,8 +161,13 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
     <?php } ?>
 
     <?php if ($hasTemporary) { ?>
-        <div class="titles-alert titles-alert--notice">
-            Temporary title is active. Remove it before selecting a permanent title.
+        <div class="titles-temporary-warning">
+            <span>A temporary title is active. It overrides your selected permanent title.</span>
+            <form method="post" class="titles-inline-form">
+                <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
+                <input type="hidden" name="title_action" value="remove_temporary" />
+                <button class="titles-button titles-button--danger" type="submit">Abandon title</button>
+            </form>
         </div>
     <?php } ?>
 
@@ -173,25 +184,9 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
         <section class="titles-summary-card titles-summary-card--temporary">
             <div class="titles-summary-card__icon" aria-hidden="true"><span></span></div>
             <div>
-                <span class="titles-summary-label">Temporary Override</span>
+                <span class="titles-summary-label">Active Temporary Title</span>
                 <strong><?php echo $escapeTitle($temporaryLabel); ?></strong>
-                <p>Temporary titles override permanent titles.</p>
-            </div>
-            <?php if ($hasTemporary) { ?>
-                <form method="post" class="titles-inline-form">
-                    <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
-                    <input type="hidden" name="title_action" value="remove_temporary" />
-                    <button class="titles-button titles-button--danger" type="submit">Remove temporary title</button>
-                </form>
-            <?php } ?>
-        </section>
-
-        <section class="titles-summary-card titles-summary-card--permanent">
-            <div class="titles-summary-card__icon" aria-hidden="true"><span></span></div>
-            <div>
-                <span class="titles-summary-label">Selected Permanent Title</span>
-                <strong><?php echo $escapeTitle($selectedLabel); ?></strong>
-                <p>Returns automatically when a temporary title expires or is removed.</p>
+                <p><?php echo $hasTemporary ? 'This title is currently overriding your permanent selection.' : 'No temporary title is active.'; ?></p>
             </div>
         </section>
     </div>
@@ -224,15 +219,33 @@ $renderTitleCard = function (array $card) use ($escapeTitle, $titleCsrfToken, $h
     <section class="titles-section">
         <div class="titles-section__header">
             <h3>Permanent Titles</h3>
-            <span>Unlocked titles can be equipped when no temporary title is active</span>
+            <span><?php echo $hasTemporary ? 'Abandon your temporary title before changing your permanent title.' : 'Select one unlocked title, then save your choice.'; ?></span>
         </div>
-        <div class="titles-card-grid">
+        <form id="titles-save-form" method="post" class="titles-permanent-form<?php echo $hasTemporary ? ' is-disabled' : ''; ?>">
+            <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
+            <input type="hidden" name="title_action" value="equip" />
+            <div class="titles-card-grid">
             <?php foreach (($titleState['permanent_titles'] ?? []) as $card) { ?>
-                <?php $renderTitleCard($card); ?>
+                <?php $renderTitleCard($card, true); ?>
             <?php } ?>
             <?php if (!empty($titleState['beginner'])) { ?>
                 <?php $renderTitleCard($titleState['beginner']); ?>
             <?php } ?>
+            </div>
+        </form>
+        <div class="titles-action-bar">
+            <div>
+                <strong><?php echo $escapeTitle($selectedLabel); ?></strong>
+                <span>Selected permanent title</span>
+            </div>
+            <div class="titles-action-bar__buttons">
+                <form method="post" class="titles-remove-form">
+                    <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
+                    <input type="hidden" name="title_action" value="remove" />
+                    <button class="titles-button titles-button--ghost" type="submit"<?php echo $titleState['selected_label'] === '' ? ' disabled' : ''; ?>>Remove permanent title</button>
+                </form>
+                <button class="titles-button titles-button--primary" type="submit" form="titles-save-form"<?php echo $hasTemporary ? ' disabled' : ''; ?>>Save changes</button>
+            </div>
         </div>
     </section>
 </div>
