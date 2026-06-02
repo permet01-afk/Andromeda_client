@@ -629,12 +629,34 @@ namespace OrbitReborn_Emulator.Game.Titles
 
         private static void GrantTemporaryTitle(SqlDatabaseClient client, int playerId, string titleKey, string source, string expiresExpression)
         {
+            RevokeOtherTemporaryTitlesBeforeGrant(client, playerId, titleKey);
             client.ClearParameters();
             client.SetParameter("playerId", playerId);
             client.SetParameter("titleKey", titleKey);
             client.SetParameter("source", source);
             string expiresSql = string.IsNullOrEmpty(expiresExpression) ? "NULL" : expiresExpression;
             client.ExecuteNonQuery("INSERT INTO player_titles (player_id, title_key, title_scope, source, expires_at, revoked_at) VALUES (@playerId, @titleKey, 'temporary', @source, " + expiresSql + ", NULL) ON DUPLICATE KEY UPDATE title_scope = 'temporary', source = VALUES(source), expires_at = VALUES(expires_at), revoked_at = NULL");
+        }
+
+        private static void RevokeOtherTemporaryTitlesBeforeGrant(SqlDatabaseClient client, int playerId, string titleKey)
+        {
+            bool returnsMostWantedToNpc = titleKey != MostWantedTitleKey && HasActiveTemporaryTitle(client, playerId, MostWantedTitleKey) && IsMostWantedHeldByPlayer(client, playerId);
+
+            client.ClearParameters();
+            client.SetParameter("playerId", playerId);
+            client.SetParameter("titleKey", titleKey);
+            client.ExecuteNonQuery("UPDATE player_titles SET revoked_at = UTC_TIMESTAMP() WHERE player_id = @playerId AND title_scope = 'temporary' AND title_key <> @titleKey AND revoked_at IS NULL");
+
+            if (returnsMostWantedToNpc)
+            {
+                AssignMostWantedToRandomNpc(client);
+            }
+        }
+
+        private static bool IsMostWantedHeldByPlayer(SqlDatabaseClient client, int playerId)
+        {
+            DataRow state = GetMostWantedState(client);
+            return state != null && string.Equals(GetString(state, "holder_type"), "player", StringComparison.OrdinalIgnoreCase) && GetInt(state, "holder_player_id") == playerId;
         }
 
         private static void RevokeTemporaryTitle(SqlDatabaseClient client, int playerId, string titleKey)

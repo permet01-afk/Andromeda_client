@@ -15,7 +15,9 @@ class TitleService
     private $db;
     private $playerId;
 
-    private static $labels = [
+    private static $translationLabels = null;
+
+    private static $fallbackLabels = [
         'title_5' => 'Beginner',
         'title_14' => 'Most Wanted',
         'title_400' => 'Spaceball Champion',
@@ -38,6 +40,39 @@ class TitleService
         'title_406' => true,
     ];
 
+    private static $permanentDefinitions = [
+        'title_401' => [
+            'condition' => 'Destroy 500 Uber NPCs on 4-5.',
+            'progress_key' => 'uber_npc_map29',
+            'target' => 500,
+            'progress_label' => 'Uber NPCs destroyed on 4-5',
+        ],
+        'title_402' => [
+            'condition' => 'Destroy 25 Boss Cubikons on 4-5.',
+            'progress_key' => 'boss_cubikon_map29',
+            'target' => 25,
+            'progress_label' => 'Boss Cubikons destroyed on 4-5',
+        ],
+        'title_403' => [
+            'condition' => 'Destroy 500 Boss Protegits on 4-5.',
+            'progress_key' => 'boss_protegit_map29',
+            'target' => 500,
+            'progress_label' => 'Boss Protegits destroyed on 4-5',
+        ],
+        'title_404' => [
+            'condition' => 'Destroy 100 eligible enemy pilots.',
+            'progress_key' => 'eligible_pvp_kill',
+            'target' => 100,
+            'progress_label' => 'eligible enemy pilots destroyed',
+        ],
+        'title_405' => [
+            'condition' => 'Claim 25 Weekly Missions.',
+            'progress_key' => 'weekly_mission_claim',
+            'target' => 25,
+            'progress_label' => 'Weekly Missions claimed',
+        ],
+    ];
+
     public function __construct(PDO $db, int $playerId)
     {
         $this->db = $db;
@@ -46,7 +81,21 @@ class TitleService
 
     public static function getTitleLabel(string $titleKey): string
     {
-        return self::$labels[$titleKey] ?? $titleKey;
+        $titleKey = trim($titleKey);
+        if ($titleKey === '') {
+            return '';
+        }
+
+        $labels = self::getTranslationLabels();
+        if (isset($labels[$titleKey]) && $labels[$titleKey] !== '') {
+            return $labels[$titleKey];
+        }
+
+        if (isset(self::$fallbackLabels[$titleKey])) {
+            return self::$fallbackLabels[$titleKey];
+        }
+
+        return 'Unknown title';
     }
 
     public function getState(): array
@@ -59,15 +108,19 @@ class TitleService
         $currentTitle = (string)($user['game_title'] ?? '');
         $selectedTitle = $this->getSelectedPermanentTitle();
         $temporary = $this->getActiveTemporaryOverride();
-        $permanentTitles = $this->getUnlockedPermanentTitles();
+        $unlockedMap = $this->getUnlockedPermanentMap();
+        $progressMap = $this->getProgressMap();
 
         return [
             'current_title' => $currentTitle,
-            'current_label' => $currentTitle !== '' ? self::getTitleLabel($currentTitle) : '',
+            'current_label' => self::getTitleLabel($currentTitle),
             'temporary' => $temporary,
+            'has_temporary' => !empty($temporary),
             'selected_title' => $selectedTitle,
-            'selected_label' => $selectedTitle !== '' ? self::getTitleLabel($selectedTitle) : '',
-            'permanent_titles' => $permanentTitles,
+            'selected_label' => self::getTitleLabel($selectedTitle),
+            'beginner' => $this->buildBeginnerCard($user, $currentTitle),
+            'temporary_titles' => $this->buildTemporaryCards($temporary),
+            'permanent_titles' => $this->buildPermanentCards($unlockedMap, $progressMap, $selectedTitle, !empty($temporary)),
         ];
     }
 
@@ -77,6 +130,9 @@ class TitleService
         $titleKey = trim($titleKey);
         if ($titleKey === '') {
             throw new Exception('Missing title.');
+        }
+        if ($this->getActiveTemporaryOverride()) {
+            throw new Exception('Temporary title is active. Remove it before selecting a permanent title.');
         }
         if (!$this->isPermanentTitleUnlocked($titleKey)) {
             throw new Exception('This title is not unlocked.');
@@ -107,6 +163,61 @@ class TitleService
             ':player_id' => $this->playerId,
             ':title_key' => '',
         ]);
+
+        $this->syncDisplayedTitle();
+    }
+
+    public function removeTemporaryTitle(): void
+    {
+        $this->ensureSchema();
+        $activeTemporaries = $this->getActiveTemporaryRows();
+        if (!$activeTemporaries) {
+            throw new Exception('No temporary title is active.');
+        }
+
+        $hasMostWanted = false;
+        foreach ($activeTemporaries as $temporary) {
+            if ((string)$temporary['title_key'] === self::MOST_WANTED_TITLE) {
+                $hasMostWanted = true;
+                break;
+            }
+        }
+
+        $stmt = $this->db->prepare(
+            'UPDATE player_titles
+             SET revoked_at = UTC_TIMESTAMP()
+             WHERE player_id = :player_id
+               AND title_scope = :title_scope
+               AND title_key IN (:most_wanted, :spaceball)
+               AND revoked_at IS NULL'
+        );
+        $stmt->execute([
+            ':player_id' => $this->playerId,
+            ':title_scope' => 'temporary',
+            ':most_wanted' => self::MOST_WANTED_TITLE,
+            ':spaceball' => self::SPACEBALL_CHAMPION_TITLE,
+        ]);
+
+        if ($hasMostWanted) {
+            $stmt = $this->db->prepare(
+                'UPDATE title_runtime_state
+                 SET holder_type = :holder_type,
+                     holder_player_id = 0,
+                     holder_npc_id = 0,
+                     holder_map_id = 0,
+                     assigned_at = NULL,
+                     expires_at = NULL
+                 WHERE state_key = :state_key
+                   AND holder_type = :old_holder_type
+                   AND holder_player_id = :player_id'
+            );
+            $stmt->execute([
+                ':holder_type' => 'none',
+                ':state_key' => 'most_wanted',
+                ':old_holder_type' => 'player',
+                ':player_id' => $this->playerId,
+            ]);
+        }
 
         $this->syncDisplayedTitle();
     }
@@ -182,6 +293,94 @@ class TitleService
         }
     }
 
+    private function buildBeginnerCard(array $user, string $currentTitle): array
+    {
+        $active = (int)($user['canBeginner'] ?? 0) === 1 && (int)($user['rankpoints'] ?? 0) < 25000;
+        return [
+            'title_key' => self::BEGINNER_TITLE,
+            'label' => self::getTitleLabel(self::BEGINNER_TITLE),
+            'type' => 'Starter',
+            'status' => $active || $currentTitle === self::BEGINNER_TITLE ? 'Active' : 'Not active',
+            'condition' => 'Available while beginner protection is active.',
+            'description' => 'Starter title. It is not selectable as a permanent title.',
+            'progress_text' => '',
+            'progress_percent' => 0,
+            'can_equip' => false,
+            'is_equipped' => false,
+            'is_locked' => !$active && $currentTitle !== self::BEGINNER_TITLE,
+        ];
+    }
+
+    private function buildTemporaryCards(array $activeTemporary): array
+    {
+        $activeKey = (string)($activeTemporary['title_key'] ?? '');
+        return [
+            [
+                'title_key' => self::MOST_WANTED_TITLE,
+                'label' => self::getTitleLabel(self::MOST_WANTED_TITLE),
+                'type' => 'Temporary',
+                'status' => $activeKey === self::MOST_WANTED_TITLE ? 'Active' : 'Not active',
+                'condition' => 'Kill the current title holder. Expires after 7 days.',
+                'expires_at' => $activeKey === self::MOST_WANTED_TITLE ? ($activeTemporary['expires_at'] ?? null) : null,
+            ],
+            [
+                'title_key' => self::SPACEBALL_CHAMPION_TITLE,
+                'label' => self::getTitleLabel(self::SPACEBALL_CHAMPION_TITLE),
+                'type' => 'Temporary',
+                'status' => $activeKey === self::SPACEBALL_CHAMPION_TITLE ? 'Active' : 'Not active',
+                'condition' => 'Awarded to online pilots on 4-4 from the winning company. Lasts until the next Spaceball.',
+                'expires_at' => $activeKey === self::SPACEBALL_CHAMPION_TITLE ? ($activeTemporary['expires_at'] ?? null) : null,
+            ],
+        ];
+    }
+
+    private function buildPermanentCards(array $unlockedMap, array $progressMap, string $selectedTitle, bool $temporaryActive): array
+    {
+        $cards = [];
+        foreach (self::$permanentDefinitions as $titleKey => $definition) {
+            $current = (int)($progressMap[$definition['progress_key']] ?? 0);
+            $target = (int)$definition['target'];
+            $unlocked = isset($unlockedMap[$titleKey]);
+            $equipped = $selectedTitle === $titleKey;
+            $cards[] = [
+                'title_key' => $titleKey,
+                'label' => self::getTitleLabel($titleKey),
+                'type' => 'Permanent',
+                'status' => $equipped ? 'Equipped' : ($unlocked ? 'Unlocked' : 'Locked'),
+                'condition' => $definition['condition'],
+                'progress_current' => min($current, $target),
+                'progress_target' => $target,
+                'progress_percent' => $target > 0 ? max(0, min(100, (int)floor((min($current, $target) / $target) * 100))) : 0,
+                'progress_text' => min($current, $target) . ' / ' . $target . ' ' . $definition['progress_label'],
+                'can_equip' => $unlocked && !$equipped && !$temporaryActive,
+                'disabled_by_temporary' => $unlocked && !$equipped && $temporaryActive,
+                'is_equipped' => $equipped,
+                'is_locked' => !$unlocked,
+            ];
+        }
+
+        if (isset($unlockedMap[self::ANDROMEDA_ELITE_TITLE])) {
+            $equipped = $selectedTitle === self::ANDROMEDA_ELITE_TITLE;
+            $cards[] = [
+                'title_key' => self::ANDROMEDA_ELITE_TITLE,
+                'label' => self::getTitleLabel(self::ANDROMEDA_ELITE_TITLE),
+                'type' => 'Special',
+                'status' => $equipped ? 'Equipped' : 'Unlocked',
+                'condition' => 'Special event title.',
+                'progress_current' => 0,
+                'progress_target' => 0,
+                'progress_percent' => 100,
+                'progress_text' => '',
+                'can_equip' => !$equipped && !$temporaryActive,
+                'disabled_by_temporary' => !$equipped && $temporaryActive,
+                'is_equipped' => $equipped,
+                'is_locked' => false,
+            ];
+        }
+
+        return $cards;
+    }
+
     private function syncDisplayedTitle(): string
     {
         $resolved = $this->resolveDisplayedTitle();
@@ -239,6 +438,22 @@ class TitleService
 
     private function getActiveTemporaryOverride(): array
     {
+        $rows = $this->getActiveTemporaryRows();
+        if (!$rows) {
+            return [];
+        }
+
+        $row = $rows[0];
+        return [
+            'title_key' => (string)$row['title_key'],
+            'label' => self::getTitleLabel((string)$row['title_key']),
+            'source' => (string)$row['source'],
+            'expires_at' => $row['expires_at'] ?? null,
+        ];
+    }
+
+    private function getActiveTemporaryRows(): array
+    {
         $stmt = $this->db->prepare(
             'SELECT title_key, source, expires_at
              FROM player_titles
@@ -247,8 +462,7 @@ class TitleService
                AND revoked_at IS NULL
                AND (expires_at IS NULL OR expires_at > UTC_TIMESTAMP())
                AND title_key IN (:most_wanted_filter, :spaceball_filter)
-             ORDER BY CASE title_key WHEN :most_wanted_order THEN 1 WHEN :spaceball_order THEN 2 ELSE 3 END
-             LIMIT 1'
+             ORDER BY CASE title_key WHEN :most_wanted_order THEN 1 WHEN :spaceball_order THEN 2 ELSE 3 END'
         );
         $stmt->execute([
             ':player_id' => $this->playerId,
@@ -258,28 +472,18 @@ class TitleService
             ':most_wanted_order' => self::MOST_WANTED_TITLE,
             ':spaceball_order' => self::SPACEBALL_CHAMPION_TITLE,
         ]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$row) {
-            return [];
-        }
-
-        return [
-            'title_key' => (string)$row['title_key'],
-            'label' => self::getTitleLabel((string)$row['title_key']),
-            'source' => (string)$row['source'],
-            'expires_at' => $row['expires_at'] ?? null,
-        ];
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return is_array($rows) ? $rows : [];
     }
 
-    private function getUnlockedPermanentTitles(): array
+    private function getUnlockedPermanentMap(): array
     {
         $stmt = $this->db->prepare(
             'SELECT title_key, source, unlocked_at
              FROM player_titles
              WHERE player_id = :player_id
                AND title_scope = :title_scope
-               AND revoked_at IS NULL
-             ORDER BY unlocked_at ASC, title_key ASC'
+               AND revoked_at IS NULL'
         );
         $stmt->execute([
             ':player_id' => $this->playerId,
@@ -288,13 +492,23 @@ class TitleService
 
         $items = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $titleKey = (string)$row['title_key'];
-            $items[] = [
-                'title_key' => $titleKey,
-                'label' => self::getTitleLabel($titleKey),
-                'source' => (string)$row['source'],
-                'unlocked_at' => $row['unlocked_at'] ?? null,
-            ];
+            $items[(string)$row['title_key']] = $row;
+        }
+        return $items;
+    }
+
+    private function getProgressMap(): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT progress_key, current_amount
+             FROM player_title_progress
+             WHERE player_id = :player_id'
+        );
+        $stmt->execute([':player_id' => $this->playerId]);
+
+        $items = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $items[(string)$row['progress_key']] = (int)$row['current_amount'];
         }
         return $items;
     }
@@ -351,6 +565,36 @@ class TitleService
             ':player_id' => $this->playerId,
             ':title_scope' => 'temporary',
         ]);
+    }
+
+    private static function getTranslationLabels(): array
+    {
+        if (self::$translationLabels !== null) {
+            return self::$translationLabels;
+        }
+
+        self::$translationLabels = self::$fallbackLabels;
+        $path = __DIR__ . '/../flashinput/translationSpacemap.php';
+        if (!is_file($path)) {
+            return self::$translationLabels;
+        }
+
+        $content = @file_get_contents($path);
+        if (!is_string($content) || $content === '') {
+            return self::$translationLabels;
+        }
+
+        if (preg_match_all("/<item\\s+id='(title_[^']+)'><!\\[CDATA\\[(.*?)\\]\\]><\\/item>/s", $content, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $key = (string)$match[1];
+                $label = trim(html_entity_decode((string)$match[2], ENT_QUOTES, 'UTF-8'));
+                if ($label !== '') {
+                    self::$translationLabels[$key] = $label;
+                }
+            }
+        }
+
+        return self::$translationLabels;
     }
 
     private function ensureSchema(): void
