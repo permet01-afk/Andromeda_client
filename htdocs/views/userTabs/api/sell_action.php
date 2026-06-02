@@ -16,6 +16,8 @@ if ($userId <= 0) {
 $IRIS_PRICES = [15000, 24000, 42000, 60000, 84000, 96000, 126000, 200000];
 $FLAX_PRICES = [100000, 200000, 400000, 800000, 1600000, 3200000, 6400000, 12800000];
 
+const NON_SELLABLE_ITEM_IDS = [9001];
+
 
 $PRICES = [
     
@@ -40,7 +42,6 @@ $PRICES = [
     21 => ['price' => 15000, 'currency' => 'uridium', 'name' => 'Cargo Compressor'],
     38 => ['price' => 500000, 'currency' => 'credits', 'name' => 'HST-1'],
     39 => ['price' => 15000, 'currency' => 'uridium', 'name' => 'HST-2'],
-    9001 => ['price' => 100000, 'currency' => 'uridium', 'name' => 'Havok Drone Design'],
 ];
 
 
@@ -49,6 +50,11 @@ if (!is_array($input)) $input = [];
 
 $itemId  = (int)($input['item_id'] ?? 0);
 $droneId = (int)($input['drone_id'] ?? 0); 
+
+if (in_array($itemId, NON_SELLABLE_ITEM_IDS, true)) {
+    echo json_encode(['error' => 'This item cannot be sold.']);
+    exit;
+}
 
 $clampIndex = function(int $n): int {
     if ($n < 0) return 0;
@@ -90,7 +96,7 @@ try {
 
         $countAll = count($dronesAll);
         if ($countAll <= 0) {
-            throw new Exception("Aucun drone à vendre.");
+            throw new Exception("No drone available to sell.");
         }
 
         
@@ -107,10 +113,10 @@ try {
                 }
             }
             if (!$target) {
-                throw new Exception("Drone introuvable.");
+                throw new Exception("Drone not found.");
             }
             if ((int)$target['item_id'] !== $itemId) {
-                throw new Exception("Ce drone n'est pas de ce type.");
+                throw new Exception("This drone is not this type.");
             }
         } else {
             
@@ -123,8 +129,15 @@ try {
                 }
             }
             if (!$target) {
-                throw new Exception("Vous n'avez pas ce type de drone à vendre.");
+                throw new Exception("You do not have this drone type to sell.");
             }
+        }
+
+        $designCheck = $db->prepare("SELECT design_item_id FROM drone_design_equipped WHERE drone_id = :did LIMIT 1");
+        $designCheck->execute([':did' => $droneId]);
+        $equippedDesignId = (int)$designCheck->fetchColumn();
+        if (in_array($equippedDesignId, NON_SELLABLE_ITEM_IDS, true)) {
+            throw new Exception("This item cannot be sold.");
         }
 
         
@@ -148,7 +161,7 @@ try {
         }
 
         if ($basePrice <= 0) {
-            throw new Exception("Prix drone invalide.");
+            throw new Exception("Invalid drone price.");
         }
 
         $refundAmount = (int)floor($basePrice * 0.50);
@@ -201,7 +214,7 @@ try {
         
         
         if (!isset($PRICES[$itemId])) {
-            throw new Exception("Item non vendable");
+            throw new Exception("This item cannot be sold.");
         }
 
         $data = $PRICES[$itemId];
@@ -216,7 +229,7 @@ try {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$row || (int)$row['qty'] < 1) {
-            throw new Exception("Vous n'avez pas cet objet.");
+            throw new Exception("You do not have this item.");
         }
 
         
@@ -264,7 +277,7 @@ try {
     
     
     if (!in_array($currency, ['credits', 'uridium'], true)) {
-        throw new Exception("Dev error: currency invalide");
+        throw new Exception("Dev error: invalid currency.");
     }
 
     $sql = "UPDATE users SET $currency = $currency + :amount WHERE id = :id";
@@ -275,7 +288,7 @@ try {
 
     echo json_encode([
         'success' => true,
-        'msg' => "Vendu : {$itemName} (+".number_format($refundAmount)." ".ucfirst($currency).")"
+        'msg' => "Sold: {$itemName} (+".number_format($refundAmount)." ".ucfirst($currency).")"
     ]);
 
 } catch (Exception $e) {

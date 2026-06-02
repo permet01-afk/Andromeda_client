@@ -597,6 +597,7 @@ const HAVOK_ICON = '/spacemap_html5/graphics/havoks/1.png';
 const HAVOK_SET_SIZE = 8;
 const HAVOK_DAMAGE_PER_DRONE = 2;
 const HAVOK_FULL_SET_DAMAGE = 20;
+const NON_SELLABLE_ITEM_IDS = new Set([9001]);
 
 function getHavokDamageBonus(equippedCount){
   const count = Math.max(0, Math.min(HAVOK_SET_SIZE, Number(equippedCount || 0) || 0));
@@ -614,7 +615,6 @@ const ITEM_PRICES = {
   30: 2000, 31: 4000, 32: 8000, 33: 16000, 34: 32000, 4: 2000, // Speed
   35: 8000, 36: 24000, 37: 256000, 2: 10000, // Shield
   20: 15000, 21: 15000, 38: 500000, 39: 15000, // Extras
-  9001: 100000, // Havok Drone Design
   3: 100000, 5: 100000 // Drones (Prix approx pour revente)
 };
 
@@ -680,9 +680,19 @@ function getDroneTierByTypeFromState(droneItemId, droneId){
 }
 
 // Retourne {refund, currency, rate, base, priceIndex}
+function isNonSellableItem(itemOrId){
+  const it = (typeof itemOrId === 'object' && itemOrId) ? itemOrId : { id: itemOrId };
+  const id = Number(it?.id || 0);
+  return NON_SELLABLE_ITEM_IDS.has(id) || isHavokDesignItem(it) || it?.havokEquipped === true;
+}
+
 function getSellQuote(itemOrId){
   const it = (typeof itemOrId === 'object' && itemOrId) ? itemOrId : { id: itemOrId };
   const id = Number(it?.id || 0);
+
+  if (isNonSellableItem(it)) {
+    return { sellable: false, refund: 0, currency: '', rate: 0, base: 0, priceIndex: null };
+  }
 
   // Drones
   if (id === 3 || id === 5) {
@@ -734,10 +744,13 @@ function showTooltip(item, x, y, isLocked = false) {
   if (tooltipLocked && !isLocked) return;
 
   const q = getSellQuote(item);
+  const sellable = q.sellable !== false;
 
   document.getElementById('ttName').textContent = item.name || ('Item ' + item.id);
   document.getElementById('ttType').textContent = (item.category || 'item').toUpperCase() + (item.type ? ' (' + item.type + ')' : '');
-  document.getElementById('ttPrice').textContent = `Resale: ${q.refund.toLocaleString()} ${q.currency}`;
+  document.getElementById('ttPrice').textContent = sellable
+    ? `Resale: ${q.refund.toLocaleString()} ${q.currency}`
+    : 'This item cannot be sold.';
 
   const ttBonus = document.getElementById('ttBonus');
   if (ttBonus) {
@@ -748,7 +761,16 @@ function showTooltip(item, x, y, isLocked = false) {
 
   // Mettre à jour le bouton (taux affiché)
   const btnSell = document.getElementById('btnSellAction');
-  if (btnSell) btnSell.textContent = `SELL ITEM (${Math.round(q.rate * 100)}%)`;
+  const tooltipActions = document.querySelector('.tooltip-actions');
+  if (tooltipActions) tooltipActions.style.display = sellable ? '' : 'none';
+  if (btnSell) {
+    btnSell.disabled = !sellable;
+    btnSell.style.display = sellable ? '' : 'none';
+    btnSell.onclick = null;
+    if (sellable) {
+      btnSell.textContent = `SELL ITEM (${Math.round(q.rate * 100)}%)`;
+    }
+  }
   
   // Position
   // Garder le tooltip dans la fenêtre
@@ -772,7 +794,9 @@ function showTooltip(item, x, y, isLocked = false) {
     
     // Configurer le bouton vendre
     const btn = document.getElementById('btnSellAction');
-    btn.onclick = () => sellItem(item.id, item.drone_id || item.droneId || null);
+    if (btn && sellable) {
+      btn.onclick = () => sellItem(item.id, item.drone_id || item.droneId || null);
+    }
   }
 }
 
