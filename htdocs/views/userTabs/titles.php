@@ -46,6 +46,21 @@ $titleVisualClass = function ($titleKey) {
     return $map[(string)$titleKey] ?? 'standard';
 };
 
+$titleIcon = function ($titleKey) {
+    $map = [
+        'title_14' => 'img/titles/title_most_wanted.svg',
+        'title_400' => 'img/titles/title_spaceball.svg',
+        'title_401' => 'img/titles/title_uber.svg',
+        'title_402' => 'img/titles/title_boss.svg',
+        'title_403' => 'img/titles/title_protegit.svg',
+        'title_404' => 'img/titles/title_pvp.svg',
+        'title_405' => 'img/titles/title_weekly.svg',
+        'title_406' => 'img/titles/title_current.svg',
+        'title_5' => 'img/titles/title_beginner.svg',
+    ];
+    return $map[(string)$titleKey] ?? 'img/titles/title_current.svg';
+};
+
 try {
     $titleService = new TitleService($db, (int)$sessionPlayerId);
 
@@ -62,6 +77,13 @@ try {
         } elseif ($action === 'remove') {
             $titleService->removePermanentTitle();
             $titleMessage = 'Permanent title removed.';
+        } elseif ($action === 'remove_displayed') {
+            $stateBeforeRemove = $titleService->getState();
+            if (!empty($stateBeforeRemove['has_temporary'])) {
+                $titleService->removeTemporaryTitle();
+            }
+            $titleService->removePermanentTitle();
+            $titleMessage = 'Title removed.';
         } elseif ($action === 'remove_temporary') {
             $titleService->removeTemporaryTitle();
             $titleMessage = 'Temporary title abandoned.';
@@ -77,8 +99,9 @@ $currentLabel = $titleState['current_label'] !== '' ? $titleState['current_label
 $temporaryLabel = !empty($titleState['temporary']) ? $titleState['temporary']['label'] : 'None';
 $selectedLabel = $titleState['selected_label'] !== '' ? $titleState['selected_label'] : 'None selected';
 $hasTemporary = !empty($titleState['has_temporary']);
+$canRemoveDisplayedTitle = $hasTemporary || $titleState['selected_label'] !== '';
 
-$renderTitleCard = function (array $card, bool $selectionMode = false) use ($escapeTitle, $hasTemporary, $badgeClass, $titleVisualClass) {
+$renderTitleCard = function (array $card, bool $selectionMode = false) use ($escapeTitle, $hasTemporary, $badgeClass, $titleVisualClass, $titleIcon) {
     $label = $card['label'] ?? 'Unknown title';
     $type = $card['type'] ?? '';
     $status = $card['status'] ?? '';
@@ -86,6 +109,7 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
     $condition = $card['condition'] ?? '';
     $titleKey = (string)($card['title_key'] ?? '');
     $visualClass = $titleVisualClass($card['title_key'] ?? '');
+    $iconSrc = $titleIcon($card['title_key'] ?? '');
     $progressPercent = isset($card['progress_percent']) ? max(0, min(100, (int)$card['progress_percent'])) : 0;
     $progressText = (string)($card['progress_text'] ?? '');
     $canEquip = !empty($card['can_equip']);
@@ -103,7 +127,9 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
     <?php } else { ?>
         <article class="<?php echo $cardClass; ?>">
     <?php } ?>
-        <div class="title-card__emblem" aria-hidden="true"><span></span></div>
+        <div class="title-card__emblem" aria-hidden="true">
+            <img src="<?php echo $escapeTitle($iconSrc); ?>" alt="" loading="lazy" />
+        </div>
         <div class="title-card__content">
             <div class="title-card__topline">
                 <span class="titles-badge titles-badge--type"><?php echo $escapeTitle($type); ?></span>
@@ -165,7 +191,7 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
             <span>A temporary title is active. It overrides your selected permanent title.</span>
             <form method="post" class="titles-inline-form">
                 <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
-                <input type="hidden" name="title_action" value="remove_temporary" />
+                <input type="hidden" name="title_action" value="remove_displayed" />
                 <button class="titles-button titles-button--danger" type="submit">Abandon title</button>
             </form>
         </div>
@@ -173,20 +199,13 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
 
     <div class="titles-summary-grid">
         <section class="titles-summary-card titles-summary-card--current">
-            <div class="titles-summary-card__icon" aria-hidden="true"><span></span></div>
+            <div class="titles-summary-card__icon" aria-hidden="true">
+                <img src="img/titles/title_current.svg" alt="" loading="lazy" />
+            </div>
             <div>
                 <span class="titles-summary-label">Current Displayed Title</span>
                 <strong><?php echo $escapeTitle($currentLabel); ?></strong>
                 <p>Shown in-game now.</p>
-            </div>
-        </section>
-
-        <section class="titles-summary-card titles-summary-card--temporary">
-            <div class="titles-summary-card__icon" aria-hidden="true"><span></span></div>
-            <div>
-                <span class="titles-summary-label">Active Temporary Title</span>
-                <strong><?php echo $escapeTitle($temporaryLabel); ?></strong>
-                <p><?php echo $hasTemporary ? 'This title is currently overriding your permanent selection.' : 'No temporary title is active.'; ?></p>
             </div>
         </section>
     </div>
@@ -198,8 +217,16 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
         </div>
         <div class="titles-card-grid titles-card-grid--two">
             <?php foreach (($titleState['temporary_titles'] ?? []) as $card) { ?>
-                <article class="title-card title-card--temporary title-card--<?php echo $escapeTitle($titleVisualClass($card['title_key'] ?? '')); ?><?php echo ($card['status'] ?? '') === 'Active' ? ' is-active' : ''; ?>">
-                    <div class="title-card__emblem" aria-hidden="true"><span></span></div>
+                <?php
+                $temporaryActive = ($card['status'] ?? '') === 'Active';
+                $temporaryClass = 'title-card title-card--temporary title-card--' . $escapeTitle($titleVisualClass($card['title_key'] ?? '')) . ($temporaryActive ? ' is-active' : '');
+                ?>
+                <label class="title-card-option title-card-option--temporary">
+                    <input class="title-card__radio title-card__radio--temporary" type="radio" name="title_selection" value="temporary"<?php echo $temporaryActive ? ' checked' : ''; ?> />
+                    <span class="<?php echo $temporaryClass; ?>">
+                    <div class="title-card__emblem" aria-hidden="true">
+                        <img src="<?php echo $escapeTitle($titleIcon($card['title_key'] ?? '')); ?>" alt="" loading="lazy" />
+                    </div>
                     <div class="title-card__content">
                         <div class="title-card__topline">
                             <span class="titles-badge titles-badge--type"><?php echo $escapeTitle($card['type'] ?? 'Temporary'); ?></span>
@@ -211,7 +238,8 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
                             <div class="title-card__progress-text">Expires: <?php echo $escapeTitle($card['expires_at']); ?></div>
                         <?php } ?>
                     </div>
-                </article>
+                    </span>
+                </label>
             <?php } ?>
         </div>
     </section>
@@ -239,13 +267,41 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
                 <span>Selected permanent title</span>
             </div>
             <div class="titles-action-bar__buttons">
-                <form method="post" class="titles-remove-form">
+                <form id="titles-remove-form" method="post" class="titles-remove-form">
                     <input type="hidden" name="title_csrf_token" value="<?php echo $escapeTitle($titleCsrfToken ?? ''); ?>" />
-                    <input type="hidden" name="title_action" value="remove" />
-                    <button class="titles-button titles-button--ghost" type="submit"<?php echo $titleState['selected_label'] === '' ? ' disabled' : ''; ?>>Remove permanent title</button>
+                    <input type="hidden" name="title_action" value="remove_displayed" />
+                    <button class="titles-button titles-button--ghost" type="submit"<?php echo !$canRemoveDisplayedTitle ? ' disabled' : ''; ?>>Remove</button>
                 </form>
-                <button class="titles-button titles-button--primary" type="submit" form="titles-save-form"<?php echo $hasTemporary ? ' disabled' : ''; ?>>Save changes</button>
+                <button class="titles-button titles-button--primary" type="submit" form="titles-save-form"<?php echo $hasTemporary || $titleState['selected_label'] === '' ? ' disabled' : ''; ?>>Save changes</button>
             </div>
         </div>
     </section>
 </div>
+
+<script>
+(function () {
+    var saveButton = document.querySelector('.titles-button--primary[form="titles-save-form"]');
+    var permanentRadios = document.querySelectorAll('.title-card__radio[name="title_key"]');
+    var temporaryRadios = document.querySelectorAll('.title-card__radio--temporary');
+
+    function selectPermanent() {
+        if (saveButton) {
+            saveButton.disabled = false;
+        }
+    }
+
+    function selectTemporary() {
+        if (saveButton) {
+            saveButton.disabled = true;
+        }
+    }
+
+    permanentRadios.forEach(function (radio) {
+        radio.addEventListener('change', selectPermanent);
+    });
+
+    temporaryRadios.forEach(function (radio) {
+        radio.addEventListener('change', selectTemporary);
+    });
+})();
+</script>
