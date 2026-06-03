@@ -30,7 +30,8 @@ namespace OrbitReborn_Emulator.Game.Event
         private const int InvaderDamage = 35000;
         private const int InvaderDamageMin = 33000;
         private const int InvaderDamageMax = 37000;
-        private const int InvaderLaserPattern = 4;
+        private const int InvaderLaserPattern = 3;
+        private const int InvaderAttackRange = 700;
 
         private const int InvaderRewardCredits = 3000000;
         private const int InvaderRewardUridium = 25000;
@@ -210,6 +211,34 @@ namespace OrbitReborn_Emulator.Game.Event
             return IsInvasionNpc(npc) ? InvaderLaserPattern : 0;
         }
 
+        public static int GetNpcAttackRange(Npc npc, int defaultRange)
+        {
+            return IsInvasionNpc(npc) ? InvaderAttackRange : defaultRange;
+        }
+
+        public static void BroadcastInvaderLock(Npc npc, int targetId)
+        {
+            if (!IsInvasionNpc(npc) || targetId <= 0)
+                return;
+
+            Session target = SessionManager.GetSessionByCharacterId(targetId);
+            if (target == null || target.CharacterInfo == null)
+                return;
+
+            if (target.CharacterInfo.Destroy || target.CharacterInfo.Disconnected || target.CharacterInfo.MapId != npc.MapId)
+                return;
+
+            BroadcastMapPacket(npc.MapId, PacketComposer.Compose("LK", npc.Id.ToString() + "|" + targetId + "|" + target.CharacterInfo.LocX + "|" + target.CharacterInfo.LocY));
+        }
+
+        public static void BroadcastInvaderLockClear(Npc npc)
+        {
+            if (!IsInvasionNpc(npc))
+                return;
+
+            BroadcastMapPacket(npc.MapId, PacketComposer.Compose("LK", npc.Id.ToString() + "|-1"));
+        }
+
         public static bool HandleNpcDestroyed(Npc npc, MapInstance map)
         {
             if (npc == null)
@@ -221,6 +250,7 @@ namespace OrbitReborn_Emulator.Game.Event
                 if (!RunsByNpcId.TryGetValue(npc.Id, out run))
                     return false;
 
+                BroadcastInvaderLockClear(npc);
                 GrantInvaderReward(run, npc);
                 RunsByNpcId.Remove(npc.Id);
                 run.Npcs.Remove(npc.Id);
@@ -382,7 +412,10 @@ namespace OrbitReborn_Emulator.Game.Event
                         if (run.WaveIndex < WaveCounts.Length)
                             SpawnNextWave(run);
                         else
-                            FinishRun(run, true, false);
+                        {
+                            FinishEventWithWinner(run);
+                            return;
+                        }
                     }
                     else if (DateTime.UtcNow >= run.NextStatusAtUtc)
                     {
@@ -434,6 +467,28 @@ namespace OrbitReborn_Emulator.Game.Event
             CleanupRunNpcs(run);
             run.Running = false;
             BroadcastMap(run.MapId, manualStop ? "Event Invasion Finished" : "Event Invasion Finished");
+        }
+
+        private static void FinishEventWithWinner(InvasionRun winningRun)
+        {
+            if (winningRun == null || !winningRun.Running)
+                return;
+
+            FinishRun(winningRun, true, false);
+
+            foreach (InvasionRun run in new List<InvasionRun>(RunsByMapId.Values))
+            {
+                if (run != null && run.Running)
+                    FinishRun(run, false, false);
+            }
+
+            RunsByMapId.Clear();
+            RunsByNpcId.Clear();
+            mStarting = false;
+            mActive = false;
+            mSafeBattle = false;
+            StopTimers();
+            SetDatabaseActive(false);
         }
 
         private static void FinishEvent(bool completed, bool manualStop)
@@ -703,6 +758,10 @@ namespace OrbitReborn_Emulator.Game.Event
 
             foreach (int npcId in remove)
             {
+                Npc npc;
+                if (run.Npcs.TryGetValue(npcId, out npc) && npc != null)
+                    BroadcastInvaderLockClear(npc);
+
                 run.Npcs.Remove(npcId);
                 RunsByNpcId.Remove(npcId);
                 SendMarkerHide(run, npcId);

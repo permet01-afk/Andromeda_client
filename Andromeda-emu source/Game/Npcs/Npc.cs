@@ -570,6 +570,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (this.TargetId != targetId)
                 return;
 
+            Invasion.BroadcastInvaderLockClear(this);
             this.mTargetId = 0;
             this.IsAttacking = false;
             this.mLastDamageTick = 0;
@@ -2253,6 +2254,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         public void StopNpcAttack()
         {
+            bool hadAttackLock = this.TargetId != 0 || this.IsAttacking || this.AttackTimer != null;
+            if (hadAttackLock)
+                Invasion.BroadcastInvaderLockClear(this);
+
             this.TargetId = 0;
             this.IsAttacking = false;
             ClearEmpInterruptedTarget();
@@ -2275,6 +2280,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
             double now = UnixTimestamp.GetCurrent();
             if (!CanLockTargetAfterEmp(targetId, now))
                 return;
+
+            bool hadAttackLock = this.TargetId != 0 || this.IsAttacking || this.AttackTimer != null;
+            if (hadAttackLock)
+                Invasion.BroadcastInvaderLockClear(this);
 
             if (this.AttackTimer != null)
             {
@@ -2312,6 +2321,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             this.TargetId = targetId;
             this.IsAttacking = true;
+            Invasion.BroadcastInvaderLock(this, targetId);
 
             this.mLastAggroTick = now;
 
@@ -2378,9 +2388,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     return;
                 }
 
-                int shootRange = this.IsBoss == 1 ? 500 : 460;
+                int shootRange = Invasion.GetNpcAttackRange(this, this.IsBoss == 1 ? 500 : 460);
                 if (!DistanceUtil.IsWithinRangeSquared(sessionByCharacterId.CharacterInfo.LocX, sessionByCharacterId.CharacterInfo.LocY, this.LocX, this.LocY, shootRange))
                     return;
+
+                Invasion.BroadcastInvaderLock(this, sessionByCharacterId.CharacterId);
 
                 int nowTick = Environment.TickCount;
                 int attackGuardCooldownMs = this.GetAttackGuardCooldownMs();

@@ -1,4 +1,5 @@
 ﻿using OrbitReborn_Emulator.Communication.Outgoing;
+using OrbitReborn_Emulator.Game.Event;
 using OrbitReborn_Emulator.Game.Handlers;
 using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Maps;
@@ -788,12 +789,56 @@ namespace OrbitReborn_Emulator.Game.Npcs
             return npc.GetAttackGuardCooldownMs();
         }
 
+        private static double GetRangeSquared(int range)
+        {
+            return (double)range * (double)range;
+        }
+
+        private static int GetNpcStopShootRange(Npc npc)
+        {
+            return Invasion.GetNpcAttackRange(npc, STOP_SHOOT_RANGE);
+        }
+
+        private static int GetNpcInstantShootRange(Npc npc)
+        {
+            return Invasion.GetNpcAttackRange(npc, INSTANT_SHOOT_RANGE);
+        }
+
+        private static int GetNpcChaseDistance(Npc npc)
+        {
+            int stopShootRange = GetNpcStopShootRange(npc);
+            if (stopShootRange > STOP_SHOOT_RANGE)
+                return stopShootRange + (CHASE_DISTANCE - STOP_SHOOT_RANGE);
+
+            return CHASE_DISTANCE;
+        }
+
+        private static double GetNpcStopShootRangeSquared(Npc npc)
+        {
+            return GetRangeSquared(GetNpcStopShootRange(npc));
+        }
+
+        private static double GetNpcInstantShootRangeSquared(Npc npc)
+        {
+            return GetRangeSquared(GetNpcInstantShootRange(npc));
+        }
+
+        private static double GetNpcChaseDistanceSquared(Npc npc)
+        {
+            return GetRangeSquared(GetNpcChaseDistance(npc));
+        }
+
+        private static double GetNpcAttackWakeRangeSquared(Npc npc)
+        {
+            return GetRangeSquared(Math.Max(900, GetNpcChaseDistance(npc)));
+        }
+
         private static void TryInstantShoot(Npc npc, Session targetSession, double distanceSquared)
         {
             if (npc == null || targetSession == null || targetSession.CharacterInfo == null)
                 return;
 
-            bool outOfRange = (distanceSquared > INSTANT_SHOOT_RANGE_SQUARED);
+            bool outOfRange = (distanceSquared > GetNpcInstantShootRangeSquared(npc));
 
             bool wasOut;
             if (!WasOutOfRange.TryGetValue(npc.Id, out wasOut))
@@ -1202,7 +1247,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             int bestTargetId = 0;
             double bestDistanceSquared = double.MaxValue;
-            double maxDistanceSquared = AGGRESSIVE_DETECT_RANGE * AGGRESSIVE_DETECT_RANGE;
+            double maxDistanceSquared = GetRangeSquared(Invasion.GetNpcAttackRange(npc, AGGRESSIVE_DETECT_RANGE));
 
             foreach (MapActor mapActor in userActorSnapshot)
             {
@@ -1465,10 +1510,13 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 double diffX = item_1.LocX - local_4.CharacterInfo.LocX;
                                 double diffY = item_1.LocY - local_4.CharacterInfo.LocY;
                                 double distSquared = (diffX * diffX) + (diffY * diffY);
+                                double npcAttackWakeRangeSquared = GetNpcAttackWakeRangeSquared(item_1);
+                                double npcChaseDistanceSquared = GetNpcChaseDistanceSquared(item_1);
+                                double npcStopShootRangeSquared = GetNpcStopShootRangeSquared(item_1);
 
                                 TryInstantShoot(item_1, local_4, distSquared);
 
-                                if (distSquared < NPC_ATTACK_WAKE_RANGE_SQUARED)
+                                if (distSquared < npcAttackWakeRangeSquared)
                                 {
                                     if (item_1.AttackTimer == null)
                                         item_1.LockTarget(item_1.TargetId);
@@ -1481,13 +1529,13 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                 }
 
 
-                                if (distSquared > CHASE_DISTANCE_SQUARED)
+                                if (distSquared > npcChaseDistanceSquared)
                                 {
                                     local_2 = local_4.CharacterInfo.LocX + GetStableNpcOffset(item_1, 11, -50, 50);
                                     local_3 = local_4.CharacterInfo.LocY + GetStableNpcOffset(item_1, 17, -50, 50);
                                     shouldMove = true;
                                 }
-                                else if (distSquared <= STOP_SHOOT_RANGE_SQUARED)
+                                else if (distSquared <= npcStopShootRangeSquared)
                                 {
                                     if (ShouldResolveNpcStackConflict(item_1, npcTargetGroups))
                                     {
