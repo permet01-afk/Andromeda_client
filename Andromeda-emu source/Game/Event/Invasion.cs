@@ -1,6 +1,7 @@
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Maps;
+using OrbitReborn_Emulator.Game.Maps.Collectables;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
@@ -68,6 +69,7 @@ namespace OrbitReborn_Emulator.Game.Event
         private static bool mSent5;
         private static bool mSent1;
         private static int mLastCountdownSecond;
+        private static int mNextInvaderCargoBoxId = -3000000;
 
         private sealed class InvasionRun
         {
@@ -559,6 +561,8 @@ namespace OrbitReborn_Emulator.Game.Event
                 double share = (double)kvp.Value / (double)totalDamage;
                 GrantRewardShare(session, share, false);
             }
+
+            SpawnInvaderCargoBox(run, npc);
         }
 
         private static void AddRunDamage(InvasionRun run, int characterId, int damage)
@@ -607,12 +611,36 @@ namespace OrbitReborn_Emulator.Game.Event
             int uridium = ScaleReward(InvaderRewardUridium, share);
             int ucb = ScaleReward(InvaderRewardUcb100, share);
             int rsb = ScaleReward(InvaderRewardRsb75, share);
-            int seprom = ScaleReward(InvaderRewardSeprom, share);
-            int promerium = ScaleReward(InvaderRewardPromerium, share);
             int xp = ScaleReward(InvaderRewardExperience, share);
             int honor = ScaleReward(InvaderRewardHonor, share);
 
-            GrantFixedReward(session, credits, uridium, ucb, rsb, seprom, promerium, xp, honor, "Invader destroyed. Rewards received.");
+            GrantFixedReward(session, credits, uridium, ucb, rsb, 0, 0, xp, honor, "Invader destroyed. Rewards received.");
+        }
+
+        private static int NextInvaderCargoBoxId()
+        {
+            return Interlocked.Decrement(ref mNextInvaderCargoBoxId);
+        }
+
+        private static void SpawnInvaderCargoBox(InvasionRun run, Npc npc)
+        {
+            if (run == null || npc == null || (InvaderRewardSeprom <= 0 && InvaderRewardPromerium <= 0))
+                return;
+
+            MapInstance instance = MapManager.GetInstanceByMapId(run.MapId);
+            if (instance == null)
+                return;
+
+            int boxId = NextInvaderCargoBoxId();
+            while (instance.Info.Collectables.ContainsKey(boxId))
+                boxId = NextInvaderCargoBoxId();
+
+            CargoBox cargoBox = new CargoBox(boxId, npc.LocX, npc.LocY, run.MapId);
+            cargoBox.Promerium = InvaderRewardPromerium;
+            cargoBox.Seprom = InvaderRewardSeprom;
+
+            instance.Info.Collectables.Add(boxId, (Collectable)cargoBox);
+            BroadcastMapPacket(run.MapId, PacketComposer.Compose("c", boxId.ToString() + "|1|" + npc.LocX + "|" + npc.LocY));
         }
 
         private static int ScaleReward(int value, double share)
