@@ -1,5 +1,6 @@
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
+using OrbitReborn_Emulator.Game.Event;
 using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Handlers;
 using OrbitReborn_Emulator.Game.Maps;
@@ -1977,6 +1978,46 @@ namespace OrbitReborn_Emulator.Game.Npcs
             {
             }
 
+            if (Invasion.HandleNpcDestroyed(this, map))
+            {
+                StopNpcAttack();
+
+                this.LocX = -100;
+                this.LocY = -100;
+                this.NewLocX = -100;
+                this.NewLocY = -100;
+
+                this.TargetId = 0;
+                this.IsAttacking = false;
+
+                if (this.PathFinder != null)
+                {
+                    this.PathFinder.Dispose();
+                    this.PathFinder = null;
+                    --TimerManager.TimerRunning;
+                }
+
+                this.IsMoving = false;
+
+                if (this.Respawn)
+                {
+                    ScheduleDelayedRespawn();
+                }
+                else
+                {
+                    if (map != null)
+                    {
+                        MapActor actorByReferenceId = map.GetActorByReferenceId(this.Id, MapActorType.AiBot);
+                        if (actorByReferenceId != null)
+                            map.KickNpc(actorByReferenceId.Id);
+                    }
+
+                    NpcAI.NpcToRemove.Add(this);
+                }
+
+                return;
+            }
+
             int ownerId = this.mRewardOwnerId;
 
             if (ownerId <= 0 && this.Attackers != null && this.Attackers.Count > 0)
@@ -2347,7 +2388,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     return;
                 this.mLastDamageTick = nowTick;
 
-                int ammoType = 0;
+                int ammoType = Invasion.GetNpcLaserPattern(this);
 
                 ServerMessage npcAttackMessage = PacketComposer.Compose("a", this.Id.ToString() + "|" + sessionByCharacterId.CharacterId + "|" + ammoType + "|0|0");
                 if (GalaxyGateWaveService.IsGateMap(this.MapId))

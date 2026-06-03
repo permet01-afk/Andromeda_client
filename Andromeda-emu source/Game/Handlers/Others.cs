@@ -648,6 +648,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (portalById1 == null || portalById2 == null)
                 return;
 
+            if (Others.invasionPortal.Contains(portalById1.Id))
+            {
+                Session.SendData(PacketComposer.Compose("A", "STD|Invasion portals are disabled in this version."));
+                return;
+            }
+
             bool isPvpMap = UsesPvpPortalCombatBlock(Session.CharacterInfo.MapId, Session.CharacterInfo.CurrentPortal);
 
             const double PVP_PORTAL_COMBAT_BLOCK_SECONDS = 5.0;
@@ -695,12 +701,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 case 204:
                 case 205:
                 case 206:
-                    if (!Invasion.Active)
-                    {
-                        Session.SendData(PacketComposer.Compose("A", "STD|Invasion isn't active !"));
-                        return false;
-                    }
-                    return true;
+                    Session.SendData(PacketComposer.Compose("A", "STD|Invasion portals are disabled in this version."));
+                    return false;
                 case 201:
                     if (Session.CharacterInfo.FactionId != 1)
                     {
@@ -773,6 +775,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             if (session.CharacterInfo.CurrentPortal == MAP_45_TO_44_PORTAL_ID)
                 portalById = CreateMap45To44SafeArrivalPortal();
+
+            if (Others.invasionPortal.Contains(session.CharacterInfo.CurrentPortal))
+            {
+                DisposePortalJumpTimer(session);
+                session.CharacterInfo.IsJumping = false;
+                session.CharacterInfo.CanMove = true;
+                session.SendData(UserDataComposer.Compose(session));
+                session.SendData(PacketComposer.Compose("A", "STD|Invasion portals are disabled in this version."));
+                return;
+            }
 
             if (portalById == null && !Others.invasionPortal.Contains(session.CharacterInfo.CurrentPortal))
             {

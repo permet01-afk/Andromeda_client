@@ -324,6 +324,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         return;
                     Invasion.StartInvasion();
                     return;
+                case "/stop_invasion":
+                    if (!Session.CharacterInfo.IsAdmin)
+                        return;
+                    Invasion.StopInvasion();
+                    return;
                 case "/join_survivor":
                     if (!Session.CharacterInfo.IsAdmin)
                         return;

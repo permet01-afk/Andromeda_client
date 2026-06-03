@@ -78,7 +78,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
             "-=[ Uber Sibelon ]=-",
             "-=[ Uber Kristallin ]=-",
             "-=[ Uber Mordon ]=-",
-            "-=[ Boss Protegit ]=-"
+            "-=[ Boss Protegit ]=-",
+            "Invader"
         };
 
         private static readonly Dictionary<int, bool> WasOutOfRange = new Dictionary<int, bool>();

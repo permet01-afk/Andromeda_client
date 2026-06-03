@@ -1,12 +1,14 @@
-﻿
-
+using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Libs;
+using OrbitReborn_Emulator.Specialized;
 using OrbitReborn_Emulator.Storage;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -14,597 +16,829 @@ namespace OrbitReborn_Emulator.Game.Event
 {
     internal static class Invasion
     {
+        private const int StartDelaySeconds = 15 * 60;
+        private const int MaxDurationMs = 40 * 60 * 1000;
+        private const int MonitorPeriodMs = 5000;
+        private const int MarkerPeriodMs = 1500;
+        private const int MarkerLifetimeTicks = 6;
+
+        private const string InvaderName = "Invader";
+        private const int InvaderShipId = 56;
+        private const int InvaderHp = 300000;
+        private const int InvaderShield = 250000;
+        private const int InvaderSpeed = 320;
+        private const int InvaderDamage = 35000;
+        private const int InvaderDamageMin = 33000;
+        private const int InvaderDamageMax = 37000;
+        private const int InvaderLaserPattern = 4;
+
+        private const int InvaderRewardCredits = 3000000;
+        private const int InvaderRewardUridium = 25000;
+        private const int InvaderRewardUcb100 = 10000;
+        private const int InvaderRewardRsb75 = 5000;
+        private const int InvaderRewardSeprom = 200;
+        private const int InvaderRewardPromerium = 500;
+        private const int InvaderRewardExperience = 250000;
+        private const int InvaderRewardHonor = 1250;
+
+        private const int FinalRewardUridium = 25000;
+        private const int FinalRewardUcb100 = 5000;
+        private const int FinalRewardRsb75 = 1500;
+        private const int FinalRewardSeprom = 500;
+
+        private static readonly object SyncRoot = new object();
+        private static readonly Dictionary<int, InvasionRun> RunsByMapId = new Dictionary<int, InvasionRun>();
+        private static readonly Dictionary<int, InvasionRun> RunsByNpcId = new Dictionary<int, InvasionRun>();
+        private static readonly int[] WaveCounts = { 10, 20, 25 };
+
         private static bool mActive;
+        private static bool mStarting;
         private static bool mSafeBattle;
         private static int mPlayerCount;
         private static int mNpcCount;
         private static int mLevel;
-        private static CList<int> IdPlayers;
         private static int mPlayerCountMax;
-        private static Timer mPerformUpdate;
+        private static Timer mAnnouncementTimer;
+        private static Timer mMonitorTimer;
+        private static Timer mMarkerTimer;
+        private static Timer mTimeoutTimer;
+        private static DateTime mStartAtUtc;
+        private static bool mSent15;
+        private static bool mSent5;
+        private static bool mSent1;
+        private static int mLastCountdownSecond;
+
+        private sealed class InvasionRun
+        {
+            public int MapId;
+            public int FactionId;
+            public string MapName;
+            public int WaveIndex;
+            public bool Running;
+            public bool Completed;
+            public DateTime NextStatusAtUtc;
+            public readonly Dictionary<int, Npc> Npcs = new Dictionary<int, Npc>();
+            public readonly Dictionary<int, long> DamageByCharacter = new Dictionary<int, long>();
+            public readonly HashSet<int> FinalRewarded = new HashSet<int>();
+            public long TotalDamage;
+        }
 
         public static bool Active
         {
-            get
-            {
-                return Invasion.mActive;
-            }
-            set
-            {
-                Invasion.mActive = value;
-            }
+            get { return mActive; }
+            set { mActive = value; }
         }
 
         public static bool SafeBattle
         {
-            get
-            {
-                return Invasion.mSafeBattle;
-            }
-            set
-            {
-                Invasion.mSafeBattle = value;
-            }
+            get { return mSafeBattle; }
+            set { mSafeBattle = value; }
         }
 
         public static int PlayerCount
         {
-            get
-            {
-                return Invasion.mPlayerCount;
-            }
-            set
-            {
-                Invasion.mPlayerCount = value;
-            }
+            get { return mPlayerCount; }
+            set { mPlayerCount = value; }
         }
 
         public static int NpcCount
         {
-            get
-            {
-                return Invasion.mNpcCount;
-            }
-            set
-            {
-                Invasion.mNpcCount = value;
-            }
+            get { return mNpcCount; }
+            set { mNpcCount = value; }
         }
 
         public static int Level
         {
-            get
-            {
-                return Invasion.mLevel;
-            }
-            set
-            {
-                Invasion.mLevel = value;
-            }
+            get { return mLevel; }
+            set { mLevel = value; }
         }
 
         public static int PlayerCountMax
         {
-            get
-            {
-                return Invasion.mPlayerCountMax;
-            }
-            set
-            {
-                Invasion.mPlayerCountMax = value;
-            }
+            get { return mPlayerCountMax; }
+            set { mPlayerCountMax = value; }
         }
 
         public static Timer PerformUpdate
         {
-            get
-            {
-                return Invasion.mPerformUpdate;
-            }
-            set
-            {
-                Invasion.mPerformUpdate = value;
-            }
+            get { return mMonitorTimer; }
+            set { mMonitorTimer = value; }
         }
 
         public static void Initialize()
         {
-            Invasion.Active = false;
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            lock (SyncRoot)
             {
-                client.ExecuteNonQuery("UPDATE event_information SET isActif=0 WHERE id = 1");
+                StopTimers();
+                RunsByMapId.Clear();
+                RunsByNpcId.Clear();
+                mActive = false;
+                mStarting = false;
+                mSafeBattle = false;
+                mPlayerCount = 0;
+                mNpcCount = 0;
+                mLevel = 0;
+                mPlayerCountMax = 0;
+                mSent15 = false;
+                mSent5 = false;
+                mSent1 = false;
+                mLastCountdownSecond = 0;
             }
-            Invasion.SafeBattle = false;
-            Invasion.PerformUpdate = (Timer)null;
-            Invasion.PlayerCount = 0;
-            Invasion.IdPlayers = new CList<int>();
+
+            SetDatabaseActive(false);
         }
 
         public static void StartInvasion()
         {
-            foreach (MapInstance mapInstance in (IEnumerable<MapInstance>)MapManager.MapInstances.Values)
+            lock (SyncRoot)
             {
-                if (!mapInstance.Unloaded)
+                if (mActive || mStarting)
                 {
-                    string str = "Invasion Event will start in 20 seconds. Prepare to fight !";
-                    mapInstance.BroadcastMessage(PacketComposer.Compose("A", "STD|" + str), false);
+                    BroadcastGlobal("Invasion is already active.");
+                    return;
                 }
-            }
-            Invasion.PerformUpdate = new Timer(new TimerCallback(Invasion.StartCoolDown), (object)10, 10000, 0);
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-            {
-                client.ExecuteNonQuery("UPDATE event_information SET isActif=1 WHERE id = 1");
+
+                mActive = true;
+                mStarting = true;
+                mSafeBattle = false;
+                mSent15 = false;
+                mSent5 = false;
+                mSent1 = false;
+                mLastCountdownSecond = 0;
+                mStartAtUtc = DateTime.UtcNow.AddSeconds(StartDelaySeconds);
+                SetDatabaseActive(true);
+
+                mAnnouncementTimer = new Timer(new TimerCallback(AnnouncementTick), null, 0, 1000);
             }
         }
 
-        public static bool Join(Session Session)
+        public static void StopInvasion()
         {
-            if (Session.CharacterInfo.MapId == 81)
+            lock (SyncRoot)
             {
-                Session.SendData(PacketComposer.Compose("A", "STD| You are already on Invasion !"));
-                return false;
+                if (!mActive && !mStarting)
+                    return;
+
+                FinishEvent(false, true);
             }
-            ++Invasion.PlayerCountMax;
-            Invasion.IdPlayers.Add(Session.CharacterId);
-            MapHandler.OpenPublicConnection(Session, 81, (PortalInfo)null);
+        }
+
+        public static bool Join(Session session)
+        {
+            if (session != null)
+                session.SendData(PacketComposer.Compose("A", "STD|Invasion portals are disabled in this version."));
+            return false;
+        }
+
+        public static void Allow(int characterId)
+        {
+        }
+
+        public static bool IsInvasionNpc(Npc npc)
+        {
+            if (npc == null)
+                return false;
+
+            lock (SyncRoot)
+            {
+                return RunsByNpcId.ContainsKey(npc.Id);
+            }
+        }
+
+        public static int GetNpcLaserPattern(Npc npc)
+        {
+            return IsInvasionNpc(npc) ? InvaderLaserPattern : 0;
+        }
+
+        public static bool HandleNpcDestroyed(Npc npc, MapInstance map)
+        {
+            if (npc == null)
+                return false;
+
+            InvasionRun run;
+            lock (SyncRoot)
+            {
+                if (!RunsByNpcId.TryGetValue(npc.Id, out run))
+                    return false;
+
+                GrantInvaderReward(run, npc);
+                RunsByNpcId.Remove(npc.Id);
+                run.Npcs.Remove(npc.Id);
+                SendMarkerHide(run, npc.Id);
+            }
+
             return true;
         }
 
-        public static void Allow(int iId)
+        private static void AnnouncementTick(object state)
         {
-            if (!Invasion.IdPlayers.Contains(iId))
-                return;
-            Invasion.IdPlayers.Remove(iId);
-        }
+            lock (SyncRoot)
+            {
+                if (!mStarting)
+                    return;
 
-        private static void StartCoolDown(object state)
-        {
-            int num = (int)state;
-            if (num == 0)
-            {
-                Invasion.BeginInvasion();
-            }
-            else
-            {
-                foreach (MapInstance mapInstance in (IEnumerable<MapInstance>)MapManager.MapInstances.Values)
+                int remaining = (int)Math.Ceiling((mStartAtUtc - DateTime.UtcNow).TotalSeconds);
+
+                if (!mSent15 && remaining <= 15 * 60)
                 {
-                    if (mapInstance != null && !mapInstance.Unloaded)
-                    {
-                        string str = "Invasion Event will start in " + (object)num + " seconds...";
-                        mapInstance.BroadcastMessage(PacketComposer.Compose("A", "STD|" + str), false);
-                    }
+                    mSent15 = true;
+                    BroadcastGlobal("Invasion will begin in 15 minutes.");
                 }
-                Invasion.PerformUpdate = new Timer(new TimerCallback(Invasion.StartCoolDown), (object)(num - 1), 1000, 0);
+
+                if (!mSent5 && remaining <= 5 * 60)
+                {
+                    mSent5 = true;
+                    BroadcastGlobal("Invasion will begin in 5 minutes.");
+                }
+
+                if (!mSent1 && remaining <= 60)
+                {
+                    mSent1 = true;
+                    BroadcastGlobal("Invasion will begin in 1 minute.");
+                }
+
+                if (remaining <= 10 && remaining > 0 && remaining != mLastCountdownSecond)
+                {
+                    mLastCountdownSecond = remaining;
+                    BroadcastGlobal("Invasion begins in " + remaining + "...");
+                }
+
+                if (remaining <= 0)
+                    BeginInvasion();
             }
         }
 
         private static void BeginInvasion()
         {
-            Invasion.Active = true;
-            Invasion.SafeBattle = true;
-            Invasion.PlayerCountMax = 0;
-            Invasion.NpcCount = 0;
-            Invasion.Level = 0;
-            foreach (MapInstance mapInstance in (IEnumerable<MapInstance>)MapManager.MapInstances.Values)
+            StopAnnouncementTimer();
+            mStarting = false;
+            mActive = true;
+            mSafeBattle = false;
+            RunsByMapId.Clear();
+            RunsByNpcId.Clear();
+
+            AddRun(17, 1, "1-5");
+            AddRun(21, 2, "2-5");
+            AddRun(25, 3, "3-5");
+
+            BroadcastGlobal("Invasion has started!");
+
+            foreach (InvasionRun run in RunsByMapId.Values)
+                SpawnNextWave(run);
+
+            mMonitorTimer = new Timer(new TimerCallback(MonitorTick), null, MonitorPeriodMs, MonitorPeriodMs);
+            mMarkerTimer = new Timer(new TimerCallback(MarkerTick), null, 0, MarkerPeriodMs);
+            mTimeoutTimer = new Timer(new TimerCallback(TimeoutTick), null, MaxDurationMs, Timeout.Infinite);
+        }
+
+        private static void AddRun(int mapId, int factionId, string mapName)
+        {
+            InvasionRun run = new InvasionRun();
+            run.MapId = mapId;
+            run.FactionId = factionId;
+            run.MapName = mapName;
+            run.WaveIndex = 0;
+            run.Running = true;
+            run.NextStatusAtUtc = DateTime.UtcNow.AddSeconds(30);
+            RunsByMapId[mapId] = run;
+        }
+
+        private static void SpawnNextWave(InvasionRun run)
+        {
+            if (run == null || !run.Running || run.WaveIndex >= WaveCounts.Length)
+                return;
+
+            int count = WaveCounts[run.WaveIndex];
+            run.WaveIndex++;
+
+            EnsureMapLoaded(run.MapId);
+            MapInstance instance = MapManager.GetInstanceByMapId(run.MapId);
+            if (instance == null)
+                return;
+
+            for (int i = 0; i < count; i++)
+            {
+                int x;
+                int y;
+                GetInvasionSpawnPosition(run.MapId, out x, out y);
+
+                Npc npc = NpcManager.CreateNewInstance(
+                    InvaderName,
+                    run.MapId,
+                    x,
+                    y,
+                    InvaderShipId,
+                    InvaderHp,
+                    InvaderHp,
+                    InvaderShield,
+                    InvaderShield,
+                    InvaderSpeed,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    "",
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    InvaderDamage
+                );
+
+                npc.DamageMin = InvaderDamageMin;
+                npc.DamageMax = InvaderDamageMax;
+                npc.Respawn = false;
+
+                instance.AddNpcToMap(npc);
+                NpcAI.NpcToAdd.Add(npc);
+                run.Npcs[npc.Id] = npc;
+                RunsByNpcId[npc.Id] = run;
+            }
+
+            BroadcastMap(run.MapId, "Wave " + run.WaveIndex + " has started.");
+            BroadcastMap(run.MapId, "Invaders remaining: " + run.Npcs.Count);
+            SendMarkers(run);
+        }
+
+        private static void MonitorTick(object state)
+        {
+            lock (SyncRoot)
+            {
+                if (!mActive || mStarting)
+                    return;
+
+                List<InvasionRun> snapshot = new List<InvasionRun>(RunsByMapId.Values);
+                foreach (InvasionRun run in snapshot)
+                {
+                    if (run == null || !run.Running)
+                        continue;
+
+                    RemoveMissingNpcs(run);
+
+                    if (run.Npcs.Count <= 0)
+                    {
+                        if (run.WaveIndex < WaveCounts.Length)
+                            SpawnNextWave(run);
+                        else
+                            FinishRun(run, true, false);
+                    }
+                    else if (DateTime.UtcNow >= run.NextStatusAtUtc)
+                    {
+                        BroadcastMap(run.MapId, "Invaders remaining: " + run.Npcs.Count);
+                        run.NextStatusAtUtc = DateTime.UtcNow.AddSeconds(30);
+                    }
+                }
+
+                FinishIfNoRunningRuns();
+            }
+        }
+
+        private static void MarkerTick(object state)
+        {
+            lock (SyncRoot)
+            {
+                if (!mActive || mStarting)
+                    return;
+
+                foreach (InvasionRun run in RunsByMapId.Values)
+                {
+                    if (run != null && run.Running)
+                        SendMarkers(run);
+                }
+            }
+        }
+
+        private static void TimeoutTick(object state)
+        {
+            lock (SyncRoot)
+            {
+                if (!mActive)
+                    return;
+
+                FinishEvent(false, false);
+            }
+        }
+
+        private static void FinishRun(InvasionRun run, bool completed, bool manualStop)
+        {
+            if (run == null || !run.Running)
+                return;
+
+            run.Completed = completed;
+
+            if (completed)
+                GrantFinalReward(run);
+
+            CleanupRunNpcs(run);
+            run.Running = false;
+            BroadcastMap(run.MapId, manualStop ? "Event Invasion Finished" : "Event Invasion Finished");
+        }
+
+        private static void FinishEvent(bool completed, bool manualStop)
+        {
+            bool hadRuns = RunsByMapId.Count > 0;
+
+            foreach (InvasionRun run in new List<InvasionRun>(RunsByMapId.Values))
+            {
+                if (run != null && run.Running)
+                    FinishRun(run, completed && run.Npcs.Count <= 0 && run.WaveIndex >= WaveCounts.Length, manualStop);
+            }
+
+            RunsByMapId.Clear();
+            RunsByNpcId.Clear();
+            mStarting = false;
+            mActive = false;
+            mSafeBattle = false;
+            StopTimers();
+            SetDatabaseActive(false);
+
+            if (manualStop && !hadRuns)
+                BroadcastGlobal("Event Invasion Finished");
+        }
+
+        private static void FinishIfNoRunningRuns()
+        {
+            foreach (InvasionRun run in RunsByMapId.Values)
+            {
+                if (run != null && run.Running)
+                    return;
+            }
+
+            RunsByMapId.Clear();
+            RunsByNpcId.Clear();
+            mActive = false;
+            mSafeBattle = false;
+            StopTimers();
+            SetDatabaseActive(false);
+        }
+
+        private static void GrantInvaderReward(InvasionRun run, Npc npc)
+        {
+            if (run == null || npc == null || npc.Attackers == null)
+                return;
+
+            ConcurrentDictionary<int, int> attackers = (ConcurrentDictionary<int, int>)npc.Attackers;
+            long totalDamage = 0;
+            foreach (KeyValuePair<int, int> kvp in attackers)
+            {
+                if (kvp.Value > 0)
+                    totalDamage += (long)kvp.Value;
+            }
+
+            if (totalDamage <= 0)
+                return;
+
+            foreach (KeyValuePair<int, int> kvp in attackers)
+            {
+                if (kvp.Value <= 0)
+                    continue;
+
+                AddRunDamage(run, kvp.Key, kvp.Value);
+
+                Session session = SessionManager.GetSessionByCharacterId(kvp.Key);
+                if (!IsEligibleRewardSession(session, run))
+                    continue;
+
+                double share = (double)kvp.Value / (double)totalDamage;
+                GrantRewardShare(session, share, false);
+            }
+        }
+
+        private static void AddRunDamage(InvasionRun run, int characterId, int damage)
+        {
+            if (run == null || characterId <= 0 || damage <= 0)
+                return;
+
+            long current;
+            if (!run.DamageByCharacter.TryGetValue(characterId, out current))
+                current = 0;
+
+            run.DamageByCharacter[characterId] = current + damage;
+            run.TotalDamage += damage;
+        }
+
+        private static void GrantFinalReward(InvasionRun run)
+        {
+            if (run == null)
+                return;
+
+            long requiredDamage = Math.Max(50000L, run.TotalDamage / 100L);
+            foreach (MapActor actor in GetMapUserActors(run.MapId))
+            {
+                if (actor == null || actor.ReferenceSessionId <= 0)
+                    continue;
+
+                Session session = SessionManager.GetSessionById(actor.ReferenceSessionId);
+                if (!IsEligibleRewardSession(session, run))
+                    continue;
+
+                long damage;
+                if (!run.DamageByCharacter.TryGetValue(session.CharacterId, out damage) || damage < requiredDamage)
+                    continue;
+
+                if (run.FinalRewarded.Contains(session.CharacterId))
+                    continue;
+
+                run.FinalRewarded.Add(session.CharacterId);
+                GrantFixedReward(session, 0, FinalRewardUridium, FinalRewardUcb100, FinalRewardRsb75, FinalRewardSeprom, 0, 0, 0, "Invasion final reward received.");
+            }
+        }
+
+        private static void GrantRewardShare(Session session, double share, bool finalReward)
+        {
+            int credits = ScaleReward(InvaderRewardCredits, share);
+            int uridium = ScaleReward(InvaderRewardUridium, share);
+            int ucb = ScaleReward(InvaderRewardUcb100, share);
+            int rsb = ScaleReward(InvaderRewardRsb75, share);
+            int seprom = ScaleReward(InvaderRewardSeprom, share);
+            int promerium = ScaleReward(InvaderRewardPromerium, share);
+            int xp = ScaleReward(InvaderRewardExperience, share);
+            int honor = ScaleReward(InvaderRewardHonor, share);
+
+            GrantFixedReward(session, credits, uridium, ucb, rsb, seprom, promerium, xp, honor, "Invader destroyed. Rewards received.");
+        }
+
+        private static int ScaleReward(int value, double share)
+        {
+            if (value <= 0 || share <= 0.0)
+                return 0;
+
+            return Math.Max(1, Convert.ToInt32(Math.Floor((double)value * share)));
+        }
+
+        private static void GrantFixedReward(Session session, int credits, int uridium, int ucb, int rsb, int seprom, int promerium, int xp, int honor, string logMessage)
+        {
+            if (session == null || session.CharacterInfo == null)
+                return;
+
+            bool leveledUp = false;
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            {
+                leveledUp = session.CharacterInfo.ApplyNpcKillRewardBatch(client, credits, uridium, 0, 0, xp, honor, 1);
+
+                if (ucb > 0 || rsb > 0)
+                {
+                    client.ClearParameters();
+                    client.SetParameter("id", (object)session.CharacterInfo.Id);
+                    client.ExecuteNonQuery("UPDATE users SET ammo_ucb100 = ammo_ucb100 + " + (object)ucb + ", ammo_rsb75 = ammo_rsb75 + " + (object)rsb + " WHERE id=@id LIMIT 1");
+                    session.CharacterInfo.AmmoUcb100 += (long)ucb;
+                    session.CharacterInfo.AmmoRsb75 += (long)rsb;
+                }
+
+                session.CharacterInfo.AddLog(client, logMessage);
+            }
+
+            if (seprom > 0)
+                session.CharacterInfo.AddCargo(14L, seprom);
+
+            if (promerium > 0)
+                session.CharacterInfo.AddCargo(13L, promerium);
+
+            if (credits > 0)
+                session.SendData(PacketComposer.Compose("y", "CRE|" + credits + "|" + session.CharacterInfo.Credits));
+
+            if (uridium > 0)
+                session.SendData(PacketComposer.Compose("y", "URI|" + uridium + "|" + session.CharacterInfo.Uridium));
+
+            if (xp > 0)
+                session.SendData(PacketComposer.Compose("y", "EP|" + xp + "|" + session.CharacterInfo.Experience + "|" + session.CharacterInfo.Level));
+
+            if (honor > 0)
+                session.SendData(PacketComposer.Compose("y", "HON|" + honor + "|" + session.CharacterInfo.Honor));
+
+            if (ucb > 0 || rsb > 0)
+                session.SendData(PacketComposer.Compose("B", session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
+
+            if (seprom > 0 || promerium > 0)
+                session.SendData(session.CharacterInfo.GetCargoMessage());
+
+            session.SendData(UserDataComposer.Compose(session));
+            session.SendData(PacketComposer.Compose("A", "STD|" + logMessage));
+
+            if (leveledUp)
+                session.SendData(PacketComposer.Compose("A", "LUP|" + session.CharacterInfo.Level + "|1"));
+        }
+
+        private static bool IsEligibleRewardSession(Session session, InvasionRun run)
+        {
+            return session != null
+                && session.CharacterInfo != null
+                && !session.CharacterInfo.Destroy
+                && session.CharacterInfo.MapId == run.MapId
+                && session.CharacterInfo.FactionId == run.FactionId;
+        }
+
+        private static void CleanupRunNpcs(InvasionRun run)
+        {
+            if (run == null)
+                return;
+
+            foreach (Npc npc in new List<Npc>(run.Npcs.Values))
+                RemoveNpcFromMap(run, npc);
+
+            run.Npcs.Clear();
+        }
+
+        private static void RemoveNpcFromMap(InvasionRun run, Npc npc)
+        {
+            if (run == null || npc == null)
+                return;
+
+            npc.StopNpcAttack();
+            npc.IsDestroying = true;
+            SendMarkerHide(run, npc.Id);
+
+            MapInstance instance = MapManager.GetInstanceByMapId(npc.MapId);
+            if (instance != null)
+            {
+                foreach (MapActor actor in instance.GetUserActorSnapshot())
+                {
+                    if (actor == null || actor.ReferenceSessionId <= 0)
+                        continue;
+
+                    Session session = SessionManager.GetSessionById(actor.ReferenceSessionId);
+                    if (session != null && session.CharacterInfo != null && session.CharacterInfo.NpcInRange.Contains(npc.Id))
+                    {
+                        session.CharacterInfo.NpcInRange.Remove(npc.Id);
+                        session.SendData(PacketComposer.Compose("R", npc.Id.ToString()));
+                    }
+                }
+
+                MapActor npcActor = instance.GetActorByReferenceId(npc.Id, MapActorType.AiBot);
+                if (npcActor != null)
+                    instance.KickNpc(npcActor.Id);
+            }
+
+            if (npc.PathFinder != null)
+            {
+                npc.PathFinder.Dispose();
+                npc.PathFinder = null;
+                --TimerManager.TimerRunning;
+            }
+
+            npc.IsMoving = false;
+            NpcAI.NpcToRemove.Add(npc);
+            RunsByNpcId.Remove(npc.Id);
+        }
+
+        private static void RemoveMissingNpcs(InvasionRun run)
+        {
+            List<int> remove = new List<int>();
+            MapInstance instance = MapManager.GetInstanceByMapId(run.MapId);
+
+            foreach (KeyValuePair<int, Npc> kvp in run.Npcs)
+            {
+                Npc npc = kvp.Value;
+                if (npc == null || npc.IsDestroying)
+                {
+                    remove.Add(kvp.Key);
+                    continue;
+                }
+
+                if (instance == null || instance.GetActorByReferenceId(npc.Id, MapActorType.AiBot) == null)
+                    remove.Add(kvp.Key);
+            }
+
+            foreach (int npcId in remove)
+            {
+                run.Npcs.Remove(npcId);
+                RunsByNpcId.Remove(npcId);
+                SendMarkerHide(run, npcId);
+            }
+        }
+
+        private static void SendMarkers(InvasionRun run)
+        {
+            if (run == null || !run.Running)
+                return;
+
+            foreach (Npc npc in run.Npcs.Values)
+            {
+                if (npc == null || npc.IsDestroying)
+                    continue;
+
+                BroadcastMapPacket(run.MapId, PacketComposer.Compose("MM", "SM|" + npc.Id + "|" + npc.LocX + "|" + npc.LocY + "|" + MarkerLifetimeTicks));
+            }
+        }
+
+        private static void SendMarkerHide(InvasionRun run, int npcId)
+        {
+            if (run == null)
+                return;
+
+            BroadcastMapPacket(run.MapId, PacketComposer.Compose("MM", "HM|" + npcId));
+        }
+
+        private static void GetInvasionSpawnPosition(int mapId, out int x, out int y)
+        {
+            for (int i = 0; i < 30; i++)
+            {
+                NpcAI.GetRandomNpcPosition(mapId, out x, out y);
+                if (IsSpawnAwayFromPortals(mapId, x, y))
+                    return;
+            }
+
+            NpcAI.GetRandomNpcPosition(mapId, out x, out y);
+        }
+
+        private static bool IsSpawnAwayFromPortals(int mapId, int x, int y)
+        {
+            CList<PortalInfo> portals = PortalManager.GetPortalForMap(mapId);
+            if (portals == null)
+                return true;
+
+            const long minDistSquared = 2500L * 2500L;
+            foreach (PortalInfo portal in portals.Keys)
+            {
+                if (portal == null)
+                    continue;
+
+                long dx = (long)x - portal.PosX;
+                long dy = (long)y - portal.PosY;
+                if (dx * dx + dy * dy < minDistSquared)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static void EnsureMapLoaded(int mapId)
+        {
+            if (MapManager.GetInstanceByMapId(mapId) == null)
+                MapManager.TryLoadMapInstance(mapId);
+        }
+
+        private static MapActor[] GetMapUserActors(int mapId)
+        {
+            MapInstance instance = MapManager.GetInstanceByMapId(mapId);
+            if (instance == null)
+                return new MapActor[0];
+
+            return instance.GetUserActorSnapshot();
+        }
+
+        private static void BroadcastGlobal(string text)
+        {
+            foreach (MapInstance mapInstance in MapManager.MapInstances.Values)
             {
                 if (mapInstance != null && !mapInstance.Unloaded)
-                {
-                    foreach (MapActor mapActor in (IEnumerable<MapActor>)mapInstance.Actors.Values)
-                    {
-                        if (mapActor.Type == MapActorType.UserCharacter && mapActor.ReferenceSessionId > 0)
-                        {
-                            Session sessionById = SessionManager.GetSessionById(mapActor.ReferenceSessionId);
-                            if (sessionById != null && sessionById.CharacterInfo != null)
-                            {
-                                ++Invasion.PlayerCountMax;
-                                Invasion.IdPlayers.Add(sessionById.CharacterId);
-                                MapHandler.OpenPublicConnection(sessionById, 81, (PortalInfo)null);
-                            }
-                        }
-                    }
-                }
-            }
-            Invasion.PerformUpdate = new Timer(new TimerCallback(Invasion.SafePeriod), (object)30, 1000, 0);
-        }
-
-        private static void SafePeriod(object state)
-        {
-            int num = (int)state;
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(81);
-            if (instanceByMapId == null && Invasion.PerformUpdate != null)
-            {
-                Invasion.PerformUpdate.Dispose();
-                Invasion.SafeBattle = false;
-                Invasion.Active = false;
-                Invasion.PlayerCount = 0;
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-                {
-                    client.ExecuteNonQuery("UPDATE event_information SET isActif=0 WHERE id = 1");
-                }
-            }
-            if (num == 0)
-            {
-                string str = "Invasion Event begin... Kill them all !";
-                instanceByMapId.BroadcastMessage(PacketComposer.Compose("A", "STD|" + str), false);
-                Invasion.PerformUpdate = new Timer(new TimerCallback(Invasion.Monitor), (object)null, 0, 15000);
-            }
-            else
-            {
-                if (num < 5 || num % 5 == 0)
-                {
-                    string str = "Invasion Event will begin in " + (object)num + " seconds...";
-                    instanceByMapId.BroadcastMessage(PacketComposer.Compose("A", "STD|" + str), false);
-                }
-                Invasion.PerformUpdate = new Timer(new TimerCallback(Invasion.SafePeriod), (object)(num - 1), 1000, 0);
+                    mapInstance.BroadcastMessage(PacketComposer.Compose("A", "STD|" + text), false);
             }
         }
 
-        private static void Monitor(object state)
+        private static void BroadcastMap(int mapId, string text)
         {
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(81);
-            if (instanceByMapId == null && Invasion.PerformUpdate != null)
+            MapInstance instance = MapManager.GetInstanceByMapId(mapId);
+            if (instance != null)
+                instance.BroadcastMessage(PacketComposer.Compose("A", "STD|" + text), false);
+        }
+
+        private static void BroadcastMapPacket(int mapId, ServerMessage message)
+        {
+            MapInstance instance = MapManager.GetInstanceByMapId(mapId);
+            if (instance != null)
+                instance.BroadcastMessage(message, false);
+        }
+
+        private static void StopAnnouncementTimer()
+        {
+            if (mAnnouncementTimer != null)
             {
-                Invasion.PerformUpdate.Dispose();
-                Invasion.Active = false;
-                Invasion.PlayerCount = 0;
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-                {
-                    client.ExecuteNonQuery("UPDATE event_information SET isActif=0 WHERE id = 1");
-                }
+                mAnnouncementTimer.Dispose();
+                mAnnouncementTimer = null;
             }
-            Invasion.PlayerCount = 0;
-            foreach (MapActor mapActor in (IEnumerable<MapActor>)instanceByMapId.Actors.Values)
+        }
+
+        private static void StopTimers()
+        {
+            StopAnnouncementTimer();
+
+            if (mMonitorTimer != null)
             {
-                if (mapActor.Type == MapActorType.UserCharacter && mapActor.ReferenceSessionId > 0)
-                {
-                    Session sessionById = SessionManager.GetSessionById(mapActor.ReferenceSessionId);
-                    if (sessionById != null && sessionById.CharacterInfo != null)
-                        ++Invasion.PlayerCount;
-                }
+                mMonitorTimer.Dispose();
+                mMonitorTimer = null;
             }
-            if (Invasion.PlayerCount > 0)
+
+            if (mMarkerTimer != null)
             {
-                Invasion.NpcCount = 0;
-                foreach (MapActor mapActor in (IEnumerable<MapActor>)instanceByMapId.Actors.Values)
-                {
-                    if (mapActor.Type == MapActorType.AiBot)
-                    {
-                        Npc referenceObject = (Npc)instanceByMapId.GetActorByReferenceId(mapActor.ReferenceId, MapActorType.AiBot).ReferenceObject;
-                        if (referenceObject != null && !referenceObject.Respawn)
-                            ++Invasion.NpcCount;
-                    }
-                }
-                if (Invasion.NpcCount > 0)
-                {
-                    foreach (MapActor mapActor in (IEnumerable<MapActor>)instanceByMapId.Actors.Values)
-                    {
-                        if (mapActor.Type == MapActorType.UserCharacter && mapActor.ReferenceSessionId > 0)
-                        {
-                            Session sessionById = SessionManager.GetSessionById(mapActor.ReferenceSessionId);
-                            if (sessionById != null && sessionById.CharacterInfo != null)
-                            {
-                                string str = Invasion.PlayerCount.ToString() + " players and " + (object)Invasion.NpcCount + " Invaders left...";
-                                sessionById.SendData(PacketComposer.Compose("A", "STD|" + str));
-                            }
-                        }
-                    }
-                }
-                else if (Invasion.Level == 2)
-                {
-                    List<string> npc1 = new List<string>()
-          {
-            "-=[ Super Invader ]=-",
-            "2",
-            "0",
-            "0",
-            "155",
-            "60000000",
-            "60000000",
-            "45000000",
-            "45000000",
-            "320",
-            "500000000",
-            "800000",
-            "0",
-            "1",
-            "0",
-            "",
-            "0",
-            "0",
-            "0",
-            "0",
-            "7000",
-            "65000"
-          };
-                    List<string> npc2 = new List<string>()
-          {
-            "-=[ Invader ]=-",
-            "2",
-            "0",
-            "0",
-            "148",
-            "20000000",
-            "20000000",
-            "15000000",
-            "15000000",
-            "300",
-            "180000000",
-            "200000",
-            "0",
-            "1",
-            "0",
-            "",
-            "0",
-            "0",
-            "0",
-            "0",
-            "2600",
-            "55000"
-          };
-                    List<string> npc3 = new List<string>()
-          {
-            "-=[ Invader ]=-",
-            "2",
-            "0",
-            "0",
-            "149",
-            "20000000",
-            "20000000",
-            "15000000",
-            "15000000",
-            "300",
-            "180000000",
-            "200000",
-            "0",
-            "1",
-            "0",
-            "",
-            "0",
-            "0",
-            "0",
-            "0",
-            "2600",
-            "55000"
-          };
-                    NpcAI.CreateNpc(npc1, 81, 3, false);
-                    NpcAI.CreateNpc(npc2, 81, 5, false);
-                    NpcAI.CreateNpc(npc3, 81, 5, false);
-                    foreach (MapActor mapActor in (IEnumerable<MapActor>)instanceByMapId.Actors.Values)
-                    {
-                        if (mapActor.Type == MapActorType.UserCharacter && mapActor.ReferenceSessionId > 0)
-                        {
-                            Session sessionById = SessionManager.GetSessionById(mapActor.ReferenceSessionId);
-                            if (sessionById != null && sessionById.CharacterInfo != null)
-                            {
-                                string str = "Third and final wave of invaders detected !";
-                                sessionById.SendData(PacketComposer.Compose("A", "STD|" + str));
-                            }
-                        }
-                    }
-                    ++Invasion.Level;
-                }
-                else if (Invasion.Level == 1)
-                {
-                    List<string> npc1 = new List<string>()
-          {
-            "-=[ Fast Invader ]=-",
-            "2",
-            "0",
-            "0",
-            "146",
-            "10000000",
-            "10000000",
-            "7000000",
-            "7000000",
-            "350",
-            "90000000",
-            "100000",
-            "0",
-            "1",
-            "0",
-            "",
-            "0",
-            "0",
-            "0",
-            "0",
-            "1300",
-            "35000"
-          };
-                    List<string> npc2 = new List<string>()
-          {
-            "-=[ Invader ]=-",
-            "2",
-            "0",
-            "0",
-            "148",
-            "20000000",
-            "20000000",
-            "15000000",
-            "15000000",
-            "300",
-            "180000000",
-            "200000",
-            "0",
-            "1",
-            "0",
-            "",
-            "0",
-            "0",
-            "0",
-            "0",
-            "2600",
-            "55000"
-          };
-                    List<string> npc3 = new List<string>()
-          {
-            "-=[ Invader ]=-",
-            "2",
-            "0",
-            "0",
-            "149",
-            "20000000",
-            "20000000",
-            "15000000",
-            "15000000",
-            "300",
-            "180000000",
-            "200000",
-            "0",
-            "1",
-            "0",
-            "",
-            "0",
-            "0",
-            "0",
-            "0",
-            "2600",
-            "55000"
-          };
-                    NpcAI.CreateNpc(npc1, 81, 15, false);
-                    NpcAI.CreateNpc(npc2, 81, 3, false);
-                    NpcAI.CreateNpc(npc3, 81, 3, false);
-                    foreach (MapActor mapActor in (IEnumerable<MapActor>)instanceByMapId.Actors.Values)
-                    {
-                        if (mapActor.Type == MapActorType.UserCharacter && mapActor.ReferenceSessionId > 0)
-                        {
-                            Session sessionById = SessionManager.GetSessionById(mapActor.ReferenceSessionId);
-                            if (sessionById != null && sessionById.CharacterInfo != null)
-                            {
-                                string str = "Second wave of invaders detected !";
-                                sessionById.SendData(PacketComposer.Compose("A", "STD|" + str));
-                            }
-                        }
-                    }
-                    ++Invasion.Level;
-                }
-                else if (Invasion.Level == 0)
-                {
-                    List<string> npc = new List<string>()
-                      {
-                        "-=[ Invader ]=-",
-                        "2",
-                        "0",
-                        "0",
-                        "15",
-                        "20000000",
-                        "20000000",
-                        "15000000",
-                        "15000000",
-                        "300",
-                        "180000000",
-                        "200000",
-                        "0",
-                        "1",
-                        "0",
-                        "",
-                        "0",
-                        "0",
-                        "0",
-                        "0",
-                        "2600",
-                        "55000"
-                      };
-                                NpcAI.CreateNpc(new List<string>()
-                      {
-                        "-=[ Fast Invader ]=-",
-                        "2",
-                        "0",
-                        "0",
-                        "81",
-                        "8000000",
-                        "8000000",
-                        "5000000",
-                        "5000000",
-                        "350",
-                        "80000000",
-                        "80000",
-                        "0",
-                        "1",
-                        "0",
-                        "",
-                        "0",
-                        "0",
-                        "0",
-                        "0",
-                        "1300",
-                        "30000"
-                      }, 81, 10, false);
-                    NpcAI.CreateNpc(npc, 81, 3, false);
-                    foreach (MapActor mapActor in (IEnumerable<MapActor>)instanceByMapId.Actors.Values)
-                    {
-                        if (mapActor.Type == MapActorType.UserCharacter && mapActor.ReferenceSessionId > 0)
-                        {
-                            Session sessionById = SessionManager.GetSessionById(mapActor.ReferenceSessionId);
-                            if (sessionById != null && sessionById.CharacterInfo != null)
-                            {
-                                string str = "First wave of invaders detected !";
-                                sessionById.SendData(PacketComposer.Compose("A", "STD|" + str));
-                            }
-                        }
-                    }
-                    ++Invasion.Level;
-                }
-                else
-                {
-                    foreach (MapActor mapActor in (IEnumerable<MapActor>)instanceByMapId.Actors.Values)
-                    {
-                        if (mapActor.Type == MapActorType.UserCharacter && mapActor.ReferenceSessionId > 0)
-                        {
-                            Session sessionById = SessionManager.GetSessionById(mapActor.ReferenceSessionId);
-                            if (sessionById != null && sessionById.CharacterInfo != null)
-                            {
-                                string str = "You won the invasion event !";
-                                sessionById.SendData(PacketComposer.Compose("A", "STD|" + str));
-                                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-                                {
-                                    string _Message = "Congratulations ! You won the invasion event !";
-                                    sessionById.SendData(PacketComposer.Compose("A", "STD|" + _Message));
-                                    sessionById.CharacterInfo.AddLog(client, _Message);
-                                    sessionById.CharacterInfo.AddReward(client, 0, 200000, 0, true);
-                                    sessionById.SendData(PacketComposer.Compose("y", "URI|" + (object)200000 + "|" + (object)sessionById.CharacterInfo.Uridium));
-                                }
-                                if (Invasion.PerformUpdate != null)
-                                    Invasion.PerformUpdate.Dispose();
-                                MapHandler.OpenPublicConnection(sessionById, 17, (PortalInfo)null);
-                            }
-                        }
-                    }
-                    Invasion.Active = false;
-                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-                    {
-                        client.ExecuteNonQuery("UPDATE event_information SET isActif=0 WHERE id = 1");
-                    }
-                }
+                mMarkerTimer.Dispose();
+                mMarkerTimer = null;
             }
-            else
+
+            if (mTimeoutTimer != null)
             {
-                if (Invasion.PerformUpdate != null)
-                    Invasion.PerformUpdate.Dispose();
-                foreach (MapActor mapActor in (IEnumerable<MapActor>)instanceByMapId.Actors.Values)
-                {
-                    if (mapActor.Type == MapActorType.UserCharacter && mapActor.ReferenceSessionId > 0)
-                    {
-                        Session sessionById = SessionManager.GetSessionById(mapActor.ReferenceSessionId);
-                        if (sessionById != null && sessionById.CharacterInfo != null)
-                        {
-                            foreach (MapInstance mapInstance in (IEnumerable<MapInstance>)MapManager.MapInstances.Values)
-                            {
-                                if (mapInstance != null && !mapInstance.Unloaded)
-                                {
-                                    string str = "Invasion Event was lost !";
-                                    mapInstance.BroadcastMessage(PacketComposer.Compose("A", "STD|" + str), false);
-                                }
-                            }
-                            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-                            {
-                                client.ExecuteNonQuery("UPDATE event_information SET isActif=0 WHERE id = 1");
-                            }
-                            Invasion.Active = false;
-                            Invasion.PlayerCount = 0;
-                            break;
-                        }
-                    }
-                }
+                mTimeoutTimer.Dispose();
+                mTimeoutTimer = null;
+            }
+        }
+
+        private static void SetDatabaseActive(bool active)
+        {
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            {
+                client.ExecuteNonQuery("UPDATE event_information SET isActif=" + (active ? "1" : "0") + " WHERE id = 1");
             }
         }
     }
