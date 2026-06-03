@@ -66,6 +66,7 @@ namespace OrbitReborn_Emulator.Game.Event
         private static Timer mStopTimer;
         private static TimeZoneInfo mScheduleTimeZone;
         private static readonly object mRewardSyncRoot = new object();
+        private static readonly object mStateSyncRoot = new object();
 
         public static void Initialize()
         {
@@ -98,16 +99,22 @@ namespace OrbitReborn_Emulator.Game.Event
         {
             if (!Spaceball.mActive)
                 return;
+            if (!Spaceball.EnsureActiveSpaceballState())
+                return;
             Session.SendData(PacketComposer.Compose("n", "ssi|" + (object)Spaceball.mMMOScore + "|" + (object)Spaceball.mEICScore + "|" + (object)Spaceball.mVRUScore + "|" + (object)Spaceball.mBallSpeed + "|" + (object)Spaceball.mMoveToFirm));
         }
 
         public static void SendHud()
         {
+            if (!Spaceball.EnsureActiveSpaceballState())
+                return;
             SessionManager.BroadcastToUser(PacketComposer.Compose("n", "ssi|" + (object)Spaceball.mMMOScore + "|" + (object)Spaceball.mEICScore + "|" + (object)Spaceball.mVRUScore + "|" + (object)Spaceball.mBallSpeed + "|" + (object)Spaceball.mMoveToFirm));
         }
 
         public static void UpdateHudScore(int FactionId)
         {
+            if (!Spaceball.EnsureActiveSpaceballState())
+                return;
             int portalId = 0;
             int score = 0;
             if (FactionId == 1)
@@ -132,6 +139,8 @@ namespace OrbitReborn_Emulator.Game.Event
 
         public static void UpdateHudSpeed(int FactionId)
         {
+            if (!Spaceball.EnsureActiveSpaceballState())
+                return;
             if (FactionId == 1)
                 SessionManager.BroadcastToUser(PacketComposer.Compose("n", "sss|" + (object)FactionId + "|" + (object)Spaceball.mBallSpeed));
             if (FactionId == 2)
@@ -216,6 +225,119 @@ namespace OrbitReborn_Emulator.Game.Event
             if (string.IsNullOrEmpty(message))
                 return;
             SessionManager.BroadcastToUser(PacketComposer.Compose("A", "STD|" + message));
+        }
+
+        private static MapInstance GetSpaceballMapInstance()
+        {
+            MapInfo mapInfo = (MapInfo)null;
+            try
+            {
+                mapInfo = MapInfoLoader.GetMapInfo(SpaceballMapId);
+            }
+            catch (Exception ex)
+            {
+                Output.WriteLine((object)("[Spaceball] Unable to load Spaceball map info: " + ex.ToString()), OutputLevel.Warning);
+                return (MapInstance)null;
+            }
+            if (mapInfo == null)
+            {
+                Output.WriteLine((object)"[Spaceball] Unable to load Spaceball map info.", OutputLevel.Warning);
+                return (MapInstance)null;
+            }
+
+            try
+            {
+                if (!MapManager.InstanceIsLoadedForMap(mapInfo.Id))
+                    MapManager.TryLoadMapInstance(mapInfo.Id);
+            }
+            catch (Exception ex)
+            {
+                Output.WriteLine((object)("[Spaceball] Unable to load map 4-4 instance: " + ex.ToString()), OutputLevel.Warning);
+                return (MapInstance)null;
+            }
+
+            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(SpaceballMapId);
+            if (instanceByMapId == null)
+                Output.WriteLine((object)"[Spaceball] Unable to load map 4-4 instance.", OutputLevel.Warning);
+            return instanceByMapId;
+        }
+
+        private static bool EnsureSpaceballActor(MapInstance instanceByMapId, bool forceFresh)
+        {
+            if (instanceByMapId == null || Spaceball.mNpc == null)
+                return false;
+
+            MapActor actorByReferenceId = instanceByMapId.GetActorByReferenceId(Spaceball.mNpc.Id, MapActorType.AiBot);
+            if (actorByReferenceId != null)
+            {
+                if (!forceFresh)
+                    return true;
+                instanceByMapId.KickNpc(actorByReferenceId.Id);
+            }
+
+            if (!instanceByMapId.AddNpcToMap(Spaceball.mNpc))
+            {
+                Output.WriteLine((object)"[Spaceball] Failed to add Spaceball object to map 4-4.", OutputLevel.Warning);
+                return false;
+            }
+
+            if (instanceByMapId.GetActorByReferenceId(Spaceball.mNpc.Id, MapActorType.AiBot) != null)
+                return true;
+
+            Output.WriteLine((object)"[Spaceball] Spaceball object was added but could not be verified on map 4-4.", OutputLevel.Warning);
+            return false;
+        }
+
+        private static void SetEventInformationActive(bool active)
+        {
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            {
+                client.ExecuteNonQuery("UPDATE event_information SET isActif=" + (active ? "1" : "0") + " WHERE id = 3");
+            }
+        }
+
+        private static void DisposeRuntimeTimers()
+        {
+            if (Spaceball.mPerformUpdate != null)
+                Spaceball.mPerformUpdate.Dispose();
+            Spaceball.mPerformUpdate = (Timer)null;
+            if (Spaceball.mStopTimer != null)
+                Spaceball.mStopTimer.Dispose();
+            Spaceball.mStopTimer = (Timer)null;
+        }
+
+        private static void AbortBrokenActiveState(string reason)
+        {
+            Output.WriteLine((object)("[Spaceball] " + reason), OutputLevel.Warning);
+            Spaceball.DisposeRuntimeTimers();
+            bool wasActive = Spaceball.mActive;
+            Spaceball.mActive = false;
+            Spaceball.SetEventInformationActive(false);
+            if (wasActive)
+                SessionManager.BroadcastToUser(PacketComposer.Compose("n", "sse"));
+            Spaceball.ScheduleNextAutomaticStart();
+        }
+
+        private static bool EnsureActiveSpaceballState()
+        {
+            lock (Spaceball.mStateSyncRoot)
+            {
+                if (!Spaceball.mActive)
+                    return false;
+
+                MapInstance instanceByMapId = Spaceball.GetSpaceballMapInstance();
+                if (!Spaceball.EnsureSpaceballActor(instanceByMapId, false))
+                {
+                    Spaceball.AbortBrokenActiveState("Active event had no Spaceball object and could not be repaired.");
+                    return false;
+                }
+
+                if (Spaceball.mPerformUpdate == null)
+                    Spaceball.mPerformUpdate = new Timer(new TimerCallback(Spaceball.CbPerformUpdate), (object)Spaceball.mNpc, 0, 2000);
+                if (Spaceball.mStopTimer == null)
+                    Spaceball.ScheduleEventStop();
+                return true;
+            }
         }
 
         private static string GetCompanyName(int factionId)
@@ -420,71 +542,79 @@ namespace OrbitReborn_Emulator.Game.Event
 
         public static void StartSpaceball()
         {
-            if (Spaceball.mActive)
-                return;
-            TitleService.RevokeSpaceballChampionTitles();
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            lock (Spaceball.mStateSyncRoot)
             {
-                client.ExecuteNonQuery("UPDATE event_information SET isActif=1 WHERE id = 3");
-            }
+                if (Spaceball.mActive)
+                {
+                    Spaceball.EnsureActiveSpaceballState();
+                    return;
+                }
 
-            Spaceball.mMMOScore = 0;
-            Spaceball.mEICScore = 0;
-            Spaceball.mVRUScore = 0;
-            Spaceball.mFinalRewardGranted = false;
-            Spaceball.ResetBall();
-            Spaceball.mActive = true;
-            SessionManager.BroadcastToUser(PacketComposer.Compose("n", "ssi|" + (object)Spaceball.mMMOScore + "|" + (object)Spaceball.mEICScore + "|" + (object)Spaceball.mVRUScore + "|" + (object)Spaceball.mBallSpeed + "|" + (object)Spaceball.mMoveToFirm));
-            Spaceball.BroadcastSpaceballLog("Spaceball event has started on 4-4.");
-            MapInfo mapInfo = MapInfoLoader.GetMapInfo(SpaceballMapId);
-            if (!MapManager.InstanceIsLoadedForMap(mapInfo.Id))
-                MapManager.TryLoadMapInstance(mapInfo.Id);
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(SpaceballMapId);
-            if (instanceByMapId == null)
-                return;
-            instanceByMapId.AddNpcToMap(Spaceball.mNpc);
-            if (Spaceball.mPerformUpdate != null)
-                Spaceball.mPerformUpdate.Dispose();
-            Spaceball.mPerformUpdate = new Timer(new TimerCallback(Spaceball.CbPerformUpdate), (object)Spaceball.mNpc, 0, 2000);
-            Spaceball.ScheduleEventStop();
+                MapInstance instanceByMapId = Spaceball.GetSpaceballMapInstance();
+                if (instanceByMapId == null)
+                {
+                    Spaceball.SetEventInformationActive(false);
+                    Spaceball.ScheduleNextAutomaticStart();
+                    return;
+                }
+
+                TitleService.RevokeSpaceballChampionTitles();
+
+                Spaceball.mMMOScore = 0;
+                Spaceball.mEICScore = 0;
+                Spaceball.mVRUScore = 0;
+                Spaceball.mFinalRewardGranted = false;
+                Spaceball.ResetBall();
+
+                instanceByMapId = Spaceball.GetSpaceballMapInstance();
+                if (!Spaceball.EnsureSpaceballActor(instanceByMapId, true))
+                {
+                    Spaceball.SetEventInformationActive(false);
+                    Spaceball.ScheduleNextAutomaticStart();
+                    return;
+                }
+
+                Spaceball.DisposeRuntimeTimers();
+                Spaceball.mActive = true;
+                Spaceball.SetEventInformationActive(true);
+                SessionManager.BroadcastToUser(PacketComposer.Compose("n", "ssi|" + (object)Spaceball.mMMOScore + "|" + (object)Spaceball.mEICScore + "|" + (object)Spaceball.mVRUScore + "|" + (object)Spaceball.mBallSpeed + "|" + (object)Spaceball.mMoveToFirm));
+                Spaceball.BroadcastSpaceballLog("Spaceball event has started on 4-4.");
+                Spaceball.mPerformUpdate = new Timer(new TimerCallback(Spaceball.CbPerformUpdate), (object)Spaceball.mNpc, 0, 2000);
+                Spaceball.ScheduleEventStop();
+            }
         }
 
         public static void StopSpaceball()
         {
-            if (Spaceball.mPerformUpdate != null)
-                Spaceball.mPerformUpdate.Dispose();
-            Spaceball.mPerformUpdate = (Timer)null;
-            if (Spaceball.mStopTimer != null)
-                Spaceball.mStopTimer.Dispose();
-            Spaceball.mStopTimer = (Timer)null;
-            bool wasActive = Spaceball.mActive;
-            if (Spaceball.mActive)
+            lock (Spaceball.mStateSyncRoot)
             {
-                Spaceball.mBallSpeed = 0;
-                Spaceball.UpdateHudSpeed(0);
-            }
-            Spaceball.mActive = false;
-            Spaceball.ResetBall();
-            if (wasActive)
-                SessionManager.BroadcastToUser(PacketComposer.Compose("n", "sse"));
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(SpaceballMapId);
-            if (instanceByMapId != null)
-            {
-                instanceByMapId.Info.MaxUsers = 0;
-                MapActor actorByReferenceId = instanceByMapId.GetActorByReferenceId(Spaceball.mNpc.Id, MapActorType.AiBot);
-                if (actorByReferenceId != null)
+                Spaceball.DisposeRuntimeTimers();
+                bool wasActive = Spaceball.mActive;
+                if (Spaceball.mActive)
                 {
-                    instanceByMapId.BroadcastMessage(PacketComposer.Compose("K", actorByReferenceId.Id.ToString()), false);
-                    instanceByMapId.KickNpc(actorByReferenceId.Id);
+                    Spaceball.mBallSpeed = 0;
+                    SessionManager.BroadcastToUser(PacketComposer.Compose("n", "sss|0|" + (object)Spaceball.mBallSpeed));
                 }
+                Spaceball.mActive = false;
+                Spaceball.ResetBall();
+                if (wasActive)
+                    SessionManager.BroadcastToUser(PacketComposer.Compose("n", "sse"));
+                MapInstance instanceByMapId = MapManager.GetInstanceByMapId(SpaceballMapId);
+                if (instanceByMapId != null)
+                {
+                    instanceByMapId.Info.MaxUsers = 0;
+                    MapActor actorByReferenceId = instanceByMapId.GetActorByReferenceId(Spaceball.mNpc.Id, MapActorType.AiBot);
+                    if (actorByReferenceId != null)
+                    {
+                        instanceByMapId.BroadcastMessage(PacketComposer.Compose("K", actorByReferenceId.Id.ToString()), false);
+                        instanceByMapId.KickNpc(actorByReferenceId.Id);
+                    }
+                }
+                Spaceball.SetEventInformationActive(false);
+                if (wasActive)
+                    Spaceball.BroadcastSpaceballLog("Spaceball event has ended.");
+                Spaceball.ScheduleNextAutomaticStart();
             }
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-            {
-                client.ExecuteNonQuery("UPDATE event_information SET isActif=0 WHERE id = 3");
-            }
-            if (wasActive)
-                Spaceball.BroadcastSpaceballLog("Spaceball event has ended.");
-            Spaceball.ScheduleNextAutomaticStart();
         }
 
         private static void CbStopSpaceball(object state)
@@ -515,6 +645,8 @@ namespace OrbitReborn_Emulator.Game.Event
         private static void CbPerformUpdate(object state)
         {
             if (Spaceball.mNpc == null)
+                return;
+            if (!Spaceball.EnsureActiveSpaceballState())
                 return;
             MapInstance instanceByMapId = MapManager.GetInstanceByMapId(SpaceballMapId);
             if (instanceByMapId == null)
