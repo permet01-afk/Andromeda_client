@@ -1210,12 +1210,12 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         public int GetAttackPeriodMs()
         {
-            return ResolveAttackPeriodMs(this.mName);
+            return Invasion.GetNpcAttackPeriodMs(this, ResolveAttackPeriodMs(this.mName));
         }
 
         public int GetAttackGuardCooldownMs()
         {
-            return ResolveAttackGuardCooldownMs(this.mName);
+            return Invasion.GetNpcAttackGuardCooldownMs(this, ResolveAttackGuardCooldownMs(this.mName));
         }
 
         private void ApplyBalance2010IfExists()

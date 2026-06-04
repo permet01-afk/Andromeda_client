@@ -8,6 +8,7 @@ using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Specialized;
 using OrbitReborn_Emulator.Storage;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -23,16 +24,18 @@ namespace OrbitReborn_Emulator.Game.Event
         private const int MarkerPeriodMs = 1500;
         private const int MarkerLifetimeTicks = 6;
 
-        private const string InvaderName = "Invader";
+        private const string InvaderName = "-=[ Invader ]=-";
         private const int InvaderShipId = 56;
         private const int InvaderHp = 300000;
         private const int InvaderShield = 250000;
-        private const int InvaderSpeed = 320;
+        private const int InvaderSpeed = 350;
         private const int InvaderDamage = 35000;
         private const int InvaderDamageMin = 33000;
         private const int InvaderDamageMax = 37000;
         private const int InvaderLaserPattern = 3;
         private const int InvaderAttackRange = 700;
+        private const int InvaderAttackPeriodMs = 800;
+        private const int InvaderAttackGuardCooldownMs = 750;
 
         private const int InvaderRewardCredits = 3000000;
         private const int InvaderRewardUridium = 25000;
@@ -218,6 +221,21 @@ namespace OrbitReborn_Emulator.Game.Event
             return IsInvasionNpc(npc) ? InvaderAttackRange : defaultRange;
         }
 
+        public static int GetNpcChaseDistance(Npc npc, int defaultDistance)
+        {
+            return IsInvasionNpc(npc) ? InvaderAttackRange : defaultDistance;
+        }
+
+        public static int GetNpcAttackPeriodMs(Npc npc, int defaultPeriodMs)
+        {
+            return IsInvasionNpc(npc) ? InvaderAttackPeriodMs : defaultPeriodMs;
+        }
+
+        public static int GetNpcAttackGuardCooldownMs(Npc npc, int defaultCooldownMs)
+        {
+            return IsInvasionNpc(npc) ? InvaderAttackGuardCooldownMs : defaultCooldownMs;
+        }
+
         public static void BroadcastInvaderLock(Npc npc, int targetId)
         {
             if (!IsInvasionNpc(npc) || targetId <= 0)
@@ -313,10 +331,27 @@ namespace OrbitReborn_Emulator.Game.Event
             AddRun(21, 2, "2-5");
             AddRun(25, 3, "3-5");
 
-            BroadcastGlobal("Invasion has started!");
+            foreach (InvasionRun run in new List<InvasionRun>(RunsByMapId.Values))
+            {
+                int spawned = SpawnNextWave(run);
+                if (spawned <= 0)
+                    AbortRun(run, "Unable to spawn the first Invasion wave on " + run.MapName + ".");
+            }
 
-            foreach (InvasionRun run in RunsByMapId.Values)
-                SpawnNextWave(run);
+            if (!HasRunningRuns())
+            {
+                Output.WriteLine((object)"[Invasion] Start aborted because no Invader could be spawned.", OutputLevel.Warning);
+                RunsByMapId.Clear();
+                RunsByNpcId.Clear();
+                mActive = false;
+                mSafeBattle = false;
+                StopTimers();
+                SetDatabaseActive(false);
+                BroadcastGlobal("Invasion could not start.");
+                return;
+            }
+
+            BroadcastGlobal("Invasion has started!");
 
             mMonitorTimer = new Timer(new TimerCallback(MonitorTick), null, MonitorPeriodMs, MonitorPeriodMs);
             mMarkerTimer = new Timer(new TimerCallback(MarkerTick), null, 0, MarkerPeriodMs);
@@ -335,19 +370,28 @@ namespace OrbitReborn_Emulator.Game.Event
             RunsByMapId[mapId] = run;
         }
 
-        private static void SpawnNextWave(InvasionRun run)
+        private static int SpawnNextWave(InvasionRun run)
         {
             if (run == null || !run.Running || run.WaveIndex >= WaveCounts.Length)
-                return;
+                return 0;
 
-            int count = WaveCounts[run.WaveIndex];
-            run.WaveIndex++;
+            int waveIndex = run.WaveIndex;
+            int count = WaveCounts[waveIndex];
 
-            EnsureMapLoaded(run.MapId);
+            if (!EnsureMapLoaded(run.MapId))
+            {
+                Output.WriteLine((object)("[Invasion] Unable to load map " + run.MapId + " for wave spawn."), OutputLevel.Warning);
+                return 0;
+            }
+
             MapInstance instance = MapManager.GetInstanceByMapId(run.MapId);
             if (instance == null)
-                return;
+            {
+                Output.WriteLine((object)("[Invasion] Map " + run.MapId + " is unavailable for wave spawn."), OutputLevel.Warning);
+                return 0;
+            }
 
+            int spawned = 0;
             for (int i = 0; i < count; i++)
             {
                 int x;
@@ -379,19 +423,39 @@ namespace OrbitReborn_Emulator.Game.Event
                     InvaderDamage
                 );
 
+                if (npc == null)
+                {
+                    Output.WriteLine((object)("[Invasion] Failed to create Invader for map " + run.MapId + "."), OutputLevel.Warning);
+                    continue;
+                }
+
                 npc.DamageMin = InvaderDamageMin;
                 npc.DamageMax = InvaderDamageMax;
                 npc.Respawn = false;
 
-                instance.AddNpcToMap(npc);
+                if (!instance.AddNpcToMap(npc))
+                {
+                    Output.WriteLine((object)("[Invasion] Failed to add Invader " + npc.Id + " to map " + run.MapId + "."), OutputLevel.Warning);
+                    continue;
+                }
+
                 NpcAI.NpcToAdd.Add(npc);
                 run.Npcs[npc.Id] = npc;
                 RunsByNpcId[npc.Id] = run;
+                spawned++;
             }
 
+            if (spawned <= 0)
+            {
+                Output.WriteLine((object)("[Invasion] Wave " + (waveIndex + 1) + " on " + run.MapName + " spawned no Invaders."), OutputLevel.Warning);
+                return 0;
+            }
+
+            run.WaveIndex = waveIndex + 1;
             BroadcastMap(run.MapId, "Wave " + run.WaveIndex + " has started.");
             BroadcastMap(run.MapId, "Invaders remaining: " + run.Npcs.Count);
             SendMarkers(run);
+            return spawned;
         }
 
         private static void MonitorTick(object state)
@@ -412,7 +476,11 @@ namespace OrbitReborn_Emulator.Game.Event
                     if (run.Npcs.Count <= 0)
                     {
                         if (run.WaveIndex < WaveCounts.Length)
-                            SpawnNextWave(run);
+                        {
+                            int spawned = SpawnNextWave(run);
+                            if (spawned <= 0)
+                                AbortRun(run, "Unable to spawn Invasion wave " + (run.WaveIndex + 1) + " on " + run.MapName + ".");
+                        }
                         else
                         {
                             FinishEventWithWinner(run);
@@ -517,11 +585,8 @@ namespace OrbitReborn_Emulator.Game.Event
 
         private static void FinishIfNoRunningRuns()
         {
-            foreach (InvasionRun run in RunsByMapId.Values)
-            {
-                if (run != null && run.Running)
-                    return;
-            }
+            if (HasRunningRuns())
+                return;
 
             RunsByMapId.Clear();
             RunsByNpcId.Clear();
@@ -531,6 +596,28 @@ namespace OrbitReborn_Emulator.Game.Event
             SetDatabaseActive(false);
         }
 
+        private static bool HasRunningRuns()
+        {
+            foreach (InvasionRun run in RunsByMapId.Values)
+            {
+                if (run != null && run.Running)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static void AbortRun(InvasionRun run, string reason)
+        {
+            if (run == null)
+                return;
+
+            Output.WriteLine((object)("[Invasion] " + reason), OutputLevel.Warning);
+            CleanupRunNpcs(run);
+            run.Running = false;
+            RunsByMapId.Remove(run.MapId);
+        }
+
         private static void GrantInvaderReward(InvasionRun run, Npc npc)
         {
             if (run == null || npc == null || npc.Attackers == null)
@@ -538,27 +625,42 @@ namespace OrbitReborn_Emulator.Game.Event
 
             ConcurrentDictionary<int, int> attackers = (ConcurrentDictionary<int, int>)npc.Attackers;
             long totalDamage = 0;
+            long totalEligibleDamage = 0;
+            Dictionary<int, int> eligibleDamageByCharacter = new Dictionary<int, int>();
+            Dictionary<int, Session> eligibleSessions = new Dictionary<int, Session>();
+
             foreach (KeyValuePair<int, int> kvp in attackers)
             {
                 if (kvp.Value > 0)
                     totalDamage += (long)kvp.Value;
-            }
 
-            if (totalDamage <= 0)
-                return;
-
-            foreach (KeyValuePair<int, int> kvp in attackers)
-            {
                 if (kvp.Value <= 0)
                     continue;
-
-                AddRunDamage(run, kvp.Key, kvp.Value);
 
                 Session session = SessionManager.GetSessionByCharacterId(kvp.Key);
                 if (!IsEligibleRewardSession(session, run))
                     continue;
 
-                double share = (double)kvp.Value / (double)totalDamage;
+                eligibleDamageByCharacter[kvp.Key] = kvp.Value;
+                eligibleSessions[kvp.Key] = session;
+                totalEligibleDamage += (long)kvp.Value;
+            }
+
+            if (totalDamage <= 0)
+                return;
+
+            foreach (KeyValuePair<int, int> kvp in eligibleDamageByCharacter)
+            {
+                AddRunDamage(run, kvp.Key, kvp.Value);
+
+                Session session;
+                if (!eligibleSessions.TryGetValue(kvp.Key, out session))
+                    continue;
+
+                if (totalEligibleDamage <= 0)
+                    continue;
+
+                double share = (double)kvp.Value / (double)totalEligibleDamage;
                 GrantRewardShare(session, share, false);
             }
 
@@ -851,10 +953,12 @@ namespace OrbitReborn_Emulator.Game.Event
             return true;
         }
 
-        private static void EnsureMapLoaded(int mapId)
+        private static bool EnsureMapLoaded(int mapId)
         {
             if (MapManager.GetInstanceByMapId(mapId) == null)
                 MapManager.TryLoadMapInstance(mapId);
+
+            return MapManager.GetInstanceByMapId(mapId) != null;
         }
 
         private static MapActor[] GetMapUserActors(int mapId)

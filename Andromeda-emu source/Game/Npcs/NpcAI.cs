@@ -80,6 +80,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             "-=[ Uber Kristallin ]=-",
             "-=[ Uber Mordon ]=-",
             "-=[ Boss Protegit ]=-",
+            "-=[ Invader ]=-",
             "Invader"
         };
 
@@ -807,10 +808,13 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private static int GetNpcChaseDistance(Npc npc)
         {
             int stopShootRange = GetNpcStopShootRange(npc);
+            int chaseDistance;
             if (stopShootRange > STOP_SHOOT_RANGE)
-                return stopShootRange + (CHASE_DISTANCE - STOP_SHOOT_RANGE);
+                chaseDistance = stopShootRange + (CHASE_DISTANCE - STOP_SHOOT_RANGE);
+            else
+                chaseDistance = CHASE_DISTANCE;
 
-            return CHASE_DISTANCE;
+            return Invasion.GetNpcChaseDistance(npc, chaseDistance);
         }
 
         private static double GetNpcStopShootRangeSquared(Npc npc)
