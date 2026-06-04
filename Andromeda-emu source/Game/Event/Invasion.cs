@@ -236,6 +236,15 @@ namespace OrbitReborn_Emulator.Game.Event
             return IsInvasionNpc(npc) ? InvaderAttackGuardCooldownMs : defaultCooldownMs;
         }
 
+        public static bool IsInvasionRuntimeMap(int mapId)
+        {
+            lock (SyncRoot)
+            {
+                InvasionRun run;
+                return mActive && !mStarting && RunsByMapId.TryGetValue(mapId, out run) && run != null && run.Running;
+            }
+        }
+
         public static void BroadcastInvaderLock(Npc npc, int targetId)
         {
             if (!IsInvasionNpc(npc) || targetId <= 0)
@@ -716,7 +725,28 @@ namespace OrbitReborn_Emulator.Game.Event
             int xp = ScaleReward(InvaderRewardExperience, share);
             int honor = ScaleReward(InvaderRewardHonor, share);
 
-            GrantFixedReward(session, credits, uridium, ucb, rsb, 0, 0, xp, honor, "Invader destroyed. Rewards received.");
+            GrantFixedReward(session, credits, uridium, ucb, rsb, 0, 0, xp, honor, BuildInvaderRewardLog(credits, uridium, ucb, rsb, xp, honor));
+        }
+
+        private static string BuildInvaderRewardLog(int credits, int uridium, int ucb, int rsb, int xp, int honor)
+        {
+            List<string> lines = new List<string>();
+            lines.Add("You have destroyed " + InvaderName + ".");
+
+            if (credits > 0)
+                lines.Add("You received " + credits + " credits.");
+            if (uridium > 0)
+                lines.Add("You received " + uridium + " uridium.");
+            if (ucb > 0)
+                lines.Add("You received " + ucb + " UCB-100.");
+            if (rsb > 0)
+                lines.Add("You received " + rsb + " RSB-75.");
+            if (xp > 0)
+                lines.Add("You received " + xp + " experience.");
+            if (honor > 0)
+                lines.Add("You received " + honor + " honor.");
+
+            return string.Join("<br/>", lines.ToArray());
         }
 
         private static int NextInvaderCargoBoxId()
@@ -873,6 +903,22 @@ namespace OrbitReborn_Emulator.Game.Event
             List<int> remove = new List<int>();
             MapInstance instance = MapManager.GetInstanceByMapId(run.MapId);
 
+            if (instance == null)
+            {
+                if (!EnsureMapLoaded(run.MapId))
+                {
+                    AbortRun(run, "Unable to reload map " + run.MapId + " while validating tracked Invaders.");
+                    return;
+                }
+
+                instance = MapManager.GetInstanceByMapId(run.MapId);
+                if (instance == null)
+                {
+                    AbortRun(run, "Map " + run.MapId + " is unavailable while validating tracked Invaders.");
+                    return;
+                }
+            }
+
             foreach (KeyValuePair<int, Npc> kvp in run.Npcs)
             {
                 Npc npc = kvp.Value;
@@ -882,8 +928,14 @@ namespace OrbitReborn_Emulator.Game.Event
                     continue;
                 }
 
-                if (instance == null || instance.GetActorByReferenceId(npc.Id, MapActorType.AiBot) == null)
-                    remove.Add(kvp.Key);
+                if (instance.GetActorByReferenceId(npc.Id, MapActorType.AiBot) == null)
+                {
+                    if (!instance.AddNpcToMap(npc) || instance.GetActorByReferenceId(npc.Id, MapActorType.AiBot) == null)
+                    {
+                        AbortRun(run, "Tracked Invader " + npc.Id + " could not be reattached on map " + run.MapId + ".");
+                        return;
+                    }
+                }
             }
 
             foreach (int npcId in remove)

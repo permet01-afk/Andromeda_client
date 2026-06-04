@@ -1,6 +1,7 @@
 ﻿
 
 using OrbitReborn_Emulator.Game.Handlers;
+using OrbitReborn_Emulator.Game.Event;
 using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Sessions;
@@ -90,6 +91,14 @@ namespace OrbitReborn_Emulator.Game.Maps
                 {
                     if (mapInstance == null)
                         continue;
+
+                    int mapId = mapInstance.Info != null ? mapInstance.Info.Id : 0;
+                    if (!mapInstance.Unloaded && Invasion.IsInvasionRuntimeMap(mapId))
+                    {
+                        if (mapInstance.MarkedAsEmpty > 0)
+                            mapInstance.MarkedAsEmpty = 0;
+                        continue;
+                    }
 
                     if (mapInstance.Unloaded)
                     {
