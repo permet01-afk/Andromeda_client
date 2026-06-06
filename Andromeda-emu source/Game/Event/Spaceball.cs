@@ -95,6 +95,12 @@ namespace OrbitReborn_Emulator.Game.Event
             Spaceball.ScheduleNextAutomaticStart();
         }
 
+        public static bool IsSpaceballRuntimeMap(int mapId)
+        {
+            lock (Spaceball.mStateSyncRoot)
+                return Spaceball.mActive && mapId == SpaceballMapId;
+        }
+
         public static void ShowHud(Session Session)
         {
             if (!Spaceball.mActive)

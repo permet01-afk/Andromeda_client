@@ -93,7 +93,7 @@ namespace OrbitReborn_Emulator.Game.Maps
                         continue;
 
                     int mapId = mapInstance.Info != null ? mapInstance.Info.Id : 0;
-                    if (!mapInstance.Unloaded && Invasion.IsInvasionRuntimeMap(mapId))
+                    if (!mapInstance.Unloaded && (Invasion.IsInvasionRuntimeMap(mapId) || Spaceball.IsSpaceballRuntimeMap(mapId)))
                     {
                         if (mapInstance.MarkedAsEmpty > 0)
                             mapInstance.MarkedAsEmpty = 0;
