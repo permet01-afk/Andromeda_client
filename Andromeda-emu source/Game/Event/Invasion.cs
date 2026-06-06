@@ -23,6 +23,8 @@ namespace OrbitReborn_Emulator.Game.Event
         private const int MonitorPeriodMs = 5000;
         private const int MarkerPeriodMs = 1500;
         private const int MarkerLifetimeTicks = 6;
+        private const string ScheduleTimeZoneIana = "Europe/Zurich";
+        private const string ScheduleTimeZoneWindows = "W. Europe Standard Time";
 
         private const string InvaderName = "-=[ Invader ]=-";
         private const int InvaderShipId = 56;
@@ -67,6 +69,8 @@ namespace OrbitReborn_Emulator.Game.Event
         private static Timer mMonitorTimer;
         private static Timer mMarkerTimer;
         private static Timer mTimeoutTimer;
+        private static Timer mScheduleTimer;
+        private static TimeZoneInfo mScheduleTimeZone;
         private static DateTime mStartAtUtc;
         private static bool mSent15;
         private static bool mSent5;
@@ -152,6 +156,8 @@ namespace OrbitReborn_Emulator.Game.Event
             }
 
             SetDatabaseActive(false);
+            mScheduleTimeZone = ResolveScheduleTimeZone();
+            ScheduleNextAutomaticStart();
         }
 
         public static void StartInvasion()
@@ -725,10 +731,11 @@ namespace OrbitReborn_Emulator.Game.Event
             int xp = ScaleReward(InvaderRewardExperience, share);
             int honor = ScaleReward(InvaderRewardHonor, share);
 
-            GrantFixedReward(session, credits, uridium, ucb, rsb, 0, 0, xp, honor, BuildInvaderRewardLog(credits, uridium, ucb, rsb, xp, honor));
+            List<string> rewardLines = BuildInvaderRewardLogLines(credits, uridium, ucb, rsb, xp, honor);
+            GrantFixedReward(session, credits, uridium, ucb, rsb, 0, 0, xp, honor, BuildRewardLogHtml(rewardLines), rewardLines.ToArray());
         }
 
-        private static string BuildInvaderRewardLog(int credits, int uridium, int ucb, int rsb, int xp, int honor)
+        private static List<string> BuildInvaderRewardLogLines(int credits, int uridium, int ucb, int rsb, int xp, int honor)
         {
             List<string> lines = new List<string>();
             lines.Add("You have destroyed " + InvaderName + ".");
@@ -745,6 +752,14 @@ namespace OrbitReborn_Emulator.Game.Event
                 lines.Add("You received " + xp + " experience.");
             if (honor > 0)
                 lines.Add("You received " + honor + " honor.");
+
+            return lines;
+        }
+
+        private static string BuildRewardLogHtml(List<string> lines)
+        {
+            if (lines == null || lines.Count == 0)
+                return string.Empty;
 
             return string.Join("<br/>", lines.ToArray());
         }
@@ -784,6 +799,11 @@ namespace OrbitReborn_Emulator.Game.Event
         }
 
         private static void GrantFixedReward(Session session, int credits, int uridium, int ucb, int rsb, int seprom, int promerium, int xp, int honor, string logMessage)
+        {
+            GrantFixedReward(session, credits, uridium, ucb, rsb, seprom, promerium, xp, honor, logMessage, new string[] { logMessage });
+        }
+
+        private static void GrantFixedReward(Session session, int credits, int uridium, int ucb, int rsb, int seprom, int promerium, int xp, int honor, string logMessage, string[] instantLogMessages)
         {
             if (session == null || session.CharacterInfo == null)
                 return;
@@ -830,7 +850,14 @@ namespace OrbitReborn_Emulator.Game.Event
                 session.SendData(session.CharacterInfo.GetCargoMessage());
 
             session.SendData(UserDataComposer.Compose(session));
-            session.SendData(PacketComposer.Compose("A", "STD|" + logMessage));
+            if (instantLogMessages != null)
+            {
+                foreach (string instantLogMessage in instantLogMessages)
+                {
+                    if (!string.IsNullOrEmpty(instantLogMessage))
+                        session.SendData(PacketComposer.Compose("A", "STD|" + instantLogMessage));
+                }
+            }
 
             if (leveledUp)
                 session.SendData(PacketComposer.Compose("A", "LUP|" + session.CharacterInfo.Level + "|1"));
@@ -1020,6 +1047,74 @@ namespace OrbitReborn_Emulator.Game.Event
                 return new MapActor[0];
 
             return instance.GetUserActorSnapshot();
+        }
+
+        private static TimeZoneInfo ResolveScheduleTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(ScheduleTimeZoneIana);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(ScheduleTimeZoneWindows);
+            }
+            catch
+            {
+            }
+
+            return TimeZoneInfo.Local;
+        }
+
+        private static DateTime GetScheduleNow()
+        {
+            TimeZoneInfo timeZone = mScheduleTimeZone ?? TimeZoneInfo.Local;
+            return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
+        }
+
+        private static DateTime GetNextScheduledStart(DateTime now)
+        {
+            int daysUntil = ((int)DayOfWeek.Saturday - (int)now.DayOfWeek + 7) % 7;
+            DateTime slot = now.Date.AddDays(daysUntil).AddHours(17);
+            if (slot <= now)
+                slot = slot.AddDays(7);
+
+            return slot;
+        }
+
+        private static void ScheduleNextAutomaticStart()
+        {
+            DateTime now = GetScheduleNow();
+            DateTime nextStart = GetNextScheduledStart(now);
+            TimeSpan delay = nextStart - now;
+            if (delay < TimeSpan.FromSeconds(1.0))
+                delay = TimeSpan.FromSeconds(1.0);
+
+            if (mScheduleTimer != null)
+                mScheduleTimer.Dispose();
+
+            mScheduleTimer = new Timer(new TimerCallback(CbAutomaticStartInvasion), null, Convert.ToInt64(delay.TotalMilliseconds), Timeout.Infinite);
+        }
+
+        private static void CbAutomaticStartInvasion(object state)
+        {
+            try
+            {
+                bool shouldStart;
+                lock (SyncRoot)
+                    shouldStart = !mActive && !mStarting;
+
+                if (shouldStart)
+                    StartInvasion();
+            }
+            finally
+            {
+                ScheduleNextAutomaticStart();
+            }
         }
 
         private static void BroadcastGlobal(string text)

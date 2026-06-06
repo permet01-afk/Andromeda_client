@@ -58,13 +58,9 @@ if (!function_exists('homeRenderClanLeaderboardRows')) {
     }
 }
 
-if (!function_exists('homeGetNextSpaceballStart')) {
-    function homeGetNextSpaceballStart(DateTimeImmutable $now)
+if (!function_exists('homeGetNextScheduledStart')) {
+    function homeGetNextScheduledStart(DateTimeImmutable $now, array $slots)
     {
-        $slots = [
-            ['day' => 3, 'time' => '19:00:00'],
-            ['day' => 0, 'time' => '17:00:00'],
-        ];
         $next = null;
 
         foreach ($slots as $slot) {
@@ -84,6 +80,25 @@ if (!function_exists('homeGetNextSpaceballStart')) {
         }
 
         return $next;
+    }
+}
+
+if (!function_exists('homeGetNextSpaceballStart')) {
+    function homeGetNextSpaceballStart(DateTimeImmutable $now)
+    {
+        return homeGetNextScheduledStart($now, [
+            ['day' => 3, 'time' => '19:00:00'],
+            ['day' => 0, 'time' => '17:00:00'],
+        ]);
+    }
+}
+
+if (!function_exists('homeGetNextInvasionStart')) {
+    function homeGetNextInvasionStart(DateTimeImmutable $now)
+    {
+        return homeGetNextScheduledStart($now, [
+            ['day' => 6, 'time' => '17:00:00'],
+        ]);
     }
 }
 
@@ -148,8 +163,8 @@ $top10Clans = $leaderboards['clans'] ?? [];
 $registeredPlayers = number_format(HomeLeaderboardService::getRegisteredPlayerCount($db));
 $serverStats = HomeLeaderboardService::getServerStats($db);
 
-$spaceballTimezone = new DateTimeZone('Europe/Zurich');
-$spaceballNow = new DateTimeImmutable('now', $spaceballTimezone);
+$eventTimezone = new DateTimeZone('Europe/Zurich');
+$spaceballNow = new DateTimeImmutable('now', $eventTimezone);
 $spaceballNextStart = homeGetNextSpaceballStart($spaceballNow);
 $spaceballCountdownSeconds = $spaceballNextStart !== null ? $spaceballNextStart->getTimestamp() - $spaceballNow->getTimestamp() : 0;
 $spaceballCountdown = homeFormatCountdown($spaceballCountdownSeconds);
@@ -160,6 +175,19 @@ $spaceballEventStatement->execute();
 $spaceballEventRow = $spaceballEventStatement->fetch(PDO::FETCH_ASSOC);
 if ($spaceballEventRow) {
     $spaceballActive = ((int)($spaceballEventRow['isActif'] ?? 0)) === 1;
+}
+
+$invasionNow = new DateTimeImmutable('now', $eventTimezone);
+$invasionNextStart = homeGetNextInvasionStart($invasionNow);
+$invasionCountdownSeconds = $invasionNextStart !== null ? $invasionNextStart->getTimestamp() - $invasionNow->getTimestamp() : 0;
+$invasionCountdown = homeFormatCountdown($invasionCountdownSeconds);
+$invasionNextLabel = $invasionNextStart !== null ? $invasionNextStart->format('l, d M H:i T') : 'Not scheduled';
+$invasionActive = false;
+$invasionEventStatement = $db->prepare('SELECT isActif FROM event_information WHERE id = 1 LIMIT 1');
+$invasionEventStatement->execute();
+$invasionEventRow = $invasionEventStatement->fetch(PDO::FETCH_ASSOC);
+if ($invasionEventRow) {
+    $invasionActive = ((int)($invasionEventRow['isActif'] ?? 0)) === 1;
 }
 
 $username = htmlspecialchars(homeDecodeLegacyHtmlEntitiesForDisplay($currentUser['username'] ?? ''), ENT_QUOTES, 'UTF-8');
@@ -319,30 +347,62 @@ $companyCounts = [
                 <h2>Events</h2>
             </header>
 
-            <div class="event-panel <?php echo $spaceballActive ? 'is-active' : 'is-scheduled'; ?>">
-                <div class="event-title-row">
-                    <span class="event-name">Spaceball</span>
-                    <span class="event-status"><?php echo $spaceballActive ? 'Active' : 'Scheduled'; ?></span>
+            <div class="events-stack">
+                <div class="event-panel <?php echo $spaceballActive ? 'is-active' : 'is-scheduled'; ?>">
+                    <div class="event-title-row">
+                        <span class="event-name">Spaceball</span>
+                        <span class="event-status"><?php echo $spaceballActive ? 'Active' : 'Scheduled'; ?></span>
+                    </div>
+
+                    <dl class="event-details">
+                        <div>
+                            <dt>Status</dt>
+                            <dd><?php echo $spaceballActive ? 'Active now on 4-4' : 'Next battle on 4-4'; ?></dd>
+                        </div>
+                        <div>
+                            <dt>Schedule</dt>
+                            <dd>Wednesday 19:00 / Sunday 17:00</dd>
+                        </div>
+                        <div>
+                            <dt>Next start</dt>
+                            <dd><?php echo htmlspecialchars($spaceballNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+                        </div>
+                        <div>
+                            <dt>Countdown</dt>
+                            <dd><?php echo htmlspecialchars($spaceballCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
+                        </div>
+                    </dl>
                 </div>
 
-                <dl class="event-details">
-                    <div>
-                        <dt>Status</dt>
-                        <dd><?php echo $spaceballActive ? 'Active now on 4-4' : 'Next battle on 4-4'; ?></dd>
+                <div class="event-panel <?php echo $invasionActive ? 'is-active' : 'is-scheduled'; ?>">
+                    <div class="event-title-row">
+                        <span class="event-name">Invasion</span>
+                        <span class="event-status"><?php echo $invasionActive ? 'Active' : 'Scheduled'; ?></span>
                     </div>
-                    <div>
-                        <dt>Schedule</dt>
-                        <dd>Wednesday 19:00 / Sunday 17:00</dd>
-                    </div>
-                    <div>
-                        <dt>Next start</dt>
-                        <dd><?php echo htmlspecialchars($spaceballNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
-                    </div>
-                    <div>
-                        <dt>Countdown</dt>
-                        <dd><?php echo htmlspecialchars($spaceballCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
-                    </div>
-                </dl>
+
+                    <dl class="event-details">
+                        <div>
+                            <dt>Status</dt>
+                            <dd><?php echo $invasionActive ? 'Active or starting soon' : 'Defend your x-5 map'; ?></dd>
+                        </div>
+                        <div>
+                            <dt>Schedule</dt>
+                            <dd>Saturday 17:00</dd>
+                        </div>
+                        <div>
+                            <dt>Maps</dt>
+                            <dd>1-5 / 2-5 / 3-5</dd>
+                        </div>
+                        <div>
+                            <dt>Next start</dt>
+                            <dd><?php echo htmlspecialchars($invasionNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+                        </div>
+                        <div>
+                            <dt>Countdown</dt>
+                            <dd><?php echo htmlspecialchars($invasionCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
+                        </div>
+                    </dl>
+                </div>
             </div>
         </section>
 

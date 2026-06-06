@@ -390,6 +390,11 @@
     gap: 0.75rem;
 }
 
+.events-stack {
+    display: grid;
+    gap: 0.85rem;
+}
+
 .event-panel {
     display: grid;
     gap: 0.9rem;
@@ -401,6 +406,10 @@
     padding: 1.05rem;
     margin-bottom: 0.45rem;
     align-content: start;
+}
+
+.events-stack .event-panel {
+    margin-bottom: 0;
 }
 
 .event-panel.is-active {
