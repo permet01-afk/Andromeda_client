@@ -70,6 +70,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private bool mIsMoving;
         private DateTime mLastMove;
         private double mTimeTaken;
+        private int mLastMovementRefreshTick;
 
         private string mName;
         private string mGameTitle = string.Empty;
@@ -212,6 +213,12 @@ namespace OrbitReborn_Emulator.Game.Npcs
         {
             get { return this.mTimeTaken; }
             set { this.mTimeTaken = value; }
+        }
+
+        public int LastMovementRefreshTick
+        {
+            get { return this.mLastMovementRefreshTick; }
+            set { this.mLastMovementRefreshTick = value; }
         }
 
         public DateTime LastMove
@@ -487,6 +494,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.IsMoving = false;
             this.NewLocX = this.LocX;
             this.NewLocY = this.LocY;
+            this.LastMovementRefreshTick = 0;
         }
 
         internal int GetVisualStopSmoothingTime(int fromX, int fromY, int toX, int toY)
@@ -1913,6 +1921,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.IsAttacking = false;
 
             this.IsMoving = false;
+            this.LastMovementRefreshTick = 0;
 
             int spawnX;
             int spawnY;
