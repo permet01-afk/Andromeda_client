@@ -34,7 +34,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private const double ORBIT_SLOT_MAX_OFFSET_DEG = 120.0;
         private const int NPC_STACK_DISTANCE = 95;
         private const int STACK_RESOLVE_COOLDOWN_MS = 900;
-        private const int NPC_VISUAL_STOP_SMOOTH_MS = 120;
 
         private const int INSTANT_SHOOT_RANGE = STOP_SHOOT_RANGE;
 
@@ -473,17 +472,21 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 return;
 
             bool hadMovement = npc.IsMoving || npc.NewLocX != npc.LocX || npc.NewLocY != npc.LocY;
+            int previousX = npc.LocX;
+            int previousY = npc.LocY;
 
             npc.StopMovementAtCurrentPosition();
 
             if (!hadMovement)
                 return;
 
+            int smoothTime = npc.GetVisualStopSmoothingTime(previousX, previousY, npc.LocX, npc.LocY);
+
             MapInstance inst = MapManager.GetInstanceByMapId(npc.MapId);
             if (inst != null)
             {
                 inst.BroadcastMessageInRange(
-                    MapShipMovementComposer.Compose(npc.Id, npc.LocX, npc.LocY, NPC_VISUAL_STOP_SMOOTH_MS),
+                    MapShipMovementComposer.Compose(npc.Id, npc.LocX, npc.LocY, smoothTime),
                     npc.Id,
                     false
                 );

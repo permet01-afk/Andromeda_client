@@ -49,13 +49,15 @@ namespace OrbitReborn_Emulator.Game.Titles
 
         private static bool? mSchemaAvailable;
         private static DateTime mLastSchemaCheck = DateTime.MinValue;
+        private static readonly TimeSpan MostWantedRuntimeInitialDelay = TimeSpan.FromSeconds(1);
+        private static readonly TimeSpan MostWantedRuntimeInterval = TimeSpan.FromSeconds(1);
         private static Timer mMostWantedTimer;
 
         public static void StartRuntime()
         {
             if (mMostWantedTimer == null)
             {
-                mMostWantedTimer = new Timer(delegate { EnsureMostWantedHolder(); }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+                mMostWantedTimer = new Timer(delegate { EnsureMostWantedHolder(); }, null, MostWantedRuntimeInitialDelay, MostWantedRuntimeInterval);
             }
 
             EnsureMostWantedHolder();
@@ -438,6 +440,7 @@ namespace OrbitReborn_Emulator.Game.Titles
 
             if (npc == null)
             {
+                Output.WriteLine((object)"[Titles] Most Wanted could not be assigned to an NPC because no eligible NPC was found.", OutputLevel.Warning);
                 client.ExecuteNonQuery("INSERT INTO title_runtime_state (state_key, title_key, holder_type, holder_player_id, holder_npc_id, holder_map_id, assigned_at, expires_at) VALUES ('most_wanted', 'title_14', 'none', 0, 0, 0, NULL, NULL) ON DUPLICATE KEY UPDATE holder_type = VALUES(holder_type), holder_player_id = VALUES(holder_player_id), holder_npc_id = VALUES(holder_npc_id), holder_map_id = VALUES(holder_map_id), assigned_at = VALUES(assigned_at), expires_at = VALUES(expires_at)");
                 return;
             }

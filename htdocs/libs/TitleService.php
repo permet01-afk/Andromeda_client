@@ -201,7 +201,8 @@ class TitleService
         if ($hasMostWanted) {
             $stmt = $this->db->prepare(
                 'UPDATE title_runtime_state
-                 SET holder_type = :holder_type,
+                 SET title_key = :title_key,
+                     holder_type = :holder_type,
                      holder_player_id = 0,
                      holder_npc_id = 0,
                      holder_map_id = 0,
@@ -212,6 +213,7 @@ class TitleService
                    AND holder_player_id = :player_id'
             );
             $stmt->execute([
+                ':title_key' => self::MOST_WANTED_TITLE,
                 ':holder_type' => 'none',
                 ':state_key' => 'most_wanted',
                 ':old_holder_type' => 'player',

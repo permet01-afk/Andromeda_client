@@ -114,7 +114,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private int mNpcPoints;
         private bool mRespawn;
         private const int NPC_RESPAWN_VISUAL_DELAY_MS = 1000;
-        private const int NPC_VISUAL_STOP_SMOOTH_MS = 120;
+        private const int NPC_VISUAL_STOP_MIN_SMOOTH_MS = 120;
+        private const int NPC_VISUAL_STOP_MAX_SMOOTH_MS = 900;
         private Timer mRespawnDelayTimer;
         private readonly object mRespawnDelaySync = new object();
 
@@ -488,6 +489,25 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.NewLocY = this.LocY;
         }
 
+        internal int GetVisualStopSmoothingTime(int fromX, int fromY, int toX, int toY)
+        {
+            if (this.ShipSpeed <= 0)
+                return NPC_VISUAL_STOP_MIN_SMOOTH_MS;
+
+            double dx = (double)(toX - fromX);
+            double dy = (double)(toY - fromY);
+            double distance = Math.Sqrt(dx * dx + dy * dy);
+            if (distance <= 0.0)
+                return NPC_VISUAL_STOP_MIN_SMOOTH_MS;
+
+            int time = (int)Math.Round(distance / (double)this.ShipSpeed * 1000.0);
+            if (time < NPC_VISUAL_STOP_MIN_SMOOTH_MS)
+                return NPC_VISUAL_STOP_MIN_SMOOTH_MS;
+            if (time > NPC_VISUAL_STOP_MAX_SMOOTH_MS)
+                return NPC_VISUAL_STOP_MAX_SMOOTH_MS;
+            return time;
+        }
+
         public bool IsEmpLockBlockedFor(int targetId, double now)
         {
             return targetId > 0
@@ -504,17 +524,21 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private bool StopMovementAtCurrentPositionAndBroadcast()
         {
             bool hadMovement = this.IsMoving || this.NewLocX != this.LocX || this.NewLocY != this.LocY;
+            int previousX = this.LocX;
+            int previousY = this.LocY;
 
             this.StopMovementAtCurrentPosition();
 
             if (!hadMovement)
                 return false;
 
+            int smoothTime = GetVisualStopSmoothingTime(previousX, previousY, this.LocX, this.LocY);
+
             MapInstance inst = MapManager.GetInstanceByMapId(this.MapId);
             if (inst != null)
             {
                 inst.BroadcastMessageInRange(
-                    MapShipMovementComposer.Compose(this.Id, this.LocX, this.LocY, NPC_VISUAL_STOP_SMOOTH_MS),
+                    MapShipMovementComposer.Compose(this.Id, this.LocX, this.LocY, smoothTime),
                     this.Id,
                     false
                 );

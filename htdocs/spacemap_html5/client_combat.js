@@ -2753,11 +2753,19 @@ function updateShieldBursts(now) {
     shieldBursts.length = keepCount;
 }
 
+function shouldSuppressImpactEffectForInvisibleTarget(targetId) {
+    if (targetId === undefined || targetId === null) return false;
+    if (heroId !== null && targetId === heroId) return false;
+    const ent = entities[targetId];
+    return !!(ent && ent.kind === "player" && ent.invisible);
+}
+
 function spawnShieldBurstAt(x, y, sprite = "hit", options = {}) {
     if (x == null || y == null) return;
     const def = SHIELD_SPRITE_DEFS[sprite];
     const lifeMs = def ? def.frameCount / (def.fps || SHIELD_ANIM_FPS) * 1e3 : 350;
     const targetId = options.targetId;
+    if (shouldSuppressImpactEffectForInvisibleTarget(targetId)) return;
     if (targetId !== undefined && targetId !== null) {
         if (heroId !== null && targetId === heroId) {
             if (heroShieldDamageCount >= 9) return;
@@ -2831,6 +2839,7 @@ function drawHullDamageEffects() {
         rotation: 0
     });
     for (const eff of hullDamageEffects) {
+        if (shouldSuppressImpactEffectForInvisibleTarget(eff.entityId)) continue;
         const def = LASER_DAMAGE_SPRITES[eff.type];
         if (!def) continue;
         const life = Math.min(1, Math.max(0, (now - eff.createdAt) / eff.duration));
@@ -2848,6 +2857,7 @@ function drawHullDamageEffects() {
 
 function spawnHullDamageEffect(targetId, typeId = null) {
     if (targetId == null) return;
+    if (shouldSuppressImpactEffectForInvisibleTarget(targetId)) return;
     const effectType = typeId != null && LASER_DAMAGE_SPRITES[typeId] ? typeId : Math.floor(Math.random() * 3);
     const def = LASER_DAMAGE_SPRITES[effectType];
     if (!def) return;

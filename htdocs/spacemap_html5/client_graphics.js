@@ -2440,6 +2440,7 @@ function resolveShieldBurstAnchor(sb) {
 function drawShieldBursts() {
     const now = performance.now();
     for (const sb of shieldBursts) {
+        if (typeof shouldSuppressImpactEffectForInvisibleTarget === "function" && shouldSuppressImpactEffectForInvisibleTarget(sb.targetId)) continue;
         const spriteKey = sb.sprite || "hit";
         const def = SHIELD_SPRITE_DEFS[spriteKey];
         if (!def) continue;
