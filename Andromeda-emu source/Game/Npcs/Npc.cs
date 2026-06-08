@@ -1931,6 +1931,14 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.ShipShield = this.ShipMaxShield;
 
             this.IsDestroying = false;
+
+            MapInstance map = MapManager.GetInstanceByMapId(this.MapId);
+            if (map != null)
+            {
+                MapActor actor = map.GetActorByReferenceId(this.Id, MapActorType.AiBot);
+                if (actor != null)
+                    ShipMovement.SendNpcLifecycleCreateToVisibleSessions(map, actor, true);
+            }
         }
 
         public void Destroy(MapInstance map)

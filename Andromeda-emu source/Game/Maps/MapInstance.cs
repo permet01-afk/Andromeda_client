@@ -287,10 +287,7 @@ namespace OrbitReborn_Emulator.Game.Maps
             }
             if (Actor.Type == MapActorType.AiBot)
             {
-                Npc referenceObject = (Npc)Actor.ReferenceObject;
-                this.BroadcastMessageInRange(PacketComposer.Compose("C", referenceObject.Id.ToString() + "|" + (object)referenceObject.ShipId + "|0||" + referenceObject.Name + "|" + (object)referenceObject.LocX + "|" + (object)referenceObject.LocY + "|" + (object)referenceObject.FactionId + "|" + (object)referenceObject.IsClanMember + "|" + (object)referenceObject.Rank + "|" + (object)referenceObject.IsBoss + "|" + (object)referenceObject.IsClanMember + "|" + (object)referenceObject.GalaxyGatesRings), referenceObject.Id, false);
-                if (!string.IsNullOrEmpty(referenceObject.GameTitle))
-                    this.BroadcastMessageInRange(PacketComposer.Compose("n", "pt|" + referenceObject.Id + "|" + referenceObject.GameTitle), referenceObject.Id, false);
+                ShipMovement.SendNpcLifecycleCreateToVisibleSessions(this, Actor, false);
             }
             return true;
         }

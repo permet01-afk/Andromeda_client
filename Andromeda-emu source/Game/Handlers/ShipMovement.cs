@@ -809,26 +809,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                     if (!session.CharacterInfo.NpcInRange.Contains(referenceObject.Id) && !referenceObject.IsDestroying)
                     {
-                        session.CharacterInfo.NpcInRange.Add(referenceObject.Id);
-                        session.SendData(PacketComposer.Compose("C", referenceObject.Id.ToString() + "|" + (object)referenceObject.ShipId + "|0|" + referenceObject.ClanTag + "|" + referenceObject.Name + "|" + (object)referenceObject.LocX + "|" + (object)referenceObject.LocY + "|" + (object)referenceObject.FactionId + "|" + (object)referenceObject.IsClanMember + "|" + (object)referenceObject.Rank + "|" + (object)referenceObject.IsBoss + "|" + (object)referenceObject.IsClanMember + "|" + (object)referenceObject.GalaxyGatesRings));
-                        if (!string.IsNullOrEmpty(referenceObject.GameTitle))
-                            session.SendData(PacketComposer.Compose("n", "pt|" + referenceObject.Id + "|" + referenceObject.GameTitle));
-                        ServerMessage Message = MapUserMovementListComposer.ComposeIA(new CList<MapActor>() { key });
-                        session.SendData(Message);
-                        if (referenceObject.Drones == 1)
-                        {
-                            session.SendData(PacketComposer.Compose(
-                                "n",
-                                "d|" + referenceObject.Id + "|3/2-15-15-15-15/4-15-15-15-15-15-15-15-15/2-15-15-15-15"
-                            ));
-                        }
-                        else if (referenceObject.Drones == 2)
-                        {
-                            session.SendData(PacketComposer.Compose(
-                                "n",
-                                "d|" + referenceObject.Id + "|3/2-25-25-25-25/4-25-25-25-25-25-25-25-25/2-25-25-25-25"
-                            ));
-                        }
+                        SendNpcLifecycleCreate(session, instanceByMapId, key, false);
                     }
                 }
                 else if (session.CharacterInfo.NpcInRange.Contains(referenceObject.Id))
@@ -854,6 +835,93 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 session.CharacterInfo.NpcInRange.Remove(key);
                 session.SendData(PacketComposer.Compose("R", key.ToString()));
+            }
+        }
+
+        private static bool ShouldSendNpcLifecycleCreate(Session session, Npc npc)
+        {
+            if (session == null || session.CharacterInfo == null || npc == null || npc.IsDestroying)
+                return false;
+            if (session.CharacterInfo.IsAdmin && session.CharacterInfo.DisableNpc)
+                return false;
+            if (!session.MapJoined || !session.MapAuthed || session.CurrentMapId <= 0)
+                return false;
+
+            int activeMapId = session.CurrentMapId;
+            if (activeMapId != npc.MapId)
+                return false;
+
+            bool isGateMap = GalaxyGateWaveService.IsGateMap(activeMapId);
+            if (isGateMap && !GalaxyGateWaveService.IsNpcOwnedBy(npc.Id, session.CharacterId))
+                return false;
+
+            double maxRange = isGateMap ? 30000.0 : 2000.0;
+            double rangeSquared = maxRange * maxRange;
+            long dx = (long)npc.LocX - session.CharacterInfo.LocX;
+            long dy = (long)npc.LocY - session.CharacterInfo.LocY;
+            return (double)(dx * dx + dy * dy) < rangeSquared || npc.IsBoss == 1 || npc.Name == "Spaceball";
+        }
+
+        public static bool SendNpcLifecycleCreate(Session session, MapInstance instance, MapActor npcActor, bool resetKnownNpc)
+        {
+            if (session == null || session.CharacterInfo == null || instance == null || npcActor == null || npcActor.Type != MapActorType.AiBot)
+                return false;
+
+            Npc npc = npcActor.ReferenceObject as Npc;
+            if (npc == null)
+                return false;
+
+            if (resetKnownNpc)
+            {
+                session.CharacterInfo.NpcInRange.Remove(npc.Id);
+                session.SendData(PacketComposer.Compose("R", npc.Id.ToString()));
+            }
+
+            npc.AdvanceMovementToCurrentPosition();
+
+            if (!ShouldSendNpcLifecycleCreate(session, npc))
+                return false;
+
+            if (!session.CharacterInfo.NpcInRange.Contains(npc.Id))
+                session.CharacterInfo.NpcInRange.Add(npc.Id);
+
+            session.SendData(PacketComposer.Compose("C", npc.Id.ToString() + "|" + (object)npc.ShipId + "|0|" + npc.ClanTag + "|" + npc.Name + "|" + (object)npc.LocX + "|" + (object)npc.LocY + "|" + (object)npc.FactionId + "|" + (object)npc.IsClanMember + "|" + (object)npc.Rank + "|" + (object)npc.IsBoss + "|" + (object)npc.IsClanMember + "|" + (object)npc.GalaxyGatesRings));
+            if (!string.IsNullOrEmpty(npc.GameTitle))
+                session.SendData(PacketComposer.Compose("n", "pt|" + npc.Id + "|" + npc.GameTitle));
+
+            if (npc.IsMoving)
+                session.SendData(MapUserMovementListComposer.ComposeIA(new CList<MapActor>() { npcActor }));
+
+            if (npc.Drones == 1)
+            {
+                session.SendData(PacketComposer.Compose(
+                    "n",
+                    "d|" + npc.Id + "|3/2-15-15-15-15/4-15-15-15-15-15-15-15-15/2-15-15-15-15"
+                ));
+            }
+            else if (npc.Drones == 2)
+            {
+                session.SendData(PacketComposer.Compose(
+                    "n",
+                    "d|" + npc.Id + "|3/2-25-25-25-25/4-25-25-25-25-25-25-25-25/2-25-25-25-25"
+                ));
+            }
+
+            return true;
+        }
+
+        public static void SendNpcLifecycleCreateToVisibleSessions(MapInstance instance, MapActor npcActor, bool resetKnownNpc)
+        {
+            if (instance == null || npcActor == null || npcActor.Type != MapActorType.AiBot)
+                return;
+
+            foreach (MapActor actor in instance.GetUserActorSnapshot())
+            {
+                if (actor == null || actor.Type != MapActorType.UserCharacter || actor.ReferenceSessionId <= 0)
+                    continue;
+
+                Session session = SessionManager.GetSessionById(actor.ReferenceSessionId);
+                SendNpcLifecycleCreate(session, instance, npcActor, resetKnownNpc);
             }
         }
 
