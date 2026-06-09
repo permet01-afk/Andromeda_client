@@ -30,9 +30,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private const int STOP_SHOOT_RANGE = 450;
         private const int AI_TICK_RATE = 800;
         private const int NPC_MOVEMENT_TICK_RATE = 550;
-        private const int NPC_MOVEMENT_REFRESH_INTERVAL_MS = 2500;
-        private const int NPC_MOVEMENT_REFRESH_LONG_MOVE_MS = 8000;
-        private const int NPC_MOVEMENT_REFRESH_MIN_REMAINING_MS = 750;
         private const double ORBIT_SLOT_ANGLE_STEP_DEG = 12.0;
         private const double ORBIT_SLOT_MAX_OFFSET_DEG = 120.0;
         private const int NPC_STACK_DISTANCE = 95;
@@ -896,58 +893,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             return mapInst;
         }
 
-        private static int GetRemainingMovementTimeMs(Npc npc)
-        {
-            if (npc == null || !npc.IsMoving || npc.ShipSpeed <= 0)
-                return 0;
-
-            npc.AdvanceMovementToCurrentPosition();
-            if (!npc.IsMoving)
-                return 0;
-
-            double dx = (double)(npc.NewLocX - npc.LocX);
-            double dy = (double)(npc.NewLocY - npc.LocY);
-            double distance = Math.Sqrt(dx * dx + dy * dy);
-            if (distance <= 0.0)
-                return 0;
-
-            return (int)Math.Ceiling(distance / (double)npc.ShipSpeed * 1000.0);
-        }
-
-        private static bool ShouldRefreshNpcMovement(Npc npc, int remainingTimeMs)
-        {
-            if (npc == null || remainingTimeMs < NPC_MOVEMENT_REFRESH_MIN_REMAINING_MS)
-                return false;
-
-            return npc.IsBoss == 1 || remainingTimeMs >= NPC_MOVEMENT_REFRESH_LONG_MOVE_MS;
-        }
-
-        private static void TrySendNpcMovementRefresh(Npc npc, Dictionary<int, MapInstance> mapInstanceCache)
-        {
-            if (npc == null || npc.IsDestroying || !npc.IsMoving)
-                return;
-
-            int nowTick = Environment.TickCount;
-            int lastTick = npc.LastMovementRefreshTick;
-            if (lastTick != 0 && unchecked(nowTick - lastTick) < NPC_MOVEMENT_REFRESH_INTERVAL_MS)
-                return;
-
-            int remainingTimeMs = GetRemainingMovementTimeMs(npc);
-            if (!ShouldRefreshNpcMovement(npc, remainingTimeMs))
-                return;
-
-            MapInstance mapInst = GetCachedMapInstance(npc.MapId, mapInstanceCache);
-            if (mapInst == null)
-                return;
-
-            mapInst.BroadcastMessageInRange(
-                MapShipMovementComposer.Compose(npc.Id, npc.NewLocX, npc.NewLocY, remainingTimeMs),
-                npc.Id,
-                false
-            );
-            npc.LastMovementRefreshTick = nowTick;
-        }
-
         private static MapActor[] GetCachedUserActorSnapshot(MapInstance mapInst, Dictionary<int, MapActor[]> userActorSnapshotCache)
         {
             if (mapInst == null)
@@ -1724,7 +1669,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                     Math.Sqrt(travelDx * travelDx + travelDy * travelDy) / (double)item_1.ShipSpeed * 1000.0;
 
                                 item_1.IsMoving = true;
-                                item_1.LastMovementRefreshTick = Environment.TickCount;
 
                                 MapInstance mapInst = GetCachedMapInstance(item_1.MapId, mapInstanceCache);
                                 if (mapInst != null)
@@ -1738,8 +1682,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                     item_1.PathFinder = new Timer(new TimerCallback(NpcAI.PathFinding), (object)item_1, NPC_MOVEMENT_TICK_RATE, NPC_MOVEMENT_TICK_RATE);
                             }
                         }
-
-                        TrySendNpcMovementRefresh(item_1, mapInstanceCache);
 
                         if (UnixTimestamp.GetCurrent() - item_1.LastAttackReceived >= REGEN_DELAY_SECONDS)
                         {

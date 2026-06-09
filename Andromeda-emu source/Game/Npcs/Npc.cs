@@ -70,7 +70,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private bool mIsMoving;
         private DateTime mLastMove;
         private double mTimeTaken;
-        private int mLastMovementRefreshTick;
 
         private string mName;
         private string mGameTitle = string.Empty;
@@ -213,12 +212,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
         {
             get { return this.mTimeTaken; }
             set { this.mTimeTaken = value; }
-        }
-
-        public int LastMovementRefreshTick
-        {
-            get { return this.mLastMovementRefreshTick; }
-            set { this.mLastMovementRefreshTick = value; }
         }
 
         public DateTime LastMove
@@ -494,7 +487,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.IsMoving = false;
             this.NewLocX = this.LocX;
             this.NewLocY = this.LocY;
-            this.LastMovementRefreshTick = 0;
         }
 
         internal int GetVisualStopSmoothingTime(int fromX, int fromY, int toX, int toY)
@@ -1397,6 +1389,22 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.CargoPalladium *= mult;
         }
 
+        private void ApplyMap29BossCubikonRewardBalanceIfNeeded()
+        {
+            if (!IsMap29BossCubikon())
+                return;
+
+            NpcBalance2010 cubikon;
+            if (!Balance2010.TryGetValue("-=[ Cubikon ]=-", out cubikon))
+                return;
+
+            const int rewardMultiplier = 2;
+            this.Credits = cubikon.Credits * rewardMultiplier;
+            this.Uridium = cubikon.Uridium * rewardMultiplier;
+            this.ExperienceReward = cubikon.Xp * rewardMultiplier;
+            this.HonorReward = cubikon.Honor * rewardMultiplier;
+        }
+
         public Npc(
             int Id,
             string Name,
@@ -1474,6 +1482,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             ApplyBalance2010IfExists();
             ApplyGalaxyGateMultiplierIfNeeded();
+            ApplyMap29BossCubikonRewardBalanceIfNeeded();
         }
 
         private bool IsSessionValidOnMap(Session s)
@@ -1921,7 +1930,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.IsAttacking = false;
 
             this.IsMoving = false;
-            this.LastMovementRefreshTick = 0;
 
             int spawnX;
             int spawnY;
