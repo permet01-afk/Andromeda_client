@@ -1389,6 +1389,15 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.CargoPalladium *= mult;
         }
 
+        private void ApplyMap29BossCubikonRewardBalanceIfNeeded()
+        {
+            if (!IsMap29BossCubikon())
+                return;
+
+            this.ExperienceReward = 2048000;
+            this.HonorReward = 16384;
+        }
+
         public Npc(
             int Id,
             string Name,
@@ -1466,6 +1475,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             ApplyBalance2010IfExists();
             ApplyGalaxyGateMultiplierIfNeeded();
+            ApplyMap29BossCubikonRewardBalanceIfNeeded();
         }
 
         private bool IsSessionValidOnMap(Session s)
