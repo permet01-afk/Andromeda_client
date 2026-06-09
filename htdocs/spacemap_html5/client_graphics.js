@@ -4389,6 +4389,21 @@ function initWindowManager() {
         }
     `;
     document.head.appendChild(style);
+    if (!document.getElementById("flashWindowSeamGuardStyle")) {
+        const seamGuardStyle = document.createElement("style");
+        seamGuardStyle.id = "flashWindowSeamGuardStyle";
+        seamGuardStyle.textContent = `
+            .gameWindow.flashWindow .windowChrome::before {
+                box-sizing: border-box;
+                background-color: #000000;
+            }
+            .gameWindow.flashWindow .gwContent::before {
+                inset: -1px;
+                background-position: 0 0;
+            }
+        `;
+        document.head.appendChild(seamGuardStyle);
+    }
     
 if (!document.getElementById("flashSpacemapStyle")) {
     const spacemapStyle = document.createElement("style");
@@ -4958,6 +4973,7 @@ function applyFlashWindowSettingEntryToRuntime(key, entry) {
         winEl.style.transform = "none";
         winEl.style.left = normalized.left + "px";
         winEl.style.top = normalized.top + "px";
+        snapFlashWindowIntegerGeometry(winEl);
     }
     if (typeof windowStates === "object" && windowStates) {
         windowStates[key] = normalized.open;
@@ -7080,8 +7096,30 @@ function auditMinimapPointerStack(clientX, clientY) {
 
 window.auditMinimapPointerStack = auditMinimapPointerStack;
 
+function snapFlashWindowIntegerGeometry(winEl) {
+    if (!winEl || !winEl.classList || !winEl.classList.contains("flashWindow")) return;
+    const snapStyleValue = prop => {
+        const raw = parseFloat(winEl.style[prop] || "");
+        if (!Number.isFinite(raw)) return null;
+        const rounded = Math.round(raw);
+        if (Math.abs(raw - rounded) > .001 || winEl.style[prop] !== `${rounded}px`) {
+            winEl.style[prop] = `${rounded}px`;
+        }
+        return rounded;
+    };
+    snapStyleValue("left");
+    snapStyleValue("top");
+    const width = snapStyleValue("width");
+    const height = snapStyleValue("height");
+    if (winEl.dataset && winEl.dataset.flashResizable === "1") {
+        if (Number.isFinite(width) && width > 0) winEl.dataset.flashUserWidth = String(width);
+        if (Number.isFinite(height) && height > 0) winEl.dataset.flashUserHeight = String(height);
+    }
+}
+
 function syncFlashWindowContentBounds(winEl) {
     if (!winEl) return;
+    snapFlashWindowIntegerGeometry(winEl);
     const isResizable = String(winEl.dataset.flashResizable || "") === "1";
     const baseW = parseInt(winEl.dataset.flashBaseWidth || "", 10);
     const baseH = parseInt(winEl.dataset.flashBaseHeight || "", 10);
@@ -8545,6 +8583,7 @@ function enforceFlashWindowBaseSize(key, winEl, runtimeCfg) {
         winEl.dataset.flashUserWidth = String(outerW);
         winEl.dataset.flashUserHeight = String(outerH);
     }
+    snapFlashWindowIntegerGeometry(winEl);
     if (window.FLASH_PARITY_DEBUG) {
         console.log("[FLASH_PARITY] enforce-window-size", key, {
             targetGameXml: {
@@ -9024,6 +9063,7 @@ function makeElementDraggable(elmnt, handle) {
     function closeDragElement() {
         document.onmouseup = null;
         document.onmousemove = null;
+        snapFlashWindowIntegerGeometry(elmnt);
         const draggedKey = elmnt && elmnt.dataset ? elmnt.dataset.windowKey || "" : "";
         if (draggedKey === "map" && typeof window.invalidateMinimapLayoutCache === "function") {
             window.invalidateMinimapLayoutCache();
@@ -9092,6 +9132,7 @@ function attachWindowResizer(winEl, options) {
     function onMouseUp() {
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
+        snapFlashWindowIntegerGeometry(winEl);
         const currentWidth = parseInt(winEl.dataset.flashUserWidth || "", 10) || winEl.offsetWidth;
         const currentHeight = parseInt(winEl.dataset.flashUserHeight || "", 10) || winEl.offsetHeight;
         persistWindowGeometry(winEl.dataset.windowKey || "", currentWidth, currentHeight);

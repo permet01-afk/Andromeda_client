@@ -427,6 +427,33 @@ let collectDelayBoxId = null;
 
 const collectedBoxRequestIds = new Set;
 
+function normalizeCollectRequestId(boxId) {
+    if (boxId == null) return null;
+    return String(boxId);
+}
+
+function hasCollectRequestPending(boxId) {
+    const key = normalizeCollectRequestId(boxId);
+    return key !== null && collectedBoxRequestIds.has(key);
+}
+
+function clearCollectRequest(boxId) {
+    const key = normalizeCollectRequestId(boxId);
+    if (key === null) return;
+    collectedBoxRequestIds.delete(key);
+}
+
+function clearAllCollectRequests() {
+    collectedBoxRequestIds.clear();
+}
+
+function markCollectRequestPending(boxId) {
+    const key = normalizeCollectRequestId(boxId);
+    if (key === null || collectedBoxRequestIds.has(key)) return false;
+    collectedBoxRequestIds.add(key);
+    return true;
+}
+
 function computeCollectApproach(box) {
     if (!box) return null;
     return {
@@ -436,8 +463,12 @@ function computeCollectApproach(box) {
 }
 
 function clearPendingCollectState() {
+    const canceledBoxId = pendingCollectBoxId;
     pendingCollectBoxId = null;
     cancelCollectDelay();
+    if (canceledBoxId != null) {
+        clearCollectRequest(canceledBoxId);
+    }
 }
 
 function cancelCollectDelay() {
@@ -509,7 +540,7 @@ function startCollectDelay(boxId, durationMs = BOX_COLLECT_DELAY_MS) {
     collectDelayTimerId = setTimeout(() => {
         collectDelayTimerId = null;
         collectDelayBoxId = null;
-            const collectRequested = typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(boxId);
+        const collectRequested = typeof hasCollectRequestPending === "function" && hasCollectRequestPending(boxId);
         if (pendingCollectBoxId === boxId && !collectRequested) {
             sendCollectBox(boxId, {
                 suppressStartBeam: true

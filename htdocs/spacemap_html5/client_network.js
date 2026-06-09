@@ -2349,7 +2349,11 @@ function resetMapState(newMapId) {
     pendingAttackAckStartMs = 0;
     resetPendingRangeResume();
     clearPendingCollectState();
-    if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.clear();
+    if (typeof clearAllCollectRequests === "function") {
+        clearAllCollectRequests();
+    } else if (typeof collectedBoxRequestIds !== "undefined") {
+        collectedBoxRequestIds.clear();
+    }
     if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
     moveTargetX = null;
     moveTargetY = null;
@@ -3980,7 +3984,11 @@ function handlePacket_f(parts, i) {
         }
         try {
             const boxId = typeof pendingCollectBoxId !== "undefined" && pendingCollectBoxId != null ? pendingCollectBoxId : typeof collectDelayBoxId !== "undefined" ? collectDelayBoxId : null;
-            if (boxId != null && typeof collectedBoxRequestIds !== "undefined") {
+            if (boxId != null && typeof clearCollectRequest === "function") {
+                clearCollectRequest(boxId);
+            } else if (boxId == null && typeof clearAllCollectRequests === "function") {
+                clearAllCollectRequests();
+            } else if (boxId != null && typeof collectedBoxRequestIds !== "undefined") {
                 collectedBoxRequestIds.delete(boxId);
             }
         } catch (_) {}
@@ -5649,7 +5657,11 @@ function handlePacket_remove(parts, i) {
     unregisterEntityRuntimeActiveState(e.id);
     delete entities[key];
     if (loggedEntities.has(e.id)) loggedEntities.delete(e.id);
-    if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(e.id);
+    if (typeof clearCollectRequest === "function") {
+        clearCollectRequest(e.id);
+    } else if (typeof collectedBoxRequestIds !== "undefined") {
+        collectedBoxRequestIds.delete(e.id);
+    }
     maybeClearMinimapEnemyWarningAfterForeignRemoval(e);
 }
 
@@ -5695,7 +5707,7 @@ function handlePacket_R(parts, i) {
     if (key == null) return;
     const ent = entities[key];
     if (!ent) return;
-    const isMyCollection = pendingCollectBoxId != null && pendingCollectBoxId == ent.id || typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(ent.id);
+    const isMyCollection = pendingCollectBoxId != null && pendingCollectBoxId == ent.id || typeof hasCollectRequestPending === "function" && hasCollectRequestPending(ent.id) || typeof hasCollectRequestPending !== "function" && typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(ent.id);
     if (ent.kind === "box") {
         if (!isMyCollection && ent.boxSpawnTime && Date.now() - ent.boxSpawnTime < 2e3) {
             return;
@@ -5739,7 +5751,11 @@ function handlePacket_R(parts, i) {
     if (entities[rawId] === ent) delete entities[rawId];
     if (ent.id != null && entities[ent.id] === ent) delete entities[ent.id];
     if (loggedEntities.has(ent.id)) loggedEntities.delete(ent.id);
-    if (typeof collectedBoxRequestIds !== "undefined") collectedBoxRequestIds.delete(ent.id);
+    if (typeof clearCollectRequest === "function") {
+        clearCollectRequest(ent.id);
+    } else if (typeof collectedBoxRequestIds !== "undefined") {
+        collectedBoxRequestIds.delete(ent.id);
+    }
     if (typeof flashClearEntityShipSkillVisualEffects === "function") {
         flashClearEntityShipSkillVisualEffects(ent.id);
     }
@@ -5837,7 +5853,11 @@ function handlePacket_y(parts, i) {
         }
         try {
             const boxId = typeof pendingCollectBoxId !== "undefined" && pendingCollectBoxId != null ? pendingCollectBoxId : typeof collectDelayBoxId !== "undefined" ? collectDelayBoxId : null;
-            if (boxId != null && typeof collectedBoxRequestIds !== "undefined") {
+            if (boxId != null && typeof clearCollectRequest === "function") {
+                clearCollectRequest(boxId);
+            } else if (boxId == null && typeof clearAllCollectRequests === "function") {
+                clearAllCollectRequests();
+            } else if (boxId != null && typeof collectedBoxRequestIds !== "undefined") {
                 collectedBoxRequestIds.delete(boxId);
             }
         } catch (_) {}
@@ -5855,7 +5875,11 @@ function handlePacket_y(parts, i) {
         }
         try {
             const boxId = typeof pendingCollectBoxId !== "undefined" && pendingCollectBoxId != null ? pendingCollectBoxId : null;
-            if (boxId != null && typeof collectedBoxRequestIds !== "undefined") {
+            if (boxId != null && typeof clearCollectRequest === "function") {
+                clearCollectRequest(boxId);
+            } else if (boxId == null && typeof clearAllCollectRequests === "function") {
+                clearAllCollectRequests();
+            } else if (boxId != null && typeof collectedBoxRequestIds !== "undefined") {
                 collectedBoxRequestIds.delete(boxId);
             }
         } catch (_) {}
@@ -6094,9 +6118,15 @@ function handlePacket_E(parts, i) {
     }
     try {
         const boxId = typeof pendingCollectBoxId !== "undefined" && pendingCollectBoxId != null ? pendingCollectBoxId : typeof collectDelayBoxId !== "undefined" && collectDelayBoxId != null ? collectDelayBoxId : null;
-        const hadRequest = boxId != null && typeof collectedBoxRequestIds !== "undefined" ? collectedBoxRequestIds.has(boxId) : false;
+        const hadRequest = boxId != null ? typeof hasCollectRequestPending === "function" ? hasCollectRequestPending(boxId) : typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(boxId) : typeof clearAllCollectRequests === "function" && typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.size > 0;
         if (hadRequest) {
-            collectedBoxRequestIds.delete(boxId);
+            if (boxId != null && typeof clearCollectRequest === "function") {
+                clearCollectRequest(boxId);
+            } else if (boxId == null && typeof clearAllCollectRequests === "function") {
+                clearAllCollectRequests();
+            } else if (boxId != null && typeof collectedBoxRequestIds !== "undefined") {
+                collectedBoxRequestIds.delete(boxId);
+            }
             if (typeof clearPendingCollectState === "function") {
                 clearPendingCollectState();
             } else {

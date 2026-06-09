@@ -644,7 +644,9 @@ function sendCollectBox(id, options = {}) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return false;
     if (id == null) return false;
     const opts = options || {};
-    if (typeof collectedBoxRequestIds !== "undefined") {
+    if (typeof markCollectRequestPending === "function") {
+        if (!markCollectRequestPending(id)) return false;
+    } else if (typeof collectedBoxRequestIds !== "undefined") {
         if (collectedBoxRequestIds.has(id)) return false;
         collectedBoxRequestIds.add(id);
     }
@@ -815,7 +817,7 @@ function updateHeroLocalMovement(dt) {
             const collectBox = entities[pendingCollectBoxId];
             if (collectBox) {
                 const distToBox = Math.hypot(collectBox.x - shipX, collectBox.y - shipY);
-                const collectRequested = typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(pendingCollectBoxId);
+                const collectRequested = typeof hasCollectRequestPending === "function" ? hasCollectRequestPending(pendingCollectBoxId) : typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(pendingCollectBoxId);
                 handleCollectRange(collectBox, distToBox, collectRequested);
             } else {
                 clearPendingCollectState();
@@ -835,7 +837,7 @@ function updateHeroLocalMovement(dt) {
     if (dist > 1e-4) {
         heroAngle = Math.atan2(dy, dx) + Math.PI;
     }
-    let collectRequested = pendingCollectBoxId !== null && typeof collectedBoxRequestIds !== "undefined" ? collectedBoxRequestIds.has(pendingCollectBoxId) : false;
+    let collectRequested = pendingCollectBoxId !== null ? typeof hasCollectRequestPending === "function" ? hasCollectRequestPending(pendingCollectBoxId) : typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(pendingCollectBoxId) : false;
     if (targetBox) {
         const distToBox = Math.hypot(targetBox.x - shipX, targetBox.y - shipY);
         const collectTriggered = handleCollectRange(targetBox, distToBox, collectRequested);
