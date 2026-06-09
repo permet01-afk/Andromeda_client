@@ -4389,6 +4389,28 @@ function initWindowManager() {
         }
     `;
     document.head.appendChild(style);
+    if (!document.getElementById("flashWindowHeaderSeamStyle")) {
+        const headerSeamStyle = document.createElement("style");
+        headerSeamStyle.id = "flashWindowHeaderSeamStyle";
+        headerSeamStyle.textContent = `
+            .gameWindow.flashWindow .gwHeader::after {
+                content: "";
+                position: absolute;
+                left: 40px;
+                right: 79px;
+                bottom: -1px;
+                height: 1px;
+                background: rgba(8, 14, 20, 0.72);
+                pointer-events: none;
+                z-index: 0;
+            }
+            .gameWindow.flashWindow .gwHeaderLeft {
+                position: relative;
+                z-index: 1;
+            }
+        `;
+        document.head.appendChild(headerSeamStyle);
+    }
     
 if (!document.getElementById("flashSpacemapStyle")) {
     const spacemapStyle = document.createElement("style");
