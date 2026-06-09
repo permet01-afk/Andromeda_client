@@ -42,6 +42,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private int mIsBoss = 0;
         private int mDamages = 0;
         private int mSharedRewards = 0;
+        private bool mHasConfiguredCargoDrop = false;
         private bool mIsAttacking = false;
         private bool mIsDestroying = false;
 
@@ -1284,6 +1285,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.CargoXenomit = bal.CargoXe * multiplier;
 
             this.CargoPalladium = 0;
+            this.mHasConfiguredCargoDrop = true;
         }
 
         private static bool TryGetDerivedBalanceSource(string npcName, out string sourceName, out int multiplier)
@@ -1398,6 +1400,22 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.HonorReward = 16384;
         }
 
+        private void ApplyMap29BossCubikonCargoBalanceIfNeeded()
+        {
+            if (!IsMap29BossCubikon())
+                return;
+
+            this.CargoPrometium = 1200;
+            this.CargoEndurium = 1200;
+            this.CargoTerbium = 1200;
+            this.CargoPrometid = 2048;
+            this.CargoDuranium = 2048;
+            this.CargoPromerium = 872;
+            this.CargoXenomit = 480;
+            this.CargoPalladium = 0;
+            this.mHasConfiguredCargoDrop = true;
+        }
+
         public Npc(
             int Id,
             string Name,
@@ -1476,6 +1494,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             ApplyBalance2010IfExists();
             ApplyGalaxyGateMultiplierIfNeeded();
             ApplyMap29BossCubikonRewardBalanceIfNeeded();
+            ApplyMap29BossCubikonCargoBalanceIfNeeded();
         }
 
         private bool IsSessionValidOnMap(Session s)
@@ -2619,7 +2638,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             CargoBox cargoBox = new CargoBox(boxId, locX, locY, this.MapId);
             cargoBox.OwnerCharacterId = ownerCharacterId;
 
-            if (Balance2010.ContainsKey(this.mName))
+            if (this.mHasConfiguredCargoDrop)
             {
                 cargoBox.Prometium = this.CargoPrometium;
                 cargoBox.Endurium = this.CargoEndurium;
