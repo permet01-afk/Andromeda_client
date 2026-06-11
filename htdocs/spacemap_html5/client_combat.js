@@ -3173,6 +3173,20 @@ function validateCriticalRuntimePreparedFrames() {
             }
         }
     }
+    const criticalExplosionTypes = typeof CRITICAL_PREPARED_EXPLOSION_TYPES !== "undefined" && Array.isArray(CRITICAL_PREPARED_EXPLOSION_TYPES) ? CRITICAL_PREPARED_EXPLOSION_TYPES : [];
+    if (typeof EXPLOSION_ANIMATIONS === "object" && EXPLOSION_ANIMATIONS && criticalExplosionTypes.length > 0) {
+        for (const explosionType of criticalExplosionTypes) {
+            const anim = EXPLOSION_ANIMATIONS[explosionType];
+            if (!anim) continue;
+            const frameCount = anim.frameCount || 1;
+            for (let frame = 0; frame < frameCount; frame++) {
+                const frameDef = typeof getExplosionFrame === "function" ? getExplosionFrame(explosionType, frame) : null;
+                if (!frameDef || !frameDef.__andromedaPreparedExplosionFrame || frameDef.__andromedaPreparedExplosionType !== explosionType) {
+                    missing.push("explosion" + explosionType + ":" + frame);
+                }
+            }
+        }
+    }
     return {
         missingCount: missing.length,
         missingFrames: missing
@@ -3685,6 +3699,18 @@ async function warmCriticalBootRuntimeVisuals(reason = "manual") {
                 addWarmTask("ish:" + frame, () => typeof prepareShieldSpriteFrame === "function" ? prepareShieldSpriteFrame("insta", frame) : null, {
                     composite: "lighter"
                 });
+            }
+        }
+        const criticalExplosionTypes = typeof CRITICAL_PREPARED_EXPLOSION_TYPES !== "undefined" && Array.isArray(CRITICAL_PREPARED_EXPLOSION_TYPES) ? CRITICAL_PREPARED_EXPLOSION_TYPES : [];
+        if (typeof EXPLOSION_ANIMATIONS === "object" && EXPLOSION_ANIMATIONS && criticalExplosionTypes.length > 0) {
+            for (const explosionType of criticalExplosionTypes) {
+                const anim = EXPLOSION_ANIMATIONS[explosionType];
+                if (!anim) continue;
+                for (const frame of buildRuntimeWarmupFrameSequence(anim.frameCount || 1, 1)) {
+                    addWarmTask("explosion" + explosionType + ":" + frame, () => typeof prepareExplosionFrame === "function" ? prepareExplosionFrame(explosionType, frame) : null, {
+                        composite: "lighter"
+                    });
+                }
             }
         }
         if (EMP_ANIM) {

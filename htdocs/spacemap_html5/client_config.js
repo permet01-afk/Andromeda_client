@@ -4432,6 +4432,8 @@ const EXPLOSION_ANIMATIONS = {
     }
 };
 
+const CRITICAL_PREPARED_EXPLOSION_TYPES = [0, 1];
+
 const ROCKET_DAMAGE_ANIM_FPS = 25;
 
 const ROCKET_DAMAGE_SPRITES = {
@@ -5352,6 +5354,8 @@ function getEffectsMiscAtlasFrame(sectionKey, frameIndex) {
 const smartbombSpriteCache = {};
 
 const explosionSpriteCache = {};
+
+const preparedExplosionSpriteCache = {};
 
 let empRingCache = null;
 
@@ -6504,18 +6508,41 @@ function getSmartbombFrame(frameIndex) {
 }
 
 function getExplosionFrame(type, frameIndex) {
-    const anim = EXPLOSION_ANIMATIONS[type] || EXPLOSION_ANIMATIONS[2];
+    const parsedType = Number(type);
+    const explosionType = EXPLOSION_ANIMATIONS[parsedType] ? parsedType : 2;
+    const anim = EXPLOSION_ANIMATIONS[explosionType];
     if (!anim) return null;
     const frameCount = anim.frameCount || 1;
     let idx = frameIndex % frameCount;
     if (idx < 0) idx += frameCount;
-    const cacheKey = `${type}_${idx}`;
+    const cacheKey = `${explosionType}_${idx}`;
+    if (CRITICAL_PREPARED_EXPLOSION_TYPES.indexOf(explosionType) !== -1) {
+        return preparedExplosionSpriteCache[cacheKey] || null;
+    }
     if (explosionSpriteCache[cacheKey]) return explosionSpriteCache[cacheKey];
     const frameDef = getPyroAtlasFrame(anim, idx);
     if (frameDef && !frameDef.pendingAtlas) {
         explosionSpriteCache[cacheKey] = frameDef;
     }
     return frameDef;
+}
+
+function prepareExplosionFrame(type, frameIndex) {
+    const parsedType = Number(type);
+    const explosionType = EXPLOSION_ANIMATIONS[parsedType] ? parsedType : 2;
+    const anim = EXPLOSION_ANIMATIONS[explosionType];
+    if (!anim) return null;
+    const frameCount = anim.frameCount || 1;
+    let idx = frameIndex % frameCount;
+    if (idx < 0) idx += frameCount;
+    const cacheKey = `${explosionType}_${idx}`;
+    if (preparedExplosionSpriteCache[cacheKey]) return preparedExplosionSpriteCache[cacheKey];
+    const prepared = buildPreparedPyroFrameCanvas(getPyroAtlasFrame(anim, idx), "__andromedaPreparedExplosionFrame", idx);
+    if (prepared && !prepared.pendingAtlas && !prepared.atlas) {
+        prepared.__andromedaPreparedExplosionType = explosionType;
+        preparedExplosionSpriteCache[cacheKey] = prepared;
+    }
+    return prepared;
 }
 
 function getEmpRingFrame() {
