@@ -2,7 +2,7 @@
 
 class AuctionService
 {
-    const TIMEZONE = 'Europe/Paris';
+    const TIMEZONE = 'Europe/Zurich';
 
     private $db;
     private $playerId;
@@ -704,6 +704,10 @@ class AuctionService
                 $this->grantUserColumn($playerId, $refId, $qty);
                 return;
 
+            case 'cargo_ore':
+                $this->grantCargoOre($playerId, $refId, $qty);
+                return;
+
             case 'design':
                 $this->grantDesign($playerId, (int)$refId);
                 return;
@@ -748,6 +752,19 @@ class AuctionService
 
         $sql = 'UPDATE users SET `' . $column . '` = `' . $column . '` + :qty WHERE id = :pid';
         $this->db->prepare($sql)->execute([':qty' => $qty, ':pid' => $playerId]);
+    }
+
+    private function grantCargoOre(int $playerId, string $oreKey, int $qty): void
+    {
+        $allowed = $this->allowedCargoOres();
+        if (!in_array($oreKey, $allowed, true)) {
+            throw new Exception('Invalid cargo ore reward.');
+        }
+
+        $sql = 'INSERT INTO player_cargo (id, `' . $oreKey . '`)
+                VALUES (:pid, :qty)
+                ON DUPLICATE KEY UPDATE `' . $oreKey . '` = `' . $oreKey . '` + VALUES(`' . $oreKey . '`)';
+        $this->db->prepare($sql)->execute([':pid' => $playerId, ':qty' => $qty]);
     }
 
     private function grantDesign(int $playerId, int $designId): void
@@ -965,6 +982,13 @@ class AuctionService
         ];
     }
 
+    private function allowedCargoOres(): array
+    {
+        return [
+            'promerium',
+        ];
+    }
+
     private function parseDroneItemIds(string $dronesStr): array
     {
         $dronesStr = trim($dronesStr);
@@ -1164,6 +1188,7 @@ class AuctionService
 
             ['code' => 'logfile', 'name' => 'Logfile', 'category' => 'Resources', 'description' => '1 Logfile.', 'image_path' => 'img/items/logfile.png', 'grant_type' => 'user_column', 'ref_id' => 'logfiles', 'qty' => 1, 'uridium_value' => 150, 'starting_bid_credits' => 60000, 'min_increment_credits' => 1, 'sort_order' => 500],
             ['code' => 'booty_key', 'name' => 'Booty Key', 'category' => 'Resources', 'description' => '1 Booty Key.', 'image_path' => 'img/items/booty-key.png', 'grant_type' => 'user_column', 'ref_id' => 'booty_keys', 'qty' => 1, 'uridium_value' => 7000, 'starting_bid_credits' => 2800000, 'min_increment_credits' => 1, 'sort_order' => 510],
+            ['code' => 'promerium_2000', 'name' => 'Promerium', 'category' => 'Resources', 'description' => 'Lot of 2,000 Promerium ore.', 'image_path' => 'img/items/cargo.png', 'grant_type' => 'cargo_ore', 'ref_id' => 'promerium', 'qty' => 2000, 'uridium_value' => 0, 'starting_bid_credits' => 3000000, 'min_increment_credits' => 1, 'sort_order' => 520],
 
             ['code' => 'vengeance_enforcer', 'name' => 'Vengeance Enforcer', 'category' => 'Ship Designs', 'description' => 'Vengeance design. +5% Damage.', 'image_path' => 'img/shop/17.png', 'grant_type' => 'design', 'ref_id' => 17, 'qty' => 1, 'uridium_value' => 50000, 'starting_bid_credits' => 20000000, 'min_increment_credits' => 1, 'sort_order' => 600],
             ['code' => 'goliath_enforcer', 'name' => 'Goliath Enforcer', 'category' => 'Ship Designs', 'description' => 'Goliath design. +5% Damage.', 'image_path' => 'img/shop/56.png', 'grant_type' => 'design', 'ref_id' => 56, 'qty' => 1, 'uridium_value' => 100000, 'starting_bid_credits' => 40000000, 'min_increment_credits' => 1, 'sort_order' => 610],
