@@ -24,6 +24,10 @@ if (empty($_SESSION['title_csrf_token'])) {
     $_SESSION['title_csrf_token'] = bin2hex(random_bytes(32));
 }
 $titleCsrfToken = $_SESSION['title_csrf_token'];
+if (empty($_SESSION['daily_login_csrf_token'])) {
+    $_SESSION['daily_login_csrf_token'] = bin2hex(random_bytes(32));
+}
+$dailyLoginCsrfToken = $_SESSION['daily_login_csrf_token'];
 session_write_close();
 
 ob_start();

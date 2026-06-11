@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../libs/HomeLeaderboardService.php';
+require_once __DIR__ . '/../libs/DailyLoginBonusService.php';
 
 if (!function_exists('homeDecodeLegacyHtmlEntitiesForDisplay')) {
     function homeDecodeLegacyHtmlEntitiesForDisplay($value)
@@ -125,6 +126,34 @@ if (!function_exists('homeFormatCountdown')) {
     }
 }
 
+if (!function_exists('homeRenderDailyRewardCards')) {
+    function homeRenderDailyRewardCards(array $cards)
+    {
+        foreach ($cards as $card) {
+            $day = (int)($card['day'] ?? 0);
+            $state = preg_replace('/[^a-z0-9_-]/i', '', (string)($card['state'] ?? 'locked'));
+            $stateLabel = htmlspecialchars((string)($card['state_label'] ?? 'Locked'), ENT_QUOTES, 'UTF-8');
+            $lines = is_array($card['lines'] ?? null) ? $card['lines'] : [];
+            ?>
+            <article class="daily-reward-card is-<?php echo $state; ?>" data-daily-day="<?php echo $day; ?>">
+                <div class="daily-reward-card-top">
+                    <span class="daily-reward-day">Day <?php echo $day; ?></span>
+                    <span class="daily-reward-state" data-daily-state><?php echo $stateLabel; ?></span>
+                </div>
+                <div class="daily-reward-lines">
+                    <?php foreach ($lines as $line) { ?>
+                        <div class="daily-reward-line">
+                            <span class="daily-reward-dot" aria-hidden="true"></span>
+                            <span><?php echo htmlspecialchars((string)$line, ENT_QUOTES, 'UTF-8'); ?></span>
+                        </div>
+                    <?php } ?>
+                </div>
+            </article>
+            <?php
+        }
+    }
+}
+
 $playerId = (int)($_SESSION['player_id'] ?? 0);
 
 $sth = $db->prepare('
@@ -207,9 +236,31 @@ $companyCounts = [
     'eic' => number_format(max(0, (int)($serverStats['active_EIC'] ?? 0))),
     'vru' => number_format(max(0, (int)($serverStats['active_VRU'] ?? 0))),
 ];
+
+try {
+    $dailyLoginService = new DailyLoginBonusService($db, $playerId);
+    $dailyLoginState = $dailyLoginService->getState();
+} catch (Throwable $e) {
+    $dailyLoginState = [
+        'schema_ready' => false,
+        'week_reset_label' => 'Monday 00:00 Europe/Zurich',
+        'next_reset_label' => 'Not available',
+        'claimed_count' => 0,
+        'claimed_today' => false,
+        'week_completed' => false,
+        'next_day' => 1,
+        'can_claim' => false,
+        'auto_open' => false,
+        'claim_message' => 'Daily Login Bonus is not available right now.',
+        'cards' => [],
+    ];
+}
+
+$dailyLoginCsrfToken = isset($dailyLoginCsrfToken) ? (string)$dailyLoginCsrfToken : '';
+$dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>
 
-<link rel="stylesheet" type="text/css" href="styles/home.css?v=6" />
+<link rel="stylesheet" type="text/css" href="styles/home.css?v=7" />
 
 <section class="dashboard">
     <header class="dashboard-hero">
@@ -514,8 +565,53 @@ $companyCounts = [
     </div>
 </div>
 
+<div class="modal-overlay daily-login-overlay" id="dailyLoginModal" hidden>
+    <div class="daily-login-card" role="dialog" aria-modal="true" aria-labelledby="dailyLoginTitle">
+        <header class="daily-login-hero">
+            <div class="daily-login-copy">
+                <span class="daily-login-kicker">Andromeda Rewards</span>
+                <h2 id="dailyLoginTitle">Daily Login Bonus</h2>
+                <p>Claim one reward per day. Missing a day keeps you behind until the weekly reset.</p>
+            </div>
+            <div class="daily-login-reset">Weekly reset: <?php echo htmlspecialchars((string)($dailyLoginState['week_reset_label'] ?? 'Monday 00:00 Europe/Zurich'), ENT_QUOTES, 'UTF-8'); ?></div>
+        </header>
+
+        <div class="daily-login-body">
+            <div class="daily-login-status" id="dailyLoginStatus" aria-live="polite">
+                <div>
+                    <strong data-daily-status-title>
+                        <?php echo ((bool)($dailyLoginState['can_claim'] ?? false)) ? 'Today\'s reward available:' : 'Daily Login Bonus:'; ?>
+                    </strong>
+                    <span data-daily-status-message><?php echo htmlspecialchars((string)($dailyLoginState['claim_message'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></span>
+                </div>
+                <div class="daily-login-claimed">
+                    <span>Claimed this week:</span>
+                    <strong data-daily-claimed-count><?php echo (int)($dailyLoginState['claimed_count'] ?? 0); ?> / 7</strong>
+                </div>
+            </div>
+
+            <section class="daily-reward-grid" aria-label="Daily Login Bonus rewards">
+                <?php homeRenderDailyRewardCards($dailyLoginState['cards'] ?? []); ?>
+            </section>
+
+            <footer class="daily-login-footer">
+                <div class="daily-login-note">Future days unlock one at a time. Claim manually after logging in.</div>
+                <div class="daily-login-actions">
+                    <button class="daily-login-button daily-login-button-secondary" type="button" id="dailyLoginClose">Close</button>
+                    <button class="daily-login-button daily-login-button-primary" type="button" id="dailyLoginClaim" <?php echo ((bool)($dailyLoginState['can_claim'] ?? false)) ? '' : 'disabled'; ?>>Claim Daily Reward</button>
+                </div>
+            </footer>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    window.ANDROMEDA_DAILY_LOGIN = {
+        state: <?php echo $dailyLoginStateJson ?: '{}'; ?>,
+        csrfToken: <?php echo json_encode($dailyLoginCsrfToken, JSON_UNESCAPED_SLASHES); ?>
+    };
+
     document.querySelectorAll('[data-tabs]').forEach(function (group) {
         var controls = group.querySelectorAll('[role="tab"]');
         var panels = group.querySelectorAll('[role="tabpanel"]');
@@ -543,6 +639,124 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     });
+
+    (function () {
+        var config = window.ANDROMEDA_DAILY_LOGIN || {};
+        var state = config.state || {};
+        var modal = document.getElementById('dailyLoginModal');
+        var closeBtn = document.getElementById('dailyLoginClose');
+        var claimBtn = document.getElementById('dailyLoginClaim');
+        var statusBox = document.getElementById('dailyLoginStatus');
+        var statusTitle = document.querySelector('[data-daily-status-title]');
+        var statusMessage = document.querySelector('[data-daily-status-message]');
+        var claimedCount = document.querySelector('[data-daily-claimed-count]');
+
+        if (!modal || !closeBtn || !claimBtn) return;
+
+        function setModalOpen(open) {
+            modal.hidden = !open;
+            document.body.classList.toggle('modal-open', open || !document.getElementById('top100Modal').hidden);
+        }
+
+        function setStatus(message, isError) {
+            if (statusMessage) {
+                statusMessage.textContent = message || '';
+            }
+            if (statusBox) {
+                statusBox.classList.toggle('is-error', !!isError);
+            }
+        }
+
+        function renderDailyState(nextState) {
+            state = nextState || state || {};
+            if (statusTitle) {
+                statusTitle.textContent = state.can_claim ? "Today's reward available:" : 'Daily Login Bonus:';
+            }
+            setStatus(state.claim_message || '', false);
+            if (claimedCount) {
+                claimedCount.textContent = String(state.claimed_count || 0) + ' / 7';
+            }
+            claimBtn.disabled = !state.can_claim;
+
+            if (Array.isArray(state.cards)) {
+                state.cards.forEach(function (card) {
+                    var el = document.querySelector('[data-daily-day="' + card.day + '"]');
+                    if (!el) return;
+                    el.classList.remove('is-claimed', 'is-today', 'is-locked');
+                    el.classList.add('is-' + (card.state || 'locked'));
+                    var badge = el.querySelector('[data-daily-state]');
+                    if (badge) {
+                        badge.textContent = card.state_label || 'Locked';
+                    }
+                });
+            }
+        }
+
+        function claimReward() {
+            if (claimBtn.disabled) {
+                return;
+            }
+
+            claimBtn.disabled = true;
+            claimBtn.textContent = 'Claiming...';
+            setStatus('Claiming your daily reward...', false);
+
+            var body = new URLSearchParams();
+            body.set('action', 'claim');
+            body.set('csrf_token', config.csrfToken || '');
+
+            fetch('views/api/daily_login_bonus.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                },
+                body: body.toString()
+            })
+                .then(function (response) {
+                    return response.json().then(function (payload) {
+                        if (!response.ok || !payload || !payload.success) {
+                            throw new Error((payload && payload.message) || 'Unable to claim Daily Login Bonus.');
+                        }
+                        return payload;
+                    });
+                })
+                .then(function (payload) {
+                    renderDailyState(payload.state || {});
+                    setStatus(payload.message || 'Daily reward claimed.', false);
+                })
+                .catch(function (error) {
+                    setStatus(error.message || 'Unable to claim Daily Login Bonus.', true);
+                    claimBtn.disabled = !state.can_claim;
+                })
+                .finally(function () {
+                    claimBtn.textContent = 'Claim Daily Reward';
+                });
+        }
+
+        closeBtn.addEventListener('click', function () {
+            setModalOpen(false);
+        });
+
+        modal.addEventListener('click', function (event) {
+            if (event.target === modal) {
+                setModalOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !modal.hidden) {
+                setModalOpen(false);
+            }
+        });
+
+        claimBtn.addEventListener('click', claimReward);
+        renderDailyState(state);
+
+        if (state.auto_open) {
+            setModalOpen(true);
+        }
+    })();
 
     (function () {
         var openBtn = document.getElementById('open-top100');
