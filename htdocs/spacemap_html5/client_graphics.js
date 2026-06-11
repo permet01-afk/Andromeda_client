@@ -3458,15 +3458,21 @@ let dronesAtlasStatus = "idle";
 
 let dronesAtlasListenersBound = false;
 
-const HAVOK_DRONE_FRAME_PATH = "graphics/havoks/";
+const HAVOK_DRONE_ATLAS_PATH = "graphics/havoks/havok_atlas.png";
 
 const HAVOK_DRONE_FRAME_WIDTH = 60;
 
 const HAVOK_DRONE_FRAME_HEIGHT = 60;
 
-const havokDroneFrameImages = new Array(DRONE_DIRECTION_FRAME_COUNT);
+const HAVOK_DRONE_ATLAS_CELL_WIDTH = 51;
 
-const havokDroneFrameStatus = new Array(DRONE_DIRECTION_FRAME_COUNT).fill("idle");
+const HAVOK_DRONE_ATLAS_CELL_HEIGHT = 51;
+
+let havokDroneAtlasImage = null;
+
+let havokDroneAtlasStatus = "idle";
+
+let havokDroneAtlasListenersBound = false;
 
 const droneSpriteFrameDefCache = {
     iris: new Array(DRONE_DIRECTION_FRAME_COUNT),
@@ -3492,53 +3498,62 @@ const pendingDroneSpriteFrameDefs = {
     }
 };
 
-function markHavokDroneFrameReadyIfDecoded(idx, img) {
+function markHavokDroneAtlasReadyIfDecoded(img) {
     if (img && img.complete && img.width > 0 && img.height > 0) {
-        havokDroneFrameStatus[idx] = "ready";
+        havokDroneAtlasStatus = "ready";
         return true;
     }
     return false;
 }
 
-function getHavokDroneFrameImage(directionIndex) {
-    const idx = (directionIndex % DRONE_DIRECTION_FRAME_COUNT + DRONE_DIRECTION_FRAME_COUNT) % DRONE_DIRECTION_FRAME_COUNT;
-    if (!havokDroneFrameImages[idx]) {
-        const img = andromedaCreateImage(`${HAVOK_DRONE_FRAME_PATH}${idx + 1}.png`);
-        havokDroneFrameImages[idx] = img;
-        havokDroneFrameStatus[idx] = markHavokDroneFrameReadyIfDecoded(idx, img) ? "ready" : "loading";
-        img.addEventListener("load", () => {
-            havokDroneFrameStatus[idx] = "ready";
+function getHavokDroneAtlasImage() {
+    if (!havokDroneAtlasImage) {
+        havokDroneAtlasImage = andromedaCreateImage(HAVOK_DRONE_ATLAS_PATH);
+        havokDroneAtlasStatus = markHavokDroneAtlasReadyIfDecoded(havokDroneAtlasImage) ? "ready" : "loading";
+    }
+    if (!havokDroneAtlasListenersBound && havokDroneAtlasImage) {
+        havokDroneAtlasListenersBound = true;
+        havokDroneAtlasImage.addEventListener("load", () => {
+            havokDroneAtlasStatus = "ready";
         }, {
             once: true
         });
-        img.addEventListener("error", () => {
-            havokDroneFrameStatus[idx] = "error";
+        havokDroneAtlasImage.addEventListener("error", () => {
+            havokDroneAtlasStatus = "error";
         }, {
             once: true
         });
     }
-    markHavokDroneFrameReadyIfDecoded(idx, havokDroneFrameImages[idx]);
-    return {
-        img: havokDroneFrameImages[idx],
-        idx: idx
-    };
+    markHavokDroneAtlasReadyIfDecoded(havokDroneAtlasImage);
+    return havokDroneAtlasImage;
 }
 
 function getHavokDroneSpriteFrame(directionIndex) {
-    const frame = getHavokDroneFrameImage(directionIndex);
-    const status = havokDroneFrameStatus[frame.idx];
-    if (status === "error") return null;
-    if (status !== "ready") {
+    const atlas = getHavokDroneAtlasImage();
+    if (!atlas) return null;
+    if (havokDroneAtlasStatus === "error") return null;
+    if (havokDroneAtlasStatus !== "ready") {
         return pendingDroneSpriteFrameDefs.havok;
     }
-    const cached = droneSpriteFrameDefCache.havok[frame.idx];
+    const idx = (directionIndex % DRONE_DIRECTION_FRAME_COUNT + DRONE_DIRECTION_FRAME_COUNT) % DRONE_DIRECTION_FRAME_COUNT;
+    const cached = droneSpriteFrameDefCache.havok[idx];
     if (cached) return cached;
+    const sx = idx * HAVOK_DRONE_ATLAS_CELL_WIDTH;
+    const sy = 0;
+    if (sx + HAVOK_DRONE_ATLAS_CELL_WIDTH > atlas.width || HAVOK_DRONE_ATLAS_CELL_HEIGHT > atlas.height) {
+        havokDroneAtlasStatus = "error";
+        return null;
+    }
     const frameDef = {
-        img: frame.img,
+        atlas: atlas,
+        sx: sx,
+        sy: sy,
+        sw: HAVOK_DRONE_ATLAS_CELL_WIDTH,
+        sh: HAVOK_DRONE_ATLAS_CELL_HEIGHT,
         width: HAVOK_DRONE_FRAME_WIDTH,
         height: HAVOK_DRONE_FRAME_HEIGHT
     };
-    droneSpriteFrameDefCache.havok[frame.idx] = frameDef;
+    droneSpriteFrameDefCache.havok[idx] = frameDef;
     return frameDef;
 }
 
