@@ -162,10 +162,13 @@
 
 .hof-card {
     grid-column: span 6 / span 6;
+    align-self: start;
 }
 
 .log-card {
     grid-column: span 6 / span 6;
+    align-self: start;
+    height: 320px;
 }
 
 @media (max-width: 1280px) {
