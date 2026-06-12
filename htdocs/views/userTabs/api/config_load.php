@@ -384,9 +384,9 @@ try {
   if (in_array($currentShipId, [10, 56, 59, 63, 64, 65, 66, 67], true)) {
     $baseShipId = 10;
     $familyDesignIds = [10, 56, 59, 63, 64, 65, 66, 67];
-  } elseif (in_array($currentShipId, [8, 17], true)) {
+  } elseif (in_array($currentShipId, [8, 17, 18], true)) {
     $baseShipId = 8;
-    $familyDesignIds = [8, 17];
+    $familyDesignIds = [8, 17, 18];
   }
 
   $shipDesignId = $currentShipId;
@@ -432,6 +432,7 @@ try {
     67 => ['name' => 'Goliath Venom',       'bonus' => '+5% Damage + Ability'],
     8  => ['name' => 'Vengeance (Standard)','bonus' => ''],
     17 => ['name' => 'Vengeance Enforcer',  'bonus' => '+5% Damage'],
+    18 => ['name' => 'Vengeance Lightning', 'bonus' => 'Lightning Design'],
   ];
 
   $mkSkin = function (int $id) use ($SKIN_META) {

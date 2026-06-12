@@ -152,8 +152,8 @@ try {
     $allowedDesignIds = [$currentShipId];
     if (in_array($currentShipId, [10, 56, 59, 63, 64, 65, 66, 67], true)) {
         $allowedDesignIds = [10, 56, 59, 63, 64, 65, 66, 67];
-    } elseif (in_array($currentShipId, [8, 17], true)) {
-        $allowedDesignIds = [8, 17];
+    } elseif (in_array($currentShipId, [8, 17, 18], true)) {
+        $allowedDesignIds = [8, 17, 18];
     }
 
     $requestedDesignId = isset($payload['design_id']) ? (int)$payload['design_id'] : 0;
@@ -170,7 +170,7 @@ try {
         
         $baseShipId = null;
         if (in_array($requestedDesignId, [10, 56, 59, 63, 64, 65, 66, 67], true)) $baseShipId = 10;
-        if (in_array($requestedDesignId, [8, 17], true))     $baseShipId = 8;
+        if (in_array($requestedDesignId, [8, 17, 18], true)) $baseShipId = 8;
 
         if ($baseShipId !== null && $requestedDesignId !== $baseShipId) {
             $own = $db->prepare("SELECT 1 FROM player_designs WHERE player_id = :p AND design_id = :d LIMIT 1");

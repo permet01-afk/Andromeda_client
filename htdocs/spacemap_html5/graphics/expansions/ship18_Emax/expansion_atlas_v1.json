@@ -1,0 +1,198 @@
+{
+    "version":  1,
+    "atlasPath":  "graphics/expansions/ship18_Emax/expansion_atlas_v1.png",
+    "frames":  {
+                   "graphics/expansions/ship18_Emax/1.png":  {
+                                                                 "x":  1,
+                                                                 "y":  1,
+                                                                 "w":  181,
+                                                                 "h":  132
+                                                             },
+                   "graphics/expansions/ship18_Emax/2.png":  {
+                                                                 "x":  184,
+                                                                 "y":  1,
+                                                                 "w":  181,
+                                                                 "h":  132
+                                                             },
+                   "graphics/expansions/ship18_Emax/3.png":  {
+                                                                 "x":  367,
+                                                                 "y":  1,
+                                                                 "w":  181,
+                                                                 "h":  132
+                                                             },
+                   "graphics/expansions/ship18_Emax/4.png":  {
+                                                                 "x":  550,
+                                                                 "y":  1,
+                                                                 "w":  181,
+                                                                 "h":  132
+                                                             },
+                   "graphics/expansions/ship18_Emax/5.png":  {
+                                                                 "x":  733,
+                                                                 "y":  1,
+                                                                 "w":  181,
+                                                                 "h":  132
+                                                             },
+                   "graphics/expansions/ship18_Emax/6.png":  {
+                                                                 "x":  916,
+                                                                 "y":  1,
+                                                                 "w":  181,
+                                                                 "h":  132
+                                                             },
+                   "graphics/expansions/ship18_Emax/7.png":  {
+                                                                 "x":  1099,
+                                                                 "y":  1,
+                                                                 "w":  181,
+                                                                 "h":  132
+                                                             },
+                   "graphics/expansions/ship18_Emax/8.png":  {
+                                                                 "x":  1282,
+                                                                 "y":  1,
+                                                                 "w":  181,
+                                                                 "h":  132
+                                                             },
+                   "graphics/expansions/ship18_Emax/9.png":  {
+                                                                 "x":  1,
+                                                                 "y":  135,
+                                                                 "w":  181,
+                                                                 "h":  132
+                                                             },
+                   "graphics/expansions/ship18_Emax/10.png":  {
+                                                                  "x":  184,
+                                                                  "y":  135,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/11.png":  {
+                                                                  "x":  367,
+                                                                  "y":  135,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/12.png":  {
+                                                                  "x":  550,
+                                                                  "y":  135,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/13.png":  {
+                                                                  "x":  733,
+                                                                  "y":  135,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/14.png":  {
+                                                                  "x":  916,
+                                                                  "y":  135,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/15.png":  {
+                                                                  "x":  1099,
+                                                                  "y":  135,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/16.png":  {
+                                                                  "x":  1282,
+                                                                  "y":  135,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/17.png":  {
+                                                                  "x":  1,
+                                                                  "y":  269,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/18.png":  {
+                                                                  "x":  184,
+                                                                  "y":  269,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/19.png":  {
+                                                                  "x":  367,
+                                                                  "y":  269,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/20.png":  {
+                                                                  "x":  550,
+                                                                  "y":  269,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/21.png":  {
+                                                                  "x":  733,
+                                                                  "y":  269,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/22.png":  {
+                                                                  "x":  916,
+                                                                  "y":  269,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/23.png":  {
+                                                                  "x":  1099,
+                                                                  "y":  269,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/24.png":  {
+                                                                  "x":  1282,
+                                                                  "y":  269,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/25.png":  {
+                                                                  "x":  1,
+                                                                  "y":  403,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/26.png":  {
+                                                                  "x":  184,
+                                                                  "y":  403,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/27.png":  {
+                                                                  "x":  367,
+                                                                  "y":  403,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/28.png":  {
+                                                                  "x":  550,
+                                                                  "y":  403,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/29.png":  {
+                                                                  "x":  733,
+                                                                  "y":  403,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/30.png":  {
+                                                                  "x":  916,
+                                                                  "y":  403,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/31.png":  {
+                                                                  "x":  1099,
+                                                                  "y":  403,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              },
+                   "graphics/expansions/ship18_Emax/32.png":  {
+                                                                  "x":  1282,
+                                                                  "y":  403,
+                                                                  "w":  181,
+                                                                  "h":  132
+                                                              }
+               }
+}
