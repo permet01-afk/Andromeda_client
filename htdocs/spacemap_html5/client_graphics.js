@@ -3031,9 +3031,41 @@ function flashDrawSolaceLightDecorator(centerX, centerY, baseRadius, alpha, ageM
     }
 }
 
-function flashResolveLightningEffectPlacement(centerX, centerY, shipId, frameIndex, spriteHeight, angleRad, entityKey) {
-    const engineState = entityKey && typeof engineAnimationState !== "undefined" ? engineAnimationState[entityKey] || null : null;
-    if (!engineState || !engineState.isMoving) return null;
+function flashIsHeroShipSkillMoving() {
+    if (typeof moveTargetX !== "undefined" && typeof moveTargetY !== "undefined" && Number.isFinite(moveTargetX) && Number.isFinite(moveTargetY) && typeof shipX === "number" && typeof shipY === "number") {
+        const dx = moveTargetX - shipX;
+        const dy = moveTargetY - shipY;
+        return dx * dx + dy * dy > 1;
+    }
+    return false;
+}
+
+function flashIsEntityShipSkillMoving(entityId) {
+    if (typeof entities === "undefined" || !entities) return false;
+    const entity = entities[entityId] || entities[String(entityId)] || null;
+    if (!entity || !entity.interp) return false;
+    const interp = entity.interp;
+    const duration = Number(interp.duration) || 0;
+    if (duration <= 0 || !Number.isFinite(interp.startTime)) return false;
+    const now = performance.now();
+    const t = (now - interp.startTime) / duration;
+    if (t < 0 || t >= 1) return false;
+    const dx = (Number(interp.endX) || 0) - (Number(interp.startX) || 0);
+    const dy = (Number(interp.endY) || 0) - (Number(interp.startY) || 0);
+    return dx * dx + dy * dy > 1;
+}
+
+function flashIsShipSkillEntityMoving(entityId, entityKey) {
+    const numericEntityId = Number(entityId);
+    if (Number.isFinite(numericEntityId) && typeof heroId !== "undefined" && numericEntityId === Number(heroId)) {
+        return flashIsHeroShipSkillMoving();
+    }
+    if (entityKey === "hero") return flashIsHeroShipSkillMoving();
+    return flashIsEntityShipSkillMoving(entityId);
+}
+
+function flashResolveLightningEffectPlacement(centerX, centerY, shipId, frameIndex, spriteHeight, angleRad, entityKey, isMoving) {
+    if (!isMoving) return null;
 
     const entityScale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
     const rotation = (typeof angleRad === "number" ? angleRad : 0) + Math.PI;
@@ -3090,7 +3122,7 @@ function flashGetSkillEffectSequenceFrameNumber(effectState, nowMs) {
     return Math.floor(ageMs / frameDurationMs) % frameCount + 1;
 }
 
-function flashTryDrawShipSkillVisualSequence(effectState, centerX, centerY, shipId, frameIndex, angleRad, spriteHeight, alpha, entityKey) {
+function flashTryDrawShipSkillVisualSequence(effectState, centerX, centerY, shipId, frameIndex, angleRad, spriteHeight, alpha, entityKey, isMoving) {
     if (!effectState || !(alpha > 0)) return false;
     if (typeof flashGetSkillEffectSequenceMeta !== "function" || typeof flashGetSkillEffectFrameImage !== "function") return false;
     const meta = flashGetSkillEffectSequenceMeta(effectState.abilityId);
@@ -3114,7 +3146,7 @@ function flashTryDrawShipSkillVisualSequence(effectState, centerX, centerY, ship
     let rotation = typeof angleRad === "number" ? angleRad : 0;
 
     if (effectState.abilityId === "lightning") {
-        const placement = flashResolveLightningEffectPlacement(centerX, centerY, shipId, frameIndex, spriteHeight, angleRad, entityKey);
+        const placement = flashResolveLightningEffectPlacement(centerX, centerY, shipId, frameIndex, spriteHeight, angleRad, entityKey, isMoving);
         if (!placement) return false;
         drawX = placement.drawX;
         drawY = placement.drawY;
@@ -3132,7 +3164,7 @@ function flashTryDrawShipSkillVisualSequence(effectState, centerX, centerY, ship
     return true;
 }
 
-function flashDrawShipSkillVisualState(effectState, centerX, centerY, shipId, frameIndex, angleRad, spriteHeight, entityKey) {
+function flashDrawShipSkillVisualState(effectState, centerX, centerY, shipId, frameIndex, angleRad, spriteHeight, entityKey, isMoving) {
     if (!effectState) return;
     const nowMs = flashShipSkillNowMs();
     const startedAtMs = Number(effectState.startedAtMs) || nowMs;
@@ -3156,7 +3188,7 @@ function flashDrawShipSkillVisualState(effectState, centerX, centerY, shipId, fr
     const baseHeight = Math.max(24, (spriteHeight || (typeof getShipReferenceVisualHeight === "function" ? getShipReferenceVisualHeight(shipId) : 0) || 44) * entityScale * 0.72);
     const baseRadius = Math.max(18, baseHeight * 0.6);
     const abilityId = effectState.abilityId || "";
-    const drewSequence = flashTryDrawShipSkillVisualSequence(effectState, centerX, centerY, shipId, frameIndex, angleRad, spriteHeight, alpha, entityKey);
+    const drewSequence = flashTryDrawShipSkillVisualSequence(effectState, centerX, centerY, shipId, frameIndex, angleRad, spriteHeight, alpha, entityKey, isMoving);
     if (drewSequence) {
         if (abilityId === "solace") {
             const totalDuration = Math.max(1, Number(effectState.sequenceDurationMs) || 0);
@@ -3172,13 +3204,13 @@ function drawShipSkillVisualEffectsForEntity(entityId, centerX, centerY, shipId,
     const states = flashGetShipSkillVisualStatesForEntity(entityId);
     if (!states || !states.length) return;
     const engineState = entityKey && typeof engineAnimationState !== "undefined" ? engineAnimationState[entityKey] || null : null;
-    const isMoving = !!(engineState && engineState.isMoving);
     for (let i = 0; i < states.length; i++) {
         const state = states[i];
+        const isMoving = state && state.abilityId === "lightning" ? flashIsShipSkillEntityMoving(entityId, entityKey) : !!(engineState && engineState.isMoving);
         if (typeof flashUpdateShipSkillRuntimeAudio === "function") {
             flashUpdateShipSkillRuntimeAudio(state, worldX, worldY, isMoving);
         }
-        flashDrawShipSkillVisualState(state, centerX, centerY, shipId, frameIndex, angleRad, spriteHeight, entityKey);
+        flashDrawShipSkillVisualState(state, centerX, centerY, shipId, frameIndex, angleRad, spriteHeight, entityKey, isMoving);
     }
 }
 
