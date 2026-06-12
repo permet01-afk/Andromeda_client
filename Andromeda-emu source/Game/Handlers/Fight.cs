@@ -351,6 +351,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             public int SelectedRocketId = 7;
             public int LoadedCount;
             public bool AutoCpuEnabled;
+            public bool InitializedFromCharacter;
             public System.Threading.Timer ReloadTimer;
             public readonly object SyncRoot = new object();
         }
@@ -370,6 +371,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private static bool IsLauncherRocketId(int rocketId)
         {
             return rocketId == 7 || rocketId == 8 || rocketId == 9;
+        }
+
+        private static int NormalizeLauncherRocketId(int rocketId)
+        {
+            return IsLauncherRocketId(rocketId) ? rocketId : 7;
         }
 
         private static int GetRocketLauncherCapacity(int launcherType)
@@ -410,8 +416,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (session == null || session.CharacterInfo == null || state == null)
                 return;
 
-            if (!IsLauncherRocketId(state.SelectedRocketId))
-                state.SelectedRocketId = 7;
+            if (!state.InitializedFromCharacter)
+            {
+                state.SelectedRocketId = NormalizeLauncherRocketId(session.CharacterInfo.SelectedLauncherRocket);
+                state.AutoCpuEnabled = session.CharacterInfo.AutoRocketLauncherSkill == 1;
+                state.InitializedFromCharacter = true;
+            }
+
+            state.SelectedRocketId = NormalizeLauncherRocketId(state.SelectedRocketId);
 
             int activeConfig = session.CharacterInfo.ActiveConfig;
             if (activeConfig != 1 && activeConfig != 2)
@@ -443,6 +455,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 StopRocketLauncherReloadTimer(state);
                 return;
             }
+
+            if (session.CharacterInfo.AutoRocketLauncherSkill == 1)
+                state.AutoCpuEnabled = true;
 
             if (state.LoadedCount < 0)
                 state.LoadedCount = 0;
@@ -561,6 +576,52 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.SendData(PacketComposer.Compose("A", "CPU|Y|" + ((launcherType > 0 && autoEnabled) ? 1 : 0)));
         }
 
+        private static void SaveRocketLauncherAutoCpuState(Session session, int state)
+        {
+            if (session == null || session.CharacterInfo == null)
+                return;
+
+            session.CharacterInfo.AutoRocketLauncherSkill = state == 1 ? 1 : 0;
+
+            try
+            {
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                {
+                    client.ClearParameters();
+                    client.SetParameter("id", (object)session.CharacterId);
+                    client.SetParameter("state", (object)session.CharacterInfo.AutoRocketLauncherSkill);
+                    client.ExecuteNonQuery("UPDATE users SET auto_rocketlauncher_skill = @state WHERE id = @id LIMIT 1");
+                }
+            }
+            catch (Exception ex)
+            {
+                Output.WriteLine("auto_rocketlauncher_skill DB update failed: " + ex.Message);
+            }
+        }
+
+        private static void SaveSelectedLauncherRocket(Session session, int rocketId)
+        {
+            if (session == null || session.CharacterInfo == null)
+                return;
+
+            session.CharacterInfo.SelectedLauncherRocket = NormalizeLauncherRocketId(rocketId);
+
+            try
+            {
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                {
+                    client.ClearParameters();
+                    client.SetParameter("id", (object)session.CharacterId);
+                    client.SetParameter("rocket", (object)session.CharacterInfo.SelectedLauncherRocket);
+                    client.ExecuteNonQuery("UPDATE users SET selected_launcher_rocket = @rocket WHERE id = @id LIMIT 1");
+                }
+            }
+            catch (Exception ex)
+            {
+                Output.WriteLine("selected_launcher_rocket DB update failed: " + ex.Message);
+            }
+        }
+
         public static void SetRocketLauncherAutoCpuState(Session session, bool enabled)
         {
             RocketLauncherRuntimeState state = GetRocketLauncherState(session);
@@ -568,6 +629,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
 
             bool startReload = false;
+            int savedState = 0;
             lock (state.SyncRoot)
             {
                 RefreshRocketLauncherState(session, state);
@@ -579,7 +641,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     int capacity = GetRocketLauncherCapacity(state.LauncherType);
                     startReload = enabled && state.ReloadTimer == null && state.LoadedCount < capacity;
                 }
+                savedState = state.AutoCpuEnabled ? 1 : 0;
             }
+
+            SaveRocketLauncherAutoCpuState(session, savedState);
 
             if (session.CharacterInfo.HasRocketLauncherCpu)
                 SendRocketLauncherAutoCpuState(session);
@@ -633,9 +698,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             lock (state.SyncRoot)
             {
                 RefreshRocketLauncherState(session, state);
-                state.SelectedRocketId = rocketId;
+                state.SelectedRocketId = NormalizeLauncherRocketId(rocketId);
             }
 
+            SaveSelectedLauncherRocket(session, rocketId);
             SendRocketLauncherProtocolState(session, false);
         }
 

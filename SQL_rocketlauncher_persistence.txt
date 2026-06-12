@@ -1,0 +1,3 @@
+ALTER TABLE `users`
+  ADD COLUMN IF NOT EXISTS `auto_rocketlauncher_skill` int(11) NOT NULL DEFAULT 0 AFTER `auto_rkt_skill`,
+  ADD COLUMN IF NOT EXISTS `selected_launcher_rocket` int(11) NOT NULL DEFAULT 7 AFTER `auto_rocketlauncher_skill`;

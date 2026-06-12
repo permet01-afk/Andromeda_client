@@ -154,6 +154,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         private int mSelectedAmmo;
         private int mSelectedRocket;
         private int mSelectedRocketAuto;
+        private int mSelectedLauncherRocket = 7;
         private int mSelectedPlayerRocket;
         private int mSelectedPlayerRocketSpawnSeq;
         private long mRankPoints;
@@ -268,6 +269,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         private bool mApisBuilt;
         private bool mZeusBuilt;
         public int AutoRocketSkill = 0;
+        public int AutoRocketLauncherSkill = 0;
         private int mBlk = 0;
         private int mGroupBoss = 0;
         private int mPvpPoints;
@@ -1100,6 +1102,18 @@ namespace OrbitReborn_Emulator.Game.Characters
             set
             {
                 this.mSelectedRocketAuto = value;
+            }
+        }
+
+        public int SelectedLauncherRocket
+        {
+            get
+            {
+                return this.mSelectedLauncherRocket;
+            }
+            set
+            {
+                this.mSelectedLauncherRocket = (value == 8 || value == 9) ? value : 7;
             }
         }
 
@@ -2443,6 +2457,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.mSelectedAmmo = 4;
             this.mSelectedRocket = 3;
             this.mSelectedRocketAuto = this.mSelectedRocket;
+            this.mSelectedLauncherRocket = 7;
             this.mLastRocketShotType = this.mSelectedRocket;
             this.mRankPoints = 0L;
             this.mUserKill = 0;
@@ -3321,6 +3336,8 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.mUserKill = getInt32("user_kill", this.mUserKill);
             this.mNpcKill = getInt32("npc_kill", this.mNpcKill);
             AutoRocketSkill = getInt32("auto_rkt_skill", 0);
+            AutoRocketLauncherSkill = getInt32("auto_rocketlauncher_skill", AutoRocketLauncherSkill) == 1 ? 1 : 0;
+            SelectedLauncherRocket = getInt32("selected_launcher_rocket", SelectedLauncherRocket);
             this.mRankPoints = getInt64("rankpoints", this.mRankPoints);
             int canBeginner = getInt32("canBeginner", 0);
             this.mDisableNpc = false;
