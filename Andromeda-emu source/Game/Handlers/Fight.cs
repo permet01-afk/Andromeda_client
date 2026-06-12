@@ -368,6 +368,17 @@ namespace OrbitReborn_Emulator.Game.Handlers
             public System.Threading.Timer Timer;
         }
 
+        private sealed class RocketAttackContext
+        {
+            public Session Attacker;
+            public int MapId;
+            public int TargetId;
+            public bool TargetIsNpc;
+            public int TargetSpawnSeq;
+            public int RocketId;
+            public System.Threading.Timer Timer;
+        }
+
         private static bool IsLauncherRocketId(int rocketId)
         {
             return rocketId == 7 || rocketId == 8 || rocketId == 9;
@@ -2690,8 +2701,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
 
             MapInstance instanceByMapId = MapManager.GetInstanceByMapId(Session.CurrentMapId);
-            if (instanceByMapId == null
-                || UnixTimestamp.GetCurrent() - Session.CharacterInfo.LastRocket < 2.0)
+            if (instanceByMapId == null)
             {
                 return;
             }
@@ -2704,6 +2714,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 return;
             }
+
+            bool isManualDcr250 = !isAutoRocketCall && rocketId == 10;
+            if (!isManualDcr250 && UnixTimestamp.GetCurrent() - Session.CharacterInfo.LastRocket < 2.0)
+                return;
 
             if (Session.CharacterInfo.SelectedPlayer == 0)
                 return;
@@ -2762,23 +2776,33 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.CharacterId.ToString() + "|" + (object)referenceObject.Id + "|H|" + (object)rocketId + "|" + (object)Session.CharacterInfo.RocketPattern + "|0"
                 ), Session);
 
-                Session.SendData(PacketComposer.Compose("A", "CLD|ROK|2"));
                 Session.CharacterInfo.LastRocketShotType = rocketId;
 
-                if (rocketId == 10)
+                if (isManualDcr250)
                 {
                     Session.CharacterInfo.LastDcr250 = UnixTimestamp.GetCurrent();
                     Session.SendData(PacketComposer.Compose("A", "CLD|DCR|240"));
                 }
+                else
+                {
+                    Session.SendData(PacketComposer.Compose("A", "CLD|ROK|2"));
+                    Session.CharacterInfo.LastRocket = UnixTimestamp.GetCurrent();
+                }
 
-                Session.CharacterInfo.RocketAttackTimer = new System.Threading.Timer(
+                RocketAttackContext context = new RocketAttackContext();
+                context.Attacker = Session;
+                context.MapId = Session.CurrentMapId;
+                context.TargetId = referenceObject.Id;
+                context.TargetIsNpc = true;
+                context.TargetSpawnSeq = referenceObject.SpawnSeq;
+                context.RocketId = rocketId;
+                context.Timer = new System.Threading.Timer(
                     new TimerCallback(Fight.EffectRocket),
-                    (object)Session,
+                    (object)context,
                     1000,
                     System.Threading.Timeout.Infinite
                 );
-
-                Session.CharacterInfo.LastRocket = UnixTimestamp.GetCurrent();
+                Session.CharacterInfo.RocketAttackTimer = context.Timer;
             }
             else
             {
@@ -2823,23 +2847,33 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.CharacterId.ToString() + "|" + (object)sessionByCharacterId.CharacterId + "|H|" + (object)rocketId + "|" + (object)Session.CharacterInfo.RocketPattern + "|0"
                 ));
 
-                Session.SendData(PacketComposer.Compose("A", "CLD|ROK|2"));
                 Session.CharacterInfo.LastRocketShotType = rocketId;
 
-                if (rocketId == 10)
+                if (isManualDcr250)
                 {
                     Session.CharacterInfo.LastDcr250 = UnixTimestamp.GetCurrent();
                     Session.SendData(PacketComposer.Compose("A", "CLD|DCR|240"));
                 }
+                else
+                {
+                    Session.SendData(PacketComposer.Compose("A", "CLD|ROK|2"));
+                    Session.CharacterInfo.LastRocket = UnixTimestamp.GetCurrent();
+                }
 
-                Session.CharacterInfo.RocketAttackTimer = new System.Threading.Timer(
+                RocketAttackContext context = new RocketAttackContext();
+                context.Attacker = Session;
+                context.MapId = Session.CurrentMapId;
+                context.TargetId = sessionByCharacterId.CharacterId;
+                context.TargetIsNpc = false;
+                context.TargetSpawnSeq = 0;
+                context.RocketId = rocketId;
+                context.Timer = new System.Threading.Timer(
                     new TimerCallback(Fight.EffectRocket),
-                    (object)Session,
+                    (object)context,
                     1000,
                     System.Threading.Timeout.Infinite
                 );
-
-                Session.CharacterInfo.LastRocket = UnixTimestamp.GetCurrent();
+                Session.CharacterInfo.RocketAttackTimer = context.Timer;
             }
         }
 
@@ -2847,13 +2881,22 @@ namespace OrbitReborn_Emulator.Game.Handlers
         {
             try
             {
-                Session session = (Session)state;
-                if (session == null || session.CharacterInfo == null)
+                RocketAttackContext context = state as RocketAttackContext;
+                Session session = context != null ? context.Attacker : (Session)state;
+                if (session == null || session.CharacterInfo == null || !session.Authenticated)
                     return;
 
                 try
                 {
-                    if (session.CharacterInfo.RocketAttackTimer != null)
+                    if (context != null && context.Timer != null)
+                    {
+                        System.Threading.Timer timer = context.Timer;
+                        timer.Dispose();
+                        context.Timer = null;
+                        if (session.CharacterInfo.RocketAttackTimer == timer)
+                            session.CharacterInfo.RocketAttackTimer = null;
+                    }
+                    else if (session.CharacterInfo.RocketAttackTimer != null)
                     {
                         session.CharacterInfo.RocketAttackTimer.Dispose();
                         session.CharacterInfo.RocketAttackTimer = null;
@@ -2863,11 +2906,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                 }
 
-                MapInstance instanceByMapId = MapManager.GetInstanceByMapId(session.CurrentMapId);
+                int mapId = context != null ? context.MapId : session.CurrentMapId;
+                if (session.CurrentMapId != mapId)
+                    return;
+
+                MapInstance instanceByMapId = MapManager.GetInstanceByMapId(mapId);
                 if (instanceByMapId == null)
                     return;
 
-                int rocketId = session.CharacterInfo.LastRocketShotType;
+                int rocketId = context != null ? context.RocketId : session.CharacterInfo.LastRocketShotType;
                 if (rocketId <= 0)
                     rocketId = session.CharacterInfo.SelectedRocket;
 
@@ -2880,17 +2927,19 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 else
                     damage = Math.Max(0, baseDamage + rng.Next(-200, 200));
 
-                MapActor actorNpc = instanceByMapId.GetActorByReferenceId(session.CharacterInfo.SelectedPlayerRocket, MapActorType.AiBot);
+                int targetId = context != null ? context.TargetId : session.CharacterInfo.SelectedPlayerRocket;
+                int targetSpawnSeq = context != null ? context.TargetSpawnSeq : session.CharacterInfo.SelectedPlayerRocketSpawnSeq;
+
+                MapActor actorNpc = context == null || context.TargetIsNpc
+                    ? instanceByMapId.GetActorByReferenceId(targetId, MapActorType.AiBot)
+                    : null;
                 if (actorNpc != null)
                 {
                     Npc npc = (Npc)actorNpc.ReferenceObject;
                     if (npc == null || npc.IsDestroying || !CanSessionAttackNpc(session, npc))
                         return;
 
-                    if (npc.SpawnSeq != session.CharacterInfo.SelectedPlayerRocketSpawnSeq)
-                        return;
-
-                    if (npc.SpawnSeq != session.CharacterInfo.SelectedPlayerRocketSpawnSeq)
+                    if (npc.SpawnSeq != targetSpawnSeq)
                         return;
 
                     if (session.CharacterInfo.LabInfos != null && session.CharacterInfo.LabInfos.Rocket[1] > 0)
@@ -2924,7 +2973,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 }
 
-                MapActor actorPlayer = instanceByMapId.GetActorByReferenceId(session.CharacterInfo.SelectedPlayerRocket, MapActorType.UserCharacter);
+                MapActor actorPlayer = context == null || !context.TargetIsNpc
+                    ? instanceByMapId.GetActorByReferenceId(targetId, MapActorType.UserCharacter)
+                    : null;
                 if (actorPlayer == null)
                     return;
 
