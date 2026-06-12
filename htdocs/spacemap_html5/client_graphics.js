@@ -3068,7 +3068,7 @@ function flashResolveLightningEffectPlacement(centerX, centerY, shipId, frameInd
     if (!isMoving) return null;
 
     const entityScale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
-    const rotation = (typeof angleRad === "number" ? angleRad : 0) + Math.PI;
+    const rotation = typeof angleRad === "number" ? angleRad : 0;
     let drawX = centerX;
     let drawY = centerY;
 
