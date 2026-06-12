@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : lun. 08 juin 2026 à 03:30
+-- Généré le : ven. 12 juin 2026 à 21:51
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.2.12
 
@@ -111,7 +111,8 @@ INSERT INTO `auction_items` (`id`, `code`, `name`, `category`, `description`, `i
 (30, 'shield_booster_1h', 'Shield Booster', 'Boosters', '+25% Shield for 5 hours.', 'img/sh.png', 'booster', 'booster_shd_time', 5, 50000, 20000000, 1, 1, 720, '2026-04-25 13:02:15'),
 (31, 'leonov', 'Leonov', 'Ships', 'Ship reward. It will be equipped on win.', 'img/shop/3.png', 'ship', '3', 1, 9000, 3600000, 1, 1, 800, '2026-04-24 22:35:23'),
 (32, 'vengeance', 'Vengeance', 'Ships', 'Ship reward. It will be equipped on win.', 'img/shop/8.png', 'ship', '8', 1, 30000, 12000000, 1, 1, 810, '2026-04-24 22:35:23'),
-(33, 'goliath', 'Goliath', 'Ships', 'Ship reward. It will be equipped on win.', 'img/shop/10.png', 'ship', '10', 1, 80000, 32000000, 1, 1, 820, '2026-04-24 22:35:23');
+(33, 'goliath', 'Goliath', 'Ships', 'Ship reward. It will be equipped on win.', 'img/shop/10.png', 'ship', '10', 1, 80000, 32000000, 1, 1, 820, '2026-04-24 22:35:23'),
+(2132, 'promerium_2000', 'Promerium', 'Resources', 'Lot of 2,000 Promerium ore.', 'img/items/promerium.png', 'cargo_ore', 'promerium', 2000, 0, 3000000, 1, 1, 520, '2026-06-11 16:33:42');
 
 -- --------------------------------------------------------
 
@@ -333,7 +334,41 @@ INSERT INTO `auction_lots` (`id`, `round_id`, `auction_item_id`, `starting_bid_c
 (525, 6, 30, 20000000, 1, 20000000, NULL, 1, '2026-05-23 21:27:36'),
 (526, 6, 31, 3600000, 1, 3600000, NULL, 1, '2026-05-23 21:27:36'),
 (527, 6, 32, 12000000, 1, 12000000, NULL, 1, '2026-05-23 21:27:36'),
-(528, 6, 33, 32000000, 1, 32000000, NULL, 1, '2026-05-23 21:27:36');
+(528, 6, 33, 32000000, 1, 32000000, NULL, 1, '2026-05-23 21:27:36'),
+(529, 7, 1, 4000000, 1, 4000000, NULL, 1, '2026-06-11 19:01:53'),
+(530, 7, 2, 4000000, 1, 4000000, NULL, 1, '2026-06-11 19:01:53'),
+(531, 7, 3, 800000, 1, 800000, NULL, 1, '2026-06-11 19:01:53'),
+(532, 7, 4, 6000000, 1, 6000000, NULL, 1, '2026-06-11 19:01:53'),
+(533, 7, 5, 6000000, 1, 6000000, NULL, 1, '2026-06-11 19:01:53'),
+(534, 7, 6, 6000000, 1, 6000000, NULL, 1, '2026-06-11 19:01:53'),
+(535, 7, 7, 250000000, 1, 250000000, NULL, 1, '2026-06-11 19:01:53'),
+(536, 7, 8, 1200000, 1, 1200000, NULL, 1, '2026-06-11 19:01:53'),
+(537, 7, 9, 1200000, 1, 1200000, NULL, 1, '2026-06-11 19:01:53'),
+(538, 7, 10, 6000000, 1, 6000000, NULL, 1, '2026-06-11 19:01:53'),
+(539, 7, 11, 2000000, 1, 2000000, NULL, 1, '2026-06-11 19:01:53'),
+(540, 7, 12, 2000000, 1, 2000000, NULL, 1, '2026-06-11 19:01:53'),
+(541, 7, 13, 12000000, 1, 12000000, NULL, 1, '2026-06-11 19:01:53'),
+(542, 7, 14, 10000000, 1, 10000000, NULL, 1, '2026-06-11 19:01:53'),
+(543, 7, 15, 4000000, 1, 4000000, NULL, 1, '2026-06-11 19:01:53'),
+(544, 7, 16, 4000000, 1, 4000000, NULL, 1, '2026-06-11 19:01:53'),
+(545, 7, 17, 5000000, 1, 5000000, NULL, 1, '2026-06-11 19:01:53'),
+(546, 7, 18, 60000, 1, 60000, NULL, 1, '2026-06-11 19:01:53'),
+(547, 7, 19, 2800000, 1, 2800000, NULL, 1, '2026-06-11 19:01:53'),
+(548, 7, 20, 20000000, 1, 20000000, NULL, 1, '2026-06-11 19:01:53'),
+(549, 7, 21, 40000000, 1, 40000000, NULL, 1, '2026-06-11 19:01:53'),
+(550, 7, 22, 40000000, 1, 40000000, NULL, 1, '2026-06-11 19:01:53'),
+(551, 7, 23, 100000000, 1, 100000000, NULL, 1, '2026-06-11 19:01:53'),
+(552, 7, 24, 100000000, 1, 100000000, NULL, 1, '2026-06-11 19:01:53'),
+(553, 7, 25, 100000000, 1, 100000000, NULL, 1, '2026-06-11 19:01:53'),
+(554, 7, 26, 100000000, 1, 100000000, NULL, 1, '2026-06-11 19:01:53'),
+(555, 7, 27, 100000000, 1, 100000000, NULL, 1, '2026-06-11 19:01:53'),
+(556, 7, 28, 20000000, 1, 20000000, NULL, 1, '2026-06-11 19:01:53'),
+(557, 7, 29, 20000000, 1, 20000000, NULL, 1, '2026-06-11 19:01:53'),
+(558, 7, 30, 20000000, 1, 20000000, NULL, 1, '2026-06-11 19:01:53'),
+(559, 7, 31, 3600000, 1, 3600000, NULL, 1, '2026-06-11 19:01:53'),
+(560, 7, 32, 12000000, 1, 12000000, NULL, 1, '2026-06-11 19:01:53'),
+(561, 7, 33, 32000000, 1, 32000000, NULL, 1, '2026-06-11 19:01:53'),
+(581, 7, 2132, 3000000, 1, 3000000, NULL, 1, '2026-06-11 19:01:53');
 
 -- --------------------------------------------------------
 
@@ -362,7 +397,8 @@ INSERT INTO `auction_rounds` (`id`, `round_key`, `starts_at`, `ends_at`, `daily_
 (3, '20260426-2', '2026-04-26 18:00:00', '2026-04-26 19:00:00', 2, 'closed', '2026-04-26 18:11:34', '2026-04-26 19:01:49'),
 (4, '20260426-3', '2026-04-26 22:00:00', '2026-04-26 23:00:00', 3, 'closed', '2026-04-26 22:01:50', '2026-04-27 01:43:29'),
 (5, '20260428-1', '2026-04-28 12:00:00', '2026-04-28 13:00:00', 1, 'closed', '2026-04-28 12:21:31', '2026-05-08 04:14:36'),
-(6, '20260523-1', '2026-05-23 12:00:00', '2026-05-23 13:00:00', 1, 'closed', '2026-05-23 12:33:57', '2026-05-23 21:27:36');
+(6, '20260523-1', '2026-05-23 12:00:00', '2026-05-23 13:00:00', 1, 'closed', '2026-05-23 12:33:57', '2026-05-23 21:27:36'),
+(7, '20260611-2', '2026-06-11 18:00:00', '2026-06-11 19:00:00', 2, 'closed', '2026-06-11 18:01:53', '2026-06-11 19:01:53');
 
 -- --------------------------------------------------------
 
@@ -755,6 +791,19 @@ CREATE TABLE `drone_design_equipped` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Déchargement des données de la table `drone_design_equipped`
+--
+
+INSERT INTO `drone_design_equipped` (`drone_id`, `design_item_id`, `updated_at`) VALUES
+(1, 9001, '2026-06-12 10:25:01'),
+(2, 9001, '2026-06-12 10:25:01'),
+(3, 9001, '2026-06-12 10:25:01'),
+(4, 9001, '2026-06-12 10:25:01'),
+(5, 9001, '2026-06-12 10:25:01'),
+(6, 9001, '2026-06-12 10:25:01'),
+(7, 9001, '2026-06-12 10:25:01');
+
 -- --------------------------------------------------------
 
 --
@@ -775,8 +824,8 @@ CREATE TABLE `drone_slot` (
 INSERT INTO `drone_slot` (`id`, `drone_id`, `slot_index`, `item_id`) VALUES
 (1, 1, 0, 2),
 (2, 1, 1, 2),
-(3, 2, 0, 2),
-(4, 2, 1, 2),
+(3, 2, 0, 1),
+(4, 2, 1, 1),
 (5, 3, 0, 1),
 (6, 3, 1, 1),
 (7, 4, 0, 1),
@@ -806,14 +855,14 @@ CREATE TABLE `drone_slot_config` (
 --
 
 INSERT INTO `drone_slot_config` (`drone_id`, `config`, `slot_index`, `item_id`) VALUES
-(1, 'A', 0, 1),
-(1, 'A', 1, 1),
+(1, 'A', 0, 2),
+(1, 'A', 1, 2),
 (1, 'B', 0, 2),
 (1, 'B', 1, 2),
-(2, 'A', 0, 1),
-(2, 'A', 1, 1),
-(2, 'B', 0, 2),
-(2, 'B', 1, 2),
+(2, 'A', 0, 2),
+(2, 'A', 1, 2),
+(2, 'B', 0, 1),
+(2, 'B', 1, 1),
 (3, 'A', 0, 1),
 (3, 'A', 1, 1),
 (3, 'B', 0, 1),
@@ -1050,7 +1099,7 @@ CREATE TABLE `player_cargo` (
 --
 
 INSERT INTO `player_cargo` (`id`, `prometium`, `endurium`, `terbium`, `xenomit`, `prometid`, `duranium`, `promerium`, `palladium`, `seprom`) VALUES
-(1, 15, 33, 1, 15607, 1, 3, 2227, 0, 720),
+(1, 198, 1, 0, 16546, 19, 7, 7, 0, 0),
 (2, 78, 0, 0, 2, 2, 0, 0, 0, 0),
 (3, 30, 37, 0, 0, 2, 0, 0, 0, 0),
 (4, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -1076,7 +1125,7 @@ CREATE TABLE `player_config` (
 --
 
 INSERT INTO `player_config` (`player_id`, `damage1`, `shield1`, `speed1`, `damage2`, `shield2`, `speed2`) VALUES
-(1, 3750, 170000, 300, 3750, 190000, 300),
+(1, 2868, 60000, 480, 3552, 120000, 380),
 (2, 5, 5, 5, 5, 5, 5),
 (3, 5, 5, 5, 5, 5, 5),
 (4, 5, 5, 5, 5, 5, 5);
@@ -1109,6 +1158,7 @@ CREATE TABLE `player_designs` (
 --
 
 INSERT INTO `player_designs` (`id`, `player_id`, `design_id`) VALUES
+(3, 1, 18),
 (2, 1, 66),
 (1, 1, 67);
 
@@ -1163,6 +1213,7 @@ INSERT INTO `player_inventory` (`player_id`, `item_id`, `qty`) VALUES
 (1, 20, 1),
 (1, 21, 1),
 (1, 39, 1),
+(1, 9001, 8),
 (4, 3, 8);
 
 -- --------------------------------------------------------
@@ -1188,7 +1239,7 @@ CREATE TABLE `player_reff` (
 --
 
 INSERT INTO `player_reff` (`id`, `laser0`, `laser1`, `rocket0`, `rocket1`, `speed0`, `speed1`, `shield0`, `shield1`) VALUES
-(1, 14, 110554, 13, 2380, 13, 1780627942, 13, 1795234493),
+(1, 14, 95812, 14, 4453, 13, 1783415926, 13, 1795887288),
 (2, 0, 0, 0, 0, 0, 0, 0, 0),
 (3, 0, 0, 0, 0, 0, 0, 0, 0),
 (4, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -1253,6 +1304,13 @@ CREATE TABLE `player_titles` (
   `revoked_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Déchargement des données de la table `player_titles`
+--
+
+INSERT INTO `player_titles` (`player_id`, `title_key`, `title_scope`, `source`, `unlocked_at`, `expires_at`, `revoked_at`) VALUES
+(1, 'title_402', 'permanent', 'map_29_boss_cubikon_kills', '2026-06-09 01:13:42', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -1271,9 +1329,9 @@ CREATE TABLE `player_title_progress` (
 --
 
 INSERT INTO `player_title_progress` (`player_id`, `progress_key`, `current_amount`, `updated_at`) VALUES
-(1, 'boss_cubikon_map29', 7, '2026-06-02 03:34:36'),
-(1, 'boss_protegit_map29', 16, '2026-06-02 03:35:36'),
-(1, 'uber_npc_map29', 14, '2026-06-02 03:34:39');
+(1, 'boss_cubikon_map29', 25, '2026-06-09 01:13:42'),
+(1, 'boss_protegit_map29', 20, '2026-06-09 12:39:45'),
+(1, 'uber_npc_map29', 76, '2026-06-12 12:27:27');
 
 -- --------------------------------------------------------
 
@@ -1286,6 +1344,13 @@ CREATE TABLE `player_title_selection` (
   `selected_title_key` varchar(32) NOT NULL DEFAULT '',
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `player_title_selection`
+--
+
+INSERT INTO `player_title_selection` (`player_id`, `selected_title_key`, `updated_at`) VALUES
+(1, 'title_402', '2026-06-09 01:13:42');
 
 -- --------------------------------------------------------
 
@@ -1432,7 +1497,7 @@ CREATE TABLE `server_statistics` (
 --
 
 INSERT INTO `server_statistics` (`skey`, `sval`) VALUES
-('active_connections', '0'),
+('active_connections', '1'),
 ('active_EIC', '1'),
 ('active_MMO', '3'),
 ('active_VRU', '0');
@@ -1479,7 +1544,11 @@ INSERT INTO `ship_config` (`id`, `player_id`, `ship_design_id`, `name`, `reactor
 (319, 1, 6, 'A', 120, 6, 8, 2, 0, 0, 0),
 (320, 1, 6, 'B', 120, 6, 8, 2, 0, 0, 0),
 (357, 3, 1, 'A', 120, 1, 1, 1, 0, 0, 0),
-(358, 3, 1, 'B', 120, 1, 1, 1, 0, 0, 0);
+(358, 3, 1, 'B', 120, 1, 1, 1, 0, 0, 0),
+(392, 1, 8, 'A', 120, 10, 10, 2, 0, 0, 0),
+(393, 1, 8, 'B', 120, 10, 10, 2, 0, 0, 0),
+(396, 1, 18, 'A', 120, 10, 10, 2, 0, 0, 0),
+(397, 1, 18, 'B', 120, 10, 10, 2, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -1506,14 +1575,16 @@ CREATE TABLE `ship_config_stats` (
 INSERT INTO `ship_config_stats` (`ship_config_id`, `config`, `lasers_slots`, `gen_slots`, `extras_slots`, `damage_total`, `shield_total`, `speed_total`, `updated_at`) VALUES
 (5, 'A', 15, 15, 3, 4086, 20000, 450, '2026-05-02 23:48:02'),
 (6, 'B', 15, 15, 3, 4392, 150000, 300, '2026-05-02 23:30:19'),
-(11, 'A', 15, 15, 3, 3750, 170000, 300, '2026-06-04 00:35:29'),
-(12, 'B', 15, 15, 3, 3750, 190000, 300, '2026-06-04 00:35:29'),
+(11, 'A', 15, 15, 3, 0, 0, 300, '2026-06-12 10:23:59'),
+(12, 'B', 15, 15, 3, 0, 0, 300, '2026-06-12 10:23:59'),
 (63, 'A', 15, 15, 3, 1800, 20000, 300, '2026-04-16 21:46:50'),
 (64, 'B', 15, 15, 3, 2100, 0, 300, '2026-04-16 21:46:50'),
 (85, 'A', 15, 15, 3, 1800, 50000, 300, '2026-04-17 09:24:23'),
 (86, 'B', 15, 15, 3, 2100, 0, 450, '2026-04-17 11:36:18'),
 (154, 'A', 1, 1, 1, 0, 0, 320, '2026-05-30 19:35:32'),
-(155, 'B', 1, 1, 1, 0, 0, 330, '2026-05-30 19:35:32');
+(155, 'B', 1, 1, 1, 0, 0, 330, '2026-05-30 19:35:32'),
+(396, 'A', 10, 10, 2, 2868, 60000, 480, '2026-06-12 10:24:34'),
+(397, 'B', 10, 10, 2, 3552, 120000, 380, '2026-06-12 10:25:01');
 
 -- --------------------------------------------------------
 
@@ -1556,7 +1627,7 @@ INSERT INTO `ship_design` (`ship_design_id`, `ship_design_nom`, `ship_design_too
 (10, 'Goliath', 'Basic Goliath', 0, 0, 0, 'Goliaths', 256000, 300, 1500, 15, 15, 3, 0, 0),
 (16, 'Adept Vengeance', 'Adept Vengeance', 700000, 1500000000, 0, 'Vengeances', 180000, 380, 1000, 10, 10, 2, 0, 0),
 (17, 'Corsair Vengeance', 'Corsair Vengeance', 700000, 1500000000, 0, 'Vengeances', 180000, 380, 1000, 10, 10, 2, 5, 0),
-(18, 'Lightning', 'Lightning Vengeance', 0, 0, 3, 'Token Designs', 0, 0, 0, 0, 0, 0, 0, 0),
+(18, 'Lightning', 'Lightning Vengeance', 0, 0, 0, 'Token Designs', 180000, 380, 1500, 10, 10, 2, 5, 0),
 (19, 'Jade Goliath', 'Jade Goliath', 1500000, 1500000000, 0, 'Goliaths', 256000, 300, 1500, 15, 15, 3, 0, 0),
 (22, 'Citadel VRU 3', 'Citadel VRU Elite', 1500000, 1500000000, 0, 'Citadels', 0, 0, 0, 0, 0, 0, 0, 0),
 (24, 'Spearhead EIC 2', 'Spearhead EIC Veteran', 1500000, 1500000000, 0, 'Spearheads', 0, 0, 0, 0, 0, 0, 0, 0),
@@ -1809,72 +1880,72 @@ INSERT INTO `ship_slot` (`id`, `ship_config_id`, `row_name`, `slot_index`, `item
 (118, 6, 'extras', 0, 20),
 (119, 6, 'extras', 1, 21),
 (120, 6, 'extras', 2, 39),
-(253, 11, 'lasers', 0, 1),
-(254, 11, 'lasers', 1, 1),
-(255, 11, 'lasers', 2, 1),
-(256, 11, 'lasers', 3, 1),
-(257, 11, 'lasers', 4, 1),
+(253, 11, 'lasers', 0, NULL),
+(254, 11, 'lasers', 1, NULL),
+(255, 11, 'lasers', 2, NULL),
+(256, 11, 'lasers', 3, NULL),
+(257, 11, 'lasers', 4, NULL),
 (258, 11, 'lasers', 5, NULL),
 (259, 11, 'lasers', 6, NULL),
-(260, 11, 'lasers', 7, 1),
-(261, 11, 'lasers', 8, 1),
-(262, 11, 'lasers', 9, 1),
-(263, 11, 'lasers', 10, 1),
-(264, 11, 'lasers', 11, 1),
-(265, 11, 'lasers', 12, 1),
-(266, 11, 'lasers', 13, 1),
-(267, 11, 'lasers', 14, 1),
-(268, 11, 'generators', 0, 2),
-(269, 11, 'generators', 1, 2),
-(270, 11, 'generators', 2, 2),
-(271, 11, 'generators', 3, 2),
-(272, 11, 'generators', 4, 2),
-(273, 11, 'generators', 5, 2),
-(274, 11, 'generators', 6, 2),
-(275, 11, 'generators', 7, 2),
-(276, 11, 'generators', 8, 2),
-(277, 11, 'generators', 9, 2),
-(278, 11, 'generators', 10, 2),
-(279, 11, 'generators', 11, 2),
-(280, 11, 'generators', 12, 2),
-(281, 11, 'generators', 13, 2),
-(282, 11, 'generators', 14, 2),
-(283, 11, 'extras', 0, 21),
-(284, 11, 'extras', 1, 39),
-(285, 11, 'extras', 2, 20),
-(286, 12, 'lasers', 0, 1),
-(287, 12, 'lasers', 1, 1),
-(288, 12, 'lasers', 2, 1),
-(289, 12, 'lasers', 3, 1),
-(290, 12, 'lasers', 4, 1),
-(291, 12, 'lasers', 5, 1),
-(292, 12, 'lasers', 6, 1),
-(293, 12, 'lasers', 7, 1),
-(294, 12, 'lasers', 8, 1),
-(295, 12, 'lasers', 9, 1),
-(296, 12, 'lasers', 10, 1),
-(297, 12, 'lasers', 11, 1),
-(298, 12, 'lasers', 12, 1),
-(299, 12, 'lasers', 13, 1),
-(300, 12, 'lasers', 14, 1),
-(301, 12, 'generators', 0, 2),
-(302, 12, 'generators', 1, 2),
-(303, 12, 'generators', 2, 2),
-(304, 12, 'generators', 3, 2),
-(305, 12, 'generators', 4, 2),
-(306, 12, 'generators', 5, 2),
-(307, 12, 'generators', 6, 2),
-(308, 12, 'generators', 7, 2),
-(309, 12, 'generators', 8, 2),
-(310, 12, 'generators', 9, 2),
-(311, 12, 'generators', 10, 2),
-(312, 12, 'generators', 11, 2),
-(313, 12, 'generators', 12, 2),
-(314, 12, 'generators', 13, 2),
-(315, 12, 'generators', 14, 2),
-(316, 12, 'extras', 0, 20),
-(317, 12, 'extras', 1, 21),
-(318, 12, 'extras', 2, 39),
+(260, 11, 'lasers', 7, NULL),
+(261, 11, 'lasers', 8, NULL),
+(262, 11, 'lasers', 9, NULL),
+(263, 11, 'lasers', 10, NULL),
+(264, 11, 'lasers', 11, NULL),
+(265, 11, 'lasers', 12, NULL),
+(266, 11, 'lasers', 13, NULL),
+(267, 11, 'lasers', 14, NULL),
+(268, 11, 'generators', 0, NULL),
+(269, 11, 'generators', 1, NULL),
+(270, 11, 'generators', 2, NULL),
+(271, 11, 'generators', 3, NULL),
+(272, 11, 'generators', 4, NULL),
+(273, 11, 'generators', 5, NULL),
+(274, 11, 'generators', 6, NULL),
+(275, 11, 'generators', 7, NULL),
+(276, 11, 'generators', 8, NULL),
+(277, 11, 'generators', 9, NULL),
+(278, 11, 'generators', 10, NULL),
+(279, 11, 'generators', 11, NULL),
+(280, 11, 'generators', 12, NULL),
+(281, 11, 'generators', 13, NULL),
+(282, 11, 'generators', 14, NULL),
+(283, 11, 'extras', 0, NULL),
+(284, 11, 'extras', 1, NULL),
+(285, 11, 'extras', 2, NULL),
+(286, 12, 'lasers', 0, NULL),
+(287, 12, 'lasers', 1, NULL),
+(288, 12, 'lasers', 2, NULL),
+(289, 12, 'lasers', 3, NULL),
+(290, 12, 'lasers', 4, NULL),
+(291, 12, 'lasers', 5, NULL),
+(292, 12, 'lasers', 6, NULL),
+(293, 12, 'lasers', 7, NULL),
+(294, 12, 'lasers', 8, NULL),
+(295, 12, 'lasers', 9, NULL),
+(296, 12, 'lasers', 10, NULL),
+(297, 12, 'lasers', 11, NULL),
+(298, 12, 'lasers', 12, NULL),
+(299, 12, 'lasers', 13, NULL),
+(300, 12, 'lasers', 14, NULL),
+(301, 12, 'generators', 0, NULL),
+(302, 12, 'generators', 1, NULL),
+(303, 12, 'generators', 2, NULL),
+(304, 12, 'generators', 3, NULL),
+(305, 12, 'generators', 4, NULL),
+(306, 12, 'generators', 5, NULL),
+(307, 12, 'generators', 6, NULL),
+(308, 12, 'generators', 7, NULL),
+(309, 12, 'generators', 8, NULL),
+(310, 12, 'generators', 9, NULL),
+(311, 12, 'generators', 10, NULL),
+(312, 12, 'generators', 11, NULL),
+(313, 12, 'generators', 12, NULL),
+(314, 12, 'generators', 13, NULL),
+(315, 12, 'generators', 14, NULL),
+(316, 12, 'extras', 0, NULL),
+(317, 12, 'extras', 1, NULL),
+(318, 12, 'extras', 2, NULL),
 (913, 43, 'lasers', 0, NULL),
 (914, 43, 'lasers', 1, NULL),
 (915, 43, 'lasers', 2, NULL),
@@ -2116,7 +2187,119 @@ INSERT INTO `ship_slot` (`id`, `ship_config_id`, `row_name`, `slot_index`, `item
 (3599, 357, 'extras', 0, NULL),
 (3600, 358, 'lasers', 0, NULL),
 (3601, 358, 'generators', 0, NULL),
-(3602, 358, 'extras', 0, NULL);
+(3602, 358, 'extras', 0, NULL),
+(3603, 392, 'lasers', 0, NULL),
+(3604, 392, 'lasers', 1, NULL),
+(3605, 392, 'lasers', 2, NULL),
+(3606, 392, 'lasers', 3, NULL),
+(3607, 392, 'lasers', 4, NULL),
+(3608, 392, 'lasers', 5, NULL),
+(3609, 392, 'lasers', 6, NULL),
+(3610, 392, 'lasers', 7, NULL),
+(3611, 392, 'lasers', 8, NULL),
+(3612, 392, 'lasers', 9, NULL),
+(3613, 392, 'generators', 0, NULL),
+(3614, 392, 'generators', 1, NULL),
+(3615, 392, 'generators', 2, NULL),
+(3616, 392, 'generators', 3, NULL),
+(3617, 392, 'generators', 4, NULL),
+(3618, 392, 'generators', 5, NULL),
+(3619, 392, 'generators', 6, NULL),
+(3620, 392, 'generators', 7, NULL),
+(3621, 392, 'generators', 8, NULL),
+(3622, 392, 'generators', 9, NULL),
+(3623, 392, 'extras', 0, NULL),
+(3624, 392, 'extras', 1, NULL),
+(3625, 393, 'lasers', 0, NULL),
+(3626, 393, 'lasers', 1, NULL),
+(3627, 393, 'lasers', 2, NULL),
+(3628, 393, 'lasers', 3, NULL),
+(3629, 393, 'lasers', 4, NULL),
+(3630, 393, 'lasers', 5, NULL),
+(3631, 393, 'lasers', 6, NULL),
+(3632, 393, 'lasers', 7, NULL),
+(3633, 393, 'lasers', 8, NULL),
+(3634, 393, 'lasers', 9, NULL),
+(3635, 393, 'generators', 0, NULL),
+(3636, 393, 'generators', 1, NULL),
+(3637, 393, 'generators', 2, NULL),
+(3638, 393, 'generators', 3, NULL),
+(3639, 393, 'generators', 4, NULL),
+(3640, 393, 'generators', 5, NULL),
+(3641, 393, 'generators', 6, NULL),
+(3642, 393, 'generators', 7, NULL),
+(3643, 393, 'generators', 8, NULL),
+(3644, 393, 'generators', 9, NULL),
+(3645, 393, 'extras', 0, NULL),
+(3646, 393, 'extras', 1, NULL),
+(3647, 396, 'lasers', 0, 1),
+(3648, 396, 'lasers', 1, 1),
+(3649, 396, 'lasers', 2, 1),
+(3650, 396, 'lasers', 3, 1),
+(3651, 396, 'lasers', 4, 1),
+(3652, 396, 'lasers', 5, 1),
+(3653, 396, 'lasers', 6, 1),
+(3654, 396, 'lasers', 7, 1),
+(3655, 396, 'lasers', 8, 1),
+(3656, 396, 'lasers', 9, 1),
+(3657, 396, 'generators', 0, 4),
+(3658, 396, 'generators', 1, 4),
+(3659, 396, 'generators', 2, 4),
+(3660, 396, 'generators', 3, 4),
+(3661, 396, 'generators', 4, 4),
+(3662, 396, 'generators', 5, 4),
+(3663, 396, 'generators', 6, 4),
+(3664, 396, 'generators', 7, 4),
+(3665, 396, 'generators', 8, 4),
+(3666, 396, 'generators', 9, 4),
+(3667, 396, 'extras', 0, 20),
+(3668, 396, 'extras', 1, 39),
+(3669, 397, 'lasers', 0, 1),
+(3670, 397, 'lasers', 1, 1),
+(3671, 397, 'lasers', 2, 1),
+(3672, 397, 'lasers', 3, 1),
+(3673, 397, 'lasers', 4, 1),
+(3674, 397, 'lasers', 5, 1),
+(3675, 397, 'lasers', 6, 1),
+(3676, 397, 'lasers', 7, 1),
+(3677, 397, 'lasers', 8, 1),
+(3678, 397, 'lasers', 9, 1),
+(3679, 397, 'generators', 0, 2),
+(3680, 397, 'generators', 1, 2),
+(3681, 397, 'generators', 2, 2),
+(3682, 397, 'generators', 3, 2),
+(3683, 397, 'generators', 4, 2),
+(3684, 397, 'generators', 5, 2),
+(3685, 397, 'generators', 6, 2),
+(3686, 397, 'generators', 7, 2),
+(3687, 397, 'generators', 8, 2),
+(3688, 397, 'generators', 9, 2),
+(3689, 397, 'extras', 0, 20),
+(3690, 397, 'extras', 1, 39);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `site_daily_login_claims`
+--
+
+CREATE TABLE `site_daily_login_claims` (
+  `id` int(11) NOT NULL,
+  `player_id` int(11) NOT NULL,
+  `week_key` char(10) NOT NULL,
+  `day_number` tinyint(3) UNSIGNED NOT NULL,
+  `claim_date` date NOT NULL,
+  `claimed_at` datetime NOT NULL,
+  `rewards_json` text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Déchargement des données de la table `site_daily_login_claims`
+--
+
+INSERT INTO `site_daily_login_claims` (`id`, `player_id`, `week_key`, `day_number`, `claim_date`, `claimed_at`, `rewards_json`) VALUES
+(1, 1, '2026-06-08', 1, '2026-06-12', '2026-06-12 01:48:00', '[\"5,000 Uridium\",\"10,000 MCB-25\"]'),
+(2, 3, '2026-06-08', 1, '2026-06-12', '2026-06-12 01:48:40', '[\"5,000 Uridium\",\"10,000 MCB-25\"]');
 
 -- --------------------------------------------------------
 
@@ -2209,7 +2392,17 @@ INSERT INTO `site_player_weekly_missions` (`id`, `player_id`, `mission_id`, `wee
 (20, 3, 2, '2026-W23', 'in_progress', '2026-06-02 02:24:54', NULL),
 (21, 3, 3, '2026-W23', 'in_progress', '2026-06-02 02:24:54', NULL),
 (22, 3, 4, '2026-W23', 'in_progress', '2026-06-02 02:24:54', NULL),
-(23, 3, 5, '2026-W23', 'in_progress', '2026-06-02 02:24:54', NULL);
+(23, 3, 5, '2026-W23', 'in_progress', '2026-06-02 02:24:54', NULL),
+(91, 1, 6, '2026-W24', 'in_progress', '2026-06-08 23:22:43', NULL),
+(92, 1, 7, '2026-W24', 'in_progress', '2026-06-08 23:22:43', NULL),
+(93, 1, 8, '2026-W24', 'in_progress', '2026-06-08 23:22:43', NULL),
+(94, 1, 9, '2026-W24', 'in_progress', '2026-06-08 23:22:43', NULL),
+(95, 1, 10, '2026-W24', 'in_progress', '2026-06-08 23:22:43', NULL),
+(220, 3, 6, '2026-W24', 'in_progress', '2026-06-11 02:36:03', NULL),
+(221, 3, 7, '2026-W24', 'in_progress', '2026-06-11 02:36:03', NULL),
+(222, 3, 8, '2026-W24', 'in_progress', '2026-06-11 02:36:03', NULL),
+(223, 3, 9, '2026-W24', 'in_progress', '2026-06-11 02:36:03', NULL),
+(224, 3, 10, '2026-W24', 'in_progress', '2026-06-11 02:36:03', NULL);
 
 -- --------------------------------------------------------
 
@@ -2251,6 +2444,23 @@ INSERT INTO `site_player_weekly_mission_progress` (`player_id`, `mission_id`, `w
 (1, 4, '2026-W23', 'weekly_npc_kill', '29:Boss Cubikon', 7, '2026-06-02 03:34:36'),
 (1, 4, '2026-W23', 'weekly_npc_kill', '29:Boss Protegit', 16, '2026-06-02 03:35:36'),
 (1, 5, '2026-W23', 'weekly_player_kill', 'eligible_enemy_pilot', 0, '2026-06-01 17:52:47'),
+(1, 6, '2026-W24', 'weekly_npc_kill', '0:Lordakia', 20, '2026-06-12 19:11:36'),
+(1, 6, '2026-W24', 'weekly_npc_kill', '0:Mordon', 0, '2026-06-08 23:22:43'),
+(1, 6, '2026-W24', 'weekly_npc_kill', '0:Saimon', 4, '2026-06-12 19:19:45'),
+(1, 6, '2026-W24', 'weekly_npc_kill', '0:Streuner', 13, '2026-06-12 19:09:34'),
+(1, 7, '2026-W24', 'weekly_npc_kill', '0:Kristallin', 1, '2026-06-09 01:41:07'),
+(1, 7, '2026-W24', 'weekly_npc_kill', '0:Kristallon', 1, '2026-06-09 01:16:06'),
+(1, 7, '2026-W24', 'weekly_npc_kill', '0:Lordakium', 1, '2026-06-08 23:23:06'),
+(1, 7, '2026-W24', 'weekly_npc_kill', '0:Sibelonit', 0, '2026-06-08 23:22:43'),
+(1, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Kristallin', 7, '2026-06-11 12:32:42'),
+(1, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Lordakia', 8, '2026-06-12 12:27:25'),
+(1, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Mordon', 6, '2026-06-10 01:28:21'),
+(1, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Saimon', 8, '2026-06-12 12:27:27'),
+(1, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Sibelon', 2, '2026-06-09 20:03:37'),
+(1, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Streuner', 11, '2026-06-11 01:27:54'),
+(1, 9, '2026-W24', 'weekly_npc_kill', '29:Boss Cubikon', 6, '2026-06-08 23:25:46'),
+(1, 9, '2026-W24', 'weekly_npc_kill', '29:Boss Protegit', 4, '2026-06-09 12:39:45'),
+(1, 10, '2026-W24', 'weekly_player_kill', 'eligible_enemy_pilot', 0, '2026-06-08 23:22:43'),
 (3, 1, '2026-W23', 'weekly_npc_kill', '0:Devolarium', 0, '2026-06-02 02:24:54'),
 (3, 1, '2026-W23', 'weekly_npc_kill', '0:Lordakia', 0, '2026-06-02 02:24:54'),
 (3, 1, '2026-W23', 'weekly_npc_kill', '0:Mordon', 0, '2026-06-02 02:24:54'),
@@ -2269,7 +2479,24 @@ INSERT INTO `site_player_weekly_mission_progress` (`player_id`, `mission_id`, `w
 (3, 3, '2026-W23', 'weekly_npc_kill', '29:Uber Sibelonit', 0, '2026-06-02 02:24:54'),
 (3, 4, '2026-W23', 'weekly_npc_kill', '29:Boss Cubikon', 0, '2026-06-02 02:24:54'),
 (3, 4, '2026-W23', 'weekly_npc_kill', '29:Boss Protegit', 0, '2026-06-02 02:24:54'),
-(3, 5, '2026-W23', 'weekly_player_kill', 'eligible_enemy_pilot', 0, '2026-06-02 02:24:54');
+(3, 5, '2026-W23', 'weekly_player_kill', 'eligible_enemy_pilot', 0, '2026-06-02 02:24:54'),
+(3, 6, '2026-W24', 'weekly_npc_kill', '0:Lordakia', 0, '2026-06-11 02:36:03'),
+(3, 6, '2026-W24', 'weekly_npc_kill', '0:Mordon', 0, '2026-06-11 02:36:03'),
+(3, 6, '2026-W24', 'weekly_npc_kill', '0:Saimon', 0, '2026-06-11 02:36:03'),
+(3, 6, '2026-W24', 'weekly_npc_kill', '0:Streuner', 0, '2026-06-11 02:36:03'),
+(3, 7, '2026-W24', 'weekly_npc_kill', '0:Kristallin', 0, '2026-06-11 02:36:03'),
+(3, 7, '2026-W24', 'weekly_npc_kill', '0:Kristallon', 0, '2026-06-11 02:36:03'),
+(3, 7, '2026-W24', 'weekly_npc_kill', '0:Lordakium', 0, '2026-06-11 02:36:03'),
+(3, 7, '2026-W24', 'weekly_npc_kill', '0:Sibelonit', 0, '2026-06-11 02:36:03'),
+(3, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Kristallin', 0, '2026-06-11 02:36:03'),
+(3, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Lordakia', 0, '2026-06-11 02:36:03'),
+(3, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Mordon', 0, '2026-06-11 02:36:03'),
+(3, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Saimon', 0, '2026-06-11 02:36:03'),
+(3, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Sibelon', 0, '2026-06-11 02:36:03'),
+(3, 8, '2026-W24', 'weekly_npc_kill', '29:Uber Streuner', 0, '2026-06-11 02:36:03'),
+(3, 9, '2026-W24', 'weekly_npc_kill', '29:Boss Cubikon', 0, '2026-06-11 02:36:03'),
+(3, 9, '2026-W24', 'weekly_npc_kill', '29:Boss Protegit', 0, '2026-06-11 02:36:03'),
+(3, 10, '2026-W24', 'weekly_player_kill', 'eligible_enemy_pilot', 0, '2026-06-11 02:36:03');
 
 -- --------------------------------------------------------
 
@@ -2322,7 +2549,10 @@ INSERT INTO `site_purchase_log` (`id`, `player_id`, `source`, `item_code`, `item
 (24, 1, 'shop_ships', 'ship6', 'Piranha', 1, 'credits', 80000, 'success', 'Transaction successful! Piranha equipped. Previous equipment moved to inventory.', '2026-05-26 03:46:17'),
 (25, 1, 'shop_ships', 'ship1', 'Phoenix', 1, 'credits', 0, 'success', 'Transaction successful! Phoenix equipped. Previous equipment moved to inventory.', '2026-05-26 03:47:01'),
 (26, 1, 'shop_ships', 'ship10', 'Goliath', 1, 'uridium', 80000, 'success', 'Transaction successful! Goliath equipped. Previous equipment moved to inventory.', '2026-05-30 21:35:32'),
-(27, 1, 'shop_boosters', 'damage_booster', 'Damage Booster', 1, 'uridium', 10000, 'success', 'Purchase success !', '2026-05-30 23:06:04');
+(27, 1, 'shop_boosters', 'damage_booster', 'Damage Booster', 1, 'uridium', 10000, 'success', 'Purchase success !', '2026-05-30 23:06:04'),
+(28, 1, 'shop_ammo', 'ish01', 'ISH01', 100, 'uridium', 40000, 'success', 'Purchased 100 unit(s) of ISH01', '2026-06-11 12:30:31'),
+(29, 1, 'shop_designs', 'design18', 'Vengeance Lightning', 1, 'uridium', 100000, 'success', 'Congratulations! You purchased the Vengeance Lightning. You can equip it in the Configurations tab.', '2026-06-12 12:23:46'),
+(30, 1, 'shop_ships', 'ship8', 'Vengeance', 1, 'uridium', 30000, 'success', 'Transaction successful! Vengeance equipped. Previous equipment moved to inventory.', '2026-06-12 12:23:59');
 
 -- --------------------------------------------------------
 
@@ -2454,102 +2684,102 @@ CREATE TABLE `site_quest_objectives` (
 --
 
 INSERT INTO `site_quest_objectives` (`id`, `quest_id`, `objective_type`, `target_key`, `required_amount`, `sort_order`) VALUES
-(93673, 1, 'ore_have', 'Prometium', 8, 10),
-(93674, 1, 'npc_kill', 'Streuner', 6, 20),
-(93675, 2, 'ore_have', 'Prometium', 20, 10),
-(93676, 3, 'ore_have', 'Prometium', 40, 10),
-(93677, 4, 'ore_have', 'Prometium', 80, 10),
-(93678, 5, 'ore_have', 'Endurium', 30, 10),
-(93679, 6, 'ore_have', 'Endurium', 60, 10),
-(93680, 7, 'ore_have', 'Endurium', 120, 10),
-(93681, 8, 'ore_have', 'Terbium', 40, 10),
-(93682, 9, 'ore_have', 'Terbium', 80, 10),
-(93683, 10, 'npc_kill', 'Streuner', 5, 10),
-(93684, 11, 'npc_kill', 'Streuner', 10, 10),
-(93685, 12, 'npc_kill', 'Streuner', 20, 10),
-(93686, 13, 'npc_kill', 'Lordakia', 10, 10),
-(93687, 14, 'npc_kill', 'Lordakia', 20, 10),
-(93688, 15, 'npc_kill', 'Lordakia', 40, 10),
-(93689, 16, 'npc_kill', 'Mordon', 10, 10),
-(93690, 17, 'npc_kill', 'Mordon', 20, 10),
-(93691, 18, 'npc_kill', 'Devolarium', 3, 10),
-(93692, 19, 'npc_kill', 'Saimon', 20, 10),
-(93693, 20, 'npc_kill', 'Saimon', 40, 10),
-(93694, 89104, 'npc_kill', 'Devolarium', 1, 10),
-(93695, 89105, 'npc_kill', 'Saimon', 3, 10),
-(93696, 89105, 'npc_kill', 'Devolarium', 1, 20),
-(93697, 89105, 'npc_kill', 'Mordon', 1, 30),
-(93698, 89106, 'npc_kill', 'Lordakia', 10, 10),
-(93699, 89106, 'npc_kill', 'Devolarium', 2, 20),
-(93700, 89107, 'npc_kill', 'Streuner', 1, 10),
-(93701, 89107, 'npc_kill', 'Lordakia', 1, 20),
-(93702, 89107, 'npc_kill', 'Saimon', 1, 30),
-(93703, 89107, 'npc_kill', 'Mordon', 1, 40),
-(93704, 89107, 'npc_kill', 'Devolarium', 1, 50),
-(93705, 89107, 'npc_kill', 'Sibelon', 1, 60),
-(93706, 89107, 'npc_kill', 'Sibelonit', 1, 70),
-(93707, 89107, 'npc_kill', 'Lordakium', 1, 80),
-(93708, 89107, 'npc_kill', 'Kristallin', 1, 90),
-(93709, 89107, 'npc_kill', 'Kristallon', 1, 100),
-(93710, 89107, 'npc_kill', 'Cubikon', 1, 110),
-(93711, 89108, 'npc_kill', 'Sibelonit', 10, 10),
-(93712, 89108, 'npc_kill', 'Sibelon', 3, 20),
-(93713, 89109, 'npc_kill', 'Lordakium', 5, 10),
-(93714, 89110, 'npc_kill', 'Kristallin', 20, 10),
-(93715, 89110, 'npc_kill', 'Kristallon', 5, 20),
-(93716, 89111, 'npc_kill', 'Cubikon', 1, 10),
-(93717, 89112, 'npc_kill', 'StreuneR_X8', 25, 10),
-(93718, 89113, 'npc_kill', 'Streuner', 15, 10),
-(93719, 89113, 'npc_kill', 'Lordakia', 15, 20),
-(93720, 89113, 'npc_kill', 'Saimon', 10, 30),
-(93721, 89113, 'npc_kill', 'Mordon', 5, 40),
-(93722, 89184, 'ore_have', 'Prometium', 300, 10),
-(93723, 89186, 'ore_have', 'Prometium', 200, 10),
-(93724, 89187, 'ore_have', 'Endurium', 220, 10),
-(93725, 89188, 'ore_have', 'Terbium', 240, 10),
-(93726, 89189, 'ore_have', 'Terbium', 300, 10),
-(93727, 89190, 'ore_have', 'Terbium', 400, 10),
-(93728, 89185, 'ore_have', 'Terbium', 200, 10),
-(93729, 89159, 'npc_kill', 'Sibelon', 2, 10),
-(93730, 89160, 'npc_kill', 'Sibelon', 4, 10),
-(93731, 89161, 'npc_kill', 'Sibelon', 8, 10),
-(93732, 89162, 'npc_kill', 'Sibelon', 200, 10),
-(93733, 89164, 'npc_kill', 'Sibelonit', 25, 10),
-(93734, 89165, 'npc_kill', 'Sibelonit', 75, 10),
-(93735, 89166, 'npc_kill', 'Sibelonit', 150, 10),
-(93736, 89167, 'npc_kill', 'Sibelonit', 225, 10),
-(93737, 89168, 'npc_kill', 'Sibelonit', 300, 10),
-(93738, 89169, 'npc_kill', 'Lordakium', 10, 10),
-(93739, 89170, 'npc_kill', 'Lordakium', 25, 10),
-(93740, 89171, 'npc_kill', 'Lordakium', 75, 10),
-(93741, 89172, 'npc_kill', 'Lordakium', 150, 10),
-(93742, 89173, 'npc_kill', 'Kristallon', 10, 10),
-(93743, 89174, 'npc_kill', 'Kristallon', 25, 10),
-(93744, 89175, 'npc_kill', 'Kristallon', 75, 10),
-(93745, 89176, 'npc_kill', 'Kristallin', 500, 10),
-(93746, 89177, 'npc_kill', 'Kristallon', 100, 10),
-(93747, 89178, 'npc_kill', 'Kristallon', 150, 10),
-(93748, 89163, 'npc_kill', 'Cubikon', 10, 10),
-(93749, 89179, 'npc_kill', 'StreuneR_X8', 50, 10),
-(93750, 89180, 'npc_kill', 'StreuneR_X8', 150, 10),
-(93751, 89181, 'npc_kill', 'StreuneR_X8', 300, 10),
-(93752, 89182, 'npc_kill', 'StreuneR_X8', 450, 10),
-(93753, 89183, 'npc_kill', 'StreuneR_X8', 600, 10),
-(93754, 581, 'player_kill', 'user_kill', 1, 10),
-(93755, 582, 'player_kill', 'user_kill', 3, 10),
-(93756, 583, 'player_kill', 'user_kill', 5, 10),
-(93757, 584, 'player_kill', 'user_kill', 10, 10),
-(93758, 585, 'player_kill', 'user_kill', 25, 10),
-(93759, 586, 'player_kill', 'user_kill', 50, 10),
-(93760, 587, 'player_kill', 'user_kill', 100, 10),
-(93761, 85611, 'npc_kill', 'Cubikon', 100, 10),
-(93762, 85612, 'galaxy_gate_complete', 'Delta', 10, 10),
-(93763, 85613, 'galaxy_gate_complete', 'Beta', 10, 10),
-(93764, 85614, 'galaxy_gate_complete', 'Alpha', 10, 10),
-(93765, 85615, 'galaxy_gate_complete', 'Gamma', 5, 10),
-(93766, 85616, 'npc_kill', 'Kristallon', 500, 10),
-(93767, 85617, 'npc_kill', 'StreuneR_X8', 400, 10),
-(93768, 85618, 'npc_kill', 'Lordakium', 650, 10);
+(94345, 1, 'ore_have', 'Prometium', 8, 10),
+(94346, 1, 'npc_kill', 'Streuner', 6, 20),
+(94347, 2, 'ore_have', 'Prometium', 20, 10),
+(94348, 3, 'ore_have', 'Prometium', 40, 10),
+(94349, 4, 'ore_have', 'Prometium', 80, 10),
+(94350, 5, 'ore_have', 'Endurium', 30, 10),
+(94351, 6, 'ore_have', 'Endurium', 60, 10),
+(94352, 7, 'ore_have', 'Endurium', 120, 10),
+(94353, 8, 'ore_have', 'Terbium', 40, 10),
+(94354, 9, 'ore_have', 'Terbium', 80, 10),
+(94355, 10, 'npc_kill', 'Streuner', 5, 10),
+(94356, 11, 'npc_kill', 'Streuner', 10, 10),
+(94357, 12, 'npc_kill', 'Streuner', 20, 10),
+(94358, 13, 'npc_kill', 'Lordakia', 10, 10),
+(94359, 14, 'npc_kill', 'Lordakia', 20, 10),
+(94360, 15, 'npc_kill', 'Lordakia', 40, 10),
+(94361, 16, 'npc_kill', 'Mordon', 10, 10),
+(94362, 17, 'npc_kill', 'Mordon', 20, 10),
+(94363, 18, 'npc_kill', 'Devolarium', 3, 10),
+(94364, 19, 'npc_kill', 'Saimon', 20, 10),
+(94365, 20, 'npc_kill', 'Saimon', 40, 10),
+(94366, 89104, 'npc_kill', 'Devolarium', 1, 10),
+(94367, 89105, 'npc_kill', 'Saimon', 3, 10),
+(94368, 89105, 'npc_kill', 'Devolarium', 1, 20),
+(94369, 89105, 'npc_kill', 'Mordon', 1, 30),
+(94370, 89106, 'npc_kill', 'Lordakia', 10, 10),
+(94371, 89106, 'npc_kill', 'Devolarium', 2, 20),
+(94372, 89107, 'npc_kill', 'Streuner', 1, 10),
+(94373, 89107, 'npc_kill', 'Lordakia', 1, 20),
+(94374, 89107, 'npc_kill', 'Saimon', 1, 30),
+(94375, 89107, 'npc_kill', 'Mordon', 1, 40),
+(94376, 89107, 'npc_kill', 'Devolarium', 1, 50),
+(94377, 89107, 'npc_kill', 'Sibelon', 1, 60),
+(94378, 89107, 'npc_kill', 'Sibelonit', 1, 70),
+(94379, 89107, 'npc_kill', 'Lordakium', 1, 80),
+(94380, 89107, 'npc_kill', 'Kristallin', 1, 90),
+(94381, 89107, 'npc_kill', 'Kristallon', 1, 100),
+(94382, 89107, 'npc_kill', 'Cubikon', 1, 110),
+(94383, 89108, 'npc_kill', 'Sibelonit', 10, 10),
+(94384, 89108, 'npc_kill', 'Sibelon', 3, 20),
+(94385, 89109, 'npc_kill', 'Lordakium', 5, 10),
+(94386, 89110, 'npc_kill', 'Kristallin', 20, 10),
+(94387, 89110, 'npc_kill', 'Kristallon', 5, 20),
+(94388, 89111, 'npc_kill', 'Cubikon', 1, 10),
+(94389, 89112, 'npc_kill', 'StreuneR_X8', 25, 10),
+(94390, 89113, 'npc_kill', 'Streuner', 15, 10),
+(94391, 89113, 'npc_kill', 'Lordakia', 15, 20),
+(94392, 89113, 'npc_kill', 'Saimon', 10, 30),
+(94393, 89113, 'npc_kill', 'Mordon', 5, 40),
+(94394, 89184, 'ore_have', 'Prometium', 300, 10),
+(94395, 89186, 'ore_have', 'Prometium', 200, 10),
+(94396, 89187, 'ore_have', 'Endurium', 220, 10),
+(94397, 89188, 'ore_have', 'Terbium', 240, 10),
+(94398, 89189, 'ore_have', 'Terbium', 300, 10),
+(94399, 89190, 'ore_have', 'Terbium', 400, 10),
+(94400, 89185, 'ore_have', 'Terbium', 200, 10),
+(94401, 89159, 'npc_kill', 'Sibelon', 2, 10),
+(94402, 89160, 'npc_kill', 'Sibelon', 4, 10),
+(94403, 89161, 'npc_kill', 'Sibelon', 8, 10),
+(94404, 89162, 'npc_kill', 'Sibelon', 200, 10),
+(94405, 89164, 'npc_kill', 'Sibelonit', 25, 10),
+(94406, 89165, 'npc_kill', 'Sibelonit', 75, 10),
+(94407, 89166, 'npc_kill', 'Sibelonit', 150, 10),
+(94408, 89167, 'npc_kill', 'Sibelonit', 225, 10),
+(94409, 89168, 'npc_kill', 'Sibelonit', 300, 10),
+(94410, 89169, 'npc_kill', 'Lordakium', 10, 10),
+(94411, 89170, 'npc_kill', 'Lordakium', 25, 10),
+(94412, 89171, 'npc_kill', 'Lordakium', 75, 10),
+(94413, 89172, 'npc_kill', 'Lordakium', 150, 10),
+(94414, 89173, 'npc_kill', 'Kristallon', 10, 10),
+(94415, 89174, 'npc_kill', 'Kristallon', 25, 10),
+(94416, 89175, 'npc_kill', 'Kristallon', 75, 10),
+(94417, 89176, 'npc_kill', 'Kristallin', 500, 10),
+(94418, 89177, 'npc_kill', 'Kristallon', 100, 10),
+(94419, 89178, 'npc_kill', 'Kristallon', 150, 10),
+(94420, 89163, 'npc_kill', 'Cubikon', 10, 10),
+(94421, 89179, 'npc_kill', 'StreuneR_X8', 50, 10),
+(94422, 89180, 'npc_kill', 'StreuneR_X8', 150, 10),
+(94423, 89181, 'npc_kill', 'StreuneR_X8', 300, 10),
+(94424, 89182, 'npc_kill', 'StreuneR_X8', 450, 10),
+(94425, 89183, 'npc_kill', 'StreuneR_X8', 600, 10),
+(94426, 581, 'player_kill', 'user_kill', 1, 10),
+(94427, 582, 'player_kill', 'user_kill', 3, 10),
+(94428, 583, 'player_kill', 'user_kill', 5, 10),
+(94429, 584, 'player_kill', 'user_kill', 10, 10),
+(94430, 585, 'player_kill', 'user_kill', 25, 10),
+(94431, 586, 'player_kill', 'user_kill', 50, 10),
+(94432, 587, 'player_kill', 'user_kill', 100, 10),
+(94433, 85611, 'npc_kill', 'Cubikon', 100, 10),
+(94434, 85612, 'galaxy_gate_complete', 'Delta', 10, 10),
+(94435, 85613, 'galaxy_gate_complete', 'Beta', 10, 10),
+(94436, 85614, 'galaxy_gate_complete', 'Alpha', 10, 10),
+(94437, 85615, 'galaxy_gate_complete', 'Gamma', 5, 10),
+(94438, 85616, 'npc_kill', 'Kristallon', 500, 10),
+(94439, 85617, 'npc_kill', 'StreuneR_X8', 400, 10),
+(94440, 85618, 'npc_kill', 'Lordakium', 650, 10);
 
 -- --------------------------------------------------------
 
@@ -2570,7 +2800,7 @@ CREATE TABLE `site_quest_ore_counts` (
 --
 
 INSERT INTO `site_quest_ore_counts` (`player_id`, `prometium`, `endurium`, `terbium`, `updated_at`) VALUES
-(1, 44128, 44136, 43293, '2026-06-06 11:40:10'),
+(1, 60688, 57286, 56233, '2026-06-12 19:11:42'),
 (3, 20, 20, 0, '2026-05-30 23:44:14');
 
 -- --------------------------------------------------------
@@ -2730,7 +2960,7 @@ CREATE TABLE `title_runtime_state` (
 --
 
 INSERT INTO `title_runtime_state` (`state_key`, `title_key`, `holder_type`, `holder_player_id`, `holder_npc_id`, `holder_map_id`, `assigned_at`, `expires_at`, `updated_at`) VALUES
-('most_wanted', 'title_14', 'none', 0, 0, 0, NULL, NULL, '2026-06-06 13:22:56');
+('most_wanted', 'title_14', 'npc', 0, -768, 29, '2026-06-12 19:47:37', NULL, '2026-06-12 21:47:37');
 
 -- --------------------------------------------------------
 
@@ -2818,6 +3048,8 @@ CREATE TABLE `users` (
   `message` text NOT NULL COMMENT 'A message that will be displayed to the user on the CMS if not null',
   `display_ads` tinyint(1) NOT NULL DEFAULT 1,
   `auto_rkt_skill` int(11) NOT NULL DEFAULT 0,
+  `auto_rocketlauncher_skill` int(11) NOT NULL DEFAULT 0,
+  `selected_launcher_rocket` int(11) NOT NULL DEFAULT 7,
   `legend_rankpoints` int(11) DEFAULT 0,
   `canBeginner` int(11) NOT NULL DEFAULT 1,
   `extra_booster` varchar(50) NOT NULL DEFAULT 'nothing',
@@ -2856,11 +3088,11 @@ CREATE TABLE `users` (
 -- Déchargement des données de la table `users`
 --
 
-INSERT INTO `users` (`id`, `sid`, `username`, `game_title`, `password`, `email`, `birthday`, `AuthTicket`, `ip`, `online`, `oldlocx`, `oldlocy`, `locx`, `locy`, `mapid`, `shipid`, `grade`, `factionid`, `clanid`, `clan_grade`, `registerdate`, `lastlogin`, `credits`, `uridium`, `speed`, `current_shield`, `max_shield`, `current_hp`, `max_hp`, `current_cargo`, `max_cargo`, `in_peacezone`, `in_fight`, `in_outofrange`, `in_warningzone`, `connID`, `FightThreadID`, `SelectedPlayer`, `user_kill`, `kill_assists`, `isDestroy`, `active_config`, `cooldown_ISH`, `cooldown_SMB`, `cooldown_ROCKET`, `auto_logout`, `is_ban`, `ban_reason`, `game_resolution`, `is_mod`, `is_admin`, `fat_lasers`, `shield_mechanics`, `drones`, `damages`, `npc_kill`, `pvp_points`, `experience`, `honor`, `level`, `dmg_lvl`, `hp_lvl`, `shd_lvl`, `speed_lvl`, `booster_dmg_time`, `booster_hp_time`, `booster_shd_time`, `booster_npc_time`, `booster_spd_time`, `booty_keys`, `drone_parts`, `apis_built`, `zeus_built`, `skilltree`, `logfiles`, `rankpoints`, `message`, `display_ads`, `auto_rkt_skill`, `legend_rankpoints`, `canBeginner`, `extra_booster`, `last_duel`, `in_fight_until`, `ammo_lcb10`, `ammo_mcb25`, `ammo_mcb50`, `ammo_ucb100`, `ammo_sab50`, `ammo_rsb75`, `ammo_r310`, `ammo_plt2026`, `ammo_plt2021`, `ammo_dcr250`, `ammo_eco10`, `ammo_ubr100`, `ammo_hstrm01`, `gg_multiplier`, `gg_rings`, `ammo_smb01`, `ammo_ish01`, `ammo_emp01`, `config_refresh_pending`, `cooldown_IH`, `cooldown_WS`, `cooldown_PS`, `cooldown_FOR`, `cooldown_SIN`, `cooldown_SB`, `current_shield1`, `current_shield2`) VALUES
-(1, 0, 'lefaucheur', 'title_20', '', '', '', '', '127.0.0.1', 0, 0, 0, 18861, 2974, 17, 67, 23, 1, 0, 0, '2026-04-04 16:54:05', 1780739403.209328, 914703643, 7702126, 300, 0, 190000, 148508, 306000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 2, 22, 0, 0, 0, 0, '', 1, 0, 1, 0, 0, '3/0-3/0-3/0-3/0-3/0-3/0-3/0', 3750, 20239, 0, 611900100, 378530, 17, 0, 10, 0, 0, 1780273184, 1780283985, 1780269587, 0, 0, 0, 0, 0, 0, 'dmg:5/hp:0/rep:3/shd_abs:3/smb:0/rck:0/shreg:0', 1007, 126278, '', 1, 1, 0, 0, 'nothing', 0, 1780739407, 3552, 595979, 258022, 778594, 195756, 452478, 262, 6458, 583, 1872, 0, 0, 908, 0, 4, 42, 12, 142, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-(2, 0, 'lefaucheur1', '', '', '', '', 'c38cf60fc9ea6fac08ffbfbbe3aea4bf4c88c858', '127.0.0.1', 0, 0, 0, 13611, 11215, 2, 1, 20, 1, 0, 0, '2026-04-06 08:53:43', 1775784058.1036468, 80224, 10150, 380, 0, 10000, 4000, 4000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 0, 0, 0, '', 1500, 36, 0, 20000, 100, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'dmg:0/hp:0/rep:0/shd_abs:0/smb:0/rck:0/shreg:0', 0, 36, '', 1, 0, 0, 1, 'nothing', 0, 1775784104, 9478, 5000, 3000, 1500, 3000, 0, 500, 300, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL),
-(3, 0, 'RΘCINΔNTΣ', 'title_5', '', '', '', '', '127.0.0.1', 0, 0, 0, 4856, 3149, 1, 1, 19, 1, 0, 0, '2026-04-06 11:28:21', 1780359959.212334, 2722172, 27804, 380, 0, 10000, 4000, 4000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 0, 0, 0, '', 1500, 65, 0, 81000, 661, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'dmg:0/hp:0/rep:0/shd_abs:0/smb:0/rck:0/shreg:0', 0, 65, '', 1, 0, 0, 1, 'nothing', 0, 1780177458, 12362, 6516, 3000, 6, 1290, 0, 435, 280, 82, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-(4, 0, 'test12345', '', '', '', '', '', '127.0.0.1', 0, 0, 0, 7388, 5721, 1, 10, 18, 1, 0, 0, '2026-04-08 16:40:03', 1776630123.672668, 21749, 273003, 380, 0, 10000, 255527, 256000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 0, 0, 0, '3/0-3/0-3/0-3/0-3/0-3/0-3/0-3/0', 1500, 1, 0, 400, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'dmg:0/hp:0/rep:0/shd_abs:0/smb:0/rck:0/shreg:0', 0, 1, '', 1, 0, 0, 1, 'nothing', 0, 1776608357, 9946, 5000, 3005, 708, 3000, 0, 500, 300, 99, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL);
+INSERT INTO `users` (`id`, `sid`, `username`, `game_title`, `password`, `email`, `birthday`, `AuthTicket`, `ip`, `online`, `oldlocx`, `oldlocy`, `locx`, `locy`, `mapid`, `shipid`, `grade`, `factionid`, `clanid`, `clan_grade`, `registerdate`, `lastlogin`, `credits`, `uridium`, `speed`, `current_shield`, `max_shield`, `current_hp`, `max_hp`, `current_cargo`, `max_cargo`, `in_peacezone`, `in_fight`, `in_outofrange`, `in_warningzone`, `connID`, `FightThreadID`, `SelectedPlayer`, `user_kill`, `kill_assists`, `isDestroy`, `active_config`, `cooldown_ISH`, `cooldown_SMB`, `cooldown_ROCKET`, `auto_logout`, `is_ban`, `ban_reason`, `game_resolution`, `is_mod`, `is_admin`, `fat_lasers`, `shield_mechanics`, `drones`, `damages`, `npc_kill`, `pvp_points`, `experience`, `honor`, `level`, `dmg_lvl`, `hp_lvl`, `shd_lvl`, `speed_lvl`, `booster_dmg_time`, `booster_hp_time`, `booster_shd_time`, `booster_npc_time`, `booster_spd_time`, `booty_keys`, `drone_parts`, `apis_built`, `zeus_built`, `skilltree`, `logfiles`, `rankpoints`, `message`, `display_ads`, `auto_rkt_skill`, `auto_rocketlauncher_skill`, `selected_launcher_rocket`, `legend_rankpoints`, `canBeginner`, `extra_booster`, `last_duel`, `in_fight_until`, `ammo_lcb10`, `ammo_mcb25`, `ammo_mcb50`, `ammo_ucb100`, `ammo_sab50`, `ammo_rsb75`, `ammo_r310`, `ammo_plt2026`, `ammo_plt2021`, `ammo_dcr250`, `ammo_eco10`, `ammo_ubr100`, `ammo_hstrm01`, `gg_multiplier`, `gg_rings`, `ammo_smb01`, `ammo_ish01`, `ammo_emp01`, `config_refresh_pending`, `cooldown_IH`, `cooldown_WS`, `cooldown_PS`, `cooldown_FOR`, `cooldown_SIN`, `cooldown_SB`, `current_shield1`, `current_shield2`) VALUES
+(1, 0, 'lefaucheur', 'title_402', '', '', '', '', '127.0.0.1', 1, 0, 0, 5717, 2798, 4, 18, 23, 1, 0, 0, '2026-04-04 16:54:05', 1781293634.9635339, 2527973654, 9046108, 380, 0, 120000, 109216, 230000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 1, 0, 0, '3/0-3/0-3/0-3/0-3/0-3/0-3/0', 3552, 29344, 0, 635274700, 547026, 17, 0, 10, 0, 0, 1780273184, 1780283985, 1780269587, 0, 0, 0, 0, 0, 0, 'dmg:5/hp:0/rep:3/shd_abs:3/smb:0/rck:0/shreg:0', 1007, 135383, '', 1, 1, 1, 7, 0, 0, 'nothing', 0, 1781293659, 2268, 606019, 257492, 769288, 193902, 450408, 262, 6458, 249, 1871, 0, 0, 863, 0, 4, 36, 94, 130, 0, 0, 0, 0, 0, 0, 355, 60000, 120000),
+(2, 0, 'lefaucheur1', '', '', '', '', 'c38cf60fc9ea6fac08ffbfbbe3aea4bf4c88c858', '127.0.0.1', 0, 0, 0, 13611, 11215, 2, 1, 20, 1, 0, 0, '2026-04-06 08:53:43', 1775784058.1036468, 80224, 10150, 380, 0, 10000, 4000, 4000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 0, 0, 0, '', 1500, 36, 0, 20000, 100, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'dmg:0/hp:0/rep:0/shd_abs:0/smb:0/rck:0/shreg:0', 0, 36, '', 1, 0, 0, 7, 0, 1, 'nothing', 0, 1775784104, 9478, 5000, 3000, 1500, 3000, 0, 500, 300, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL),
+(3, 0, 'RΘCINΔNTΣ', 'title_5', '', '', '', '', '127.0.0.1', 0, 0, 0, 15636, 8707, 1, 1, 19, 1, 0, 0, '2026-04-06 11:28:21', 1781283947.5008154, 2722172, 32804, 380, 0, 10000, 4000, 4000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 0, 0, 0, '', 1500, 65, 0, 81000, 661, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'dmg:0/hp:0/rep:0/shd_abs:0/smb:0/rck:0/shreg:0', 0, 65, '', 1, 0, 0, 7, 0, 1, 'nothing', 0, 1780177458, 12362, 16516, 3000, 6, 1290, 0, 435, 280, 82, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+(4, 0, 'test12345', '', '', '', '', '', '127.0.0.1', 0, 0, 0, 7388, 5721, 1, 10, 18, 1, 0, 0, '2026-04-08 16:40:03', 1776630123.672668, 21749, 273003, 380, 0, 10000, 255527, 256000, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, '', 1, 0, 0, 0, 0, '3/0-3/0-3/0-3/0-3/0-3/0-3/0-3/0', 1500, 1, 0, 400, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'dmg:0/hp:0/rep:0/shd_abs:0/smb:0/rck:0/shreg:0', 0, 1, '', 1, 0, 0, 7, 0, 1, 'nothing', 0, 1776608357, 9946, 5000, 3005, 708, 3000, 0, 500, 300, 99, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -5099,7 +5331,161 @@ INSERT INTO `users_log` (`id`, `playerid`, `message`, `timestamp`) VALUES
 (2176, 1, 'You have destroyed -=[ Invader ]=-.<br/>You received 3000000 credits.<br/>You received 25000 uridium.<br/>You received 10000 UCB-100.<br/>You received 5000 RSB-75.<br/>You received 250000 experience.<br/>You received 1250 honor.', '2026-06-06 09:49:10'),
 (2177, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-06 09:49:15'),
 (2178, 1, 'You have detroyed -=[ Sibelonit ]=-.<br/>You received 38400 credits.<br/>You received 36 uridium.<br/>You received 12 npc point(s).<br/>You received 12 rankpoint(s).<br/>You received 3200 experience.<br/>You received 16 honor.', '2026-06-06 09:49:19'),
-(2179, 1, 'You have destroyed -=[ Invader ]=-.<br/>You received 3000000 credits.<br/>You received 25000 uridium.<br/>You received 10000 UCB-100.<br/>You received 5000 RSB-75.<br/>You received 250000 experience.<br/>You received 1250 honor.', '2026-06-06 09:50:00');
+(2179, 1, 'You have destroyed -=[ Invader ]=-.<br/>You received 3000000 credits.<br/>You received 25000 uridium.<br/>You received 10000 UCB-100.<br/>You received 5000 RSB-75.<br/>You received 250000 experience.<br/>You received 1250 honor.', '2026-06-06 09:50:00'),
+(2180, 1, 'You have detroyed -=[ Lordakium ]=-.<br/>You received 614400 credits.<br/>You received 192 uridium.<br/>You received 20 npc point(s).<br/>You received 20 rankpoint(s).<br/>You received 25600 experience.<br/>You received 128 honor.', '2026-06-08 21:23:06'),
+(2181, 1, 'You have detroyed -=[ Uber Lordakium ]=-.<br/>You received 1843200 credits.<br/>You received 576 uridium.<br/>You received 60 npc point(s).<br/>You received 60 rankpoint(s).<br/>You received 76800 experience.<br/>You received 384 honor.', '2026-06-08 21:23:36'),
+(2182, 1, 'You have detroyed -=[ Uber Kristallon ]=-.<br/>You received 3686400 credits.<br/>You received 1152 uridium.<br/>You received 84 npc point(s).<br/>You received 84 rankpoint(s).<br/>You received 153600 experience.<br/>You received 768 honor.', '2026-06-08 21:23:49'),
+(2183, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:24:05'),
+(2184, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:24:28'),
+(2185, 1, 'You have detroyed -=[ Uber Sibelonit ]=-.<br/>You received 115200 credits.<br/>You received 108 uridium.<br/>You received 36 npc point(s).<br/>You received 36 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-08 21:24:32'),
+(2186, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:24:54'),
+(2187, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:25:22'),
+(2188, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:25:38'),
+(2189, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:25:46'),
+(2190, 1, 'You have detroyed -=[ Uber Sibelonit ]=-.<br/>You received 115200 credits.<br/>You received 108 uridium.<br/>You received 36 npc point(s).<br/>You received 36 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-08 21:25:57'),
+(2191, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:26:16'),
+(2192, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:28:21'),
+(2193, 1, 'You have detroyed -=[ Uber Kristallon ]=-.<br/>You received 3686400 credits.<br/>You received 1152 uridium.<br/>You received 84 npc point(s).<br/>You received 84 rankpoint(s).<br/>You received 153600 experience.<br/>You received 768 honor.', '2026-06-08 21:28:29'),
+(2194, 1, 'You have detroyed -=[ Uber Kristallon ]=-.<br/>You received 3686400 credits.<br/>You received 1152 uridium.<br/>You received 84 npc point(s).<br/>You received 84 rankpoint(s).<br/>You received 153600 experience.<br/>You received 768 honor.', '2026-06-08 21:28:33'),
+(2195, 1, 'You have detroyed -=[ Uber Kristallon ]=-.<br/>You received 3686400 credits.<br/>You received 1152 uridium.<br/>You received 84 npc point(s).<br/>You received 84 rankpoint(s).<br/>You received 153600 experience.<br/>You received 768 honor.', '2026-06-08 21:28:36'),
+(2196, 1, 'You have detroyed -=[ Uber Devolarium ]=-.<br/>You received 460800 credits.<br/>You received 144 uridium.<br/>You received 96 npc point(s).<br/>You received 96 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-08 21:28:39'),
+(2197, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:28:47'),
+(2198, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:28:58'),
+(2199, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 21:29:03'),
+(2200, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:11:49'),
+(2201, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:12:02'),
+(2202, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:12:21'),
+(2203, 1, 'You have detroyed -=[ Uber Sibelonit ]=-.<br/>You received 115200 credits.<br/>You received 108 uridium.<br/>You received 36 npc point(s).<br/>You received 36 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-08 23:12:25'),
+(2204, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:12:39'),
+(2205, 1, 'You have detroyed -=[ Boss Protegit ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 45 npc point(s).<br/>You received 45 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-08 23:12:41'),
+(2206, 1, 'You have detroyed -=[ Uber Lordakia ]=-.<br/>You received 7200 credits.<br/>You received 18 uridium.<br/>You received 6 npc point(s).<br/>You received 6 rankpoint(s).<br/>You received 2400 experience.<br/>You received 12 honor.', '2026-06-08 23:12:44'),
+(2207, 1, 'You have detroyed -=[ Uber Streuner ]=-.<br/>You received 3600 credits.<br/>You received 9 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1200 experience.<br/>You received 6 honor.', '2026-06-08 23:12:45'),
+(2208, 1, 'You have detroyed -=[ Uber Mordon ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-08 23:12:46'),
+(2209, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:13:09'),
+(2210, 1, 'You have detroyed -=[ Boss Protegit ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 45 npc point(s).<br/>You received 45 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-08 23:13:11'),
+(2211, 1, 'You have detroyed -=[ Boss Protegit ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 45 npc point(s).<br/>You received 45 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-08 23:13:12'),
+(2212, 1, 'You have detroyed -=[ Uber Sibelonit ]=-.<br/>You received 115200 credits.<br/>You received 108 uridium.<br/>You received 36 npc point(s).<br/>You received 36 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-08 23:13:14'),
+(2213, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:13:27'),
+(2214, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:13:42'),
+(2215, 1, 'You have detroyed -=[ Uber Mordon ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-08 23:13:58'),
+(2216, 1, 'You have detroyed -=[ Uber StreuneR ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-08 23:14:06'),
+(2217, 1, 'You have detroyed -=[ Uber StreuneR ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-08 23:14:13'),
+(2218, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:14:23'),
+(2219, 1, 'You have detroyed -=[ Cubikon ]=-.<br/>You received 4915200 credits.<br/>You received 3072 uridium.<br/>You received 100 npc point(s).<br/>You received 100 rankpoint(s).<br/>You received 512000 experience.<br/>You received 4096 honor.', '2026-06-08 23:15:59'),
+(2220, 1, 'You have detroyed -=[ Kristallon ]=-.<br/>You received 1228800 credits.<br/>You received 384 uridium.<br/>You received 28 npc point(s).<br/>You received 28 rankpoint(s).<br/>You received 51200 experience.<br/>You received 256 honor.', '2026-06-08 23:16:06'),
+(2221, 1, 'You have detroyed -=[ Kristallin ]=-.<br/>You received 38400 credits.<br/>You received 48 uridium.<br/>You received 6 npc point(s).<br/>You received 6 rankpoint(s).<br/>You received 6400 experience.<br/>You received 32 honor.', '2026-06-08 23:41:07'),
+(2222, 1, 'You have detroyed -=[ Boss Kristallon ]=-.<br/>You received 2457600 credits.<br/>You received 768 uridium.<br/>You received 56 npc point(s).<br/>You received 56 rankpoint(s).<br/>You received 102400 experience.<br/>You received 512 honor.', '2026-06-08 23:41:16'),
+(2223, 1, 'You have detroyed -=[ Cubikon ]=-.<br/>You received 4915200 credits.<br/>You received 3072 uridium.<br/>You received 100 npc point(s).<br/>You received 100 rankpoint(s).<br/>You received 512000 experience.<br/>You received 4096 honor.', '2026-06-08 23:41:38'),
+(2224, 1, 'You have detroyed -=[ Boss Lordakium ]=-.<br/>You received 1228800 credits.<br/>You received 384 uridium.<br/>You received 80 npc point(s).<br/>You received 80 rankpoint(s).<br/>You received 51200 experience.<br/>You received 256 honor.', '2026-06-08 23:42:05'),
+(2225, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:42:40'),
+(2226, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:42:50'),
+(2227, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:43:00'),
+(2228, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:43:10'),
+(2229, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:43:21'),
+(2230, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:43:36'),
+(2231, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:43:45'),
+(2232, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:43:55'),
+(2233, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:44:39'),
+(2234, 1, 'You have detroyed -=[ Cubikon ]=-.<br/>You received 4915200 credits.<br/>You received 3072 uridium.<br/>You received 100 npc point(s).<br/>You received 100 rankpoint(s).<br/>You received 512000 experience.<br/>You received 4096 honor.', '2026-06-08 23:45:59'),
+(2235, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 48000000 credits.<br/>You received 48000 uridium.<br/>You received 200 npc point(s).<br/>You received 200 rankpoint(s).<br/>You received 200 experience.<br/>You received 20 honor.', '2026-06-08 23:47:17'),
+(2236, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 19660800 credits.<br/>You received 12288 uridium.<br/>You received 100 npc point(s).<br/>You received 100 rankpoint(s).<br/>You received 2048000 experience.<br/>You received 16384 honor.', '2026-06-09 10:38:54'),
+(2237, 1, 'You have detroyed -=[ Uber Kristallin ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 18 npc point(s).<br/>You received 18 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-09 10:39:20'),
+(2238, 1, 'You have detroyed -=[ Uber Mordon ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-09 10:39:22'),
+(2239, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 19660800 credits.<br/>You received 12288 uridium.<br/>You received 100 npc point(s).<br/>You received 100 rankpoint(s).<br/>You received 2048000 experience.<br/>You received 16384 honor.', '2026-06-09 10:39:43'),
+(2240, 1, 'You have detroyed -=[ Boss Protegit ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 45 npc point(s).<br/>You received 45 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-09 10:39:45'),
+(2241, 1, 'You have detroyed -=[ Uber Lordakia ]=-.<br/>You received 7200 credits.<br/>You received 18 uridium.<br/>You received 6 npc point(s).<br/>You received 6 rankpoint(s).<br/>You received 2400 experience.<br/>You received 12 honor.', '2026-06-09 10:39:50'),
+(2242, 1, 'You have detroyed -=[ Uber Mordon ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-09 10:40:16'),
+(2243, 1, 'You have detroyed -=[ Uber Kristallin ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 18 npc point(s).<br/>You received 18 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-09 12:31:24'),
+(2244, 1, 'You have detroyed -=[ Uber Kristallon ]=-.<br/>You received 3686400 credits.<br/>You received 1152 uridium.<br/>You received 84 npc point(s).<br/>You received 84 rankpoint(s).<br/>You received 153600 experience.<br/>You received 768 honor.', '2026-06-09 12:32:00'),
+(2245, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 19660800 credits.<br/>You received 12288 uridium.<br/>You received 100 npc point(s).<br/>You received 100 rankpoint(s).<br/>You received 2048000 experience.<br/>You received 16384 honor.', '2026-06-09 12:34:04'),
+(2246, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 19660800 credits.<br/>You received 12288 uridium.<br/>You received 100 npc point(s).<br/>You received 100 rankpoint(s).<br/>You received 2048000 experience.<br/>You received 16384 honor.', '2026-06-09 12:34:47'),
+(2247, 1, 'You have detroyed -=[ Uber Lordakia ]=-.<br/>You received 7200 credits.<br/>You received 18 uridium.<br/>You received 6 npc point(s).<br/>You received 6 rankpoint(s).<br/>You received 2400 experience.<br/>You received 12 honor.', '2026-06-09 12:34:57'),
+(2248, 1, 'You have detroyed -=[ Uber Lordakia ]=-.<br/>You received 7200 credits.<br/>You received 18 uridium.<br/>You received 6 npc point(s).<br/>You received 6 rankpoint(s).<br/>You received 2400 experience.<br/>You received 12 honor.', '2026-06-09 12:37:23'),
+(2249, 1, 'You have detroyed -=[ Uber Saimon ]=-.<br/>You received 14400 credits.<br/>You received 36 uridium.<br/>You received 9 npc point(s).<br/>You received 9 rankpoint(s).<br/>You received 4800 experience.<br/>You received 24 honor.', '2026-06-09 12:37:24'),
+(2250, 1, 'You have detroyed -=[ Uber StreuneR ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-09 17:15:58'),
+(2251, 1, 'You have detroyed -=[ Uber Streuner ]=-.<br/>You received 3600 credits.<br/>You received 9 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1200 experience.<br/>You received 6 honor.', '2026-06-09 17:16:09'),
+(2252, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 19660800 credits.<br/>You received 12288 uridium.<br/>You received 100 npc point(s).<br/>You received 100 rankpoint(s).<br/>You received 2048000 experience.<br/>You received 16384 honor.', '2026-06-09 17:16:23'),
+(2253, 1, 'You have detroyed -=[ Uber Kristallin ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 18 npc point(s).<br/>You received 18 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-09 17:17:44'),
+(2254, 1, 'You have detroyed -=[ Uber Lordakia ]=-.<br/>You received 7200 credits.<br/>You received 18 uridium.<br/>You received 6 npc point(s).<br/>You received 6 rankpoint(s).<br/>You received 2400 experience.<br/>You received 12 honor.', '2026-06-09 17:17:54'),
+(2255, 1, 'You have detroyed -=[ Uber Kristallin ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 18 npc point(s).<br/>You received 18 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-09 17:17:57'),
+(2256, 1, 'You have detroyed -=[ Uber Sibelon ]=-.<br/>You received 921600 credits.<br/>You received 288 uridium.<br/>You received 57 npc point(s).<br/>You received 57 rankpoint(s).<br/>You received 38400 experience.<br/>You received 192 honor.', '2026-06-09 17:18:16'),
+(2257, 1, 'You have detroyed -=[ Uber Saimon ]=-.<br/>You received 14400 credits.<br/>You received 36 uridium.<br/>You received 9 npc point(s).<br/>You received 9 rankpoint(s).<br/>You received 4800 experience.<br/>You received 24 honor.', '2026-06-09 17:18:24'),
+(2258, 1, 'You have detroyed -=[ Uber Saimon ]=-.<br/>You received 14400 credits.<br/>You received 36 uridium.<br/>You received 9 npc point(s).<br/>You received 9 rankpoint(s).<br/>You received 4800 experience.<br/>You received 24 honor.', '2026-06-09 17:21:20'),
+(2259, 1, 'You have detroyed -=[ Uber Lordakium ]=-.<br/>You received 1843200 credits.<br/>You received 576 uridium.<br/>You received 60 npc point(s).<br/>You received 60 rankpoint(s).<br/>You received 76800 experience.<br/>You received 384 honor.', '2026-06-09 18:02:03'),
+(2260, 1, 'You have detroyed -=[ Uber Streuner ]=-.<br/>You received 3600 credits.<br/>You received 9 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1200 experience.<br/>You received 6 honor.', '2026-06-09 18:02:09'),
+(2261, 1, 'You have detroyed -=[ Uber Kristallin ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 18 npc point(s).<br/>You received 18 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-09 18:02:12'),
+(2262, 1, 'You have detroyed -=[ Uber Saimon ]=-.<br/>You received 14400 credits.<br/>You received 36 uridium.<br/>You received 9 npc point(s).<br/>You received 9 rankpoint(s).<br/>You received 4800 experience.<br/>You received 24 honor.', '2026-06-09 18:02:14'),
+(2263, 1, 'You have detroyed -=[ Uber Streuner ]=-.<br/>You received 3600 credits.<br/>You received 9 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1200 experience.<br/>You received 6 honor.', '2026-06-09 18:02:20'),
+(2264, 1, 'You have detroyed -=[ Uber Lordakia ]=-.<br/>You received 7200 credits.<br/>You received 18 uridium.<br/>You received 6 npc point(s).<br/>You received 6 rankpoint(s).<br/>You received 2400 experience.<br/>You received 12 honor.', '2026-06-09 18:02:29'),
+(2265, 1, 'You have detroyed -=[ Uber Mordon ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-09 18:02:34'),
+(2266, 1, 'You have detroyed -=[ Uber Streuner ]=-.<br/>You received 3600 credits.<br/>You received 9 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1200 experience.<br/>You received 6 honor.', '2026-06-09 18:02:47'),
+(2267, 1, 'You have detroyed -=[ Uber StreuneR ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-09 18:02:52'),
+(2268, 1, 'You have detroyed -=[ Uber Sibelon ]=-.<br/>You received 921600 credits.<br/>You received 288 uridium.<br/>You received 57 npc point(s).<br/>You received 57 rankpoint(s).<br/>You received 38400 experience.<br/>You received 192 honor.', '2026-06-09 18:03:37'),
+(2269, 1, 'You have detroyed -=[ Uber Streuner ]=-.<br/>You received 3600 credits.<br/>You received 9 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1200 experience.<br/>You received 6 honor.', '2026-06-09 18:03:39'),
+(2270, 1, 'You have detroyed -=[ Uber Kristallon ]=-.<br/>You received 3686400 credits.<br/>You received 1152 uridium.<br/>You received 84 npc point(s).<br/>You received 84 rankpoint(s).<br/>You received 153600 experience.<br/>You received 768 honor.', '2026-06-09 18:03:48'),
+(2271, 1, 'You have detroyed -=[ Uber Kristallin ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 18 npc point(s).<br/>You received 18 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-09 18:04:10'),
+(2272, 1, 'You have detroyed -=[ Uber Sibelonit ]=-.<br/>You received 115200 credits.<br/>You received 108 uridium.<br/>You received 36 npc point(s).<br/>You received 36 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-09 23:27:41'),
+(2273, 1, 'You have detroyed -=[ Uber Mordon ]=-.<br/>You received 57600 credits.<br/>You received 72 uridium.<br/>You received 24 npc point(s).<br/>You received 24 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-09 23:28:21'),
+(2274, 1, 'You have detroyed -=[ Uber Lordakia ]=-.<br/>You received 7200 credits.<br/>You received 18 uridium.<br/>You received 6 npc point(s).<br/>You received 6 rankpoint(s).<br/>You received 2400 experience.<br/>You received 12 honor.', '2026-06-09 23:28:22'),
+(2275, 1, 'You have detroyed -=[ Uber Sibelonit ]=-.<br/>You received 115200 credits.<br/>You received 108 uridium.<br/>You received 36 npc point(s).<br/>You received 36 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-09 23:29:22'),
+(2276, 1, 'You have detroyed -=[ Uber Saimon ]=-.<br/>You received 14400 credits.<br/>You received 36 uridium.<br/>You received 9 npc point(s).<br/>You received 9 rankpoint(s).<br/>You received 4800 experience.<br/>You received 24 honor.', '2026-06-10 14:03:55'),
+(2277, 1, 'You have detroyed -=[ Uber Saimon ]=-.<br/>You received 14400 credits.<br/>You received 36 uridium.<br/>You received 9 npc point(s).<br/>You received 9 rankpoint(s).<br/>You received 4800 experience.<br/>You received 24 honor.', '2026-06-10 14:04:20'),
+(2278, 1, 'You have detroyed -=[ Uber Streuner ]=-.<br/>You received 3600 credits.<br/>You received 9 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1200 experience.<br/>You received 6 honor.', '2026-06-10 23:27:54'),
+(2279, 1, 'You have detroyed -=[ Boss Cubikon ]=-.<br/>You received 19660800 credits.<br/>You received 12288 uridium.<br/>You received 100 npc point(s).<br/>You received 100 rankpoint(s).<br/>You received 2048000 experience.<br/>You received 16384 honor.', '2026-06-11 10:31:44'),
+(2280, 1, 'You have detroyed -=[ Uber Saimon ]=-.<br/>You received 14400 credits.<br/>You received 36 uridium.<br/>You received 9 npc point(s).<br/>You received 9 rankpoint(s).<br/>You received 4800 experience.<br/>You received 24 honor.', '2026-06-11 10:32:19'),
+(2281, 1, 'You have detroyed -=[ Uber Devolarium ]=-.<br/>You received 460800 credits.<br/>You received 144 uridium.<br/>You received 96 npc point(s).<br/>You received 96 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-11 10:32:23'),
+(2282, 1, 'You have detroyed -=[ Uber Kristallin ]=-.<br/>You received 115200 credits.<br/>You received 144 uridium.<br/>You received 18 npc point(s).<br/>You received 18 rankpoint(s).<br/>You received 19200 experience.<br/>You received 96 honor.', '2026-06-11 10:32:42'),
+(2283, 1, 'You have detroyed -=[ Uber Lordakium ]=-.<br/>You received 1843200 credits.<br/>You received 576 uridium.<br/>You received 60 npc point(s).<br/>You received 60 rankpoint(s).<br/>You received 76800 experience.<br/>You received 384 honor.', '2026-06-11 10:32:48'),
+(2284, 1, 'You have detroyed -=[ Uber Kristallon ]=-.<br/>You received 3686400 credits.<br/>You received 1152 uridium.<br/>You received 84 npc point(s).<br/>You received 84 rankpoint(s).<br/>You received 153600 experience.<br/>You received 768 honor.', '2026-06-11 10:32:54'),
+(2285, 1, 'You have detroyed -=[ Uber Sibelonit ]=-.<br/>You received 115200 credits.<br/>You received 108 uridium.<br/>You received 36 npc point(s).<br/>You received 36 rankpoint(s).<br/>You received 9600 experience.<br/>You received 48 honor.', '2026-06-11 11:37:20'),
+(2286, 1, 'You have detroyed -=[ Uber Lordakium ]=-.<br/>You received 1843200 credits.<br/>You received 576 uridium.<br/>You received 60 npc point(s).<br/>You received 60 rankpoint(s).<br/>You received 76800 experience.<br/>You received 384 honor.', '2026-06-12 10:27:24'),
+(2287, 1, 'You have detroyed -=[ Uber Lordakia ]=-.<br/>You received 7200 credits.<br/>You received 18 uridium.<br/>You received 6 npc point(s).<br/>You received 6 rankpoint(s).<br/>You received 2400 experience.<br/>You received 12 honor.', '2026-06-12 10:27:25'),
+(2288, 1, 'You have detroyed -=[ Uber Saimon ]=-.<br/>You received 14400 credits.<br/>You received 36 uridium.<br/>You received 9 npc point(s).<br/>You received 9 rankpoint(s).<br/>You received 4800 experience.<br/>You received 24 honor.', '2026-06-12 10:27:27'),
+(2289, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 16:56:59'),
+(2290, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:04:18'),
+(2291, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:04:20'),
+(2292, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:04:22'),
+(2293, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:04:58'),
+(2294, 1, 'You have detroyed -=[ Boss Lordakia ]=-.<br/>You received 4800 credits.<br/>You received 12 uridium.<br/>You received 4 npc point(s).<br/>You received 4 rankpoint(s).<br/>You received 1600 experience.<br/>You received 8 honor.', '2026-06-12 17:07:44'),
+(2295, 1, 'You have detroyed -=[ Boss Streuner ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:07:47'),
+(2296, 1, 'You have detroyed -=[ Boss Streuner ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:07:54'),
+(2297, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:07:56'),
+(2298, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:07:59'),
+(2299, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:02'),
+(2300, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:05'),
+(2301, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:08:09'),
+(2302, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:08:12'),
+(2303, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:14'),
+(2304, 1, 'You have detroyed -=[ Boss Lordakia ]=-.<br/>You received 4800 credits.<br/>You received 12 uridium.<br/>You received 4 npc point(s).<br/>You received 4 rankpoint(s).<br/>You received 1600 experience.<br/>You received 8 honor.', '2026-06-12 17:08:18'),
+(2305, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:20'),
+(2306, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:25'),
+(2307, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:32'),
+(2308, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:34'),
+(2309, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:53'),
+(2310, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:55'),
+(2311, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:08:59'),
+(2312, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:09:01'),
+(2313, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:09:03'),
+(2314, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:09:05'),
+(2315, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:09:07'),
+(2316, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:09:14'),
+(2317, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:09:18'),
+(2318, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:09:20'),
+(2319, 1, 'You have detroyed -=[ Boss Lordakia ]=-.<br/>You received 4800 credits.<br/>You received 12 uridium.<br/>You received 4 npc point(s).<br/>You received 4 rankpoint(s).<br/>You received 1600 experience.<br/>You received 8 honor.', '2026-06-12 17:09:22'),
+(2320, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:09:24'),
+(2321, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:09:26'),
+(2322, 1, 'You have detroyed -=[ Streuner ]=-.<br/>You received 1200 credits.<br/>You received 3 uridium.<br/>You received 1 npc point(s).<br/>You received 1 rankpoint(s).<br/>You received 400 experience.<br/>You received 2 honor.', '2026-06-12 17:09:34'),
+(2323, 1, 'You have detroyed -=[ Boss Lordakia ]=-.<br/>You received 4800 credits.<br/>You received 12 uridium.<br/>You received 4 npc point(s).<br/>You received 4 rankpoint(s).<br/>You received 1600 experience.<br/>You received 8 honor.', '2026-06-12 17:09:47'),
+(2324, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:09:49'),
+(2325, 1, 'You have detroyed -=[ Sibelon ]=-.<br/>You received 307200 credits.<br/>You received 96 uridium.<br/>You received 19 npc point(s).<br/>You received 19 rankpoint(s).<br/>You received 12800 experience.<br/>You received 64 honor.', '2026-06-12 17:10:14'),
+(2326, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:10:48'),
+(2327, 1, 'You have detroyed -=[ Saimon ]=-.<br/>You received 4800 credits.<br/>You received 12 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1600 experience.<br/>You received 8 honor.', '2026-06-12 17:10:51'),
+(2328, 1, 'You have detroyed -=[ Saimon ]=-.<br/>You received 4800 credits.<br/>You received 12 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1600 experience.<br/>You received 8 honor.', '2026-06-12 17:11:07'),
+(2329, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:11:27'),
+(2330, 1, 'You have detroyed -=[ Saimon ]=-.<br/>You received 4800 credits.<br/>You received 12 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1600 experience.<br/>You received 8 honor.', '2026-06-12 17:11:33'),
+(2331, 1, 'You have detroyed -=[ Lordakia ]=-.<br/>You received 2400 credits.<br/>You received 6 uridium.<br/>You received 2 npc point(s).<br/>You received 2 rankpoint(s).<br/>You received 800 experience.<br/>You received 4 honor.', '2026-06-12 17:11:36'),
+(2332, 1, 'You have detroyed -=[ Boss Sibelon ]=-.<br/>You received 614400 credits.<br/>You received 192 uridium.<br/>You received 38 npc point(s).<br/>You received 38 rankpoint(s).<br/>You received 25600 experience.<br/>You received 128 honor.', '2026-06-12 17:12:06'),
+(2333, 1, 'You have detroyed -=[ Saimon ]=-.<br/>You received 4800 credits.<br/>You received 12 uridium.<br/>You received 3 npc point(s).<br/>You received 3 rankpoint(s).<br/>You received 1600 experience.<br/>You received 8 honor.', '2026-06-12 17:19:45');
 
 -- --------------------------------------------------------
 
@@ -5137,7 +5523,7 @@ CREATE TABLE `users_npc_counts` (
 --
 
 INSERT INTO `users_npc_counts` (`id`, `Streuner`, `Lordakia`, `Saimon`, `Sibelon`, `Kristallin`, `Kristallon`, `Cubikon`, `IceMeteroid`, `Melter`, `Scorcher`, `BossCurcubitor`, `Hitac`, `Devourer`, `BossKuKu`, `Saboteur`, `Annihilator`, `Battleray`, `Mordon`, `Devolarium`, `Sibelonit`, `Lordakium`) VALUES
-(1, 358, 431, 337, 37, 268, 78, 19, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 51, 290, 66),
+(1, 375, 459, 341, 40, 269, 81, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 51, 290, 69),
 (2, 12, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 (3, 50, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 (4, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -5178,7 +5564,7 @@ CREATE TABLE `users_npc_lvl` (
 --
 
 INSERT INTO `users_npc_lvl` (`id`, `Streuner`, `Lordakia`, `Saimon`, `Sibelon`, `Kristallin`, `Kristallon`, `Cubikon`, `IceMeteroid`, `Melter`, `Scorcher`, `BossCurcubitor`, `Hitac`, `Devourer`, `BossKuKu`, `Saboteur`, `Annihilator`, `Battleray`, `Mordon`, `Devolarium`, `Sibelonit`, `Lordakium`) VALUES
-(1, 2, 2, 2, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 2, 1),
+(1, 2, 2, 2, 1, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 2, 1),
 (2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 (3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
 (4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
@@ -5232,9 +5618,9 @@ CREATE TABLE `users_settings` (
 --
 
 INSERT INTO `users_settings` (`id`, `playerid`, `flash_set`, `minimap_scale`, `resizable_windows`, `display_player_names`, `display_chat`, `play_music`, `play_sfx`, `bar_status`, `window_settings`, `client_resolution`, `auto_refinement`, `quickslot_stop_attack`, `doubleclick_attack`, `auto_start`, `display_notifications`, `show_drones`, `display_window_background`, `always_draggable_windows`, `preload_user_ships`, `quality_presetting`, `quality_customized`, `quality_background`, `quality_poizone`, `quality_ship`, `quality_engine`, `quality_collectable`, `quality_attack`, `quality_effect`, `quality_explosion`, `quickbar_slot`, `mainmenu_position`, `slotmenu_position`, `slotmenu_order`) VALUES
-(1, 1, '1|1|1|1|1|1|1|1|1|1|1|1|0|1|1|1|3|1|1|0|0|1|1|1|1', '5', '', 1, 1, 0, 1, '23,0,24,0,25,1,26,0,27,0', '0|0,452,493,1,1,71,296,1,3,1449,750,1,5,853,243,0,10,962,199,0,13,1220,120,0,15,137,163,0,16,883,113,1,20,3,797,1,23,259,336,1,24,1134,114,0', '0,820,600|1', 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, '3,4,5,6,7,39,16,17,45,23', '0|318,503', '0|794,880', '0'),
+(1, 1, '1|1|1|1|1|1|1|1|1|1|1|1|0|1|1|5|3|1|1|0|0|1|1|1|1', '6', '', 1, 1, 0, 1, '23,0,24,0,25,1,26,0,27,0', '0|0,316,33,1,1,46,22,1,3,1527,800,1,5,821,113,0,10,962,199,0,13,1220,120,0,15,137,163,0,16,883,113,1,20,18,751,1,23,620,40,1,24,1134,114,0', '0,820,600|1', 1, 1, 1, 1, 1, 0, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, '3,4,72,6,7,39,16,17,45,23', '0|318,503', '0|794,880', '0'),
 (2, 2, '1|1|1|1|1|1|1|1|1|1|1|1|0|1|1|1|3|1|1|0|0|1|1|1|1', '5', '', 1, 1, 0, 1, '23,0,24,0,25,1,26,0,27,0', '0|0,9,4,1,1,232,3,1,3,780,388,1,5,5,5,0,10,5,288,0,13,187,50,0,20,5,402,1,22,347,188,0,23,458,1,1,24,284,25,0', '0,820,600|1', 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, '6,39,7,45,17,16,-1,-1,-1,-1', '', '0|771,927', '0'),
-(3, 3, '1|1|1|1|1|1|1|1|1|1|1|1|0|1|1|4|2|1|1|0|0|1|1|1|1', '5', '', 1, 1, 0, 1, '23,0,24,0,25,1,26,0,27,0', '0|0,9,4,1,1,232,3,1,3,1467,744,1,5,565,49,1,10,1000,19,0,13,704,189,0,15,427,407,0,16,628,193,1,20,3,831,1,23,1156,139,1,24,1238,242,0', '0,820,600|1', 0, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, '3,4,7,45,17,16,-1,-1,-1,-1', '', '0|790,896', '0'),
+(3, 3, '1|1|1|1|1|1|1|1|1|1|1|0|0|1|1|4|2|1|1|0|0|1|1|1|1', '5', '', 1, 1, 0, 0, '23,0,24,0,25,1,26,0,27,0', '0|0,9,4,1,1,232,3,1,3,1467,744,1,5,565,49,1,10,1000,19,0,13,704,189,0,15,427,407,0,16,628,193,1,20,3,831,1,23,1156,139,1,24,1238,242,0', '0,820,600|1', 0, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, '3,4,7,45,17,16,-1,-1,-1,-1', '', '0|790,896', '0'),
 (4, 4, '1|1|1|1|1|1|1|1|1|1|1|0|0|1|1|0|0|1|1|0|0|1|1|1|1', '7', '', 1, 1, 0, 0, '23,0,24,0,25,1,26,0,27,0', '8|0,376,6,0,1,601,6,1,3,1300,624,1,5,10,10,1,13,520,265,0,15,958,6,0,16,1084,311,1,20,7,544,1,23,1060,131,1,24,613,263,0', '8,1680,1050|1', 0, 1, 1, 1, 1, 0, 1, 1, 1, 3, 1, 0, 3, 3, 3, 3, 3, 3, 3, '6,39,7,45,17,16,-1,-1,-1,-1', '8|399,890', '8|395,855', '0');
 
 --
@@ -5591,6 +5977,15 @@ ALTER TABLE `ship_slot`
   ADD UNIQUE KEY `uq_ship_slot` (`ship_config_id`,`row_name`,`slot_index`);
 
 --
+-- Index pour la table `site_daily_login_claims`
+--
+ALTER TABLE `site_daily_login_claims`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_daily_login_player_week_day` (`player_id`,`week_key`,`day_number`),
+  ADD UNIQUE KEY `uniq_daily_login_player_claim_date` (`player_id`,`claim_date`),
+  ADD KEY `idx_daily_login_player_week` (`player_id`,`week_key`);
+
+--
 -- Index pour la table `site_player_quests`
 --
 ALTER TABLE `site_player_quests`
@@ -5737,19 +6132,19 @@ ALTER TABLE `auction_bids`
 -- AUTO_INCREMENT pour la table `auction_items`
 --
 ALTER TABLE `auction_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2014;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2215;
 
 --
 -- AUTO_INCREMENT pour la table `auction_lots`
 --
 ALTER TABLE `auction_lots`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=529;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=630;
 
 --
 -- AUTO_INCREMENT pour la table `auction_rounds`
 --
 ALTER TABLE `auction_rounds`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT pour la table `auction_wins`
@@ -5845,7 +6240,7 @@ ALTER TABLE `drone`
 -- AUTO_INCREMENT pour la table `drone_slot`
 --
 ALTER TABLE `drone_slot`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2132;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2216;
 
 --
 -- AUTO_INCREMENT pour la table `invite_code`
@@ -5881,7 +6276,7 @@ ALTER TABLE `name_change`
 -- AUTO_INCREMENT pour la table `player_designs`
 --
 ALTER TABLE `player_designs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT pour la table `player_galaxy_gates`
@@ -5905,13 +6300,19 @@ ALTER TABLE `role_clan`
 -- AUTO_INCREMENT pour la table `ship_config`
 --
 ALTER TABLE `ship_config`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=381;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=415;
 
 --
 -- AUTO_INCREMENT pour la table `ship_slot`
 --
 ALTER TABLE `ship_slot`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3603;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3691;
+
+--
+-- AUTO_INCREMENT pour la table `site_daily_login_claims`
+--
+ALTER TABLE `site_daily_login_claims`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT pour la table `site_player_quests`
@@ -5923,31 +6324,31 @@ ALTER TABLE `site_player_quests`
 -- AUTO_INCREMENT pour la table `site_player_weekly_missions`
 --
 ALTER TABLE `site_player_weekly_missions`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=294;
 
 --
 -- AUTO_INCREMENT pour la table `site_purchase_log`
 --
 ALTER TABLE `site_purchase_log`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT pour la table `site_quests`
 --
 ALTER TABLE `site_quests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90207;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90746;
 
 --
 -- AUTO_INCREMENT pour la table `site_quest_objectives`
 --
 ALTER TABLE `site_quest_objectives`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=93769;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=94441;
 
 --
 -- AUTO_INCREMENT pour la table `site_weekly_missions`
 --
 ALTER TABLE `site_weekly_missions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT pour la table `site_weekly_mission_objectives`
@@ -5971,7 +6372,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT pour la table `users_log`
 --
 ALTER TABLE `users_log`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2180;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2334;
 
 --
 -- AUTO_INCREMENT pour la table `users_settings`
