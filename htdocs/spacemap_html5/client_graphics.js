@@ -3153,6 +3153,9 @@ function flashTryDrawShipSkillVisualSequence(effectState, centerX, centerY, ship
         rotation = placement.rotation;
         drawW *= 0.9;
         drawH *= 0.9;
+        const anchorCompensation = drawW * 0.4;
+        drawX += Math.cos(rotation) * anchorCompensation;
+        drawY += Math.sin(rotation) * anchorCompensation;
     }
 
     ctx.save();
