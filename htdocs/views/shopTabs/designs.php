@@ -8,14 +8,14 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $DESIGNS = [
     17 => ['name' => 'Vengeance Enforcer', 'base_ship' => 'Vengeance', 'base_id' => 8,  'price' => 50000,  'currency' => 'uridium', 'bonus' => '+5% Damage'],
-    18 => ['name' => 'Vengeance Lightning', 'base_ship' => 'Vengeance', 'base_id' => 8,  'price' => 150000, 'currency' => 'uridium', 'bonus' => '+10% Damage'],
+    18 => ['name' => 'Vengeance Lightning', 'base_ship' => 'Vengeance', 'base_id' => 8,  'price' => 150000, 'currency' => 'uridium', 'bonus' => '+10% Damage', 'ability_tip' => 'Activates a short afterburner burst that increases your ship speed for a few seconds.'],
     56 => ['name' => 'Goliath Enforcer',   'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 100000, 'currency' => 'uridium', 'bonus' => '+5% Damage'],
     59 => ['name' => 'Goliath Bastion',    'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 100000, 'currency' => 'uridium', 'bonus' => '+10% Shield'],
-    63 => ['name' => 'Goliath Solace',     'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+10% Shield + Ability'],
-    64 => ['name' => 'Goliath Diminisher', 'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+5% Damage + Ability'],
-    65 => ['name' => 'Goliath Spectrum',   'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+25% Shield + Ability'],
-    66 => ['name' => 'Goliath Sentinel',   'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+10% Shield + Ability'],
-    67 => ['name' => 'Goliath Venom',      'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+5% Damage + Ability'],
+    63 => ['name' => 'Goliath Solace',     'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+10% Shield + Ability', 'ability_tip' => 'Restores a large amount of your HP and also repairs nearby group members.'],
+    64 => ['name' => 'Goliath Diminisher', 'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+5% Damage + Ability', 'ability_tip' => "Weakens your target's shields, allowing you to deal increased shield damage for a limited time."],
+    65 => ['name' => 'Goliath Spectrum',   'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+25% Shield + Ability', 'ability_tip' => 'Greatly reduces incoming laser damage for a short time, but also lowers your outgoing damage.'],
+    66 => ['name' => 'Goliath Sentinel',   'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+10% Shield + Ability', 'ability_tip' => 'Fortifies your ship and reduces incoming shield damage for a limited time, at the cost of speed.'],
+    67 => ['name' => 'Goliath Venom',      'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+5% Damage + Ability', 'ability_tip' => 'Applies a singularity effect that deals increasing damage over time to your target.'],
 ];
 
 $pid = (int)$_SESSION['player_id'];
@@ -61,8 +61,14 @@ $user = $uStmt->fetch();
 <style>
     .shop-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 1.5rem; box-shadow: var(--shadow-lg); user-select: none; }
     .shop-title { font-size: 1.25rem; font-weight: 700; color: var(--color-accent); margin-bottom: 1.5rem; text-transform: uppercase; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem; }
-    .design-row { display: flex; align-items: center; background: rgba(8, 14, 26, 0.4); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; transition: transform var(--transition-fast); }
+    .design-row { position: relative; display: flex; align-items: center; background: rgba(8, 14, 26, 0.4); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 0.75rem; transition: transform var(--transition-fast); }
     .design-row:hover { border-color: var(--color-accent-strong); transform: translateY(-2px); }
+    .design-row.has-ability::after { content: attr(data-ability-tooltip); position: absolute; left: 130px; right: 240px; bottom: calc(100% + 10px); z-index: 20; padding: 0.7rem 0.85rem; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: rgba(4, 14, 25, 0.96); color: var(--color-text); font-size: 0.82rem; line-height: 1.35; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(94, 234, 212, 0.16); opacity: 0; pointer-events: none; transform: translateY(6px); transition: opacity var(--transition-fast), transform var(--transition-fast); }
+    .design-row.has-ability::before { content: ""; position: absolute; left: 160px; bottom: calc(100% + 3px); z-index: 21; border-width: 7px 7px 0 7px; border-style: solid; border-color: var(--color-border-strong) transparent transparent transparent; opacity: 0; pointer-events: none; transform: translateY(6px); transition: opacity var(--transition-fast), transform var(--transition-fast); }
+    .design-row.has-ability:hover::after,
+    .design-row.has-ability:hover::before,
+    .design-row.has-ability:focus-within::after,
+    .design-row.has-ability:focus-within::before { opacity: 1; transform: translateY(0); }
     .design-img { width: 100px; margin-right: 1.5rem; flex-shrink: 0; }
     .design-img img { width: 100%; filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)); pointer-events: none; }
     .design-info { flex: 1; }
@@ -86,8 +92,9 @@ $user = $uStmt->fetch();
         <?php foreach ($DESIGNS as $id => $d): 
             $isOwned = in_array($id, $ownedDesigns);
             $imgId = $id; 
+            $abilityTip = $d['ability_tip'] ?? '';
         ?>
-            <div class="design-row">
+            <div class="design-row<?= $abilityTip !== '' ? ' has-ability' : '' ?>"<?= $abilityTip !== '' ? ' data-ability-tooltip="' . htmlspecialchars($abilityTip, ENT_QUOTES, 'UTF-8') . '"' : '' ?>>
                 <div class="design-img">
                     <img src="img/shop/<?= $imgId ?>.png" alt="<?= $d['name'] ?>">
                 </div>
