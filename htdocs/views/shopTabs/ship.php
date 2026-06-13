@@ -55,7 +55,6 @@ $u = $sth->fetch(PDO::FETCH_ASSOC);
 ?>
 
 <style>
-    /* Custom Shop Styles matching mainStyles.css */
     .shop-card {
         background: var(--color-surface);
         border: 1px solid var(--color-border);
@@ -134,7 +133,6 @@ $u = $sth->fetch(PDO::FETCH_ASSOC);
         margin-bottom: 0.5rem;
     }
 
-    /* Buttons inspired by .nav-item.is-active from mainStyles.css */
     .btn-buy {
         display: inline-block;
         padding: 0.5rem 1.5rem;
@@ -215,12 +213,3 @@ $u = $sth->fetch(PDO::FETCH_ASSOC);
         <?php endforeach; ?>
     </div>
 </div>
-
-<?php
-
-function buy($newId, $db, $data) {
-    $pid = (int)($_SESSION['player_id'] ?? 0);
-    $service = new ShopPurchaseService($db, $pid);
-    return $service->buyShip((int)$newId, $data);
-}
-?>

@@ -72,12 +72,6 @@ if (!empty($buymessage)) {
 
             $('#popupBoxClose').click(function() { unloadPopupBox(); });
             
-            // On ferme aussi si on clique en dehors (sur l'app-shell par exemple)
-            $(document).on('click', function(e) {
-                if($(e.target).closest('#popup_box').length === 0 && $(e.target).attr('id') != 'popup_box') {
-                     // Logique optionnelle pour fermer au clic extérieur
-                }
-            });
 
             function unloadPopupBox() {
                 $('#popup_box').fadeOut("slow");

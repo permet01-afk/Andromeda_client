@@ -112,11 +112,3 @@ $user = $uStmt->fetch();
         <?php endforeach; ?>
     </div>
 </div>
-
-<?php
-function buyDesign($designId, $db, $data) {
-    $pid = (int)($_SESSION['player_id'] ?? 0);
-    $service = new ShopPurchaseService($db, $pid);
-    return $service->buyDesign((int)$designId, $data);
-}
-?>

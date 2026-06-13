@@ -291,27 +291,3 @@ $booster_shd_display = calculateBoosterTime($datauser[0]['booster_shd_time']);
 
     </div>
 </div>
-
-<?php
-
-
-
-
-function handleSubmitDamageBooster($datauser,$db) {
-    $amount = (!empty($_POST['amount-d'])) ? (int)$_POST['amount-d'] : 1;
-    $service = new ShopPurchaseService($db, (int)$_SESSION['player_id']);
-    return $service->buyBooster('damage_booster', 'booster_dmg_time', $amount, 10000, 'Damage Booster');
-}
-
-function handleSubmitHpBooster($datauser,$db) {
-    $amount = (!empty($_POST['amount-g'])) ? (int)$_POST['amount-g'] : 1;
-    $service = new ShopPurchaseService($db, (int)$_SESSION['player_id']);
-    return $service->buyBooster('hp_booster', 'booster_hp_time', $amount, 10000, 'HP Booster');
-}
-
-function handleSubmitShieldBooster($datauser,$db) {
-    $amount = (!empty($_POST['amount-e'])) ? (int)$_POST['amount-e'] : 1;
-    $service = new ShopPurchaseService($db, (int)$_SESSION['player_id']);
-    return $service->buyBooster('shield_booster', 'booster_shd_time', $amount, 10000, 'Shield Booster');
-}
-?>

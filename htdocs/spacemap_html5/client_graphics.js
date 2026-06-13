@@ -9574,8 +9574,6 @@ function finalizeLogoutCountdown() {
     logoutCountdownValue = 0;
     logoutControlsLocked = true;
     updateLogoutWindowText();
-    // Le serveur est l'autorité finale : à 0, on attend le paquet "l"
-    // ou le paquet "t" si le logout est annulé par combat/dégâts.
 }
 
 let flashConnectionModalLayer = null;
