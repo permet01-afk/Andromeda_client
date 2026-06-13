@@ -8,7 +8,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 $DESIGNS = [
     17 => ['name' => 'Vengeance Enforcer', 'base_ship' => 'Vengeance', 'base_id' => 8,  'price' => 50000,  'currency' => 'uridium', 'bonus' => '+5% Damage'],
-    18 => ['name' => 'Vengeance Lightning', 'base_ship' => 'Vengeance', 'base_id' => 8,  'price' => 150000, 'currency' => 'uridium', 'bonus' => 'Lightning Design +10% Damage'],
+    18 => ['name' => 'Vengeance Lightning', 'base_ship' => 'Vengeance', 'base_id' => 8,  'price' => 150000, 'currency' => 'uridium', 'bonus' => '+10% Damage'],
     56 => ['name' => 'Goliath Enforcer',   'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 100000, 'currency' => 'uridium', 'bonus' => '+5% Damage'],
     59 => ['name' => 'Goliath Bastion',    'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 100000, 'currency' => 'uridium', 'bonus' => '+10% Shield'],
     63 => ['name' => 'Goliath Solace',     'base_ship' => 'Goliath',   'base_id' => 10, 'price' => 250000, 'currency' => 'uridium', 'bonus' => '+10% Shield + Ability'],
