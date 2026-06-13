@@ -2040,6 +2040,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
             {
             }
 
+            TitleService.OnNpcDestroyed(this);
+
             if (Invasion.HandleNpcDestroyed(this, map))
             {
                 StopNpcAttack();
@@ -2276,8 +2278,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 if (leveledUp)
                     sessionByCharacterId.SendData(PacketComposer.Compose("A", $"LUP|{levelNow}|1"));
             }
-
-            TitleService.OnNpcDestroyed(this);
 
             StopNpcAttack();
             this.Loot();

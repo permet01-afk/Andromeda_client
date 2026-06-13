@@ -9,6 +9,7 @@ using OrbitReborn_Emulator.Game.Misc;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Titles;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
 using System;
@@ -4168,6 +4169,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
 
                 GalaxyGateWaveService.OnPlayerKilled(Session);
+                TitleService.OnPlayerDestroyed(Session);
 
                 Session.CharacterInfo.FactionId = Session.CharacterInfo.RealFaction;
                 Session.CharacterInfo.ClanId = Session.CharacterInfo.RealClan;

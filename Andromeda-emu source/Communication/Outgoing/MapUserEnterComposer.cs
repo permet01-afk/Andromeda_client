@@ -65,12 +65,9 @@ namespace OrbitReborn_Emulator.Communication.Outgoing
                 serverMessage.Append("e|" + (object)Info.Id + "|" + (object)flax + "/" + (object)iris);
                 serverMessage.AppendBreak();
             }
-            if (Info.GameTitle != "")
-            {
-                serverMessage.AppendShort("0|n");
-                serverMessage.Append("pt|" + (object)Info.Id + "|" + Info.GameTitle);
-                serverMessage.AppendBreak();
-            }
+            serverMessage.AppendShort("0|n");
+            serverMessage.Append("pt|" + (object)Info.Id + "|" + Info.GameTitle);
+            serverMessage.AppendBreak();
             serverMessage.AppendShort("0|n");
             serverMessage.Append("INV|" + (object)Info.Id + "|" + (object)Info.Invisible);
             serverMessage.AppendBreak();

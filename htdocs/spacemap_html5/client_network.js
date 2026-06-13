@@ -4027,6 +4027,7 @@ function handlePacket_f(parts, i) {
     const resolvedStage = resolveExpansionStage(expansionStage, shipId);
     const e = ensureEntity(id);
     e.kind = "player";
+    e.gameTitleKey = "";
     e.name = name;
     e.clanTag = normalizeChatClanTag(clanTag);
     cacheKnownClanTag(name, e.clanTag);
@@ -4219,6 +4220,7 @@ function handlePacket_C(parts, i) {
         if (typeof resetEntityVisualLife === "function") resetEntityVisualLife(e);
     }
     e.kind = "npc";
+    e.gameTitleKey = "";
     e.type = shipId;
     e.shipId = shipId;
     resetEntityInterpolationTo(e, x, y);

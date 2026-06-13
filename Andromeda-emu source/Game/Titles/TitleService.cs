@@ -239,6 +239,41 @@ namespace OrbitReborn_Emulator.Game.Titles
             }
         }
 
+        public static void OnPlayerDestroyed(Session victim)
+        {
+            if (victim == null || victim.CharacterInfo == null)
+            {
+                return;
+            }
+
+            try
+            {
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                {
+                    if (!AreTitleTablesAvailable(client))
+                    {
+                        return;
+                    }
+
+                    lock (MostWantedLock)
+                    {
+                        DataRow state = GetMostWantedState(client);
+                        if (state == null || !string.Equals(GetString(state, "holder_type"), "player", StringComparison.OrdinalIgnoreCase) || GetInt(state, "holder_player_id") != victim.CharacterInfo.Id)
+                        {
+                            return;
+                        }
+
+                        RevokeTemporaryTitle(client, victim.CharacterInfo.Id, MostWantedTitleKey);
+                        AssignMostWantedToRandomNpc(client);
+                        RefreshDisplayedTitle(victim, true);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
         public static void EnsureMostWantedHolder()
         {
             try
@@ -513,6 +548,11 @@ namespace OrbitReborn_Emulator.Game.Titles
             }
 
             string cleanName = CleanNpcName(npc.Name);
+            if (string.Equals(cleanName, "Invader", StringComparison.OrdinalIgnoreCase) || string.Equals(cleanName, "Super Invader", StringComparison.OrdinalIgnoreCase) || string.Equals(cleanName, "Fast Invader", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
             return !string.Equals(cleanName, "Spaceball", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -643,12 +683,19 @@ namespace OrbitReborn_Emulator.Game.Titles
 
         private static void RevokeOtherTemporaryTitlesBeforeGrant(SqlDatabaseClient client, int playerId, string titleKey)
         {
-            bool returnsMostWantedToNpc = titleKey != MostWantedTitleKey && HasActiveTemporaryTitle(client, playerId, MostWantedTitleKey) && IsMostWantedHeldByPlayer(client, playerId);
+            bool preserveMostWanted = string.Equals(titleKey, SpaceballChampionTitleKey, StringComparison.Ordinal);
+            bool returnsMostWantedToNpc = titleKey != MostWantedTitleKey && !preserveMostWanted && HasActiveTemporaryTitle(client, playerId, MostWantedTitleKey) && IsMostWantedHeldByPlayer(client, playerId);
 
             client.ClearParameters();
             client.SetParameter("playerId", playerId);
             client.SetParameter("titleKey", titleKey);
-            client.ExecuteNonQuery("UPDATE player_titles SET revoked_at = UTC_TIMESTAMP() WHERE player_id = @playerId AND title_scope = 'temporary' AND title_key <> @titleKey AND revoked_at IS NULL");
+            string sql = "UPDATE player_titles SET revoked_at = UTC_TIMESTAMP() WHERE player_id = @playerId AND title_scope = 'temporary' AND title_key <> @titleKey";
+            if (preserveMostWanted)
+            {
+                client.SetParameter("mostWantedTitleKey", MostWantedTitleKey);
+                sql += " AND title_key <> @mostWantedTitleKey";
+            }
+            client.ExecuteNonQuery(sql + " AND revoked_at IS NULL");
 
             if (returnsMostWantedToNpc)
             {
