@@ -1647,17 +1647,17 @@ namespace OrbitReborn_Emulator.Game.Characters
             switch (skillType)
             {
                 case 1:
-                    return 900;
+                    return 750;
                 case 2:
-                    return 1200;
-                case 3:
                     return 900;
+                case 3:
+                    return 750;
                 case 4:
-                    return 1200;
+                    return 900;
                 case 5:
-                    return 1200;
+                    return 900;
                 case 6:
-                    return 480;
+                    return 350;
                 default:
                     return 0;
             }
