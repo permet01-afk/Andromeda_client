@@ -327,6 +327,35 @@ namespace OrbitReborn_Emulator.Game.Handlers
             return sb.ToString();
         }
 
+        private static string BuildGroupMemberUpdatePayload(Session memberSession)
+        {
+            var info = memberSession.CharacterInfo;
+            return "<1 hp=\"" + info.ShipHp + "\" hpM=\"" + info.ShipMaxHp + "\" sh=\"" + info.ShipShield + "\"  shM=\"" + info.ShipMaxShield + "\"  tgt=\"" + info.SelectedPlayer + "\"  fgt=\"" + GeneralFunctions.ToEnum(info.Attacking) + "\"  map=\"" + info.MapId + "\" pos=\"" + info.LocX + "," + info.LocY + "\" lev=\"" + info.Level + "\" fra=\"" + info.FactionId + "\" shp=\"" + info.ShipId + "\" act=\"" + GeneralFunctions.ToEnum(info.Destroy) + "\" clk=\"" + info.Invisible + "\" lgo=\"0\"></1>";
+        }
+
+        public static void BroadcastGroupMemberState(Session memberSession)
+        {
+            if (memberSession == null || memberSession.CharacterInfo == null)
+                return;
+
+            List<int> memberIds = GetGroupCharacterIds(memberSession);
+            if (memberIds.Count < 2)
+                return;
+
+            string payload = BuildGroupMemberUpdatePayload(memberSession);
+            string packet = "upd|" + memberSession.CharacterInfo.Id + "|" + payload;
+
+            foreach (int memberId in memberIds)
+            {
+                if (memberId == memberSession.CharacterInfo.Id)
+                    continue;
+
+                Session targetSession = SessionManager.GetSessionByCharacterId(memberId);
+                if (targetSession != null && targetSession.CharacterInfo != null)
+                    targetSession.SendData(PacketComposer.Compose("ps", packet));
+            }
+        }
+
         public static void SendFullGroupStateToMembers(Session session)
         {
             List<int> memberIds = GetGroupCharacterIds(session);
@@ -961,7 +990,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         }
                         else
                         {
-                            string str = "<1 hp=\"" + sessiongroup.CharacterInfo.ShipHp + "\" hpM=\"" + sessiongroup.CharacterInfo.ShipMaxHp + "\" sh=\"" + sessiongroup.CharacterInfo.ShipShield + "\"  shM=\"" + sessiongroup.CharacterInfo.ShipMaxShield + "\"  tgt=\"" + sessiongroup.CharacterInfo.SelectedPlayer + "\"  fgt=\"" + GeneralFunctions.ToEnum(sessiongroup.CharacterInfo.Attacking) + "\"  map=\"" + sessiongroup.CharacterInfo.MapId + "\" pos=\"" + sessiongroup.CharacterInfo.LocX + "," + sessiongroup.CharacterInfo.LocY + "\" lev=\"" + sessiongroup.CharacterInfo.Level + "\" fra=\"" + sessiongroup.CharacterInfo.FactionId + "\" shp=\"" + sessiongroup.CharacterInfo.ShipId + "\" act=\"" + GeneralFunctions.ToEnum(sessiongroup.CharacterInfo.Destroy) + "\" clk=\"" + sessiongroup.CharacterInfo.Invisible + "\" lgo=\"0\"></1>";
+                            string str = BuildGroupMemberUpdatePayload(sessiongroup);
                             Session.SendData(PacketComposer.Compose("ps", "upd|" + key + "|" + str));
                         }
                     }

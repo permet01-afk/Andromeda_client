@@ -1668,6 +1668,14 @@ const minimapEntityRenderCache = [];
 let minimapEntityRenderCacheLastUpdate = -Infinity;
 let minimapEntityRenderCacheSignature = "";
 
+function invalidateMinimapEntityRenderCache() {
+    minimapEntityRenderCache.length = 0;
+    minimapEntityRenderCacheLastUpdate = -Infinity;
+    minimapEntityRenderCacheSignature = "";
+}
+
+window.invalidateMinimapEntityRenderCache = invalidateMinimapEntityRenderCache;
+
 function getMinimapThreatIndicator(level, height) {
     const key = `${level}|${height}`;
     if (minimapThreatIndicatorCache[key]) return minimapThreatIndicatorCache[key];

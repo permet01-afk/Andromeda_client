@@ -2004,6 +2004,7 @@ function handlePacket_ps(parts) {
         groupInvitationBehavior = 0;
         groupInGroupServerState = false;
         syntheticGroupChatServerId = 0;
+        invalidateGroupMinimapCache();
         if (showMessage) addServerInfoLogMessage("Group disbanded.");
         refreshGroupUi();
     };
@@ -2139,6 +2140,7 @@ function handlePacket_ps(parts) {
             if (Object.keys(groupMembers).length > 0) {
                 addServerInfoLogMessage("Group formed!");
             }
+            invalidateGroupMinimapCache();
             refreshGroupUi();
         }
         return;
@@ -2182,6 +2184,7 @@ function handlePacket_ps(parts) {
             if (shp !== null) groupMembers[memId].shipType = shp;
             if (fgt !== null) groupMembers[memId].fighting = Boolean(fgt);
             if (off !== null) groupMembers[memId].isOffline = Boolean(off);
+            removeRemoteGroupMemberEntityIfNeeded(memId);
             refreshGroupUi();
         }
         return;
@@ -2203,6 +2206,7 @@ function handlePacket_ps(parts) {
                 groupInGroupServerState = false;
                 syntheticGroupChatServerId = 0;
             }
+            invalidateGroupMinimapCache();
             refreshGroupUi();
         }
         return;
@@ -2236,6 +2240,7 @@ function handlePacket_ps(parts) {
         const newMap = parseInt(parts[4], 10);
         if (groupMembers[targetId] && !isNaN(newMap)) {
             groupMembers[targetId].mapId = newMap;
+            removeRemoteGroupMemberEntityIfNeeded(targetId);
             refreshGroupUi();
         }
         return;
@@ -2315,6 +2320,7 @@ function resetMapState(newMapId) {
     }
     applyMapBackground(currentMapId);
     for (const id in entities) delete entities[id];
+    invalidateGroupMinimapCache();
     if (typeof clearEntityRuntimeActiveLists === "function") clearEntityRuntimeActiveLists();
     for (const id in portals) delete portals[id];
     if (pendingAttackLocksByAttackerId instanceof Map) pendingAttackLocksByAttackerId.clear();
@@ -2385,6 +2391,37 @@ function resetMapState(newMapId) {
     if (typeof clearEnergyLeechEchoBeams === "function") {
         clearEnergyLeechEchoBeams();
     }
+}
+
+function invalidateGroupMinimapCache() {
+    if (typeof window !== "undefined" && typeof window.invalidateMinimapEntityRenderCache === "function") {
+        window.invalidateMinimapEntityRenderCache();
+    }
+}
+
+function getCurrentGroupNetworkMapId() {
+    const activeMapId = typeof currentMapId !== "undefined" && currentMapId !== null ? parseInt(currentMapId, 10) : NaN;
+    if (Number.isFinite(activeMapId) && activeMapId > 0) return activeMapId;
+    const cfgMapId = typeof cfg !== "undefined" && cfg && cfg.mapID != null ? parseInt(cfg.mapID, 10) : NaN;
+    return Number.isFinite(cfgMapId) && cfgMapId > 0 ? cfgMapId : null;
+}
+
+function removeRemoteGroupMemberEntityIfNeeded(memberId) {
+    const member = groupMembers[memberId] || groupMembers[String(memberId)];
+    if (!member) return;
+
+    const memberMapId = parseInt(member.mapId, 10);
+    const activeMapId = getCurrentGroupNetworkMapId();
+    if (!Number.isFinite(memberMapId) || !Number.isFinite(activeMapId) || memberMapId === activeMapId) {
+        invalidateGroupMinimapCache();
+        return;
+    }
+
+    const ent = entities[memberId] || entities[String(memberId)];
+    if (ent && ent.kind === "player") {
+        handlePacket_R([ "R", String(memberId) ], 1);
+    }
+    invalidateGroupMinimapCache();
 }
 
 function handlePacket_i(parts, i) {
@@ -4049,6 +4086,7 @@ function handlePacket_f(parts, i) {
         groupMembers[id].posX = x;
         groupMembers[id].posY = y;
         if (typeof currentMapId !== "undefined") groupMembers[id].mapId = currentMapId;
+        invalidateGroupMinimapCache();
     }
     if (heroId !== null && id === heroId) {
         shipX = x;

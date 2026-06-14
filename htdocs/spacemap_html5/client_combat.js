@@ -63,16 +63,26 @@ function getGameXmlColorPattern(key, fallback) {
     return fallback;
 }
 
+function isEntitySameMapGroupMember(e) {
+    if (!e || e.id == null) return false;
+    try {
+        if (typeof groupMembers !== "object" || !groupMembers) return false;
+        const member = groupMembers[e.id] || groupMembers[String(e.id)];
+        if (!member) return false;
+        const memberMapId = parseInt(member.mapId, 10);
+        const activeMapId = typeof currentMapId !== "undefined" && currentMapId !== null ? parseInt(currentMapId, 10) : NaN;
+        return Number.isFinite(memberMapId) && Number.isFinite(activeMapId) && memberMapId === activeMapId;
+    } catch (_) {
+        return false;
+    }
+}
+
 function getRelationColorKeyForEntity(e) {
     if (!e) return "neutral";
     if (typeof heroId !== "undefined" && e.id === heroId) {
         return "neutral";
     }
-    try {
-        if (typeof groupMembers === "object" && groupMembers && e.id != null && groupMembers[e.id] !== undefined) {
-            return "sameGroup";
-        }
-    } catch (_) {}
+    if (isEntitySameMapGroupMember(e)) return "sameGroup";
     const myClanId = typeof heroClanId === "number" && heroClanId > 0 ? heroClanId : 0;
     if (myClanId && e.clanId && e.clanId === myClanId) {
         return "sameClan";

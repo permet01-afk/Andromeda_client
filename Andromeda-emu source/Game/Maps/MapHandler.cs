@@ -258,6 +258,7 @@ namespace OrbitReborn_Emulator.Game.Maps
 
                 ShipMovement.CheckPeaceZone(Session);
                 ShipMovement.CheckPortalZone(Session, true);
+                GroupManager.BroadcastGroupMemberState(Session);
             }
 
             if (Session.CharacterInfo.KillStrek >= 10)
