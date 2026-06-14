@@ -3314,6 +3314,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
             session.SendData(PacketComposer.Compose("N", "-1"));
         }
 
+        private static void ResyncMap45BossCubikonOnOutOfRange(MapInstance instance, Session session, Npc npc)
+        {
+            if (instance == null || session == null || npc == null)
+                return;
+            if (!NpcAI.IsMap45BossCubikon(npc.Name, npc.MapId))
+                return;
+
+            ShipMovement.ResyncNpcLifecycleCreate(session, instance, npc);
+        }
+
         private static void AttackNpc(MapInstance Instance, Session Session, Npc Npc, int Ammo, bool damage = true)
         {
             if (Session == null || Session.CharacterInfo == null || Npc == null || !CanSessionAttackNpc(Session, Npc))
@@ -3397,6 +3407,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 Session.SendData(PacketComposer.Compose("O", ""));
                 Session.CharacterInfo.OutOfRange = true;
+                ResyncMap45BossCubikonOnOutOfRange(Instance, Session, Npc);
             }
         }
 

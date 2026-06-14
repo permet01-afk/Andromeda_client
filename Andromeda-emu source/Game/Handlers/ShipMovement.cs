@@ -805,7 +805,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 long dx = (long)referenceObject.LocX - session.CharacterInfo.LocX;
                 long dy = (long)referenceObject.LocY - session.CharacterInfo.LocY;
-                if (((double)(dx * dx + dy * dy) < rangeSquared || referenceObject.IsBoss == 1 || referenceObject.Name == "Spaceball") && activeMapId == referenceObject.MapId)
+                if (((double)(dx * dx + dy * dy) < rangeSquared || ShouldForceGlobalNpcVisibility(referenceObject)) && activeMapId == referenceObject.MapId)
                 {
                     if (!session.CharacterInfo.NpcInRange.Contains(referenceObject.Id) && !referenceObject.IsDestroying)
                     {
@@ -838,7 +838,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        private static bool ShouldSendNpcLifecycleCreate(Session session, Npc npc)
+        private static bool ShouldForceGlobalNpcVisibility(Npc npc)
+        {
+            if (npc == null)
+                return false;
+            if (NpcAI.IsMap45BossCubikon(npc.Name, npc.MapId))
+                return false;
+            return npc.IsBoss == 1 || npc.Name == "Spaceball";
+        }
+
+        private static bool ShouldSendNpcLifecycleCreate(Session session, Npc npc, bool forceVisibility = false)
         {
             if (session == null || session.CharacterInfo == null || npc == null || npc.IsDestroying)
                 return false;
@@ -859,10 +868,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             double rangeSquared = maxRange * maxRange;
             long dx = (long)npc.LocX - session.CharacterInfo.LocX;
             long dy = (long)npc.LocY - session.CharacterInfo.LocY;
-            return (double)(dx * dx + dy * dy) < rangeSquared || npc.IsBoss == 1 || npc.Name == "Spaceball";
+            return forceVisibility || (double)(dx * dx + dy * dy) < rangeSquared || ShouldForceGlobalNpcVisibility(npc);
         }
 
-        public static bool SendNpcLifecycleCreate(Session session, MapInstance instance, MapActor npcActor, bool resetKnownNpc)
+        public static bool SendNpcLifecycleCreate(Session session, MapInstance instance, MapActor npcActor, bool resetKnownNpc, bool forceVisibility = false)
         {
             if (session == null || session.CharacterInfo == null || instance == null || npcActor == null || npcActor.Type != MapActorType.AiBot)
                 return false;
@@ -879,7 +888,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             npc.AdvanceMovementToCurrentPosition();
 
-            if (!ShouldSendNpcLifecycleCreate(session, npc))
+            if (!ShouldSendNpcLifecycleCreate(session, npc, forceVisibility))
                 return false;
 
             if (!session.CharacterInfo.NpcInRange.Contains(npc.Id))
@@ -907,6 +916,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
 
             return true;
+        }
+
+        public static bool ResyncNpcLifecycleCreate(Session session, MapInstance instance, Npc npc)
+        {
+            if (session == null || instance == null || npc == null)
+                return false;
+
+            MapActor npcActor = instance.GetActorByReferenceId(npc.Id, MapActorType.AiBot);
+            return SendNpcLifecycleCreate(session, instance, npcActor, true, true);
         }
 
         public static void SendNpcLifecycleCreateToVisibleSessions(MapInstance instance, MapActor npcActor, bool resetKnownNpc)

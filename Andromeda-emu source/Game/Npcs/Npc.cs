@@ -1968,6 +1968,62 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 if (actor != null)
                     ShipMovement.SendNpcLifecycleCreateToVisibleSessions(map, actor, true);
             }
+
+            NpcAI.SendMap45BossCubikonMarker(this);
+        }
+
+        private static void RemoveNpcFromVisibleSessions(MapInstance map, Npc npc)
+        {
+            if (map == null || npc == null)
+                return;
+
+            foreach (MapActor mapActor in map.GetUserActorSnapshot())
+            {
+                if (mapActor == null || mapActor.Type != MapActorType.UserCharacter || mapActor.ReferenceSessionId <= 0)
+                    continue;
+
+                Session sessionById = SessionManager.GetSessionById(mapActor.ReferenceSessionId);
+                if (sessionById == null || sessionById.CharacterInfo == null)
+                    continue;
+
+                if (!sessionById.CharacterInfo.NpcInRange.Contains(npc.Id))
+                    continue;
+
+                if (sessionById.CharacterInfo.SelectedPlayer == npc.Id)
+                    Fight.StopLaser(sessionById, null);
+
+                sessionById.CharacterInfo.NpcInRange.Remove(npc.Id);
+                sessionById.SendData(PacketComposer.Compose("R", npc.Id.ToString()));
+            }
+        }
+
+        private void CleanupMap45BossProtegits(MapInstance currentMap)
+        {
+            if (currentMap == null)
+            {
+                this.SpawnedMinions.Clear();
+                return;
+            }
+
+            foreach (int minionId in this.SpawnedMinions.Keys)
+            {
+                MapActor minionActor = currentMap.GetActorByReferenceId(minionId, MapActorType.AiBot);
+                if (minionActor == null || !(minionActor.ReferenceObject is Npc))
+                    continue;
+
+                Npc minionNpc = (Npc)minionActor.ReferenceObject;
+                minionNpc.StopNpcAttack();
+                minionNpc.StopMovementAtCurrentPosition();
+                minionNpc.TargetId = 0;
+                minionNpc.IsAttacking = false;
+                minionNpc.DespawnAt = 0.0;
+                minionNpc.IsDestroying = true;
+                RemoveNpcFromVisibleSessions(currentMap, minionNpc);
+                currentMap.KickNpc(minionActor.Id);
+                NpcAI.NpcToRemove.Add(minionNpc);
+            }
+
+            this.SpawnedMinions.Clear();
         }
 
         public void Destroy(MapInstance map)
@@ -1985,7 +2041,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (UsesCubikonRewardModel())
             {
                 MapInstance currentMap = MapManager.GetInstanceByMapId(this.MapId);
-                if (currentMap != null)
+                if (IsMap29BossCubikon())
+                {
+                    CleanupMap45BossProtegits(currentMap);
+                }
+                else if (currentMap != null)
                 {
                     double despawnAt = UnixTimestamp.GetCurrent() + 3.0;
 
@@ -2007,6 +2067,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 this.SpawnedMinions.Clear();
             }
+
+            NpcAI.HideMap45BossCubikonMarker(this);
 
 
             try
@@ -2405,6 +2467,37 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 if (this.ShipId == 80)
                     return;
 
+                if (this.IsDestroying || this.DespawnAt > 0.0)
+                {
+                    StopNpcAttack();
+                    return;
+                }
+
+                MapInstance instanceByMapId = MapManager.GetInstanceByMapId(this.MapId);
+                if (instanceByMapId == null)
+                {
+                    StopNpcAttack();
+                    return;
+                }
+
+                MapActor ownActor = instanceByMapId.GetActorByReferenceId(this.Id, MapActorType.AiBot);
+                if (ownActor == null || !object.ReferenceEquals(ownActor.ReferenceObject, this))
+                {
+                    StopNpcAttack();
+                    return;
+                }
+
+                if (this.ParentNpcId > 0 && this.Name == "-=[ Boss Protegit ]=-")
+                {
+                    MapActor parentActor = instanceByMapId.GetActorByReferenceId(this.ParentNpcId, MapActorType.AiBot);
+                    Npc parentNpc = parentActor == null ? null : parentActor.ReferenceObject as Npc;
+                    if (parentNpc == null || parentNpc.IsDestroying || parentNpc.ShipHp <= 0)
+                    {
+                        StopNpcAttack();
+                        return;
+                    }
+                }
+
                 Session sessionByCharacterId = SessionManager.GetSessionByCharacterId(this.TargetId);
                 if (sessionByCharacterId == null || sessionByCharacterId.CharacterInfo == null)
                 {
@@ -2437,13 +2530,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 }
 
                 if (sessionByCharacterId.CharacterInfo.PeaceZone || sessionByCharacterId.CharacterInfo.WarningZone)
-                {
-                    StopNpcAttack();
-                    return;
-                }
-
-                MapInstance instanceByMapId = MapManager.GetInstanceByMapId(this.MapId);
-                if (instanceByMapId == null)
                 {
                     StopNpcAttack();
                     return;

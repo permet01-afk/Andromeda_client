@@ -30,6 +30,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private const int STOP_SHOOT_RANGE = 450;
         private const int AI_TICK_RATE = 800;
         private const int NPC_MOVEMENT_TICK_RATE = 550;
+        private const int MAP45_BOSS_CUBIKON_MARKER_LIFETIME_TICKS = 6;
         private const double ORBIT_SLOT_ANGLE_STEP_DEG = 12.0;
         private const double ORBIT_SLOT_MAX_OFFSET_DEG = 120.0;
         private const int NPC_STACK_DISTANCE = 95;
@@ -175,6 +176,30 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private static bool IsMap45BossCubikon(Npc npc)
         {
             return npc != null && IsMap45BossCubikon(npc.Name, npc.MapId);
+        }
+
+        public static void SendMap45BossCubikonMarker(Npc npc)
+        {
+            if (!IsMap45BossCubikon(npc) || npc.IsDestroying)
+                return;
+
+            MapInstance instance = MapManager.GetInstanceByMapId(npc.MapId);
+            if (instance == null)
+                return;
+
+            instance.BroadcastMessage(PacketComposer.Compose("MM", "SM|" + npc.Id + "|" + npc.LocX + "|" + npc.LocY + "|" + MAP45_BOSS_CUBIKON_MARKER_LIFETIME_TICKS), false);
+        }
+
+        public static void HideMap45BossCubikonMarker(Npc npc)
+        {
+            if (!IsMap45BossCubikon(npc))
+                return;
+
+            MapInstance instance = MapManager.GetInstanceByMapId(npc.MapId);
+            if (instance == null)
+                return;
+
+            instance.BroadcastMessage(PacketComposer.Compose("MM", "HM|" + npc.Id), false);
         }
 
         private static void ClampMap45BossCubikonPosition(ref int x, ref int y)
@@ -692,6 +717,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 instanceByMapId.AddNpcToMap(newInstance);
                 NpcAI.NpcToAdd.Add(newInstance);
+                if (isMap45BossCubikon)
+                    SendMap45BossCubikonMarker(newInstance);
 
                 WasOutOfRange[newInstance.Id] = true;
                 LastInstantShootTick[newInstance.Id] = 0;
@@ -1682,6 +1709,9 @@ namespace OrbitReborn_Emulator.Game.Npcs
                                     item_1.PathFinder = new Timer(new TimerCallback(NpcAI.PathFinding), (object)item_1, NPC_MOVEMENT_TICK_RATE, NPC_MOVEMENT_TICK_RATE);
                             }
                         }
+
+                        if (IsMap45BossCubikon(item_1))
+                            SendMap45BossCubikonMarker(item_1);
 
                         if (UnixTimestamp.GetCurrent() - item_1.LastAttackReceived >= REGEN_DELAY_SECONDS)
                         {
