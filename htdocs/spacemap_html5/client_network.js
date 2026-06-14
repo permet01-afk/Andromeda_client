@@ -4180,7 +4180,7 @@ function handlePacket_MM(parts, i) {
         }
         return;
     }
-    if (action === "SM") {
+    if (action === "SM" || action === "SR") {
         const markerId = parseInt(parts[i + 1] || "0", 10);
         const x = parseInt(parts[i + 2] || "0", 10);
         const y = parseInt(parts[i + 3] || "0", 10);
@@ -4193,7 +4193,8 @@ function handlePacket_MM(parts, i) {
             x: x,
             y: y,
             count: Number.isFinite(count) ? count : -1,
-            startedAt: nowMs
+            startedAt: nowMs,
+            type: action === "SR" ? "redDot" : "ping"
         });
         return;
     }

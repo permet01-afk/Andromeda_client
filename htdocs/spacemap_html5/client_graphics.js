@@ -2170,6 +2170,13 @@ function drawMiniMap() {
             }
             const mx = x + (m.x - MAP_MIN_X) * miniScaleX;
             const my = mapY + (m.y - MAP_MIN_Y) * miniScaleY;
+            if (m.type === "redDot") {
+                ctx.save();
+                ctx.fillStyle = "#ff2d1f";
+                ctx.fillRect(Math.round(mx) - 1, Math.round(my) - 1, 3, 3);
+                ctx.restore();
+                continue;
+            }
             const frameIndex = Math.min(def.frameCount - 1, Math.floor(age % cycleMs / cycleMs * def.frameCount));
             const img = getMinimapSpriteFrame("groupPing", frameIndex);
             if (!img || !img.complete || img.width <= 0) continue;

@@ -924,7 +924,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return false;
 
             MapActor npcActor = instance.GetActorByReferenceId(npc.Id, MapActorType.AiBot);
-            return SendNpcLifecycleCreate(session, instance, npcActor, true, true);
+            return SendNpcLifecycleCreate(session, instance, npcActor, false, true);
         }
 
         public static void SendNpcLifecycleCreateToVisibleSessions(MapInstance instance, MapActor npcActor, bool resetKnownNpc)

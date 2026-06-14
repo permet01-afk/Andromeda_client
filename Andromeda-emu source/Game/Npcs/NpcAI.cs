@@ -187,7 +187,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (instance == null)
                 return;
 
-            instance.BroadcastMessage(PacketComposer.Compose("MM", "SM|" + npc.Id + "|" + npc.LocX + "|" + npc.LocY + "|" + MAP45_BOSS_CUBIKON_MARKER_LIFETIME_TICKS), false);
+            instance.BroadcastMessage(PacketComposer.Compose("MM", "SR|" + npc.Id + "|" + npc.LocX + "|" + npc.LocY + "|" + MAP45_BOSS_CUBIKON_MARKER_LIFETIME_TICKS), false);
         }
 
         public static void HideMap45BossCubikonMarker(Npc npc)
