@@ -23,11 +23,82 @@ if (!function_exists('auction_qty')) {
     }
 }
 
+if (!function_exists('auction_daily_windows')) {
+    function auction_daily_windows(): array
+    {
+        return [
+            ['12:00', '13:00'],
+            ['18:00', '19:00'],
+            ['22:00', '23:00'],
+        ];
+    }
+}
+
+if (!function_exists('auction_fallback_schedule')) {
+    function auction_fallback_schedule(): array
+    {
+        $tz = new DateTimeZone(AuctionService::TIMEZONE);
+        $now = new DateTimeImmutable('now', $tz);
+        $today = $now->format('Y-m-d');
+        $windows = auction_daily_windows();
+        $active = null;
+        $next = null;
+
+        foreach ($windows as $index => $window) {
+            $start = new DateTimeImmutable($today . ' ' . $window[0] . ':00', $tz);
+            $end = new DateTimeImmutable($today . ' ' . $window[1] . ':00', $tz);
+
+            if ($now >= $start && $now < $end) {
+                $active = [
+                    'round_number' => $index + 1,
+                    'start' => $start,
+                    'end' => $end,
+                ];
+                break;
+            }
+
+            if ($now < $start && $next === null) {
+                $next = [
+                    'round_number' => $index + 1,
+                    'start' => $start,
+                    'end' => $end,
+                ];
+            }
+        }
+
+        if ($next === null) {
+            $tomorrow = $now->modify('+1 day')->format('Y-m-d');
+            $first = $windows[0];
+            $next = [
+                'round_number' => 1,
+                'start' => new DateTimeImmutable($tomorrow . ' ' . $first[0] . ':00', $tz),
+                'end' => new DateTimeImmutable($tomorrow . ' ' . $first[1] . ':00', $tz),
+            ];
+        }
+
+        $target = $active ? $active['end'] : $next['start'];
+
+        return [
+            'is_open' => false,
+            'round_number' => null,
+            'next_round_number' => $active ? $active['round_number'] : $next['round_number'],
+            'target_timestamp' => $target->getTimestamp(),
+            'now_timestamp' => $now->getTimestamp(),
+            'now_label' => $now->format('Y-m-d H:i:s T'),
+            'timezone' => AuctionService::TIMEZONE,
+            'next_starts_at' => $active ? null : $next['start']->format('Y-m-d H:i:s'),
+            'next_ends_at' => $active ? null : $next['end']->format('Y-m-d H:i:s'),
+            'ends_at' => $active ? $active['end']->format('Y-m-d H:i:s') : null,
+        ];
+    }
+}
+
 $auctionPlayerId = (int)($sessionPlayerId ?? ($_SESSION['player_id'] ?? 0));
 $csrfToken = (string)($auctionCsrfToken ?? ($_SESSION['auction_csrf_token'] ?? ''));
 $auctionService = new AuctionService($db, $auctionPlayerId);
 $auctionMessage = '';
 $auctionError = '';
+$auctionSystemError = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['auction_action'] ?? '') === 'bid') {
     try {
@@ -49,34 +120,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['auction_action'] ?? '') ==
 try {
     $auctionState = $auctionService->preparePage();
 } catch (Exception $e) {
+    $auctionSystemError = true;
     $auctionState = [
-        'schedule' => [
-            'is_open' => false,
-            'round_number' => null,
-            'next_round_number' => 1,
-            'target_timestamp' => time(),
-            'now_timestamp' => time(),
-            'now_label' => date('Y-m-d H:i:s'),
-            'timezone' => AuctionService::TIMEZONE,
-            'next_starts_at' => null,
-            'next_ends_at' => null,
-            'ends_at' => null,
-        ],
+        'schedule' => auction_fallback_schedule(),
         'round' => null,
         'lots' => [],
-        'daily_windows' => [],
+        'daily_windows' => auction_daily_windows(),
     ];
-    $auctionError = $auctionError !== '' ? $auctionError : 'Auction system error: ' . $e->getMessage();
+    $auctionError = $auctionError !== '' ? $auctionError : 'Auction temporarily unavailable. Please try again later.';
 }
 
 $schedule = $auctionState['schedule'];
-$isOpen = !empty($schedule['is_open']);
+$isOpen = !$auctionSystemError && !empty($schedule['is_open']);
 $lots = $auctionState['lots'];
 $dailyWindows = $auctionState['daily_windows'];
 $targetTimestamp = (int)($schedule['target_timestamp'] ?? time());
 $roundLabel = $isOpen ? (int)($schedule['round_number'] ?? 0) : (int)($schedule['next_round_number'] ?? 1);
-$timerSuffix = $isOpen ? 'left' : 'until next round';
+$timerSuffix = $auctionSystemError ? 'schedule timer' : ($isOpen ? 'left' : 'until next round');
 $serverTime = (string)($schedule['now_label'] ?? '');
+$auctionCanAutoRefresh = (!$auctionSystemError && $targetTimestamp > (int)($schedule['now_timestamp'] ?? time()));
 
 $auctionCategoryTabs = [
     'ammo' => [
@@ -149,7 +211,7 @@ $currentTab = $auctionCategoryTabs[$currentAuctionCategory];
 $currentTabCount = (int)($auctionTabCounts[$currentAuctionCategory] ?? 0);
 ?>
 
-<div class="auction-page <?php echo $isOpen ? 'is-open' : 'is-closed'; ?>" data-auction-target="<?php echo $targetTimestamp; ?>" data-auction-open="<?php echo $isOpen ? '1' : '0'; ?>">
+<div class="auction-page <?php echo $auctionSystemError ? 'is-error' : ($isOpen ? 'is-open' : 'is-closed'); ?>" data-auction-target="<?php echo $targetTimestamp; ?>" data-auction-open="<?php echo $isOpen ? '1' : '0'; ?>" data-auction-refresh="<?php echo $auctionCanAutoRefresh ? '1' : '0'; ?>" data-auction-error="<?php echo $auctionSystemError ? '1' : '0'; ?>">
     <section class="auction-hero" aria-label="Auction status">
         <div class="auction-hero-copy">
             <h1>Auction</h1>
@@ -193,7 +255,12 @@ $currentTabCount = (int)($auctionTabCounts[$currentAuctionCategory] ?? 0);
             </header>
 
             <div class="auction-table-wrap">
-                <?php if (!$isOpen): ?>
+                <?php if ($auctionSystemError): ?>
+                    <div class="auction-closed-overlay" role="alert">
+                        <strong>Auction temporarily unavailable</strong>
+                        <span>Please try again later. Bidding controls are disabled.</span>
+                    </div>
+                <?php elseif (!$isOpen): ?>
                     <div class="auction-closed-overlay" role="status">
                         <strong>Auction is closed</strong>
                         <span>Next round starts in <b id="auction-overlay-countdown">--:--:--</b>. Bidding controls are disabled.</span>
@@ -315,7 +382,9 @@ $currentTabCount = (int)($auctionTabCounts[$currentAuctionCategory] ?? 0);
     var overlayTimer = document.getElementById('auction-overlay-countdown');
     if (!root || !timer) return;
 
-    var target = parseInt(root.getAttribute('data-auction-target'), 10) * 1000;
+    var targetValue = parseInt(root.getAttribute('data-auction-target'), 10);
+    var target = isFinite(targetValue) ? targetValue * 1000 : Date.now();
+    var refreshEnabled = root.getAttribute('data-auction-refresh') === '1';
     var reloaded = false;
 
     function pad(value) {
@@ -334,7 +403,7 @@ $currentTabCount = (int)($auctionTabCounts[$currentAuctionCategory] ?? 0);
         timer.textContent = value;
         if (overlayTimer) overlayTimer.textContent = value;
 
-        if (diff <= 0 && !reloaded) {
+        if (refreshEnabled && diff <= 0 && !reloaded) {
             reloaded = true;
             window.setTimeout(function () { window.location.reload(); }, 1200);
         }
