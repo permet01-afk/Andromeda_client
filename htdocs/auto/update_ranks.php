@@ -29,9 +29,9 @@ class Connexion
 $req = Connexion::bdd()->prepare("UPDATE users SET grade=1 WHERE COALESCE(is_admin, 0)=0 AND COALESCE(is_mod, 0)=0 AND (lastlogin < $last_active_limit OR (SELECT count(id) AS is_ban FROM bans WHERE bans.user_id = users.id AND bans.timestamp_expire > UNIX_TIMESTAMP() ) <> 0)");
 $req->execute();
 
-// Reset the previous special rank before recalculating all active faction ranks.
-// The current best-of-the-three faction generals will receive it again below.
-$req = Connexion::bdd()->prepare("UPDATE users SET grade=1 WHERE grade=23 AND COALESCE(is_admin, 0)=0 AND COALESCE(is_mod, 0)=0");
+// Reset previous special ranks before recalculating all active faction ranks.
+// The current global general and company generals will receive them again below.
+$req = Connexion::bdd()->prepare("UPDATE users SET grade=1 WHERE grade IN (20, 23) AND COALESCE(is_admin, 0)=0 AND COALESCE(is_mod, 0)=0");
 $req->execute();
 
 
@@ -129,14 +129,22 @@ function update_faction_ranks($faction_id, $label, $color, $stats_key, $rank_per
 	$topFactionUser['faction_label'] = $label;
 	$topFactionUser['faction_color'] = $color;
 
-	echo '<br/><font color="' . $color . '">- ' . $userslist[0]['username']. '</font> set rank 20';
-	edit_rank($userslist[0]['id'], 20);
+	$topRemainingFactionUser = null;
+
 	array_shift($userslist);
+
+	if (count($userslist) > 0)
+	{
+		$topRemainingFactionUser = $userslist[0];
+		$topRemainingFactionUser['faction'] = $faction_id;
+		$topRemainingFactionUser['faction_label'] = $label;
+		$topRemainingFactionUser['faction_color'] = $color;
+	}
 
 	$remainingCount = count($userslist);
 	if ($remainingCount <= 0)
 	{
-		return $topFactionUser;
+		return array('top' => $topFactionUser, 'remaining_top' => $topRemainingFactionUser);
 	}
 
 	$predictcount = 0;
@@ -165,19 +173,20 @@ function update_faction_ranks($faction_id, $label, $color, $stats_key, $rank_per
 		}
 	}
 
-	return $topFactionUser;
+	return array('top' => $topFactionUser, 'remaining_top' => $topRemainingFactionUser);
 }
 
 $topFactionUsers = array();
+$topFactionResults = array();
 
-$topUser = update_faction_ranks(1, 'MMO', 'brown', 'active_MMO', $rank, $debug);
-if ($topUser !== null) { $topFactionUsers[] = $topUser; }
+$topResult = update_faction_ranks(1, 'MMO', 'brown', 'active_MMO', $rank, $debug);
+if ($topResult !== null) { $topFactionResults[] = $topResult; $topFactionUsers[] = $topResult['top']; }
 
-$topUser = update_faction_ranks(2, 'EIC', 'blue', 'active_EIC', $rank, $debug);
-if ($topUser !== null) { $topFactionUsers[] = $topUser; }
+$topResult = update_faction_ranks(2, 'EIC', 'darkblue', 'active_EIC', $rank, $debug);
+if ($topResult !== null) { $topFactionResults[] = $topResult; $topFactionUsers[] = $topResult['top']; }
 
-$topUser = update_faction_ranks(3, 'VRU', 'green', 'active_VRU', $rank, $debug);
-if ($topUser !== null) { $topFactionUsers[] = $topUser; }
+$topResult = update_faction_ranks(3, 'VRU', 'green', 'active_VRU', $rank, $debug);
+if ($topResult !== null) { $topFactionResults[] = $topResult; $topFactionUsers[] = $topResult['top']; }
 
 if (count($topFactionUsers) > 0)
 {
@@ -188,6 +197,26 @@ if (count($topFactionUsers) > 0)
 
 	echo '<br/><font color="' . $specialColor . '">- ' . $specialRankUser['username']. '</font> set rank 23 (best of faction generals - ' . $specialFaction . ')';
 	edit_rank($specialRankUser['id'], 23);
+
+	foreach ($topFactionResults as $factionResult)
+	{
+		$companyRankUser = $factionResult['top'];
+
+		if ((int)$companyRankUser['id'] === (int)$specialRankUser['id'])
+		{
+			$companyRankUser = $factionResult['remaining_top'];
+		}
+
+		if ($companyRankUser === null || (int)$companyRankUser['id'] === (int)$specialRankUser['id'])
+		{
+			continue;
+		}
+
+		$companyFaction = isset($companyRankUser['faction_label']) ? $companyRankUser['faction_label'] : $factionResult['top']['faction_label'];
+		$companyColor = isset($companyRankUser['faction_color']) ? $companyRankUser['faction_color'] : $factionResult['top']['faction_color'];
+		echo '<br/><font color="' . $companyColor . '">- ' . $companyRankUser['username']. '</font> set rank 20 (company general - ' . $companyFaction . ')';
+		edit_rank($companyRankUser['id'], 20);
+	}
 }
 
 echo '<h1 style="color:silver;">Script executed in '.number_format((microtime(true) - $timestart), 3).' seconds</h1>';
