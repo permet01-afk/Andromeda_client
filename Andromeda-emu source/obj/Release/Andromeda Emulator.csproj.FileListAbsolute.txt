@@ -47,7 +47,6 @@ C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source
 C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\bin\Release\Andromeda Emulator.pdb
 C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\bin\Release\MySql.Data.dll
 C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\obj\Release\Andromeda Emulator.csproj.AssemblyReference.cache
-C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\obj\Release\Andromeda Emulator.exe.config
 C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\obj\Release\Andromeda Emulator.csproj.CoreCompileInputs.cache
 C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\obj\Release\Andromed.AB36FBA7.Up2Date
 C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\obj\Release\Andromeda Emulator.exe
