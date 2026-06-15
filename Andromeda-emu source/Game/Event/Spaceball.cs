@@ -382,7 +382,9 @@ namespace OrbitReborn_Emulator.Game.Event
             List<Session> result = new List<Session>();
             HashSet<int> seen = new HashSet<int>();
             CList<Session> sessionsUser = SessionManager.SessionsUser;
-            foreach (Session session in (IEnumerable<Session>)sessionsUser)
+            if (sessionsUser == null)
+                return result;
+            foreach (Session session in sessionsUser.Keys)
             {
                 if (session == null || session.CharacterInfo == null)
                     continue;
@@ -455,16 +457,48 @@ namespace OrbitReborn_Emulator.Game.Event
             }
             string message = Spaceball.GetFinalRewardMessage();
             List<int> onlineCharacterIds = new List<int>();
-            List<Session> connectedWinners = Spaceball.GetConnectedFactionSessions(factionId, onlineCharacterIds);
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            List<Session> connectedWinners;
+            try
             {
-                Spaceball.GrantOfflineWinningFactionReward(client, factionId, onlineCharacterIds, message);
+                connectedWinners = Spaceball.GetConnectedFactionSessions(factionId, onlineCharacterIds);
+            }
+            catch (Exception ex)
+            {
+                Output.WriteLine((object)("[Spaceball] Unable to enumerate connected winning faction sessions: " + ex.ToString()), OutputLevel.Warning);
+                return;
+            }
+            try
+            {
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                {
+                    Spaceball.GrantOfflineWinningFactionReward(client, factionId, onlineCharacterIds, message);
+                }
+            }
+            catch (Exception ex)
+            {
+                Output.WriteLine((object)("[Spaceball] Unable to grant offline winning faction reward: " + ex.ToString()), OutputLevel.Warning);
             }
             foreach (Session session in connectedWinners)
             {
-                Spaceball.GrantConnectedWinningFactionReward(session, message);
+                if (session == null || session.CharacterInfo == null)
+                    continue;
+                try
+                {
+                    Spaceball.GrantConnectedWinningFactionReward(session, message);
+                }
+                catch (Exception ex)
+                {
+                    Output.WriteLine((object)("[Spaceball] Unable to grant connected winning faction reward to player " + (object)session.CharacterInfo.Id + ": " + ex.ToString()), OutputLevel.Warning);
+                }
             }
-            TitleService.GrantSpaceballChampionToOnlineWinners(factionId, SpaceballMapId);
+            try
+            {
+                TitleService.GrantSpaceballChampionToOnlineWinners(factionId, SpaceballMapId);
+            }
+            catch (Exception ex)
+            {
+                Output.WriteLine((object)("[Spaceball] Unable to grant Spaceball champion title: " + ex.ToString()), OutputLevel.Warning);
+            }
         }
 
         public static void ResetBall()
