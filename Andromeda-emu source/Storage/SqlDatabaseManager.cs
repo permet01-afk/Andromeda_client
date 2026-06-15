@@ -37,7 +37,9 @@ namespace OrbitReborn_Emulator.Storage
       SqlDatabaseManager.mPoolLifetime = (int) ConfigManager.GetValue("mysql.pool.lifetime");
       SqlDatabaseManager.mSyncRoot = new object();
       SqlDatabaseManager.mPoolWait = new ManualResetEvent(true);
-      SqlDatabaseManager.mMonitorThread = new Timer(new TimerCallback(SqlDatabaseManager.ProcessMonitorThread), (object) null, SqlDatabaseManager.mPoolLifetime / 2, SqlDatabaseManager.mPoolLifetime / 2);
+      double monitorIntervalSeconds = Math.Max(1.0, SqlDatabaseManager.mPoolLifetime / 2.0);
+      TimeSpan monitorInterval = TimeSpan.FromSeconds(monitorIntervalSeconds);
+      SqlDatabaseManager.mMonitorThread = new Timer(new TimerCallback(SqlDatabaseManager.ProcessMonitorThread), (object) null, monitorInterval, monitorInterval);
       if (SqlDatabaseManager.mMinPoolSize < 0)
         throw new ArgumentException("(Sql) Invalid database pool size configured (less than zero).");
       SqlDatabaseManager.SetClientAmount(SqlDatabaseManager.mMinPoolSize, "server init");
