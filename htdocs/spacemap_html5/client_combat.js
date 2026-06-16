@@ -4267,3 +4267,30 @@ function drawPvpOverlay() {
         ctx.restore();
     }
 }
+
+(function installAndroPerfCombatDrawHooks() {
+    if (!window.AndroPerf || !window.AndroPerf.enabled) return;
+    function wrap(label, fn) {
+        if (typeof fn !== "function" || fn.__androPerfWrapped) return fn;
+        const wrapped = function() {
+            const startedAt = performance.now();
+            try {
+                return fn.apply(this, arguments);
+            } finally {
+                window.AndroPerf.recordRender(label, performance.now() - startedAt);
+            }
+        };
+        wrapped.__androPerfWrapped = true;
+        return wrapped;
+    }
+    drawLaserBeams = wrap("drawLaserBeams", drawLaserBeams);
+    drawRocketAttacks = wrap("drawRocketAttacks", drawRocketAttacks);
+    drawSabShots = wrap("drawSabShots", drawSabShots);
+    drawDamageBubbles = wrap("drawDamageBubbles", drawDamageBubbles);
+    drawExplosions = wrap("drawExplosions", drawExplosions);
+    drawSmartbombEffects = wrap("drawSmartbombEffects", drawSmartbombEffects);
+    drawEmpEffects = wrap("drawEmpEffects", drawEmpEffects);
+    drawPortalJumpEffects = wrap("drawPortalJumpEffects", drawPortalJumpEffects);
+    drawHullDamageEffects = wrap("drawHullDamageEffects", drawHullDamageEffects);
+    drawRocketDamageEffects = wrap("drawRocketDamageEffects", drawRocketDamageEffects);
+})();

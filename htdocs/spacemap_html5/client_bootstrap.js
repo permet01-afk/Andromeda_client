@@ -137,6 +137,8 @@ function drawStationImageClipped(meta, drawX, drawY, viewport) {
 }
 
 function render(now) {
+    const perf = window.AndroPerf;
+    const perfStartedAt = perf && perf.enabled ? performance.now() : 0;
     if (typeof beginEntitySnapshotFrame === "function") beginEntitySnapshotFrame();
     try {
         updateGameLogic(now);
@@ -210,6 +212,9 @@ function render(now) {
         heroSmbJustUsed = false;
     } finally {
         if (typeof endEntitySnapshotFrame === "function") endEntitySnapshotFrame();
+        if (perfStartedAt && perf && perf.enabled) {
+            perf.recordRender("drawTotal", performance.now() - perfStartedAt);
+        }
     }
     requestAnimationFrame(render);
 }

@@ -1,3 +1,345 @@
+const ANDRO_PERF_THRESHOLDS = Object.freeze({
+    frameGapWarnMs: 120,
+    frameGapConsoleMs: 250,
+    frameGapBigMs: 500,
+    packetHandlerWarnMs: 20,
+    packetHandlerConsoleMs: 50,
+    rxDrainWarnMs: 40,
+    rxDrainConsoleMs: 80,
+    rxBacklogWarn: 200,
+    rxBurstPacketsWarn: 64,
+    drawTotalWarnMs: 25,
+    drawEntitiesWarnMs: 15,
+    drawMinimapWarnMs: 10,
+    drawEffectWarnMs: 10,
+    cleanupWarnMs: 10,
+    drawConsoleMs: 50,
+    ringSize: 500
+});
+
+(function initAndroPerf() {
+    function nowMs() {
+        return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+    }
+
+    function roundMs(value) {
+        return Math.round((Number(value) || 0) * 10) / 10;
+    }
+
+    function detectEnabled() {
+        try {
+            const params = new URLSearchParams(window.location.search || "");
+            if (params.get("androPerf") === "1") return true;
+            if (params.get("androPerf") === "0") return false;
+        } catch (_) {}
+        try {
+            return window.localStorage && window.localStorage.getItem("androPerf") === "1";
+        } catch (_) {
+            return false;
+        }
+    }
+
+    const enabled = detectEnabled();
+    const events = [];
+    const counts = Object.create(null);
+    const opcodeCounts = Object.create(null);
+    const slowest = Object.create(null);
+    const lastRecordAtByKey = Object.create(null);
+    const startedAtMs = nowMs();
+    const startedAtIso = new Date().toISOString();
+    let seq = 1;
+
+    function getArrayLength(value) {
+        return Array.isArray(value) ? value.length : null;
+    }
+
+    function getWindowOpenByKey(key) {
+        try {
+            const selector = `.gameWindow[data-window-key="${key}"]`;
+            const el = document.querySelector(selector);
+            if (!el) return false;
+            const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+            if (style && (style.display === "none" || style.visibility === "hidden")) return false;
+            return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function collectSnapshot() {
+        const snapshot = {
+            map: null,
+            entities: null,
+            players: null,
+            npcs: null,
+            bossProtegits: null,
+            lasers: null,
+            sabShots: null,
+            sabRings: null,
+            rockets: null,
+            rocketSmoke: null,
+            damageBubbles: null,
+            explosions: null,
+            smartbombEffects: null,
+            empEffects: null,
+            portalJumpEffects: null,
+            minimapMarkers: null,
+            pendingVisualCleanup: null,
+            rxQueue: null,
+            minimapOpen: false,
+            groupOpen: false
+        };
+        try {
+            if (typeof currentMapId !== "undefined") snapshot.map = currentMapId;
+        } catch (_) {}
+        try {
+            if (typeof entities !== "undefined" && entities) {
+                const seen = new Set();
+                let players = 0;
+                let npcs = 0;
+                let bossProtegits = 0;
+                for (const key in entities) {
+                    const e = entities[key];
+                    if (!e || e.id == null) continue;
+                    const id = String(e.id);
+                    if (seen.has(id)) continue;
+                    seen.add(id);
+                    if (e.kind === "player") players++;
+                    if (e.kind === "npc") {
+                        npcs++;
+                        const shipId = Number(e.shipId ?? e.type ?? 0);
+                        const name = String(e.name || "").toLowerCase();
+                        if (shipId === 81 || name.includes("protegit")) bossProtegits++;
+                    }
+                }
+                snapshot.entities = seen.size;
+                snapshot.players = players;
+                snapshot.npcs = npcs;
+                snapshot.bossProtegits = bossProtegits;
+            }
+        } catch (_) {}
+        try { if (typeof laserBeams !== "undefined") snapshot.lasers = getArrayLength(laserBeams); } catch (_) {}
+        try { if (typeof sabShots !== "undefined") snapshot.sabShots = getArrayLength(sabShots); } catch (_) {}
+        try { if (typeof SAB_RING_STATE !== "undefined" && SAB_RING_STATE instanceof Map) snapshot.sabRings = SAB_RING_STATE.size; } catch (_) {}
+        try { if (typeof rocketAttacks !== "undefined") snapshot.rockets = getArrayLength(rocketAttacks); } catch (_) {}
+        try { if (typeof rocketSmokeParticles !== "undefined") snapshot.rocketSmoke = getArrayLength(rocketSmokeParticles); } catch (_) {}
+        try { if (typeof damageBubbles !== "undefined") snapshot.damageBubbles = getArrayLength(damageBubbles); } catch (_) {}
+        try { if (typeof explosions !== "undefined") snapshot.explosions = getArrayLength(explosions); } catch (_) {}
+        try { if (typeof smartbombEffects !== "undefined") snapshot.smartbombEffects = getArrayLength(smartbombEffects); } catch (_) {}
+        try { if (typeof empEffects !== "undefined") snapshot.empEffects = getArrayLength(empEffects); } catch (_) {}
+        try { if (typeof portalJumpEffects !== "undefined") snapshot.portalJumpEffects = getArrayLength(portalJumpEffects); } catch (_) {}
+        try { if (window.minimapServerMarkers instanceof Map) snapshot.minimapMarkers = window.minimapServerMarkers.size; } catch (_) {}
+        try { if (typeof PENDING_ENTITY_VISUAL_CLEANUPS !== "undefined" && PENDING_ENTITY_VISUAL_CLEANUPS instanceof Map) snapshot.pendingVisualCleanup = PENDING_ENTITY_VISUAL_CLEANUPS.size; } catch (_) {}
+        try { if (typeof __andromedaRxLineQueue !== "undefined") snapshot.rxQueue = Math.max(0, __andromedaRxLineQueue.length - __andromedaRxQueueHead); } catch (_) {}
+        snapshot.minimapOpen = getWindowOpenByKey("map") || getWindowOpenByKey("minimap");
+        snapshot.groupOpen = getWindowOpenByKey("group");
+        return snapshot;
+    }
+
+    function updateSlowest(bucket, event) {
+        const duration = Number(event.durationMs ?? event.gapMs ?? 0);
+        if (!Number.isFinite(duration)) return;
+        const current = slowest[bucket];
+        if (!current || duration > current.durationMs) {
+            slowest[bucket] = {
+                durationMs: duration,
+                type: event.type,
+                opcode: event.opcode || null,
+                label: event.label || null,
+                at: event.at
+            };
+        }
+    }
+
+    function shouldConsoleLog(type, data) {
+        if (type === "frame_gap") return Number(data.gapMs || 0) >= ANDRO_PERF_THRESHOLDS.frameGapConsoleMs;
+        if (type === "packet_handler_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.packetHandlerConsoleMs;
+        if (type === "rx_drain_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.rxDrainConsoleMs;
+        if (type === "draw_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawConsoleMs;
+        if (type === "cleanup_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawConsoleMs;
+        return false;
+    }
+
+    function shouldThrottleRecord(type, data, perfNow) {
+        if (shouldConsoleLog(type, data)) return false;
+        let key = "";
+        let throttleMs = 0;
+        if (type === "draw_slow") {
+            key = `${type}:${data.label || ""}`;
+            throttleMs = 250;
+        } else if (type === "cleanup_slow") {
+            key = `${type}:${data.label || ""}`;
+            throttleMs = 250;
+        } else {
+            return false;
+        }
+        const lastAt = lastRecordAtByKey[key] || 0;
+        if (perfNow - lastAt < throttleMs) return true;
+        lastRecordAtByKey[key] = perfNow;
+        return false;
+    }
+
+    function record(type, data = {}) {
+        if (!enabled) return null;
+        const perfNow = nowMs();
+        if (shouldThrottleRecord(type, data, perfNow)) return null;
+        const event = Object.assign({
+            id: seq++,
+            at: new Date().toISOString(),
+            tMs: roundMs(perfNow - startedAtMs),
+            type: type
+        }, data);
+        if (!event.snapshot) event.snapshot = collectSnapshot();
+        events.push(event);
+        while (events.length > ANDRO_PERF_THRESHOLDS.ringSize) events.shift();
+        counts[type] = (counts[type] || 0) + 1;
+        if (event.opcode) opcodeCounts[event.opcode] = (opcodeCounts[event.opcode] || 0) + 1;
+        if (type === "frame_gap") updateSlowest("frameGap", event);
+        if (type === "packet_handler_slow") updateSlowest("packetHandler", event);
+        if (type === "rx_drain_slow") updateSlowest("rxDrain", event);
+        if (type === "draw_slow") updateSlowest("draw", event);
+        if (type === "cleanup_slow") updateSlowest("cleanup", event);
+        if (shouldConsoleLog(type, event)) {
+            try {
+                console.warn("[AndroPerf]", type, event);
+            } catch (_) {}
+        }
+        return event;
+    }
+
+    function packetPrefix(parts, startIndex) {
+        try {
+            return parts.slice(0, Math.min(parts.length, Math.max(startIndex + 4, 6))).map(part => String(part).slice(0, 80)).join("|");
+        } catch (_) {
+            return "";
+        }
+    }
+
+    function getRenderWarnThreshold(label) {
+        if (label === "drawTotal" || label === "renderFrame") return ANDRO_PERF_THRESHOLDS.drawTotalWarnMs;
+        if (label === "drawEntities") return ANDRO_PERF_THRESHOLDS.drawEntitiesWarnMs;
+        if (label === "drawMiniMap" || label === "minimapRebuild") return ANDRO_PERF_THRESHOLDS.drawMinimapWarnMs;
+        return ANDRO_PERF_THRESHOLDS.drawEffectWarnMs;
+    }
+
+    const api = {
+        enabled: enabled,
+        thresholds: ANDRO_PERF_THRESHOLDS,
+        nowMs: nowMs,
+        collectSnapshot: collectSnapshot,
+        record: record,
+        recordFrameGap(gapMs) {
+            if (!enabled || gapMs < ANDRO_PERF_THRESHOLDS.frameGapWarnMs) return;
+            const level = gapMs >= ANDRO_PERF_THRESHOLDS.frameGapBigMs ? "500ms+" : gapMs >= ANDRO_PERF_THRESHOLDS.frameGapConsoleMs ? "250ms+" : "120ms+";
+            record("frame_gap", {
+                gapMs: roundMs(gapMs),
+                level: level
+            });
+        },
+        recordPacketHandler(opcode, durationMs, parts, startIndex) {
+            if (!enabled || durationMs < ANDRO_PERF_THRESHOLDS.packetHandlerWarnMs) return;
+            record("packet_handler_slow", {
+                opcode: opcode || "",
+                durationMs: roundMs(durationMs),
+                prefix: packetPrefix(parts || [], startIndex || 0),
+                partCount: parts && parts.length || 0
+            });
+        },
+        recordRxDrain(data) {
+            if (!enabled || !data) return;
+            const duration = Number(data.durationMs || 0);
+            const backlogBefore = Number(data.backlogBefore || 0);
+            const backlogAfter = Number(data.backlogAfter || 0);
+            const processed = Number(data.processed || 0);
+            if (duration < ANDRO_PERF_THRESHOLDS.rxDrainWarnMs && backlogBefore < ANDRO_PERF_THRESHOLDS.rxBacklogWarn && backlogAfter < ANDRO_PERF_THRESHOLDS.rxBacklogWarn && processed < ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn) return;
+            record("rx_drain_slow", {
+                durationMs: roundMs(duration),
+                processed: processed,
+                backlogBefore: backlogBefore,
+                backlogAfter: backlogAfter,
+                budgetMs: data.budgetMs,
+                maxLines: data.maxLines
+            });
+        },
+        recordRender(label, durationMs, extra = null) {
+            if (!enabled) return;
+            const threshold = getRenderWarnThreshold(label);
+            if (durationMs < threshold) return;
+            record("draw_slow", Object.assign({
+                label: label,
+                durationMs: roundMs(durationMs),
+                thresholdMs: threshold
+            }, extra || {}));
+        },
+        recordCleanup(label, durationMs, data = null) {
+            if (!enabled || durationMs < ANDRO_PERF_THRESHOLDS.cleanupWarnMs) return;
+            record("cleanup_slow", Object.assign({
+                label: label,
+                durationMs: roundMs(durationMs),
+                thresholdMs: ANDRO_PERF_THRESHOLDS.cleanupWarnMs
+            }, data || {}));
+        },
+        summary() {
+            return {
+                enabled: enabled,
+                startedAt: startedAtIso,
+                uptimeMs: roundMs(nowMs() - startedAtMs),
+                eventCount: events.length,
+                counts: Object.assign({}, counts),
+                opcodeCounts: Object.assign({}, opcodeCounts),
+                slowest: JSON.parse(JSON.stringify(slowest)),
+                snapshot: collectSnapshot(),
+                thresholds: ANDRO_PERF_THRESHOLDS
+            };
+        },
+        dump() {
+            return JSON.stringify({
+                generatedAt: new Date().toISOString(),
+                summary: api.summary(),
+                events: events.slice()
+            }, null, 2);
+        },
+        clear() {
+            events.length = 0;
+            for (const key of Object.keys(counts)) delete counts[key];
+            for (const key of Object.keys(opcodeCounts)) delete opcodeCounts[key];
+            for (const key of Object.keys(slowest)) delete slowest[key];
+            seq = 1;
+            return api.summary();
+        },
+        copy() {
+            const text = api.dump();
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                return navigator.clipboard.writeText(text).then(() => text);
+            }
+            try {
+                if (typeof window.copy === "function") {
+                    window.copy(text);
+                    return text;
+                }
+            } catch (_) {}
+            console.warn("[AndroPerf] Clipboard API unavailable; use copy(AndroPerf.dump()) in DevTools.");
+            return text;
+        }
+    };
+
+    window.AndroPerf = api;
+
+    if (enabled && typeof requestAnimationFrame === "function") {
+        let lastFrameAt = 0;
+        const tick = ts => {
+            if (typeof document !== "undefined" && document.hidden) {
+                lastFrameAt = ts;
+            } else if (lastFrameAt > 0) {
+                api.recordFrameGap(ts - lastFrameAt);
+            }
+            lastFrameAt = ts;
+            requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }
+})();
+
 let ws = null;
 
 let wsConnecting = false;
@@ -688,6 +1030,7 @@ function __processQueuedRxLine(item) {
 function __drainRxQueue() {
     __andromedaRxDrainScheduled = false;
     const startedAt = __rxNowMs();
+    const backlogBefore = Math.max(0, __andromedaRxLineQueue.length - __andromedaRxQueueHead);
     let processed = 0;
     while (__andromedaRxQueueHead < __andromedaRxLineQueue.length) {
         const item = __andromedaRxLineQueue[__andromedaRxQueueHead++];
@@ -697,6 +1040,16 @@ function __drainRxQueue() {
         if (__rxNowMs() - startedAt >= RX_DRAIN_BUDGET_MS) break;
     }
     __compactRxQueueIfNeeded();
+    if (window.AndroPerf && window.AndroPerf.enabled) {
+        window.AndroPerf.recordRxDrain({
+            durationMs: __rxNowMs() - startedAt,
+            processed: processed,
+            backlogBefore: backlogBefore,
+            backlogAfter: Math.max(0, __andromedaRxLineQueue.length - __andromedaRxQueueHead),
+            budgetMs: RX_DRAIN_BUDGET_MS,
+            maxLines: RX_DRAIN_MAX_LINES
+        });
+    }
     if (__andromedaRxQueueHead < __andromedaRxLineQueue.length) {
         __scheduleRxDrain();
     }
@@ -1455,10 +1808,16 @@ function handleServerLine(line) {
     telemetry.lastGameOpcode = opcode;
     window.__flashLastGameOpcode = opcode;
     if (handler) {
+        const perf = window.AndroPerf;
+        const perfStartedAt = perf && perf.enabled ? __rxNowMs() : 0;
         try {
             handler(parts, startIndex);
         } catch (e) {
             console.error("[PACKET ERROR] opcode =", opcode, "| line =", line, "| parts =", parts, e);
+        } finally {
+            if (perfStartedAt && perf && perf.enabled) {
+                perf.recordPacketHandler(opcode, __rxNowMs() - perfStartedAt, parts, startIndex);
+            }
         }
     } else {
         logUnknownPacket(opcode, parts);
@@ -5503,6 +5862,7 @@ function runEntityVisualCleanupJob(job) {
 function flushEntityVisualCleanups() {
     entityVisualCleanupScheduled = false;
     const startedAt = __rxNowMs();
+    const backlogBefore = PENDING_ENTITY_VISUAL_CLEANUPS.size;
     let processed = 0;
     while (PENDING_ENTITY_VISUAL_CLEANUPS.size > 0) {
         const first = PENDING_ENTITY_VISUAL_CLEANUPS.keys().next();
@@ -5517,6 +5877,13 @@ function flushEntityVisualCleanups() {
     }
     if (PENDING_ENTITY_VISUAL_CLEANUPS.size > 0) {
         scheduleEntityVisualCleanupFlush();
+    }
+    if (window.AndroPerf && window.AndroPerf.enabled) {
+        window.AndroPerf.recordCleanup("entityVisualCleanup", __rxNowMs() - startedAt, {
+            processed: processed,
+            backlogBefore: backlogBefore,
+            backlogAfter: PENDING_ENTITY_VISUAL_CLEANUPS.size
+        });
     }
 }
 

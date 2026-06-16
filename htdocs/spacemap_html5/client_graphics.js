@@ -2237,6 +2237,24 @@ function drawMiniMap() {
     }
 }
 
+function wrapAndroPerfDrawFunction(label, fn) {
+    if (!window.AndroPerf || !window.AndroPerf.enabled || typeof fn !== "function") return fn;
+    if (fn.__androPerfWrapped) return fn;
+    const wrapped = function() {
+        const startedAt = performance.now();
+        try {
+            return fn.apply(this, arguments);
+        } finally {
+            window.AndroPerf.recordRender(label, performance.now() - startedAt);
+        }
+    };
+    wrapped.__androPerfWrapped = true;
+    return wrapped;
+}
+
+drawMiniMap = wrapAndroPerfDrawFunction("drawMiniMap", drawMiniMap);
+rebuildMinimapEntityRenderCache = wrapAndroPerfDrawFunction("minimapRebuild", rebuildMinimapEntityRenderCache);
+
 function drawShieldAura(sx, sy, currentShield, maxShield, ish, invincible, ishSince, ishUntil, invSince, invUntil, techShieldBackupUntil = 0) {
     const now = performance.now();
     const entityScale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
@@ -4128,6 +4146,8 @@ function drawEntities() {
     drawActiveCollectableFadeOuts(now);
     drawActiveCollectableBoxBeams(now);
 }
+
+drawEntities = wrapAndroPerfDrawFunction("drawEntities", drawEntities);
 
 const portalFrameViewportScratch = {
     left: 0,
