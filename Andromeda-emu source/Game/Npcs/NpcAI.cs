@@ -8,6 +8,7 @@ using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Game.Titles;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Specialized;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -1316,6 +1317,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         private static void PerformUpdate(object state)
         {
+            long perfStart = PerformanceProfiler.Start();
             try
             {
                 Random random = NpcAI.RandomPos;
@@ -1780,6 +1782,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     }
                 }
 
+                long perfCleanupStart = PerformanceProfiler.Start();
                 foreach (Npc key in (IEnumerable<Npc>)NpcAI.NpcToRemove.Keys)
                 {
                     if (key != null)
@@ -1809,11 +1812,16 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     }
                 }
                 NpcAI.NpcToAdd.Clear();
+                PerformanceProfiler.LogCleanup("NpcAI.AddRemove", perfCleanupStart);
 
             }
             catch (Exception ex)
             {
                 LogTimerFailure("PerformUpdate", ex);
+            }
+            finally
+            {
+                PerformanceProfiler.LogTimer("NpcAI.PerformUpdate", 0, perfStart);
             }
         }
     }

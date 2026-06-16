@@ -7,6 +7,7 @@ using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -70,6 +71,7 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         private static void ProcessMaps(object state)
         {
+            long perfStart = PerformanceProfiler.Start();
             try
             {
                 CDictionnary<int, MapInstance> cdictionnary = new CDictionnary<int, MapInstance>();
@@ -152,6 +154,10 @@ namespace OrbitReborn_Emulator.Game.Maps
             {
                 MapManager.LogTimerFailure("ProcessMaps", ex);
             }
+            finally
+            {
+                PerformanceProfiler.LogCleanup("MapManager.ProcessMaps", perfStart);
+            }
         }
 
         public static bool InstanceIsLoadedForMap(int MapId)
@@ -161,11 +167,14 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         public static bool TryLoadMapInstance(int MapId)
         {
+            long perfStart = PerformanceProfiler.Start();
+            int instanceId = 0;
             lock (MapManager.mMapInstances)
             {
                 if (MapManager.GetInstanceByMapId(MapId) != null)
                     return false;
                 int local_1 = MapManager.GenerateInstanceId();
+                instanceId = local_1;
                 MapInstance local_2 = MapInstance.TryCreateMapInstance(local_1, MapId);
                 if (local_2 == null)
                     return false;
@@ -174,6 +183,7 @@ namespace OrbitReborn_Emulator.Game.Maps
                 ReattachNpcActors(local_2);
                 Output.WriteLine((object)("[MapMgr] Map instance " + (object)local_1 + " has been loaded for Map " + (object)MapId + "."), OutputLevel.Warning);
             }
+            PerformanceProfiler.LogMapOperation("Load", MapId, instanceId, perfStart);
             return true;
         }
 
@@ -203,30 +213,38 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         public static bool RemoveUserFromMap(Session Session)
         {
+            long perfStart = PerformanceProfiler.Start();
             int absoluteMapId = Session.AbsoluteMapId;
             bool flag = false;
-            if (absoluteMapId > 0)
+            try
             {
-                if (GalaxyGateWaveService.IsGateMap(absoluteMapId))
-                    GalaxyGateWaveService.CleanupRunForSession(Session);
-
-                ShipMovement.StopMovementTracking(Session);
-
-                MapInstance instanceByMapId = (MapInstance)null;
-                if (Session.MapJoined)
+                if (absoluteMapId > 0)
                 {
-                    instanceByMapId = MapManager.GetInstanceByMapId(absoluteMapId);
+                    if (GalaxyGateWaveService.IsGateMap(absoluteMapId))
+                        GalaxyGateWaveService.CleanupRunForSession(Session);
+
+                    ShipMovement.StopMovementTracking(Session);
+
+                    MapInstance instanceByMapId = (MapInstance)null;
+                    if (Session.MapJoined)
+                    {
+                        instanceByMapId = MapManager.GetInstanceByMapId(absoluteMapId);
+                        if (instanceByMapId != null)
+                            instanceByMapId.RemoveCharacterFromMap(Session.CharacterId);
+                    }
+                    Session.AbsoluteMapId = 0;
+                    Session.MapAuthed = false;
+                    Session.MapJoined = false;
                     if (instanceByMapId != null)
-                        instanceByMapId.RemoveCharacterFromMap(Session.CharacterId);
+                        ShipMovement.RefreshEnemyWarningForMap(instanceByMapId);
+                    flag = true;
                 }
-                Session.AbsoluteMapId = 0;
-                Session.MapAuthed = false;
-                Session.MapJoined = false;
-                if (instanceByMapId != null)
-                    ShipMovement.RefreshEnemyWarningForMap(instanceByMapId);
-                flag = true;
+                return flag;
             }
-            return flag;
+            finally
+            {
+                PerformanceProfiler.LogCleanup("MapManager.RemoveUserFromMap", absoluteMapId, 0, perfStart);
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Moderation;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -162,6 +163,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
         private static void ExecuteNoFightMonitor(object state)
         {
             const int PEACE_PORTAL_DELAY = 10;
+            long perfStart = PerformanceProfiler.Start();
 
             try
             {
@@ -263,6 +265,10 @@ namespace OrbitReborn_Emulator.Game.Sessions
             {
                 SessionManager.LogTimerFailure("ExecuteNoFightMonitor", ex);
             }
+            finally
+            {
+                PerformanceProfiler.LogTimer("SessionManager.ExecuteNoFightMonitor", 0, perfStart);
+            }
         }
 
         private static double GetLastIncomingAttackActivity(Session session)
@@ -345,6 +351,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         private static void ExecuteMonitor(object state)
         {
+            long perfStart = PerformanceProfiler.Start();
             try
             {
                 CList<Session> clist1 = new CList<Session>();
@@ -371,7 +378,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 }
                 if (clist2.Count > 0)
                 {
-                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("SessionManager.ExecuteMonitor.Stop"))
                     {
                         foreach (Session key in (IEnumerable<Session>)clist2.Keys)
                         {
@@ -388,7 +395,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 }
                 if (clist1.Count > 0)
                 {
-                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("SessionManager.ExecuteMonitor.AutoLogout"))
                     {
                         foreach (Session key in (IEnumerable<Session>)clist1.Keys)
                         {
@@ -422,6 +429,10 @@ namespace OrbitReborn_Emulator.Game.Sessions
             catch (Exception ex)
             {
                 SessionManager.LogTimerFailure("ExecuteMonitor", ex);
+            }
+            finally
+            {
+                PerformanceProfiler.LogCleanup("SessionManager.ExecuteMonitor", perfStart);
             }
         }
 

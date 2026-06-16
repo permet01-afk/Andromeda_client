@@ -52,3 +52,13 @@ C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source
 C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\obj\Release\Andromeda Emulator.exe
 C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\obj\Release\Andromeda Emulator.pdb
 C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\obj\Release\Andromeda Emulator.exe.config
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\bin\Release\Andromeda Emulator.exe.config
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\bin\Release\Andromeda Emulator.exe
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\bin\Release\Andromeda Emulator.pdb
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\bin\Release\MySql.Data.dll
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\obj\Release\Andromeda Emulator.csproj.AssemblyReference.cache
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\obj\Release\Andromeda Emulator.exe.config
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\obj\Release\Andromeda Emulator.csproj.CoreCompileInputs.cache
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\obj\Release\Andromed.AB36FBA7.Up2Date
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\obj\Release\Andromeda Emulator.exe
+C:\Users\CodexSandboxOffline\.codex\.sandbox\cwd\1f4b8223da804982\Andromeda-emu source\obj\Release\Andromeda Emulator.pdb

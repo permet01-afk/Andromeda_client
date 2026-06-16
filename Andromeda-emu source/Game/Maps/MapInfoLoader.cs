@@ -2,6 +2,7 @@
 
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -23,16 +24,24 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         private static void MonitorCache(object state)
         {
-            lock (MapInfoLoader.mMapInfoCache)
+            long perfStart = PerformanceProfiler.Start();
+            try
             {
-                CList<int> local_0 = new CList<int>();
-                foreach (MapInfo item_0 in (IEnumerable<MapInfo>)MapInfoLoader.mMapInfoCache.Values)
+                lock (MapInfoLoader.mMapInfoCache)
                 {
-                    if (MapManager.GetInstanceByMapId(item_0.Id) != null || item_0.CacheAge >= 300.0)
-                        local_0.Add(item_0.Id);
+                    CList<int> local_0 = new CList<int>();
+                    foreach (MapInfo item_0 in (IEnumerable<MapInfo>)MapInfoLoader.mMapInfoCache.Values)
+                    {
+                        if (MapManager.GetInstanceByMapId(item_0.Id) != null || item_0.CacheAge >= 300.0)
+                            local_0.Add(item_0.Id);
+                    }
+                    foreach (int item_1 in (IEnumerable<int>)local_0.Keys)
+                        MapInfoLoader.mMapInfoCache.Remove(item_1);
                 }
-                foreach (int item_1 in (IEnumerable<int>)local_0.Keys)
-                    MapInfoLoader.mMapInfoCache.Remove(item_1);
+            }
+            finally
+            {
+                PerformanceProfiler.LogCleanup("MapInfoLoader.MonitorCache", perfStart);
             }
         }
 
@@ -72,7 +81,7 @@ namespace OrbitReborn_Emulator.Game.Maps
                 if (infoFromCache != null)
                     return infoFromCache;
             }
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("MapInfoLoader.GetMapInfo"))
             {
                 client.ClearParameters();
                 client.SetParameter("id", (object)MapId);

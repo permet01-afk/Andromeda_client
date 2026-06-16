@@ -21,12 +21,20 @@ namespace OrbitReborn_Emulator.Util
     {
       while (Program.Alive)
       {
-        using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+        long perfStart = PerformanceProfiler.Start();
+        try
         {
-          client.ClearParameters();
-          client.SetParameter("skey", (object) "active_connections");
-          client.SetParameter("sval", (object) SessionManager.ConnectedUserData.Count);
-          client.ExecuteNonQuery("UPDATE server_statistics SET sval = @sval WHERE skey = @skey LIMIT 1");
+          using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("StatisticsSyncUtil.ProcessThread"))
+          {
+            client.ClearParameters();
+            client.SetParameter("skey", (object) "active_connections");
+            client.SetParameter("sval", (object) SessionManager.ConnectedUserData.Count);
+            client.ExecuteNonQuery("UPDATE server_statistics SET sval = @sval WHERE skey = @skey LIMIT 1");
+          }
+        }
+        finally
+        {
+          PerformanceProfiler.LogCleanup("StatisticsSyncUtil.ProcessThread", perfStart);
         }
         Thread.Sleep(60000);
       }

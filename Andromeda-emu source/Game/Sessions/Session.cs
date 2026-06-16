@@ -27,6 +27,12 @@ namespace OrbitReborn_Emulator.Game.Sessions
         private const byte DELIM_BS = (byte)'\\';
         private const byte DELIM_CHAR0 = (byte)'0';
 
+        private sealed class SendState
+        {
+            public Socket Socket;
+            public int Length;
+        }
+
         private int mId;
         private Socket mSocket;
         private byte[] mBuffer;
@@ -324,7 +330,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 if (socket == null || !socket.Connected) return;
 
                 int dataLength = Data.Length;
-                socket.BeginSend(Data, 0, dataLength, SocketFlags.None, new AsyncCallback(this.OnDataSent), socket);
+                SendState sendState = new SendState { Socket = socket, Length = dataLength };
+                socket.BeginSend(Data, 0, dataLength, SocketFlags.None, new AsyncCallback(this.OnDataSent), sendState);
                 PerformanceProfiler.RecordNetworkSend(dataLength);
             }
             catch (Exception ex)
@@ -335,9 +342,14 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         private void OnDataSent(IAsyncResult Result)
         {
-            Socket sentSocket = Result.AsyncState as Socket;
+            SendState sendState = Result.AsyncState as SendState;
+            Socket sentSocket = sendState != null ? sendState.Socket : Result.AsyncState as Socket;
             if (sentSocket == null || !object.ReferenceEquals(sentSocket, this.mSocket))
+            {
+                if (sendState != null)
+                    PerformanceProfiler.RecordNetworkSendCompleted(sendState.Length);
                 return;
+            }
 
             try
             {
@@ -347,6 +359,11 @@ namespace OrbitReborn_Emulator.Game.Sessions
             {
                 if (object.ReferenceEquals(sentSocket, this.mSocket))
                     SessionManager.StopSession(this.mId);
+            }
+            finally
+            {
+                if (sendState != null)
+                    PerformanceProfiler.RecordNetworkSendCompleted(sendState.Length);
             }
         }
 

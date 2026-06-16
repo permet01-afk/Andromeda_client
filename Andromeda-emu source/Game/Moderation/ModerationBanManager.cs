@@ -3,6 +3,7 @@
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Data;
 using System.Threading;
@@ -29,8 +30,16 @@ namespace OrbitReborn_Emulator.Game.Moderation
 
     public static void ProcessThread(object state)
     {
-      using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-        ModerationBanManager.ReloadCache(client);
+      long perfStart = PerformanceProfiler.Start();
+      try
+      {
+        using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("ModerationBanManager.ReloadCache"))
+          ModerationBanManager.ReloadCache(client);
+      }
+      finally
+      {
+        PerformanceProfiler.LogCleanup("ModerationBanManager.ReloadCache", perfStart);
+      }
     }
 
     public static void ReloadCache(SqlDatabaseClient MySqlClient)

@@ -3,6 +3,7 @@
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -23,16 +24,24 @@ namespace OrbitReborn_Emulator.Game.Characters
 
     private static void MonitorCache(object state)
     {
-      lock (CharacterInfoLoader.mCharacterInfoCache)
+      long perfStart = PerformanceProfiler.Start();
+      try
       {
-        CList<int> local_0 = new CList<int>();
-        foreach (CharacterInfo item_0 in (IEnumerable<CharacterInfo>) CharacterInfoLoader.mCharacterInfoCache.Values)
+        lock (CharacterInfoLoader.mCharacterInfoCache)
         {
-          if (SessionManager.ContainsCharacterId(item_0.Id) || item_0.CacheAge >= 300.0)
-            local_0.Add(item_0.Id);
+          CList<int> local_0 = new CList<int>();
+          foreach (CharacterInfo item_0 in (IEnumerable<CharacterInfo>) CharacterInfoLoader.mCharacterInfoCache.Values)
+          {
+            if (SessionManager.ContainsCharacterId(item_0.Id) || item_0.CacheAge >= 300.0)
+              local_0.Add(item_0.Id);
+          }
+          foreach (int item_1 in (IEnumerable<int>) local_0.Keys)
+            CharacterInfoLoader.mCharacterInfoCache.Remove(item_1);
         }
-        foreach (int item_1 in (IEnumerable<int>) local_0.Keys)
-          CharacterInfoLoader.mCharacterInfoCache.Remove(item_1);
+      }
+      finally
+      {
+        PerformanceProfiler.LogCleanup("CharacterInfoLoader.MonitorCache", perfStart);
       }
     }
 
