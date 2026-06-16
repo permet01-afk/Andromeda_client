@@ -4346,6 +4346,18 @@ function handlePacket_POI(parts, i) {
     }
 }
 
+const MINIMAP_SERVER_MARKER_CYCLE_MS = 500;
+
+function getMinimapServerMarkerExpiresAt(count, nowMs) {
+    const markerCount = Number.isFinite(count) ? count : -1;
+    if (markerCount < 0) return Number.POSITIVE_INFINITY;
+    return nowMs + markerCount * MINIMAP_SERVER_MARKER_CYCLE_MS;
+}
+
+function isSameMinimapServerMarker(marker, x, y, count, type) {
+    return !!marker && marker.x === x && marker.y === y && marker.count === count && marker.type === type;
+}
+
 function handlePacket_MM(parts, i) {
     const action = String(parts[i] || "").toUpperCase();
     if (action === "NO" || action === "NOISE") {
@@ -4362,14 +4374,25 @@ function handlePacket_MM(parts, i) {
         const count = parseInt(parts[i + 4] || "-1", 10);
         if (!Number.isFinite(markerId) || !Number.isFinite(x) || !Number.isFinite(y)) return;
         if (!(window.minimapServerMarkers instanceof Map)) return;
-        const nowMs = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        const nowMs = __rxNowMs();
+        const markerCount = Number.isFinite(count) ? count : -1;
+        const markerType = action === "SR" ? "redDot" : "ping";
+        const expiresAt = getMinimapServerMarkerExpiresAt(markerCount, nowMs);
+        const existingMarker = window.minimapServerMarkers.get(markerId);
+        if (action === "SR" && isSameMinimapServerMarker(existingMarker, x, y, markerCount, markerType)) {
+            existingMarker.lastSeenAt = nowMs;
+            existingMarker.expiresAt = expiresAt;
+            return;
+        }
         window.minimapServerMarkers.set(markerId, {
             id: markerId,
             x: x,
             y: y,
-            count: Number.isFinite(count) ? count : -1,
+            count: markerCount,
             startedAt: nowMs,
-            type: action === "SR" ? "redDot" : "ping"
+            lastSeenAt: nowMs,
+            expiresAt: expiresAt,
+            type: markerType
         });
         return;
     }
@@ -5436,6 +5459,67 @@ function detachRocketAttacksForEntity(entityId) {
     }
 }
 
+const ENTITY_VISUAL_CLEANUP_MAX_PER_FRAME = 8;
+const ENTITY_VISUAL_CLEANUP_BUDGET_MS = 3;
+const PENDING_ENTITY_VISUAL_CLEANUPS = new Map;
+let entityVisualCleanupScheduled = false;
+
+function scheduleEntityVisualCleanupFlush() {
+    if (entityVisualCleanupScheduled) return;
+    entityVisualCleanupScheduled = true;
+    if (typeof requestAnimationFrame === "function" && !(typeof document !== "undefined" && document.hidden)) {
+        requestAnimationFrame(flushEntityVisualCleanups);
+    } else {
+        setTimeout(flushEntityVisualCleanups, 0);
+    }
+}
+
+function queueEntityVisualCleanup(entityId, options = {}) {
+    if (entityId == null) return;
+    const key = String(entityId);
+    let job = PENDING_ENTITY_VISUAL_CLEANUPS.get(key);
+    if (!job) {
+        job = { entityId: entityId };
+        PENDING_ENTITY_VISUAL_CLEANUPS.set(key, job);
+    }
+    if (options.clearSabRing) job.clearSabRing = true;
+    if (options.releaseSabShots) job.releaseSabShots = true;
+    if (options.detachRocketAttacks) job.detachRocketAttacks = true;
+    if (options.clearShipSkillVisuals) job.clearShipSkillVisuals = true;
+    scheduleEntityVisualCleanupFlush();
+}
+
+function runEntityVisualCleanupJob(job) {
+    if (!job || job.entityId == null) return;
+    const entityId = job.entityId;
+    if (job.clearSabRing) clearSabRingStateForEntity(entityId);
+    if (job.releaseSabShots) releaseSabShotsForEntity(entityId);
+    if (job.detachRocketAttacks) detachRocketAttacksForEntity(entityId);
+    if (job.clearShipSkillVisuals && typeof flashClearEntityShipSkillVisualEffects === "function") {
+        flashClearEntityShipSkillVisualEffects(entityId);
+    }
+}
+
+function flushEntityVisualCleanups() {
+    entityVisualCleanupScheduled = false;
+    const startedAt = __rxNowMs();
+    let processed = 0;
+    while (PENDING_ENTITY_VISUAL_CLEANUPS.size > 0) {
+        const first = PENDING_ENTITY_VISUAL_CLEANUPS.keys().next();
+        if (first.done) break;
+        const key = first.value;
+        const job = PENDING_ENTITY_VISUAL_CLEANUPS.get(key);
+        PENDING_ENTITY_VISUAL_CLEANUPS.delete(key);
+        runEntityVisualCleanupJob(job);
+        processed++;
+        if (processed >= ENTITY_VISUAL_CLEANUP_MAX_PER_FRAME) break;
+        if (__rxNowMs() - startedAt >= ENTITY_VISUAL_CLEANUP_BUDGET_MS) break;
+    }
+    if (PENDING_ENTITY_VISUAL_CLEANUPS.size > 0) {
+        scheduleEntityVisualCleanupFlush();
+    }
+}
+
 function handlePacket_laserAttack(parts, i) {
     if (parts.length < i + 5) return;
     const attackerId = parseInt(parts[i], 10);
@@ -5974,16 +6058,21 @@ function handlePacket_R(parts, i) {
     if (typeof rememberRemovedEntitySnapshot === "function" && (ent.kind === "player" || ent.kind === "npc")) {
         rememberRemovedEntitySnapshot(ent);
     }
-    cancelRsbBurstsByTarget(ent.id);
-    cancelRsbBurst(ent.id);
-    clearSabRingStateForEntity(ent.id);
-    clearSabLaserVisualJobsForEntity(ent.id);
-    removeLaserBeamsForEntity(ent.id);
-    releaseSabShotsForEntity(ent.id);
-    detachRocketAttacksForEntity(ent.id);
-    clearAttackLocksTargetingEntity(ent.id);
-    unregisterAttackLockForEntity(ent);
-    unregisterEntityRuntimeActiveState(ent.id);
+    if (ent.kind === "player" || ent.kind === "npc") {
+        cancelRsbBurstsByTarget(ent.id);
+        cancelRsbBurst(ent.id);
+        clearSabLaserVisualJobsForEntity(ent.id);
+        removeLaserBeamsForEntity(ent.id);
+        queueEntityVisualCleanup(ent.id, {
+            clearSabRing: true,
+            releaseSabShots: true,
+            detachRocketAttacks: true,
+            clearShipSkillVisuals: true
+        });
+        clearAttackLocksTargetingEntity(ent.id);
+        unregisterAttackLockForEntity(ent);
+        unregisterEntityRuntimeActiveState(ent.id);
+    }
     if (entities[key] === ent) delete entities[key];
     if (entities[rawId] === ent) delete entities[rawId];
     if (ent.id != null && entities[ent.id] === ent) delete entities[ent.id];
@@ -5992,9 +6081,6 @@ function handlePacket_R(parts, i) {
         clearCollectRequest(ent.id);
     } else if (typeof collectedBoxRequestIds !== "undefined") {
         collectedBoxRequestIds.delete(ent.id);
-    }
-    if (typeof flashClearEntityShipSkillVisualEffects === "function") {
-        flashClearEntityShipSkillVisualEffects(ent.id);
     }
     maybeClearMinimapEnemyWarningAfterForeignRemoval(ent);
 }
@@ -6266,7 +6352,9 @@ function handlePacket_K(parts, i) {
     if (typeof rememberRemovedEntitySnapshot === "function" && e) {
         rememberRemovedEntitySnapshot(e);
     }
-    detachRocketAttacksForEntity(id);
+    if (Number.isFinite(id)) {
+        queueEntityVisualCleanup(id, { detachRocketAttacks: true });
+    }
     clearAttackLocksTargetingEntity(id);
     if (e || id === heroId) {
         const entityX = id === heroId ? shipX : e ? e.x : 0;
@@ -6311,13 +6399,14 @@ function handlePacket_K(parts, i) {
         forceUnlock(id, { suppressServerStop: true, preserveMinimapMove: true });
         cancelRsbBurstsByTarget(id);
         cancelRsbBurst(id);
-        clearSabRingStateForEntity(id);
         clearSabLaserVisualJobsForEntity(id);
         removeLaserBeamsForEntity(id);
-        releaseSabShotsForEntity(id);
-        if (typeof flashClearEntityShipSkillVisualEffects === "function") {
-            flashClearEntityShipSkillVisualEffects(id);
-        }
+        queueEntityVisualCleanup(id, {
+            clearSabRing: true,
+            releaseSabShots: true,
+            detachRocketAttacks: true,
+            clearShipSkillVisuals: true
+        });
         unregisterAttackLockForEntity(e);
         unregisterEntityRuntimeActiveState(id);
         delete entities[id];

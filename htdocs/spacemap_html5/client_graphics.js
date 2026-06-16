@@ -2172,7 +2172,8 @@ function drawMiniMap() {
             }
             const markerCount = Number.isFinite(m.count) ? m.count : -1;
             const age = nowMs - m.startedAt;
-            if (markerCount !== -1 && age >= markerCount * cycleMs) {
+            const expiresAt = Number.isFinite(m.expiresAt) ? m.expiresAt : markerCount !== -1 ? m.startedAt + markerCount * cycleMs : Number.POSITIVE_INFINITY;
+            if (Number.isFinite(expiresAt) && nowMs >= expiresAt) {
                 window.minimapServerMarkers.delete(markerId);
                 continue;
             }
