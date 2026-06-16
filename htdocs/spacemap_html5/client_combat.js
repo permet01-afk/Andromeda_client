@@ -1024,11 +1024,19 @@ function updateCombatRotations() {
                 }
             }
             if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) {
-                attacker.attackTargetId = null;
-                attacker.attackLockUntil = 0;
+                if (typeof clearAttackLockForEntity === "function") {
+                    clearAttackLockForEntity(attacker);
+                } else {
+                    attacker.attackTargetId = null;
+                    attacker.attackLockUntil = 0;
+                }
                 continue;
             }
-            attacker.attackTargetId = tId;
+            if (typeof setAttackLockTargetForEntity === "function") {
+                setAttackLockTargetForEntity(attacker, tId);
+            } else {
+                attacker.attackTargetId = tId;
+            }
             if (beam.duration) {
                 const lockUntil = beam.createdAt + beam.duration;
                 attacker.attackLockUntil = Math.max(attacker.attackLockUntil || 0, lockUntil);

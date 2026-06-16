@@ -18,6 +18,8 @@ let wsLoginAttemptPending = false;
 
 const pendingAttackLocksByAttackerId = new Map();
 
+const attackLockAttackersByTargetId = new Map();
+
 function resetWsLoginAttempt(reason = "") {
     wsLoginAttemptPending = false;
 }
@@ -610,6 +612,96 @@ const WS_TEXT_DECODER = new TextDecoder("utf-8");
 
 let __andromedaRxChain = Promise.resolve();
 
+const RX_DRAIN_BUDGET_MS = 4;
+const RX_DRAIN_MAX_LINES = 96;
+
+const __andromedaRxLineQueue = [];
+
+let __andromedaRxQueueHead = 0;
+
+let __andromedaRxDrainScheduled = false;
+
+function __rxNowMs() {
+    return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+}
+
+function __compactRxQueueIfNeeded() {
+    if (__andromedaRxQueueHead <= 0) return;
+    if (__andromedaRxQueueHead < 1024 && __andromedaRxQueueHead * 2 < __andromedaRxLineQueue.length) return;
+    __andromedaRxLineQueue.splice(0, __andromedaRxQueueHead);
+    __andromedaRxQueueHead = 0;
+}
+
+function __clearRxQueue(channel = null) {
+    if (!channel) {
+        __andromedaRxLineQueue.length = 0;
+        __andromedaRxQueueHead = 0;
+        return;
+    }
+    const pending = [];
+    for (let i = __andromedaRxQueueHead; i < __andromedaRxLineQueue.length; i++) {
+        const item = __andromedaRxLineQueue[i];
+        if (item && item.channel !== channel) pending.push(item);
+    }
+    __andromedaRxLineQueue.length = 0;
+    for (const item of pending) __andromedaRxLineQueue.push(item);
+    __andromedaRxQueueHead = 0;
+}
+
+function __scheduleRxDrain() {
+    if (__andromedaRxDrainScheduled) return;
+    __andromedaRxDrainScheduled = true;
+    const run = () => __drainRxQueue();
+    if (typeof requestAnimationFrame === "function" && !(typeof document !== "undefined" && document.hidden)) {
+        requestAnimationFrame(run);
+    } else {
+        setTimeout(run, 0);
+    }
+}
+
+function __queueRxLine(channel, line, fallback = false) {
+    line = (line || "").trim();
+    if (!line || line === "||") return;
+    __andromedaRxLineQueue.push({
+        channel: channel,
+        line: line,
+        fallback: !!fallback
+    });
+    __scheduleRxDrain();
+}
+
+function __processQueuedRxLine(item) {
+    if (!item || !item.line) return;
+    try {
+        if (item.channel === "chat") {
+            if (item.line.indexOf("%") !== -1) handleChatPacket(item.line); else handleServerLine(item.line);
+        } else {
+            handleServerLine(item.line);
+        }
+    } catch (e) {
+        const prefix = item.channel === "chat" ? "[CHAT-WS]" : "[WS]";
+        const mode = item.fallback ? " (fallback)" : "";
+        console.error(`${prefix} Line processing error${mode}:`, e, item.line);
+    }
+}
+
+function __drainRxQueue() {
+    __andromedaRxDrainScheduled = false;
+    const startedAt = __rxNowMs();
+    let processed = 0;
+    while (__andromedaRxQueueHead < __andromedaRxLineQueue.length) {
+        const item = __andromedaRxLineQueue[__andromedaRxQueueHead++];
+        __processQueuedRxLine(item);
+        processed++;
+        if (processed >= RX_DRAIN_MAX_LINES) break;
+        if (__rxNowMs() - startedAt >= RX_DRAIN_BUDGET_MS) break;
+    }
+    __compactRxQueueIfNeeded();
+    if (__andromedaRxQueueHead < __andromedaRxLineQueue.length) {
+        __scheduleRxDrain();
+    }
+}
+
 function __decodeWsPayload(raw) {
     try {
         if (raw == null) return Promise.resolve("");
@@ -677,13 +769,7 @@ function __processGameRxText(raw) {
         if (pkt) {
             const lines = pkt.split(/\r?\n/);
             for (let line of lines) {
-                line = (line || "").trim();
-                if (!line || line === "||") continue;
-                try {
-                    handleServerLine(line);
-                } catch (e) {
-                    console.error("[WS] Line processing error (fallback):", e, line);
-                }
+                __queueRxLine("game", line, true);
             }
         }
         return;
@@ -696,13 +782,7 @@ function __processGameRxText(raw) {
         if (!pkt || pkt === "||") continue;
         const lines = pkt.split(/\r?\n/);
         for (let line of lines) {
-            line = (line || "").trim();
-            if (!line || line === "||") continue;
-            try {
-                handleServerLine(line);
-            } catch (e) {
-                console.error("[WS] Line processing error:", e, line);
-            }
+            __queueRxLine("game", line, false);
         }
     }
 }
@@ -724,13 +804,7 @@ function __processChatRxText(raw) {
         if (pkt) {
             const lines = pkt.split(/\r?\n/);
             for (let line of lines) {
-                line = (line || "").trim();
-                if (!line || line === "||") continue;
-                try {
-                    if (line.indexOf("%") !== -1) handleChatPacket(line); else handleServerLine(line);
-                } catch (e) {
-                    console.error("[CHAT-WS] Line processing error (fallback):", e, line);
-                }
+                __queueRxLine("chat", line, true);
             }
         }
         return;
@@ -743,13 +817,7 @@ function __processChatRxText(raw) {
         if (!pkt || pkt === "||") continue;
         const lines = pkt.split(/\r?\n/);
         for (let line of lines) {
-            line = (line || "").trim();
-            if (!line || line === "||") continue;
-            try {
-                if (line.indexOf("%") !== -1) handleChatPacket(line); else handleServerLine(line);
-            } catch (e) {
-                console.error("[CHAT-WS] Line processing error:", e, line);
-            }
+            __queueRxLine("chat", line, false);
         }
     }
 }
@@ -808,6 +876,7 @@ function connectToServer(isReconnect = false) {
         resetReadyFlags();
         netBuffer = "";
         wsUsesNullDelimiter = false;
+        __clearRxQueue("game");
         const version = "4.1";
         if (wsLoginAttemptPending) {
             console.warn("[WS] LOGIN already pending, suppressing duplicate startup LOGIN");
@@ -834,6 +903,7 @@ function connectToServer(isReconnect = false) {
         stopPingTimer();
         netBuffer = "";
         wsUsesNullDelimiter = false;
+        __clearRxQueue("game");
         try {
             if (typeof isPortalJumpLocked === "function" && isPortalJumpLocked() && typeof endPortalJumpLock === "function") {
                 endPortalJumpLock("disconnect");
@@ -912,6 +982,7 @@ function connectToChat() {
         chatServerFrameSeen = false;
         chatBuffer = "";
         chatUsesNullDelimiter = false;
+        __clearRxQueue("chat");
         startChatHeartbeat(__chatWsInstance);
         ensureDefaultChatRooms();
         renderChatTabsSafe();
@@ -947,6 +1018,7 @@ function connectToChat() {
             chatServerFrameSeen = false;
             chatBuffer = "";
             chatUsesNullDelimiter = false;
+            __clearRxQueue("chat");
         }
         console.warn("[CHAT-WS] Closed (Code: " + e.code + ").");
         if (!isCurrentChatSocket) return;
@@ -2324,6 +2396,7 @@ function resetMapState(newMapId) {
     if (typeof clearEntityRuntimeActiveLists === "function") clearEntityRuntimeActiveLists();
     for (const id in portals) delete portals[id];
     if (pendingAttackLocksByAttackerId instanceof Map) pendingAttackLocksByAttackerId.clear();
+    if (attackLockAttackersByTargetId instanceof Map) attackLockAttackersByTargetId.clear();
     if (typeof clearAllCollectableAnimationStates === "function") clearAllCollectableAnimationStates();
     if (Array.isArray(stations)) {
         stations.length = 0;
@@ -4390,10 +4463,83 @@ function handlePacket_J(parts, i) {
 
 function clearAttackLockForEntity(ent) {
     if (!ent) return;
+    unregisterAttackLockForEntity(ent);
     ent.attackTargetId = null;
     ent.attackLockUntil = 0;
     ent.attackLockX = null;
     ent.attackLockY = null;
+}
+
+function normalizeAttackLockEntityId(value) {
+    if (value === null || value === undefined || value === "") return null;
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+}
+
+function registerAttackLockForEntity(ent) {
+    if (!ent) return;
+    const attackerId = normalizeAttackLockEntityId(ent.id);
+    const targetId = normalizeAttackLockEntityId(ent.attackTargetId);
+    if (attackerId === null || targetId === null || targetId === -1) return;
+    let attackers = attackLockAttackersByTargetId.get(targetId);
+    if (!attackers) {
+        attackers = new Set();
+        attackLockAttackersByTargetId.set(targetId, attackers);
+    }
+    attackers.add(attackerId);
+}
+
+function unregisterAttackLockForEntity(ent) {
+    if (!ent) return;
+    const attackerId = normalizeAttackLockEntityId(ent.id);
+    const targetId = normalizeAttackLockEntityId(ent.attackTargetId);
+    if (attackerId === null || targetId === null) return;
+    const attackers = attackLockAttackersByTargetId.get(targetId);
+    if (!attackers) return;
+    attackers.delete(attackerId);
+    if (attackers.size === 0) {
+        attackLockAttackersByTargetId.delete(targetId);
+    }
+}
+
+function setAttackLockTargetForEntity(ent, targetId) {
+    if (!ent) return false;
+    const numericTargetId = normalizeAttackLockEntityId(targetId);
+    if (numericTargetId === null || numericTargetId === -1) {
+        clearAttackLockForEntity(ent);
+        return false;
+    }
+    unregisterAttackLockForEntity(ent);
+    ent.attackTargetId = numericTargetId;
+    registerAttackLockForEntity(ent);
+    return true;
+}
+
+function clearAttackLocksTargetingEntity(removedId) {
+    const targetId = normalizeAttackLockEntityId(removedId);
+    if (targetId === null) return;
+    let cleared = 0;
+    const indexedAttackers = attackLockAttackersByTargetId.get(targetId);
+    if (indexedAttackers && indexedAttackers.size > 0) {
+        const attackerIds = Array.from(indexedAttackers);
+        attackLockAttackersByTargetId.delete(targetId);
+        for (const attackerId of attackerIds) {
+            const other = entities[attackerId] || entities[String(attackerId)];
+            if (!other || other.id === heroId) continue;
+            if (normalizeAttackLockEntityId(other.attackTargetId) === targetId) {
+                clearAttackLockForEntity(other);
+                cleared++;
+            }
+        }
+    }
+    if (cleared > 0) return;
+    for (const oid in entities) {
+        const other = entities[oid];
+        if (!other || other.id === heroId) continue;
+        if (normalizeAttackLockEntityId(other.attackTargetId) === targetId) {
+            clearAttackLockForEntity(other);
+        }
+    }
 }
 
 function resolveAttackLockTargetPoint(attacker) {
@@ -4423,7 +4569,7 @@ function applyAttackLockToEntity(attacker, lock) {
         clearAttackLockForEntity(attacker);
         return;
     }
-    attacker.attackTargetId = targetId;
+    setAttackLockTargetForEntity(attacker, targetId);
     attacker.attackLockUntil = Number.POSITIVE_INFINITY;
     attacker.attackLockX = Number.isFinite(lock.x) ? lock.x : null;
     attacker.attackLockY = Number.isFinite(lock.y) ? lock.y : null;
@@ -5336,7 +5482,7 @@ function handlePacket_laserAttack(parts, i) {
     const duration = visual.playLoop ? visual.attackLengthMs || LASER_ATTACK_LENGTH_MS : baseDuration;
     const attackerLive = entities[attackerId];
     if (attackerLive) {
-        attackerLive.attackTargetId = targetId;
+        setAttackLockTargetForEntity(attackerLive, targetId);
         attackerLive.attackLockX = targetSnap.x;
         attackerLive.attackLockY = targetSnap.y;
         const lockDuration = visual.attackLengthMs || (typeof LASER_ATTACK_LENGTH_MS !== "undefined" ? LASER_ATTACK_LENGTH_MS : 1350);
@@ -5684,17 +5830,8 @@ function handlePacket_remove(parts, i) {
     removeLaserBeamsForEntity(e.id);
     releaseSabShotsForEntity(e.id);
     detachRocketAttacksForEntity(e.id);
-    try {
-        const removedId = e.id;
-        for (const oid in entities) {
-            const other = entities[oid];
-            if (!other || other.id === heroId) continue;
-            if (other.attackTargetId === removedId) {
-                other.attackTargetId = null;
-                other.attackLockUntil = 0;
-            }
-        }
-    } catch (err) {}
+    clearAttackLocksTargetingEntity(e.id);
+    unregisterAttackLockForEntity(e);
     unregisterEntityRuntimeActiveState(e.id);
     delete entities[key];
     if (loggedEntities.has(e.id)) loggedEntities.delete(e.id);
@@ -5780,13 +5917,8 @@ function handlePacket_R(parts, i) {
     removeLaserBeamsForEntity(ent.id);
     releaseSabShotsForEntity(ent.id);
     detachRocketAttacksForEntity(ent.id);
-    for (const oid in entities) {
-        const other = entities[oid];
-        if (!other || other.id === heroId) continue;
-        if (other.attackTargetId === ent.id) {
-            clearAttackLockForEntity(other);
-        }
-    }
+    clearAttackLocksTargetingEntity(ent.id);
+    unregisterAttackLockForEntity(ent);
     unregisterEntityRuntimeActiveState(ent.id);
     if (entities[key] === ent) delete entities[key];
     if (entities[rawId] === ent) delete entities[rawId];
@@ -6071,15 +6203,7 @@ function handlePacket_K(parts, i) {
         rememberRemovedEntitySnapshot(e);
     }
     detachRocketAttacksForEntity(id);
-    try {
-        for (const oid in entities) {
-            const other = entities[oid];
-            if (!other || other.id === heroId) continue;
-            if (other.attackTargetId === id) {
-                clearAttackLockForEntity(other);
-            }
-        }
-    } catch (err) {}
+    clearAttackLocksTargetingEntity(id);
     if (e || id === heroId) {
         const entityX = id === heroId ? shipX : e ? e.x : 0;
         const entityY = id === heroId ? shipY : e ? e.y : 0;
@@ -6130,6 +6254,7 @@ function handlePacket_K(parts, i) {
         if (typeof flashClearEntityShipSkillVisualEffects === "function") {
             flashClearEntityShipSkillVisualEffects(id);
         }
+        unregisterAttackLockForEntity(e);
         unregisterEntityRuntimeActiveState(id);
         delete entities[id];
         if (loggedEntities.has(id)) loggedEntities.delete(id);
