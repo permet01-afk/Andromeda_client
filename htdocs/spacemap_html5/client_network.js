@@ -2037,6 +2037,75 @@ function handleChatPacket(raw) {
     }
 }
 
+let groupUiRefreshScheduled = false;
+let groupUiRefreshNeedsChatSync = false;
+
+function scheduleFlashLikeGroupUiRefresh(syncChat = false) {
+    if (syncChat) groupUiRefreshNeedsChatSync = true;
+    if (groupUiRefreshScheduled) return;
+    groupUiRefreshScheduled = true;
+    const run = () => {
+        groupUiRefreshScheduled = false;
+        const shouldSyncChat = groupUiRefreshNeedsChatSync;
+        groupUiRefreshNeedsChatSync = false;
+        if (typeof forceGroupUiUpdate === "function") {
+            forceGroupUiUpdate();
+        }
+        if (shouldSyncChat) {
+            syncSyntheticGroupChatRoom();
+        }
+    };
+    if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(run);
+    } else {
+        setTimeout(run, 0);
+    }
+}
+
+function setGroupMemberField(member, key, value) {
+    if (!member || value === null || typeof value === "undefined") return false;
+    if (member[key] === value) return false;
+    member[key] = value;
+    return true;
+}
+
+function getGroupMemberMinimapState(member) {
+    const activeMapId = getCurrentGroupNetworkMapId();
+    const memberMapId = member && member.mapId != null ? parseInt(member.mapId, 10) : NaN;
+    const posX = member && member.posX != null ? parseInt(member.posX, 10) : NaN;
+    const posY = member && member.posY != null ? parseInt(member.posY, 10) : NaN;
+    const visible = !!(member && !member.isOffline && Number.isFinite(memberMapId) && Number.isFinite(activeMapId) && memberMapId === activeMapId);
+    return {
+        visible: visible,
+        mapId: Number.isFinite(memberMapId) ? memberMapId : null,
+        activeMapId: Number.isFinite(activeMapId) ? activeMapId : null,
+        posX: Number.isFinite(posX) ? posX : 0,
+        posY: Number.isFinite(posY) ? posY : 0
+    };
+}
+
+function hasGroupMinimapStateChanged(before, after) {
+    if (!before || !after) return true;
+    if (before.visible !== after.visible) return true;
+    if (!after.visible) return false;
+    return before.mapId !== after.mapId || before.activeMapId !== after.activeMapId || before.posX !== after.posX || before.posY !== after.posY;
+}
+
+function clearRemoteGroupMemberEntityAfterMapExit(memberId, before, after) {
+    if (!before || !before.visible || after.visible) return;
+    const ent = entities[memberId] || entities[String(memberId)];
+    if (ent && ent.kind === "player") {
+        handlePacket_R([ "R", String(memberId) ], 1);
+    }
+}
+
+function applyGroupMemberMinimapDiff(memberId, before, after) {
+    if (hasGroupMinimapStateChanged(before, after)) {
+        invalidateGroupMinimapCache();
+    }
+    clearRemoteGroupMemberEntityAfterMapExit(memberId, before, after);
+}
+
 function handlePacket_ps(parts) {
     if (parts.length < 3) return;
     const INVITE_ERROR_MESSAGES = {
@@ -2061,12 +2130,7 @@ function handlePacket_ps(parts) {
         action: action,
         parts: parts.slice(3)
     });
-    const refreshGroupUi = () => {
-        if (typeof forceGroupUiUpdate === "function") {
-            forceGroupUiUpdate();
-        }
-        syncSyntheticGroupChatRoom();
-    };
+    const refreshGroupUi = (syncChat = false) => scheduleFlashLikeGroupUiRefresh(syncChat);
     const resetGroup = showMessage => {
         for (const k in groupMembers) delete groupMembers[k];
         groupLeaderId = null;
@@ -2078,7 +2142,7 @@ function handlePacket_ps(parts) {
         syntheticGroupChatServerId = 0;
         invalidateGroupMinimapCache();
         if (showMessage) addServerInfoLogMessage("Group disbanded.");
-        refreshGroupUi();
+        refreshGroupUi(true);
     };
     const parseMemberBlock = (block, orderIdx) => {
         const name = block[0];
@@ -2213,18 +2277,21 @@ function handlePacket_ps(parts) {
                 addServerInfoLogMessage("Group formed!");
             }
             invalidateGroupMinimapCache();
-            refreshGroupUi();
+            refreshGroupUi(true);
         }
         return;
     }
     if (action === "upd") {
         const memId = parseInt(parts[3], 10);
         const xmlData = parts[4];
-        if (groupMembers[memId] && xmlData) {
+        const member = groupMembers[memId];
+        if (member && xmlData) {
             const extract = key => {
                 const match = xmlData.match(new RegExp(`${key}="(\\d+)"`));
                 return match ? parseInt(match[1], 10) : null;
             };
+            const beforeMinimapState = getGroupMemberMinimapState(member);
+            let changed = false;
             const hp = extract("hp");
             const maxHp = extract("hpM");
             const sh = extract("sh");
@@ -2239,25 +2306,27 @@ function handlePacket_ps(parts) {
             const shp = extract("shp");
             const fgt = extract("fgt");
             const off = extract("lgo");
-            if (hp !== null) groupMembers[memId].hp = hp;
-            if (maxHp !== null) groupMembers[memId].maxHp = maxHp;
-            if (sh !== null) groupMembers[memId].shield = sh;
-            if (maxSh !== null) groupMembers[memId].maxShield = maxSh;
-            if (map !== null) groupMembers[memId].mapId = map;
+            changed = setGroupMemberField(member, "hp", hp) || changed;
+            changed = setGroupMemberField(member, "maxHp", maxHp) || changed;
+            changed = setGroupMemberField(member, "shield", sh) || changed;
+            changed = setGroupMemberField(member, "maxShield", maxSh) || changed;
+            changed = setGroupMemberField(member, "mapId", map) || changed;
             if (pos) {
-                groupMembers[memId].posX = parseInt(pos[1], 10);
-                groupMembers[memId].posY = parseInt(pos[2], 10);
+                changed = setGroupMemberField(member, "posX", parseInt(pos[1], 10)) || changed;
+                changed = setGroupMemberField(member, "posY", parseInt(pos[2], 10)) || changed;
             }
-            if (level !== null) groupMembers[memId].level = level;
-            if (faction !== null) groupMembers[memId].factionId = faction;
-            if (act !== null) groupMembers[memId].activity = Boolean(act);
-            if (clk !== null) groupMembers[memId].cloaked = Boolean(clk);
-            if (tgt !== null) groupMembers[memId].targetId = tgt;
-            if (shp !== null) groupMembers[memId].shipType = shp;
-            if (fgt !== null) groupMembers[memId].fighting = Boolean(fgt);
-            if (off !== null) groupMembers[memId].isOffline = Boolean(off);
-            removeRemoteGroupMemberEntityIfNeeded(memId);
-            refreshGroupUi();
+            changed = setGroupMemberField(member, "level", level) || changed;
+            changed = setGroupMemberField(member, "factionId", faction) || changed;
+            changed = setGroupMemberField(member, "activity", act !== null ? Boolean(act) : null) || changed;
+            changed = setGroupMemberField(member, "cloaked", clk !== null ? Boolean(clk) : null) || changed;
+            changed = setGroupMemberField(member, "targetId", tgt) || changed;
+            changed = setGroupMemberField(member, "shipType", shp) || changed;
+            changed = setGroupMemberField(member, "fighting", fgt !== null ? Boolean(fgt) : null) || changed;
+            changed = setGroupMemberField(member, "isOffline", off !== null ? Boolean(off) : null) || changed;
+            if (changed) {
+                applyGroupMemberMinimapDiff(memId, beforeMinimapState, getGroupMemberMinimapState(member));
+                refreshGroupUi();
+            }
         }
         return;
     }
@@ -2272,14 +2341,15 @@ function handlePacket_ps(parts) {
             let msg = `${groupMembers[targetId].name} left the group.`;
             if (reason === "kick") msg = `${groupMembers[targetId].name} was kicked from the group.`;
             addServerInfoLogMessage(msg);
+            const beforeMinimapState = getGroupMemberMinimapState(groupMembers[targetId]);
             delete groupMembers[targetId];
             if (groupLeaderId === targetId) groupLeaderId = null;
             if (Object.keys(groupMembers).length === 0) {
                 groupInGroupServerState = false;
                 syntheticGroupChatServerId = 0;
             }
-            invalidateGroupMinimapCache();
-            refreshGroupUi();
+            applyGroupMemberMinimapDiff(targetId, beforeMinimapState, getGroupMemberMinimapState(null));
+            refreshGroupUi(true);
         }
         return;
     }
@@ -2300,20 +2370,25 @@ function handlePacket_ps(parts) {
     }
     if (action === "kill") {
         const targetId = parseInt(parts[3], 10);
-        if (groupMembers[targetId]) {
-            groupMembers[targetId].hp = 0;
+        const member = groupMembers[targetId];
+        if (member) {
+            const changed = setGroupMemberField(member, "hp", 0);
             addServerInfoLogMessage(`${groupMembers[targetId].name} was destroyed.`);
-            refreshGroupUi();
+            if (changed) refreshGroupUi();
         }
         return;
     }
     if (action === "jump") {
         const targetId = parseInt(parts[3], 10);
         const newMap = parseInt(parts[4], 10);
-        if (groupMembers[targetId] && !isNaN(newMap)) {
-            groupMembers[targetId].mapId = newMap;
-            removeRemoteGroupMemberEntityIfNeeded(targetId);
-            refreshGroupUi();
+        const member = groupMembers[targetId];
+        if (member && !isNaN(newMap)) {
+            const beforeMinimapState = getGroupMemberMinimapState(member);
+            const changed = setGroupMemberField(member, "mapId", newMap);
+            if (changed) {
+                applyGroupMemberMinimapDiff(targetId, beforeMinimapState, getGroupMemberMinimapState(member));
+                refreshGroupUi();
+            }
         }
         return;
     }
@@ -2477,24 +2552,6 @@ function getCurrentGroupNetworkMapId() {
     if (Number.isFinite(activeMapId) && activeMapId > 0) return activeMapId;
     const cfgMapId = typeof cfg !== "undefined" && cfg && cfg.mapID != null ? parseInt(cfg.mapID, 10) : NaN;
     return Number.isFinite(cfgMapId) && cfgMapId > 0 ? cfgMapId : null;
-}
-
-function removeRemoteGroupMemberEntityIfNeeded(memberId) {
-    const member = groupMembers[memberId] || groupMembers[String(memberId)];
-    if (!member) return;
-
-    const memberMapId = parseInt(member.mapId, 10);
-    const activeMapId = getCurrentGroupNetworkMapId();
-    if (!Number.isFinite(memberMapId) || !Number.isFinite(activeMapId) || memberMapId === activeMapId) {
-        invalidateGroupMinimapCache();
-        return;
-    }
-
-    const ent = entities[memberId] || entities[String(memberId)];
-    if (ent && ent.kind === "player") {
-        handlePacket_R([ "R", String(memberId) ], 1);
-    }
-    invalidateGroupMinimapCache();
 }
 
 function handlePacket_i(parts, i) {
@@ -4152,14 +4209,21 @@ function handlePacket_f(parts, i) {
     }
     resetEntityInterpolationTo(e, x, y);
     e.expansionTypeId = resolvedStage;
-    if (groupMembers[id]) {
-        groupMembers[id].name = name || groupMembers[id].name;
-        if (e.clanTag) groupMembers[id].clanTag = e.clanTag;
-        if (!isNaN(shipId)) groupMembers[id].shipType = shipId;
-        groupMembers[id].posX = x;
-        groupMembers[id].posY = y;
-        if (typeof currentMapId !== "undefined") groupMembers[id].mapId = currentMapId;
-        invalidateGroupMinimapCache();
+    const groupMember = groupMembers[id];
+    if (groupMember) {
+        const beforeMinimapState = getGroupMemberMinimapState(groupMember);
+        let groupMemberChanged = false;
+        if (name) groupMemberChanged = setGroupMemberField(groupMember, "name", name) || groupMemberChanged;
+        if (e.clanTag) groupMemberChanged = setGroupMemberField(groupMember, "clanTag", e.clanTag) || groupMemberChanged;
+        if (!isNaN(shipId)) groupMemberChanged = setGroupMemberField(groupMember, "shipType", shipId) || groupMemberChanged;
+        groupMemberChanged = setGroupMemberField(groupMember, "posX", x) || groupMemberChanged;
+        groupMemberChanged = setGroupMemberField(groupMember, "posY", y) || groupMemberChanged;
+        const activeMapId = getCurrentGroupNetworkMapId();
+        if (activeMapId !== null) groupMemberChanged = setGroupMemberField(groupMember, "mapId", activeMapId) || groupMemberChanged;
+        if (groupMemberChanged) {
+            applyGroupMemberMinimapDiff(id, beforeMinimapState, getGroupMemberMinimapState(groupMember));
+            scheduleFlashLikeGroupUiRefresh();
+        }
     }
     if (heroId !== null && id === heroId) {
         shipX = x;
