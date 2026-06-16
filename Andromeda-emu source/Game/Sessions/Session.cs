@@ -309,6 +309,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 return;
             }
 
+            PerformanceProfiler.RecordNetworkReceiveBytes(ByteCount);
             this.ProcessData(this.mBuffer, 0, ByteCount);
             this.BeginReceive();
         }
@@ -322,7 +323,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 Socket socket = this.mSocket;
                 if (socket == null || !socket.Connected) return;
 
-                socket.BeginSend(Data, 0, Data.Length, SocketFlags.None, new AsyncCallback(this.OnDataSent), socket);
+                int dataLength = Data.Length;
+                socket.BeginSend(Data, 0, dataLength, SocketFlags.None, new AsyncCallback(this.OnDataSent), socket);
+                PerformanceProfiler.RecordNetworkSend(dataLength);
             }
             catch (Exception ex)
             {
@@ -422,6 +425,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                         continue;
                     }
 
+                    PerformanceProfiler.RecordNetworkIncomingPacket(packetLength);
                     byte[] packetBytes = new byte[packetLength];
                     this.mRxBuffer.CopyTo(this.mRxHead, packetBytes, 0, packetLength);
 

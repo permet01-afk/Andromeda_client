@@ -9,6 +9,7 @@ using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Specialized;
 using OrbitReborn_Emulator.Storage;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -273,12 +274,17 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void AmmoSyncTick(object state)
         {
+            long perfStart = PerformanceProfiler.Start();
+            int perfUserId = 0;
+            bool perfActive = false;
             try
             {
                 Session s = (Session)state;
                 if (s == null || s.CharacterInfo == null || !s.Authenticated || s.Stopped)
                     return;
 
+                perfUserId = s.CharacterId;
+                perfActive = true;
                 bool ammoChanged = s.CharacterInfo.ConsumeAmmoSyncClientUpdatePending();
 
                 try
@@ -321,17 +327,27 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 LogTimerFailure("AmmoSyncTick", ex);
             }
+            finally
+            {
+                if (perfActive)
+                    PerformanceProfiler.LogTimer("AmmoSyncTick", perfUserId, perfStart);
+            }
         }
 
         private static void ConfigRefreshTick(object state)
         {
+            long perfStart = PerformanceProfiler.Start();
+            int perfUserId = 0;
+            bool perfActive = false;
             try
             {
                 Session s = (Session)state;
                 if (s == null || s.CharacterInfo == null || !s.Authenticated || s.Stopped)
                     return;
 
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                perfUserId = s.CharacterId;
+                perfActive = true;
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("ConfigRefreshTick"))
                 {
                     int dbActiveConfig;
 
@@ -354,6 +370,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
             catch (Exception ex)
             {
                 LogTimerFailure("ConfigRefreshTick", ex);
+            }
+            finally
+            {
+                if (perfActive)
+                    PerformanceProfiler.LogTimer("ConfigRefreshTick", perfUserId, perfStart);
             }
         }
 

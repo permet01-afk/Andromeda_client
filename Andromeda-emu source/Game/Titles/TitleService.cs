@@ -205,9 +205,10 @@ namespace OrbitReborn_Emulator.Game.Titles
                 return;
             }
 
+            long perfStart = PerformanceProfiler.Start();
             try
             {
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("TitleService.OnNpcDestroyed"))
                 {
                     if (!AreTitleTablesAvailable(client))
                     {
@@ -236,6 +237,10 @@ namespace OrbitReborn_Emulator.Game.Titles
             }
             catch
             {
+            }
+            finally
+            {
+                PerformanceProfiler.LogTitle("OnNpcDestroyed", perfStart);
             }
         }
 
@@ -276,9 +281,10 @@ namespace OrbitReborn_Emulator.Game.Titles
 
         public static void EnsureMostWantedHolder()
         {
+            long perfStart = PerformanceProfiler.Start();
             try
             {
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("MostWanted"))
                 {
                     if (!AreTitleTablesAvailable(client))
                     {
@@ -319,6 +325,10 @@ namespace OrbitReborn_Emulator.Game.Titles
             }
             catch
             {
+            }
+            finally
+            {
+                PerformanceProfiler.LogTitle("MostWanted", perfStart);
             }
         }
 

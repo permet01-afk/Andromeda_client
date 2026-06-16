@@ -57,6 +57,7 @@ namespace OrbitReborn_Emulator
 
             ConfigManager.Initialize(Constants.DataFileDirectory + "\\server-main.cfg");
             Output.SetVerbosityLevel((OutputLevel)ConfigManager.GetValue("output.verbositylevel"));
+            PerformanceProfiler.Initialize();
 
             Localization.Initialize(Constants.LangFileDirectory + "\\lang_" + ConfigManager.GetValue("lang") + ".lang");
 
@@ -179,6 +180,7 @@ namespace OrbitReborn_Emulator
         {
             Output.WriteLine((object)Localization.GetValue("core.uninit", (string[])null));
             Program.mAlive = false;
+            PerformanceProfiler.Uninitialize();
             SqlDatabaseManager.Uninitialize();
             Program.mServer.Dispose();
             Program.mServer = (SocketListener)null;

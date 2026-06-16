@@ -149,6 +149,7 @@
     <Compile Include="Game\Sessions\SingleSignOnAuthenticator.cs" />
     <Compile Include="Util\CharacterResolverCache.cs" />
     <Compile Include="Util\DistanceUtil.cs" />
+    <Compile Include="Util\PerformanceProfiler.cs" />
     <Compile Include="Util\RandomProvider.cs" />
     <Compile Include="Util\ByteUtil.cs" />
     <Compile Include="Util\GeneralFunctions.cs" />

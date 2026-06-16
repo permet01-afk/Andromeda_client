@@ -3,6 +3,7 @@
 using MySql.Data.MySqlClient;
 using OrbitReborn_Emulator.Config;
 using OrbitReborn_Emulator.Libs;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -27,6 +28,25 @@ namespace OrbitReborn_Emulator.Storage
       {
         return SqlDatabaseManager.mClients.Count;
       }
+    }
+
+    public static bool TryGetPoolUsage(out int UsedClients, out int TotalClients, out int MaxClients)
+    {
+      UsedClients = 0;
+      TotalClients = 0;
+      MaxClients = SqlDatabaseManager.mMaxPoolSize;
+
+      if (SqlDatabaseManager.mClients == null || SqlDatabaseManager.mSyncRoot == null)
+        return false;
+
+      lock (SqlDatabaseManager.mSyncRoot)
+      {
+        TotalClients = SqlDatabaseManager.mClients.Count;
+        MaxClients = SqlDatabaseManager.mMaxPoolSize;
+        UsedClients = SqlDatabaseManager.GetUsedClientCountUnsafe();
+      }
+
+      return true;
     }
 
     public static void Initialize()
@@ -132,6 +152,17 @@ namespace OrbitReborn_Emulator.Storage
 
     public static SqlDatabaseClient GetClient()
     {
+      return SqlDatabaseManager.GetClient(null);
+    }
+
+    public static SqlDatabaseClient GetClient(string Caller)
+    {
+      long perfStart = PerformanceProfiler.Start();
+      return SqlDatabaseManager.GetClientInternal(perfStart, Caller);
+    }
+
+    private static SqlDatabaseClient GetClientInternal(long PerfStart, string Caller)
+    {
       lock (SqlDatabaseManager.mSyncRoot)
       {
         foreach (SqlDatabaseClient item_0 in (IEnumerable<SqlDatabaseClient>) SqlDatabaseManager.mClients.Values)
@@ -139,19 +170,37 @@ namespace OrbitReborn_Emulator.Storage
           if (item_0.Available)
           {
             item_0.Available = false;
+            PerformanceProfiler.LogSqlPoolWait(Caller, PerfStart, SqlDatabaseManager.GetUsedClientCountUnsafe(), SqlDatabaseManager.mMaxPoolSize, false);
             return item_0;
           }
         }
         if (SqlDatabaseManager.mMaxPoolSize <= 0 || SqlDatabaseManager.ClientCount < SqlDatabaseManager.mMaxPoolSize)
         {
           SqlDatabaseManager.SetClientAmount(SqlDatabaseManager.ClientCount + 1, "out of assignable clients in GetClient()");
-          return SqlDatabaseManager.GetClient();
+          return SqlDatabaseManager.GetClientInternal(PerfStart, Caller);
         }
         ++SqlDatabaseManager.mStarvationCounter;
         Output.WriteLine((object) ("(Sql) Client starvation; out of assignable clients/maximum pool size reached. Consider increasing the `mysql.pool.max` configuration value. Starvation count is " + (object) SqlDatabaseManager.mStarvationCounter + "."), OutputLevel.Warning);
+        PerformanceProfiler.LogSqlPoolWait(Caller, PerfStart, SqlDatabaseManager.GetUsedClientCountUnsafe(), SqlDatabaseManager.mMaxPoolSize, true);
         Monitor.Wait(SqlDatabaseManager.mSyncRoot);
-        return SqlDatabaseManager.GetClient();
+        return SqlDatabaseManager.GetClientInternal(PerfStart, Caller);
       }
+    }
+
+    private static int GetUsedClientCountUnsafe()
+    {
+      int usedClients = 0;
+
+      if (SqlDatabaseManager.mClients == null)
+        return usedClients;
+
+      foreach (SqlDatabaseClient client in (IEnumerable<SqlDatabaseClient>) SqlDatabaseManager.mClients.Values)
+      {
+        if (client != null && !client.Available)
+          ++usedClients;
+      }
+
+      return usedClients;
     }
 
     public static void PokeAllAwaiting()

@@ -1,6 +1,7 @@
 ﻿
 
 using OrbitReborn_Emulator.Config;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.IO;
 using System.Text;
@@ -103,12 +104,20 @@ namespace OrbitReborn_Emulator
             return stringBuilder.ToString();
         }
 
-        private static void WriteLogIfNeeded(object Line)
+        private static void WriteLogIfNeeded(object Line, OutputLevel Level)
         {
             if (!Output.mEnableLogging)
                 return;
-            lock (Output.mWritebackSyncRoot)
-                File.AppendAllText(Output.mLogFilePath, Output.FormatTimestamp() + Line + (object)Constants.LineBreakChar, Constants.DefaultEncoding);
+            long perfStart = PerformanceProfiler.BeginLogWrite();
+            try
+            {
+                lock (Output.mWritebackSyncRoot)
+                    File.AppendAllText(Output.mLogFilePath, Output.FormatTimestamp() + Line + (object)Constants.LineBreakChar, Constants.DefaultEncoding);
+            }
+            finally
+            {
+                PerformanceProfiler.EndLogWrite(perfStart, Level);
+            }
         }
 
         public static void WriteLine()
@@ -116,7 +125,7 @@ namespace OrbitReborn_Emulator
             if (Output.mVerbosityLevel > OutputLevel.Notification)
                 return;
             Console.WriteLine();
-            Output.WriteLogIfNeeded((object)Constants.LineBreakChar.ToString());
+            Output.WriteLogIfNeeded((object)Constants.LineBreakChar.ToString(), OutputLevel.Notification);
         }
 
         public static void WriteLine(object Line)
@@ -132,7 +141,7 @@ namespace OrbitReborn_Emulator
             Output.SetColorSchemeForSeverity(Level);
             Console.WriteLine(Line);
             Output.ResetColorScheme();
-            Output.WriteLogIfNeeded(Line);
+            Output.WriteLogIfNeeded(Line, Level);
         }
 
         private static string FormatTimestamp()

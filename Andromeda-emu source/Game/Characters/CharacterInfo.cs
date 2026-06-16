@@ -9,6 +9,7 @@ using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Game.Quests;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
+using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -4072,8 +4073,17 @@ namespace OrbitReborn_Emulator.Game.Characters
                     return;
 
                 CharacterInfo attackerInfo = this.Attacker.CharacterInfo;
+                long perfStart = PerformanceProfiler.Start();
+                long perfDbBlockStart = PerformanceProfiler.Start();
+                long perfDbBlockMs = 0L;
+                long perfQuestMs = 0L;
+                long perfWeeklyMs = 0L;
+                long perfTitleMs = 0L;
+                long perfAssistMs = 0L;
+                int perfKillerId = attackerInfo.Id;
+                int perfVictimId = victimInfo.Id;
 
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("PvpReward"))
                 {
                     string _Message1 = "You have destroyed " + this.Username + ".";
                     string _Message2 = "You have been destroyed by " + WebUtility.HtmlEncode(attackerInfo.Username) + ".";
@@ -4088,7 +4098,9 @@ namespace OrbitReborn_Emulator.Game.Characters
                         attackerInfo.AddLog(client, _Message1);
                         victimInfo.AddLog(client, _Message2);
 
+                        long perfStepStart = PerformanceProfiler.Start();
                         bool questProgressChanged = QuestObjectiveProgress.AddPlayerKillProgress(attackerInfo.Id);
+                        perfQuestMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
                         bool sameWeeklyGroup = (attackerInfo.Members != null && attackerInfo.Members.Contains(victimInfo.Id))
                             || (victimInfo.Members != null && victimInfo.Members.Contains(attackerInfo.Id));
                         string attackerRemoteAddress = this.Attacker.RemoteAddress;
@@ -4096,7 +4108,8 @@ namespace OrbitReborn_Emulator.Game.Characters
                         bool sameWeeklyRemoteAddress = !string.IsNullOrEmpty(attackerRemoteAddress)
                             && attackerRemoteAddress == victimRemoteAddress;
 
-                        questProgressChanged = QuestObjectiveProgress.AddWeeklyEligiblePlayerKillProgress(
+                        perfStepStart = PerformanceProfiler.Start();
+                        bool weeklyProgressChanged = QuestObjectiveProgress.AddWeeklyEligiblePlayerKillProgress(
                             attackerInfo.Id,
                             attackerInfo.FactionId,
                             attackerInfo.ClanId,
@@ -4106,9 +4119,13 @@ namespace OrbitReborn_Emulator.Game.Characters
                             sameWeeklyGroup,
                             sameWeeklyRemoteAddress,
                             rewardAsEnemy
-                        ) || questProgressChanged;
+                        );
+                        perfWeeklyMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
+                        questProgressChanged = weeklyProgressChanged || questProgressChanged;
 
+                        perfStepStart = PerformanceProfiler.Start();
                         bool titleProgressChanged = TitleService.TrackEligiblePvpKill(this.Attacker, ennemy, rewardAsEnemy);
+                        perfTitleMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
 
                         if (questProgressChanged || titleProgressChanged)
                             this.Attacker.SendData(PacketComposer.Compose("QST", "UPD"));
@@ -4156,8 +4173,12 @@ namespace OrbitReborn_Emulator.Game.Characters
                         string str = this.Username + " has been destroyed by " + attackerInfo.Username + ".";
                         instanceByMapId.BroadcastMessage(PacketComposer.Compose("A", "STD|" + str), false);
                     }
+                    long perfAssistStart = PerformanceProfiler.Start();
                     this.SendRewardAssistAttacker(client, ennemy);
+                    perfAssistMs += PerformanceProfiler.ElapsedMilliseconds(perfAssistStart);
                 }
+                perfDbBlockMs = PerformanceProfiler.ElapsedMilliseconds(perfDbBlockStart);
+                PerformanceProfiler.LogPvpReward(perfKillerId, perfVictimId, perfStart, perfDbBlockMs, perfQuestMs, perfWeeklyMs, perfTitleMs, perfAssistMs);
                 this.assistAttacker.Clear();
             }
             catch (Exception exception)
@@ -5320,7 +5341,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
 
             DataRow row;
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("AmmoSyncTick.PrimaryAmmoFlush"))
             {
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
@@ -5469,7 +5490,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
 
             DataRow row;
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("AmmoSyncTick.SecondaryAmmoFlush"))
             {
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
@@ -5784,75 +5805,84 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool RefreshAmmoFromDbIfHigher()
         {
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            long perfStart = PerformanceProfiler.Start();
+            try
             {
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-
-                DataRow row = client.ExecuteQueryRow("SELECT ammo_lcb10, ammo_mcb25, ammo_mcb50, ammo_ucb100, ammo_sab50, ammo_rsb75, ammo_r310, ammo_plt2026, ammo_plt2021, ammo_dcr250, ammo_hstrm01, ammo_ubr100, ammo_eco10, ammo_smb01, ammo_ish01, ammo_emp01 FROM users WHERE id=@id LIMIT 1");
-                if (row == null) return false;
-
-                Func<string, long, long> getInt64 = (columnName, defaultValue) =>
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("RefreshAmmoFromDbIfHigher"))
                 {
-                    try
+                    client.ClearParameters();
+                    client.SetParameter("id", (object)this.mId);
+
+                    DataRow row = client.ExecuteQueryRow("SELECT ammo_lcb10, ammo_mcb25, ammo_mcb50, ammo_ucb100, ammo_sab50, ammo_rsb75, ammo_r310, ammo_plt2026, ammo_plt2021, ammo_dcr250, ammo_hstrm01, ammo_ubr100, ammo_eco10, ammo_smb01, ammo_ish01, ammo_emp01 FROM users WHERE id=@id LIMIT 1");
+                    if (row == null) return false;
+
+                    Func<string, long, long> getInt64 = (columnName, defaultValue) =>
                     {
-                        if (!row.Table.Columns.Contains(columnName) || row[columnName] == DBNull.Value)
+                        try
+                        {
+                            if (!row.Table.Columns.Contains(columnName) || row[columnName] == DBNull.Value)
+                                return defaultValue;
+                            return Convert.ToInt64(row[columnName]);
+                        }
+                        catch
+                        {
                             return defaultValue;
-                        return Convert.ToInt64(row[columnName]);
-                    }
-                    catch
-                    {
-                        return defaultValue;
-                    }
-                };
+                        }
+                    };
 
-                bool changed = false;
-                long v;
+                    bool changed = false;
+                    long v;
 
-                lock (this.mPrimaryAmmoSyncLock)
-                {
-                    if (!this.mPrimaryAmmoDirty)
+                    lock (this.mPrimaryAmmoSyncLock)
                     {
-                        v = getInt64("ammo_lcb10", AmmoLcb10); if (v > AmmoLcb10) { AmmoLcb10 = v; mDbAmmoLcb10 = v; changed = true; }
-                        v = getInt64("ammo_mcb25", AmmoMcb25); if (v > AmmoMcb25) { AmmoMcb25 = v; mDbAmmoMcb25 = v; changed = true; }
-                        v = getInt64("ammo_mcb50", AmmoMcb50); if (v > AmmoMcb50) { AmmoMcb50 = v; mDbAmmoMcb50 = v; changed = true; }
-                        v = getInt64("ammo_ucb100", AmmoUcb100); if (v > AmmoUcb100) { AmmoUcb100 = v; mDbAmmoUcb100 = v; changed = true; }
-                        v = getInt64("ammo_sab50", AmmoSab50); if (v > AmmoSab50) { AmmoSab50 = v; mDbAmmoSab50 = v; changed = true; }
-                        v = getInt64("ammo_rsb75", AmmoRsb75); if (v > AmmoRsb75) { AmmoRsb75 = v; mDbAmmoRsb75 = v; changed = true; }
+                        if (!this.mPrimaryAmmoDirty)
+                        {
+                            v = getInt64("ammo_lcb10", AmmoLcb10); if (v > AmmoLcb10) { AmmoLcb10 = v; mDbAmmoLcb10 = v; changed = true; }
+                            v = getInt64("ammo_mcb25", AmmoMcb25); if (v > AmmoMcb25) { AmmoMcb25 = v; mDbAmmoMcb25 = v; changed = true; }
+                            v = getInt64("ammo_mcb50", AmmoMcb50); if (v > AmmoMcb50) { AmmoMcb50 = v; mDbAmmoMcb50 = v; changed = true; }
+                            v = getInt64("ammo_ucb100", AmmoUcb100); if (v > AmmoUcb100) { AmmoUcb100 = v; mDbAmmoUcb100 = v; changed = true; }
+                            v = getInt64("ammo_sab50", AmmoSab50); if (v > AmmoSab50) { AmmoSab50 = v; mDbAmmoSab50 = v; changed = true; }
+                            v = getInt64("ammo_rsb75", AmmoRsb75); if (v > AmmoRsb75) { AmmoRsb75 = v; mDbAmmoRsb75 = v; changed = true; }
+                        }
                     }
+
+                    lock (this.mSecondaryAmmoSyncLock)
+                    {
+                        if (!this.mSecondaryAmmoDirty)
+                        {
+                            v = getInt64("ammo_r310", AmmoR310); if (v > AmmoR310) { AmmoR310 = v; mDbAmmoR310 = v; changed = true; }
+                            v = getInt64("ammo_plt2026", AmmoPlt2026); if (v > AmmoPlt2026) { AmmoPlt2026 = v; mDbAmmoPlt2026 = v; changed = true; }
+                            v = getInt64("ammo_plt2021", AmmoPlt2021); if (v > AmmoPlt2021) { AmmoPlt2021 = v; mDbAmmoPlt2021 = v; changed = true; }
+                            v = getInt64("ammo_dcr250", AmmoDcr250); if (v > AmmoDcr250) { AmmoDcr250 = v; mDbAmmoDcr250 = v; changed = true; }
+                            v = getInt64("ammo_hstrm01", AmmoHstrm01); if (v > AmmoHstrm01) { AmmoHstrm01 = v; mDbAmmoHstrm01 = v; changed = true; }
+                            v = getInt64("ammo_ubr100", AmmoUbr100); if (v > AmmoUbr100) { AmmoUbr100 = v; mDbAmmoUbr100 = v; changed = true; }
+                            v = getInt64("ammo_eco10", AmmoEco10); if (v > AmmoEco10) { AmmoEco10 = v; mDbAmmoEco10 = v; changed = true; }
+                            v = getInt64("ammo_smb01", AmmoSmb01); if (v > AmmoSmb01) { AmmoSmb01 = v; mDbAmmoSmb01 = v; changed = true; }
+                            v = getInt64("ammo_ish01", AmmoIsh01); if (v > AmmoIsh01) { AmmoIsh01 = v; mDbAmmoIsh01 = v; changed = true; }
+                            v = getInt64("ammo_emp01", AmmoEmp01); if (v > AmmoEmp01) { AmmoEmp01 = v; mDbAmmoEmp01 = v; changed = true; }
+                        }
+                    }
+
+                    this.MarkAmmoClientUpdateIfNeeded(changed);
+                    return changed;
                 }
-
-                lock (this.mSecondaryAmmoSyncLock)
-                {
-                    if (!this.mSecondaryAmmoDirty)
-                    {
-                        v = getInt64("ammo_r310", AmmoR310); if (v > AmmoR310) { AmmoR310 = v; mDbAmmoR310 = v; changed = true; }
-                        v = getInt64("ammo_plt2026", AmmoPlt2026); if (v > AmmoPlt2026) { AmmoPlt2026 = v; mDbAmmoPlt2026 = v; changed = true; }
-                        v = getInt64("ammo_plt2021", AmmoPlt2021); if (v > AmmoPlt2021) { AmmoPlt2021 = v; mDbAmmoPlt2021 = v; changed = true; }
-                        v = getInt64("ammo_dcr250", AmmoDcr250); if (v > AmmoDcr250) { AmmoDcr250 = v; mDbAmmoDcr250 = v; changed = true; }
-                        v = getInt64("ammo_hstrm01", AmmoHstrm01); if (v > AmmoHstrm01) { AmmoHstrm01 = v; mDbAmmoHstrm01 = v; changed = true; }
-                        v = getInt64("ammo_ubr100", AmmoUbr100); if (v > AmmoUbr100) { AmmoUbr100 = v; mDbAmmoUbr100 = v; changed = true; }
-                        v = getInt64("ammo_eco10", AmmoEco10); if (v > AmmoEco10) { AmmoEco10 = v; mDbAmmoEco10 = v; changed = true; }
-                        v = getInt64("ammo_smb01", AmmoSmb01); if (v > AmmoSmb01) { AmmoSmb01 = v; mDbAmmoSmb01 = v; changed = true; }
-                        v = getInt64("ammo_ish01", AmmoIsh01); if (v > AmmoIsh01) { AmmoIsh01 = v; mDbAmmoIsh01 = v; changed = true; }
-                        v = getInt64("ammo_emp01", AmmoEmp01); if (v > AmmoEmp01) { AmmoEmp01 = v; mDbAmmoEmp01 = v; changed = true; }
-                    }
-                }
-
-                this.MarkAmmoClientUpdateIfNeeded(changed);
-                return changed;
+            }
+            finally
+            {
+                PerformanceProfiler.LogTimer("RefreshAmmoFromDbIfHigher", this.mId, perfStart);
             }
         }
 
         public bool HasPendingWebsiteConfigRefresh(SqlDatabaseClient client, out int activeConfig)
         {
+            long perfStart = PerformanceProfiler.Start();
             activeConfig = this.ActiveConfig;
-
-            if (client == null)
-                return false;
 
             try
             {
+                if (client == null)
+                    return false;
+
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
 
@@ -5875,6 +5905,10 @@ namespace OrbitReborn_Emulator.Game.Characters
             catch
             {
                 return false;
+            }
+            finally
+            {
+                PerformanceProfiler.LogTimer("HasPendingWebsiteConfigRefresh", this.mId, perfStart);
             }
         }
 

@@ -25,6 +25,13 @@ namespace OrbitReborn_Emulator.Config
       ConfigManager.mConfigData = new CDictionnary<string, ConfigElement>();
       ConfigManager.mConfigData.Add("output.enablelogfiles", new ConfigElement("output.enablelogfiles", ConfigElementType.Boolean, (object) true));
       ConfigManager.mConfigData.Add("output.verbositylevel", new ConfigElement("output.verbositylevel", ConfigElementType.Integer, (object) -1));
+      ConfigManager.mConfigData.Add("performance.profiling.enabled", new ConfigElement("performance.profiling.enabled", ConfigElementType.Boolean, (object) false));
+      ConfigManager.mConfigData.Add("performance.sql.wait.warn.ms", new ConfigElement("performance.sql.wait.warn.ms", ConfigElementType.Integer, (object) 100));
+      ConfigManager.mConfigData.Add("performance.timer.warn.ms", new ConfigElement("performance.timer.warn.ms", ConfigElementType.Integer, (object) 100));
+      ConfigManager.mConfigData.Add("performance.reward.warn.ms", new ConfigElement("performance.reward.warn.ms", ConfigElementType.Integer, (object) 250));
+      ConfigManager.mConfigData.Add("performance.logwrite.warn.ms", new ConfigElement("performance.logwrite.warn.ms", ConfigElementType.Integer, (object) 100));
+      ConfigManager.mConfigData.Add("performance.system.sample.seconds", new ConfigElement("performance.system.sample.seconds", ConfigElementType.Integer, (object) 30));
+      ConfigManager.mConfigData.Add("performance.network.warn.bytes.per.sec", new ConfigElement("performance.network.warn.bytes.per.sec", ConfigElementType.Integer, (object) 0));
       ConfigManager.mConfigData.Add("mysql.pool.min", new ConfigElement("mysql.pool.min", ConfigElementType.Integer, (object) 5));
       ConfigManager.mConfigData.Add("mysql.pool.max", new ConfigElement("mysql.pool.max", ConfigElementType.Integer, (object) 20));
       ConfigManager.mConfigData.Add("mysql.pool.lifetime", new ConfigElement("mysql.pool.lifetime", ConfigElementType.Integer, (object) 10));

@@ -2291,10 +2291,18 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 bool leveledUp = false;
                 bool questProgressChanged = false;
+                long perfRewardStart = PerformanceProfiler.Start();
+                long perfRewardDbMs = 0L;
+                long perfLogDbMs = 0L;
+                long perfNpcCountDbMs = 0L;
+                long perfQuestMs = 0L;
+                long perfTitleMs = 0L;
 
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("NpcReward"))
                 {
+                    long perfStepStart = PerformanceProfiler.Start();
                     leveledUp = sessionByCharacterId.CharacterInfo.ApplyNpcKillRewardBatch(client, int32_1, int32_2, npcPoints, rankpoints, xpGain, honorGain, 1);
+                    perfRewardDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
 
                     string _Message =
                         "You have detroyed " + this.Name + ".<br/>" +
@@ -2305,12 +2313,23 @@ namespace OrbitReborn_Emulator.Game.Npcs
                         "You received " + xpGain + " experience.<br/>" +
                         "You received " + honorGain + " honor.";
 
+                    perfStepStart = PerformanceProfiler.Start();
                     sessionByCharacterId.CharacterInfo.AddLog(client, _Message);
+                    perfLogDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
+
+                    perfStepStart = PerformanceProfiler.Start();
                     sessionByCharacterId.CharacterInfo.AddNpcCount(client, this.Name);
+                    perfNpcCountDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
                 }
 
+                long perfQuestStart = PerformanceProfiler.Start();
                 questProgressChanged = QuestObjectiveProgress.AddNpcKillProgress(sessionByCharacterId.CharacterInfo.Id, this.Name, this.MapId);
+                perfQuestMs += PerformanceProfiler.ElapsedMilliseconds(perfQuestStart);
+
+                long perfTitleStart = PerformanceProfiler.Start();
                 bool titleProgressChanged = TitleService.TrackNpcKill(sessionByCharacterId, this.Name, this.MapId);
+                perfTitleMs += PerformanceProfiler.ElapsedMilliseconds(perfTitleStart);
+                PerformanceProfiler.LogNpcReward(this.Name, sessionByCharacterId.CharacterInfo.Id, perfRewardStart, perfRewardDbMs, perfLogDbMs, perfNpcCountDbMs, perfQuestMs, perfTitleMs);
 
                 sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|Target destroyed."));
 
