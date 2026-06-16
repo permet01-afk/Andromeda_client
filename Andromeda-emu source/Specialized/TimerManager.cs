@@ -1,5 +1,8 @@
 ﻿
 
+using System;
+using System.Threading;
+
 namespace OrbitReborn_Emulator.Specialized
 {
   public static class TimerManager
@@ -10,11 +13,12 @@ namespace OrbitReborn_Emulator.Specialized
     {
       get
       {
-        return TimerManager.mTimerRunning;
+        int value = Volatile.Read(ref TimerManager.mTimerRunning);
+        return Math.Max(0, value);
       }
       set
       {
-        TimerManager.mTimerRunning = value;
+        Volatile.Write(ref TimerManager.mTimerRunning, Math.Max(0, value));
       }
     }
   }

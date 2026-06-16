@@ -24,7 +24,8 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         private static void MonitorCache(object state)
         {
-            long perfStart = PerformanceProfiler.Start();
+            const int CACHE_MONITOR_PERIOD_MS = 30000;
+            long perfStart = PerformanceProfiler.BeginTimerCallback("MapInfoLoader.MonitorCache", CACHE_MONITOR_PERIOD_MS);
             try
             {
                 lock (MapInfoLoader.mMapInfoCache)
@@ -42,6 +43,7 @@ namespace OrbitReborn_Emulator.Game.Maps
             finally
             {
                 PerformanceProfiler.LogCleanup("MapInfoLoader.MonitorCache", perfStart);
+                PerformanceProfiler.EndTimerCallback("MapInfoLoader.MonitorCache", CACHE_MONITOR_PERIOD_MS, perfStart);
             }
         }
 

@@ -8,6 +8,8 @@ namespace OrbitReborn_Emulator.Util
 {
   public static class StatisticsSyncUtil
   {
+    private const int PROCESS_INTERVAL_MS = 60000;
+
     public static void Initialize()
     {
       new Thread(new ThreadStart(StatisticsSyncUtil.ProcessThread))
@@ -21,7 +23,7 @@ namespace OrbitReborn_Emulator.Util
     {
       while (Program.Alive)
       {
-        long perfStart = PerformanceProfiler.Start();
+        long perfStart = PerformanceProfiler.BeginTimerCallback("StatisticsSyncUtil.ProcessThread", PROCESS_INTERVAL_MS);
         try
         {
           using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("StatisticsSyncUtil.ProcessThread"))
@@ -35,8 +37,9 @@ namespace OrbitReborn_Emulator.Util
         finally
         {
           PerformanceProfiler.LogCleanup("StatisticsSyncUtil.ProcessThread", perfStart);
+          PerformanceProfiler.EndTimerCallback("StatisticsSyncUtil.ProcessThread", PROCESS_INTERVAL_MS, perfStart);
         }
-        Thread.Sleep(60000);
+        Thread.Sleep(PROCESS_INTERVAL_MS);
       }
     }
   }

@@ -168,12 +168,21 @@ namespace OrbitReborn_Emulator
 
         public static void ServerMonitor(object state)
         {
-            Console.Title = "Andromeda | uptime : " +
-                string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", (object)(DateTime.Now - Program.InitStart)) +
-                " | Sessions : " + (object)SessionManager.ActiveConnections +
-                " | Players : " + (object)SessionManager.ConnectedUserData.Count +
-                " | Running timer : " + (object)TimerManager.TimerRunning +
-                " | " + (object)Math.Round((double)GC.GetTotalMemory(false) / 1048576.0, 2) + " MB ";
+            const int SERVER_MONITOR_PERIOD_MS = 5000;
+            long perfStart = PerformanceProfiler.BeginTimerCallback("Program.ServerMonitor", SERVER_MONITOR_PERIOD_MS);
+            try
+            {
+                Console.Title = "Andromeda | uptime : " +
+                    string.Format("{0:%d}d {0:%h}h {0:%m}m {0:%s}s", (object)(DateTime.Now - Program.InitStart)) +
+                    " | Sessions : " + (object)SessionManager.ActiveConnections +
+                    " | Players : " + (object)SessionManager.ConnectedUserData.Count +
+                    " | Running timer : " + (object)TimerManager.TimerRunning +
+                    " | " + (object)Math.Round((double)GC.GetTotalMemory(false) / 1048576.0, 2) + " MB ";
+            }
+            finally
+            {
+                PerformanceProfiler.EndTimerCallback("Program.ServerMonitor", SERVER_MONITOR_PERIOD_MS, perfStart);
+            }
         }
 
         public static void Stop()

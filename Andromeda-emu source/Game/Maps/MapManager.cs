@@ -71,7 +71,8 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         private static void ProcessMaps(object state)
         {
-            long perfStart = PerformanceProfiler.Start();
+            const int PROCESS_MAPS_PERIOD_MS = 10000;
+            long perfStart = PerformanceProfiler.BeginTimerCallback("MapManager.ProcessMaps", PROCESS_MAPS_PERIOD_MS);
             try
             {
                 CDictionnary<int, MapInstance> cdictionnary = new CDictionnary<int, MapInstance>();
@@ -157,6 +158,7 @@ namespace OrbitReborn_Emulator.Game.Maps
             finally
             {
                 PerformanceProfiler.LogCleanup("MapManager.ProcessMaps", perfStart);
+                PerformanceProfiler.EndTimerCallback("MapManager.ProcessMaps", PROCESS_MAPS_PERIOD_MS, perfStart);
             }
         }
 
@@ -175,12 +177,16 @@ namespace OrbitReborn_Emulator.Game.Maps
                     return false;
                 int local_1 = MapManager.GenerateInstanceId();
                 instanceId = local_1;
+                long createStart = PerformanceProfiler.Start();
                 MapInstance local_2 = MapInstance.TryCreateMapInstance(local_1, MapId);
+                PerformanceProfiler.LogMapOperation("Load.Create", MapId, local_1, createStart);
                 if (local_2 == null)
                     return false;
                 MapManager.mMapInstances.Add(local_1, local_2);
                 MapManager.mMapInstancesByMapId[MapId] = local_2;
+                long reattachStart = PerformanceProfiler.Start();
                 ReattachNpcActors(local_2);
+                PerformanceProfiler.LogMapOperation("Load.ReattachNpcActors", MapId, local_1, reattachStart);
                 Output.WriteLine((object)("[MapMgr] Map instance " + (object)local_1 + " has been loaded for Map " + (object)MapId + "."), OutputLevel.Warning);
             }
             PerformanceProfiler.LogMapOperation("Load", MapId, instanceId, perfStart);

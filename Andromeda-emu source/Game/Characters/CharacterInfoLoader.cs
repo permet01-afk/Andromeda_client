@@ -24,7 +24,8 @@ namespace OrbitReborn_Emulator.Game.Characters
 
     private static void MonitorCache(object state)
     {
-      long perfStart = PerformanceProfiler.Start();
+      const int CACHE_MONITOR_PERIOD_MS = 30000;
+      long perfStart = PerformanceProfiler.BeginTimerCallback("CharacterInfoLoader.MonitorCache", CACHE_MONITOR_PERIOD_MS);
       try
       {
         lock (CharacterInfoLoader.mCharacterInfoCache)
@@ -42,6 +43,7 @@ namespace OrbitReborn_Emulator.Game.Characters
       finally
       {
         PerformanceProfiler.LogCleanup("CharacterInfoLoader.MonitorCache", perfStart);
+        PerformanceProfiler.EndTimerCallback("CharacterInfoLoader.MonitorCache", CACHE_MONITOR_PERIOD_MS, perfStart);
       }
     }
 

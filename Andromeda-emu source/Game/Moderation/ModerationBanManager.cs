@@ -30,7 +30,8 @@ namespace OrbitReborn_Emulator.Game.Moderation
 
     public static void ProcessThread(object state)
     {
-      long perfStart = PerformanceProfiler.Start();
+      const int RELOAD_CACHE_PERIOD_MS = 900000;
+      long perfStart = PerformanceProfiler.BeginTimerCallback("ModerationBanManager.ReloadCache", RELOAD_CACHE_PERIOD_MS);
       try
       {
         using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("ModerationBanManager.ReloadCache"))
@@ -39,6 +40,7 @@ namespace OrbitReborn_Emulator.Game.Moderation
       finally
       {
         PerformanceProfiler.LogCleanup("ModerationBanManager.ReloadCache", perfStart);
+        PerformanceProfiler.EndTimerCallback("ModerationBanManager.ReloadCache", RELOAD_CACHE_PERIOD_MS, perfStart);
       }
     }
 

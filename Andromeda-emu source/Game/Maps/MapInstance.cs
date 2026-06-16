@@ -652,15 +652,23 @@ namespace OrbitReborn_Emulator.Game.Maps
             try
             {
                 this.mUnloaded = true;
-                lock (this.mActorSyncRoot)
+                long clearActorsStart = PerformanceProfiler.Start();
+                try
                 {
-                    lock (this.mActors)
+                    lock (this.mActorSyncRoot)
                     {
-                        this.mActors.Clear();
-                        this.mUserActorsByReferenceId.Clear();
-                        this.mNpcActorsByReferenceId.Clear();
-                        this.InvalidateActorSnapshots();
+                        lock (this.mActors)
+                        {
+                            this.mActors.Clear();
+                            this.mUserActorsByReferenceId.Clear();
+                            this.mNpcActorsByReferenceId.Clear();
+                            this.InvalidateActorSnapshots();
+                        }
                     }
+                }
+                finally
+                {
+                    PerformanceProfiler.LogCleanup("MapInstance.ClearActors", mapId, this.InstanceId, clearActorsStart);
                 }
                 this.mUnloadedTimestamp = UnixTimestamp.GetCurrent();
             }
@@ -679,8 +687,17 @@ namespace OrbitReborn_Emulator.Game.Maps
             {
                 if (!this.mUnloaded)
                     this.Unload();
-                this.mUpdater.Dispose();
-                this.mUpdater = (Timer)null;
+                long updaterDisposeStart = PerformanceProfiler.Start();
+                try
+                {
+                    if (this.mUpdater != null)
+                        this.mUpdater.Dispose();
+                    this.mUpdater = (Timer)null;
+                }
+                finally
+                {
+                    PerformanceProfiler.LogCleanup("MapInstance.DisposeUpdater", mapId, this.InstanceId, updaterDisposeStart);
+                }
                 this.mInfo = (MapInfo)null;
             }
             finally
@@ -692,8 +709,10 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         public void PerformUpdate(object state)
         {
-            long perfStart = PerformanceProfiler.Start();
+            const int MAP_INSTANCE_UPDATE_PERIOD_MS = 500;
             int mapId = this.mInfo != null ? this.mInfo.Id : 0;
+            string callbackName = "MapInstance.PerformUpdate.map" + mapId + ".instance" + this.InstanceId;
+            long perfStart = PerformanceProfiler.BeginTimerCallback(callbackName, MAP_INSTANCE_UPDATE_PERIOD_MS);
             try
             {
                 MapActor[] userSnapshot = this.GetUserActorSnapshot();
@@ -712,6 +731,7 @@ namespace OrbitReborn_Emulator.Game.Maps
             finally
             {
                 PerformanceProfiler.LogMapOperation("Update", mapId, this.InstanceId, perfStart);
+                PerformanceProfiler.EndTimerCallback(callbackName, MAP_INSTANCE_UPDATE_PERIOD_MS, perfStart);
             }
         }
     }

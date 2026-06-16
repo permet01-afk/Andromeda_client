@@ -163,7 +163,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
         private static void ExecuteNoFightMonitor(object state)
         {
             const int PEACE_PORTAL_DELAY = 10;
-            long perfStart = PerformanceProfiler.Start();
+            const int NO_FIGHT_MONITOR_PERIOD_MS = 1000;
+            long perfStart = PerformanceProfiler.BeginTimerCallback("SessionManager.ExecuteNoFightMonitor", NO_FIGHT_MONITOR_PERIOD_MS);
 
             try
             {
@@ -268,6 +269,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
             finally
             {
                 PerformanceProfiler.LogTimer("SessionManager.ExecuteNoFightMonitor", 0, perfStart);
+                PerformanceProfiler.EndTimerCallback("SessionManager.ExecuteNoFightMonitor", NO_FIGHT_MONITOR_PERIOD_MS, perfStart);
             }
         }
 
@@ -351,7 +353,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         private static void ExecuteMonitor(object state)
         {
-            long perfStart = PerformanceProfiler.Start();
+            const int SESSION_MONITOR_PERIOD_MS = 300;
+            long perfStart = PerformanceProfiler.BeginTimerCallback("SessionManager.ExecuteMonitor", SESSION_MONITOR_PERIOD_MS);
             try
             {
                 CList<Session> clist1 = new CList<Session>();
@@ -433,6 +436,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
             finally
             {
                 PerformanceProfiler.LogCleanup("SessionManager.ExecuteMonitor", perfStart);
+                PerformanceProfiler.EndTimerCallback("SessionManager.ExecuteMonitor", SESSION_MONITOR_PERIOD_MS, perfStart);
             }
         }
 

@@ -3,6 +3,7 @@ using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Specialized;
 using OrbitReborn_Emulator.Storage;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
@@ -18,18 +19,22 @@ namespace OrbitReborn_Emulator.Util
         private static int mSystemSampleSeconds = 30;
         private static int mNetworkWarnBytesPerSecond;
         private static int mServerStallWarnMs = 1000;
+        private static int mServerStallProbeMs = 250;
+        private static int mServerStallLogThrottleMs = 1000;
         private static int mMapWarnMs = 100;
         private static int mCleanupWarnMs = 100;
+        private static int mTimerCallbackWarnMs = 100;
         private static Timer mSampleTimer;
         private static Timer mServerStallTimer;
         private static DateTime mLastSampleUtc;
-        private static DateTime mLastServerStallTickUtc;
         private static TimeSpan mLastProcessCpu;
         private static int mLastGc0Count;
         private static int mLastGc1Count;
         private static int mLastGc2Count;
-        private const int ServerStallExpectedMs = 1000;
-        private const int ServerStallJitterGuardMs = 100;
+        private static long mLastServerStallTickTicks;
+        private static long mLastServerStallLogTicks;
+        private static readonly object mTimerCallbackSyncRoot = new object();
+        private static readonly Dictionary<string, DateTime> mTimerCallbackLastSeenUtc = new Dictionary<string, DateTime>(StringComparer.Ordinal);
 
         private static long mInBytes;
         private static long mOutBytes;
@@ -60,20 +65,32 @@ namespace OrbitReborn_Emulator.Util
             mSystemSampleSeconds = GetIntConfig("performance.system.sample.seconds", 30);
             mNetworkWarnBytesPerSecond = GetIntConfig("performance.network.warn.bytes.per.sec", 0);
             mServerStallWarnMs = GetIntConfig("performance.serverstall.warn.ms", 1000);
+            mServerStallProbeMs = GetIntConfig("performance.serverstall.probe.ms", 0);
+            mServerStallLogThrottleMs = GetIntConfig("performance.serverstall.log.throttle.ms", 1000);
             mMapWarnMs = GetIntConfig("performance.map.warn.ms", 100);
             mCleanupWarnMs = GetIntConfig("performance.cleanup.warn.ms", 100);
+            mTimerCallbackWarnMs = GetIntConfig("performance.timer.callback.warn.ms", mTimerWarnMs);
+            if (mTimerCallbackWarnMs <= 0)
+                mTimerCallbackWarnMs = mTimerWarnMs > 0 ? mTimerWarnMs : 100;
 
             if (!mEnabled)
                 return;
 
-            mLastServerStallTickUtc = DateTime.UtcNow;
             if (mServerStallWarnMs > 0)
             {
+                if (mServerStallProbeMs <= 0)
+                    mServerStallProbeMs = Math.Max(50, Math.Min(250, Math.Max(50, mServerStallWarnMs / 2)));
+
+                if (mServerStallLogThrottleMs < 0)
+                    mServerStallLogThrottleMs = 0;
+
+                Interlocked.Exchange(ref mLastServerStallTickTicks, DateTime.UtcNow.Ticks);
+                Interlocked.Exchange(ref mLastServerStallLogTicks, 0L);
                 mServerStallTimer = new Timer(
                     new TimerCallback(ServerStallTick),
                     null,
-                    TimeSpan.FromMilliseconds(ServerStallExpectedMs),
-                    TimeSpan.FromMilliseconds(ServerStallExpectedMs)
+                    TimeSpan.FromMilliseconds(mServerStallProbeMs),
+                    TimeSpan.FromMilliseconds(mServerStallProbeMs)
                 );
             }
 
@@ -104,6 +121,9 @@ namespace OrbitReborn_Emulator.Util
             mServerStallTimer = null;
             if (stallTimer != null)
                 stallTimer.Dispose();
+
+            lock (mTimerCallbackSyncRoot)
+                mTimerCallbackLastSeenUtc.Clear();
         }
 
         public static long Start()
@@ -152,6 +172,58 @@ namespace OrbitReborn_Emulator.Util
             if (userId > 0)
                 message += " user=" + userId;
             message += " duration=" + elapsedMs + "ms";
+            WritePerf(message);
+        }
+
+        public static long BeginTimerCallback(string name, int expectedIntervalMs)
+        {
+            if (!mEnabled)
+                return 0L;
+
+            string normalizedName = NormalizeLabel(name);
+            DateTime now = DateTime.UtcNow;
+            DateTime previous = DateTime.MinValue;
+
+            lock (mTimerCallbackSyncRoot)
+            {
+                mTimerCallbackLastSeenUtc.TryGetValue(normalizedName, out previous);
+                mTimerCallbackLastSeenUtc[normalizedName] = now;
+            }
+
+            if (previous != DateTime.MinValue && expectedIntervalMs > 0)
+            {
+                long gapMs = (long)(now - previous).TotalMilliseconds;
+                long delayMs = gapMs - expectedIntervalMs;
+                if (delayMs >= mTimerCallbackWarnMs)
+                {
+                    WritePerf(
+                        "[PERF][TIMER_CALLBACK] name=" + normalizedName +
+                        " gap=" + gapMs + "ms" +
+                        " expected=" + expectedIntervalMs + "ms" +
+                        " delay=" + delayMs + "ms"
+                    );
+                }
+            }
+
+            return Stopwatch.GetTimestamp();
+        }
+
+        public static void EndTimerCallback(string name, int expectedIntervalMs, long startTimestamp)
+        {
+            if (!mEnabled || startTimestamp <= 0L)
+                return;
+
+            long elapsedMs = ElapsedMilliseconds(startTimestamp);
+            if (elapsedMs < mTimerCallbackWarnMs)
+                return;
+
+            string message =
+                "[PERF][TIMER_CALLBACK] name=" + NormalizeLabel(name) +
+                " duration=" + elapsedMs + "ms";
+
+            if (expectedIntervalMs > 0)
+                message += " expected=" + expectedIntervalMs + "ms";
+
             WritePerf(message);
         }
 
@@ -317,19 +389,30 @@ namespace OrbitReborn_Emulator.Util
             if (!mEnabled)
                 return;
 
-            DateTime now = DateTime.UtcNow;
-            DateTime previous = mLastServerStallTickUtc;
-            mLastServerStallTickUtc = now;
-
-            if (previous == DateTime.MinValue)
+            long nowTicks = DateTime.UtcNow.Ticks;
+            long previousTicks = Interlocked.Exchange(ref mLastServerStallTickTicks, nowTicks);
+            if (previousTicks <= 0L)
                 return;
 
-            long gapMs = (long)(now - previous).TotalMilliseconds;
-            int effectiveThreshold = Math.Max(mServerStallWarnMs, ServerStallExpectedMs + ServerStallJitterGuardMs);
-            if (gapMs <= effectiveThreshold)
+            long gapMs = (nowTicks - previousTicks) / TimeSpan.TicksPerMillisecond;
+            long delayMs = gapMs - mServerStallProbeMs;
+            if (delayMs < mServerStallWarnMs)
                 return;
 
-            WritePerf("[PERF][SERVER_STALL] gap=" + gapMs + "ms expected=" + ServerStallExpectedMs + "ms");
+            long lastLogTicks = Interlocked.Read(ref mLastServerStallLogTicks);
+            if (lastLogTicks > 0L && mServerStallLogThrottleMs > 0)
+            {
+                long sinceLastLogMs = (nowTicks - lastLogTicks) / TimeSpan.TicksPerMillisecond;
+                if (sinceLastLogMs < mServerStallLogThrottleMs)
+                    return;
+            }
+
+            Interlocked.Exchange(ref mLastServerStallLogTicks, nowTicks);
+            WritePerf(
+                "[PERF][SERVER_STALL] gap=" + gapMs + "ms" +
+                " expected=" + mServerStallProbeMs + "ms" +
+                " delay=" + delayMs + "ms"
+            );
         }
 
         private static void SampleTick(object state)

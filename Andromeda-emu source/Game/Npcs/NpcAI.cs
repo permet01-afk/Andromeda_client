@@ -1317,7 +1317,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         private static void PerformUpdate(object state)
         {
-            long perfStart = PerformanceProfiler.Start();
+            long perfStart = PerformanceProfiler.BeginTimerCallback("NpcAI.PerformUpdate", AI_TICK_RATE);
             try
             {
                 Random random = NpcAI.RandomPos;
@@ -1822,6 +1822,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             finally
             {
                 PerformanceProfiler.LogTimer("NpcAI.PerformUpdate", 0, perfStart);
+                PerformanceProfiler.EndTimerCallback("NpcAI.PerformUpdate", AI_TICK_RATE, perfStart);
             }
         }
     }

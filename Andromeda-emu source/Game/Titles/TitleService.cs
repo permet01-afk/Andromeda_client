@@ -57,10 +57,24 @@ namespace OrbitReborn_Emulator.Game.Titles
         {
             if (mMostWantedTimer == null)
             {
-                mMostWantedTimer = new Timer(delegate { EnsureMostWantedHolder(); }, null, MostWantedRuntimeInitialDelay, MostWantedRuntimeInterval);
+                mMostWantedTimer = new Timer(new TimerCallback(MostWantedTimerTick), null, MostWantedRuntimeInitialDelay, MostWantedRuntimeInterval);
             }
 
             EnsureMostWantedHolder();
+        }
+
+        private static void MostWantedTimerTick(object state)
+        {
+            int expectedIntervalMs = (int)MostWantedRuntimeInterval.TotalMilliseconds;
+            long perfStart = PerformanceProfiler.BeginTimerCallback("TitleService.MostWantedTimer", expectedIntervalMs);
+            try
+            {
+                EnsureMostWantedHolder();
+            }
+            finally
+            {
+                PerformanceProfiler.EndTimerCallback("TitleService.MostWantedTimer", expectedIntervalMs, perfStart);
+            }
         }
 
         public static bool RefreshDisplayedTitle(Session session, bool notify)
