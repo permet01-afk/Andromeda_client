@@ -26,6 +26,8 @@ const DAMAGE_BUBBLE_STACK_STEP_PX = 12;
 
 const DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX = 36;
 
+const DAMAGE_BUBBLE_MAX_ACTIVE = 160;
+
 let entityVisualLifeSeq = 1;
 const removedEntitySnapshots = new Map();
 const REMOVED_ENTITY_SNAPSHOT_TTL_MS = 3500;
@@ -231,6 +233,15 @@ function pushDamageBubble(entityId, delta, isHealHint = false, colorId = null, s
         stackOffsetY: stackOffsetY,
         createdAt: now
     });
+    trimDamageBubbles();
+}
+
+function trimDamageBubbles(maxActive = DAMAGE_BUBBLE_MAX_ACTIVE) {
+    if (!Array.isArray(damageBubbles)) return;
+    const max = Math.max(0, Number(maxActive) || DAMAGE_BUBBLE_MAX_ACTIVE);
+    if (damageBubbles.length > max) {
+        damageBubbles.splice(0, damageBubbles.length - max);
+    }
 }
 
 const explosions = [];

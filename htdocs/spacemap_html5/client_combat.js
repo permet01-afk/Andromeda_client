@@ -1708,6 +1708,7 @@ function updateRocketLauncherMissDisplays(now = performance.now()) {
             showPlus: false,
             createdAt: now
         });
+        if (typeof trimDamageBubbles === "function") trimDamageBubbles();
     }
     rocketLauncherMissDisplays.length = keepCount;
 }
