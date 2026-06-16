@@ -17,7 +17,7 @@ function parsePositiveIntEnv(name, fallback) {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-const WS_MAX_PAYLOAD = parsePositiveIntEnv("WS_MAX_PAYLOAD", 256 * 1024);
+const WS_MAX_PAYLOAD = parsePositiveIntEnv("WS_MAX_PAYLOAD", 5 * 1024 * 1024);
 
 const WS_BUFFER_HIGH_WATER = parsePositiveIntEnv("WS_BUFFER_HIGH_WATER", 512 * 1024);
 
