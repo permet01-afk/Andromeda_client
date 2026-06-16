@@ -14,6 +14,14 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
     drawEffectWarnMs: 10,
     cleanupWarnMs: 10,
     drawConsoleMs: 50,
+    longTaskWarnMs: 50,
+    longTaskConsoleMs: 250,
+    lifecycleRecentMs: 3000,
+    mapTransitionRecentMs: 5000,
+    frameGapContextEvents: 20,
+    frameGapContextSeconds: 10,
+    secondBinCount: 60,
+    resourceLookbackMs: 10000,
     ringSize: 500
 });
 
@@ -47,10 +55,202 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
     const lastRecordAtByKey = Object.create(null);
     const startedAtMs = nowMs();
     const startedAtIso = new Date().toISOString();
+    const lifecycle = {
+        visibilityState: typeof document !== "undefined" ? document.visibilityState || "visible" : "unknown",
+        focused: typeof document !== "undefined" && typeof document.hasFocus === "function" ? document.hasFocus() : true,
+        lastFocusAtMs: null,
+        lastFocusAt: null,
+        lastBlurAtMs: null,
+        lastBlurAt: null,
+        lastVisibilityChangeAtMs: null,
+        lastVisibilityChangeAt: null,
+        lastVisibilityState: typeof document !== "undefined" ? document.visibilityState || "visible" : "unknown",
+        lastPageHideAtMs: null,
+        lastPageHideAt: null,
+        lastPageShowAtMs: null,
+        lastPageShowAt: null,
+        lastFreezeAtMs: null,
+        lastFreezeAt: null,
+        lastResumeAtMs: null,
+        lastResumeAt: null
+    };
+    const lastState = {
+        packet: null,
+        opcode: null,
+        handler: null,
+        draw: null,
+        cleanup: null,
+        longTask: null,
+        input: null,
+        mapTransition: null
+    };
+    const workerState = {
+        supported: false,
+        started: false,
+        failed: false,
+        lastHeartbeatAtMs: null,
+        lastHeartbeatAt: null,
+        lastWorkerNowMs: null,
+        lastSeq: 0,
+        lastMainReceiveGapMs: null,
+        maxMainReceiveGapMs: 0,
+        lastWorkerGapMs: null,
+        maxWorkerGapMs: 0,
+        heartbeatCount: 0
+    };
+    const secondBins = [];
+    let lastSnapshotMap = null;
+    let longTaskObserver = null;
+    let heartbeatWorker = null;
     let seq = 1;
 
     function getArrayLength(value) {
         return Array.isArray(value) ? value.length : null;
+    }
+
+    function getMemorySnapshot() {
+        try {
+            const memory = typeof performance !== "undefined" ? performance.memory : null;
+            if (!memory) return null;
+            return {
+                usedJSHeapSize: Number(memory.usedJSHeapSize) || 0,
+                totalJSHeapSize: Number(memory.totalJSHeapSize) || 0,
+                jsHeapSizeLimit: Number(memory.jsHeapSizeLimit) || 0
+            };
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function updateLifecycleState() {
+        try {
+            lifecycle.visibilityState = typeof document !== "undefined" ? document.visibilityState || "visible" : "unknown";
+            lifecycle.focused = typeof document !== "undefined" && typeof document.hasFocus === "function" ? document.hasFocus() : true;
+        } catch (_) {}
+    }
+
+    function isoFromNow(perfNow) {
+        return new Date(Date.now() - Math.max(0, nowMs() - perfNow)).toISOString();
+    }
+
+    function getCurrentSecondBin(perfNow = nowMs()) {
+        const sec = Math.floor((perfNow - startedAtMs) / 1000);
+        let bin = secondBins.length ? secondBins[secondBins.length - 1] : null;
+        if (!bin || bin.sec !== sec) {
+            bin = {
+                sec: sec,
+                startMs: sec * 1000,
+                startAt: isoFromNow(startedAtMs + sec * 1000),
+                packets: 0,
+                opcodes: Object.create(null),
+                drains: 0,
+                maxRxBacklog: 0,
+                maxDrawTotal: 0,
+                maxDrawEntities: 0,
+                maxDrawMiniMap: 0,
+                maxDrawLaserBeams: 0,
+                maxDrawExplosions: 0,
+                drawTotalSum: 0,
+                drawTotalCount: 0,
+                drawEntitiesSum: 0,
+                drawEntitiesCount: 0,
+                drawMiniMapSum: 0,
+                drawMiniMapCount: 0,
+                maxCleanup: 0,
+                maxFrameGap: 0,
+                entities: null,
+                players: null,
+                npcs: null,
+                bossProtegits: null,
+                lasers: null,
+                damageBubbles: null,
+                minimapOpen: false,
+                groupOpen: false,
+                visibilityState: lifecycle.visibilityState,
+                focused: lifecycle.focused,
+                memory: null
+            };
+            secondBins.push(bin);
+            while (secondBins.length > ANDRO_PERF_THRESHOLDS.secondBinCount) secondBins.shift();
+        }
+        return bin;
+    }
+
+    function updateBinSnapshot(bin, snapshot) {
+        if (!bin || !snapshot) return;
+        bin.entities = snapshot.entities;
+        bin.players = snapshot.players;
+        bin.npcs = snapshot.npcs;
+        bin.bossProtegits = snapshot.bossProtegits;
+        bin.lasers = snapshot.lasers;
+        bin.damageBubbles = snapshot.damageBubbles;
+        bin.minimapOpen = !!snapshot.minimapOpen;
+        bin.groupOpen = !!snapshot.groupOpen;
+        bin.visibilityState = snapshot.visibilityState;
+        bin.focused = snapshot.hasFocus;
+        bin.memory = snapshot.memory;
+    }
+
+    function normalizeOpcodeForStats(opcode, parts, startIndex) {
+        const op = String(opcode || "");
+        const next = String(parts && parts[startIndex] || "");
+        if (op === "MM" && next.toUpperCase() === "SR") return "MM|SR";
+        if (op === "ps" && next.toLowerCase() === "upd") return "ps|upd";
+        if (op === "C" || op === "R" || op === "K" || op === "MM" || op === "a" || op === "Y" || op === "U" || op === "ps") return op;
+        return "other";
+    }
+
+    function getRecentBins(seconds = ANDRO_PERF_THRESHOLDS.frameGapContextSeconds) {
+        return secondBins.slice(-Math.max(1, seconds)).map(bin => ({
+            sec: bin.sec,
+            startMs: bin.startMs,
+            startAt: bin.startAt,
+            packets: bin.packets,
+            opcodes: Object.assign({}, bin.opcodes),
+            drains: bin.drains,
+            maxRxBacklog: roundMs(bin.maxRxBacklog),
+            maxDrawTotal: roundMs(bin.maxDrawTotal),
+            maxDrawEntities: roundMs(bin.maxDrawEntities),
+            maxDrawMiniMap: roundMs(bin.maxDrawMiniMap),
+            maxDrawLaserBeams: roundMs(bin.maxDrawLaserBeams),
+            maxDrawExplosions: roundMs(bin.maxDrawExplosions),
+            avgDrawTotal: bin.drawTotalCount > 0 ? roundMs(bin.drawTotalSum / bin.drawTotalCount) : 0,
+            avgDrawEntities: bin.drawEntitiesCount > 0 ? roundMs(bin.drawEntitiesSum / bin.drawEntitiesCount) : 0,
+            avgDrawMiniMap: bin.drawMiniMapCount > 0 ? roundMs(bin.drawMiniMapSum / bin.drawMiniMapCount) : 0,
+            maxCleanup: roundMs(bin.maxCleanup),
+            maxFrameGap: roundMs(bin.maxFrameGap),
+            entities: bin.entities,
+            players: bin.players,
+            npcs: bin.npcs,
+            bossProtegits: bin.bossProtegits,
+            lasers: bin.lasers,
+            damageBubbles: bin.damageBubbles,
+            minimapOpen: bin.minimapOpen,
+            groupOpen: bin.groupOpen,
+            visibilityState: bin.visibilityState,
+            focused: bin.focused,
+            memory: bin.memory
+        }));
+    }
+
+    function getRecentResources(perfNow = nowMs()) {
+        try {
+            if (!performance || typeof performance.getEntriesByType !== "function") return [];
+            const minStart = perfNow - ANDRO_PERF_THRESHOLDS.resourceLookbackMs;
+            return performance.getEntriesByType("resource").filter(entry => {
+                const end = Number(entry.responseEnd || entry.startTime || 0);
+                return end >= minStart;
+            }).slice(-25).map(entry => ({
+                name: String(entry.name || "").split("?")[0].slice(-160),
+                initiatorType: entry.initiatorType || "",
+                startTime: roundMs(entry.startTime || 0),
+                responseEnd: roundMs(entry.responseEnd || 0),
+                durationMs: roundMs(entry.duration || 0),
+                transferSize: Number(entry.transferSize || 0)
+            }));
+        } catch (_) {
+            return [];
+        }
     }
 
     function getWindowOpenByKey(key) {
@@ -67,8 +267,39 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
     }
 
     function collectSnapshot() {
+        updateLifecycleState();
         const snapshot = {
             map: null,
+            visibilityState: lifecycle.visibilityState,
+            hasFocus: lifecycle.focused,
+            lastFocusAt: lifecycle.lastFocusAt,
+            lastBlurAt: lifecycle.lastBlurAt,
+            lastVisibilityChangeAt: lifecycle.lastVisibilityChangeAt,
+            lastPageHideAt: lifecycle.lastPageHideAt,
+            lastPageShowAt: lifecycle.lastPageShowAt,
+            lastFreezeAt: lifecycle.lastFreezeAt,
+            lastResumeAt: lifecycle.lastResumeAt,
+            memory: getMemorySnapshot(),
+            workerHeartbeat: {
+                supported: workerState.supported,
+                started: workerState.started,
+                failed: workerState.failed,
+                lastHeartbeatAt: workerState.lastHeartbeatAt,
+                lastHeartbeatAgeMs: workerState.lastHeartbeatAtMs == null ? null : roundMs(nowMs() - workerState.lastHeartbeatAtMs),
+                lastMainReceiveGapMs: workerState.lastMainReceiveGapMs == null ? null : roundMs(workerState.lastMainReceiveGapMs),
+                maxMainReceiveGapMs: roundMs(workerState.maxMainReceiveGapMs),
+                lastWorkerGapMs: workerState.lastWorkerGapMs == null ? null : roundMs(workerState.lastWorkerGapMs),
+                maxWorkerGapMs: roundMs(workerState.maxWorkerGapMs),
+                heartbeatCount: workerState.heartbeatCount
+            },
+            lastPacket: lastState.packet,
+            lastOpcode: lastState.opcode,
+            lastHandler: lastState.handler,
+            lastDraw: lastState.draw,
+            lastCleanup: lastState.cleanup,
+            lastLongTask: lastState.longTask,
+            lastInput: lastState.input,
+            lastMapTransition: lastState.mapTransition,
             entities: null,
             players: null,
             npcs: null,
@@ -91,6 +322,20 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         };
         try {
             if (typeof currentMapId !== "undefined") snapshot.map = currentMapId;
+        } catch (_) {}
+        try {
+            if (snapshot.map != null && snapshot.map !== lastSnapshotMap) {
+                if (lastSnapshotMap !== null) {
+                    lastState.mapTransition = {
+                        from: lastSnapshotMap,
+                        to: snapshot.map,
+                        at: new Date().toISOString(),
+                        tMs: roundMs(nowMs() - startedAtMs)
+                    };
+                    snapshot.lastMapTransition = lastState.mapTransition;
+                }
+                lastSnapshotMap = snapshot.map;
+            }
         } catch (_) {}
         try {
             if (typeof entities !== "undefined" && entities) {
@@ -133,6 +378,7 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         try { if (typeof __andromedaRxLineQueue !== "undefined") snapshot.rxQueue = Math.max(0, __andromedaRxLineQueue.length - __andromedaRxQueueHead); } catch (_) {}
         snapshot.minimapOpen = getWindowOpenByKey("map") || getWindowOpenByKey("minimap");
         snapshot.groupOpen = getWindowOpenByKey("group");
+        updateBinSnapshot(getCurrentSecondBin(), snapshot);
         return snapshot;
     }
 
@@ -157,6 +403,7 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         if (type === "rx_drain_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.rxDrainConsoleMs;
         if (type === "draw_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawConsoleMs;
         if (type === "cleanup_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawConsoleMs;
+        if (type === "longtask") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.longTaskConsoleMs;
         return false;
     }
 
@@ -199,12 +446,75 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         if (type === "rx_drain_slow") updateSlowest("rxDrain", event);
         if (type === "draw_slow") updateSlowest("draw", event);
         if (type === "cleanup_slow") updateSlowest("cleanup", event);
+        if (type === "longtask") updateSlowest("longTask", event);
         if (shouldConsoleLog(type, event)) {
             try {
                 console.warn("[AndroPerf]", type, event);
             } catch (_) {}
         }
         return event;
+    }
+
+    function msSince(perfNow, timestampMs) {
+        if (timestampMs == null) return Number.POSITIVE_INFINITY;
+        return perfNow - timestampMs;
+    }
+
+    function classifyFrameGap(gapMs, snapshot, perfNow) {
+        const visible = snapshot.visibilityState === "visible";
+        const focused = snapshot.hasFocus !== false;
+        const reasons = [];
+        if (!visible) reasons.push("document-not-visible");
+        if (!focused) reasons.push("document-not-focused");
+        if (msSince(perfNow, lifecycle.lastVisibilityChangeAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-visibilitychange");
+        if (msSince(perfNow, lifecycle.lastBlurAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-blur");
+        if (msSince(perfNow, lifecycle.lastFocusAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-focus");
+        if (msSince(perfNow, lifecycle.lastPageHideAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-pagehide");
+        if (msSince(perfNow, lifecycle.lastPageShowAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-pageshow");
+        if (msSince(perfNow, lifecycle.lastFreezeAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("browser-freeze-event");
+        if (msSince(perfNow, lifecycle.lastResumeAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("browser-resume-event");
+        const transition = lastState.mapTransition;
+        if (transition && Number.isFinite(transition.tMs) && perfNow - (startedAtMs + transition.tMs) <= ANDRO_PERF_THRESHOLDS.mapTransitionRecentMs) {
+            reasons.push("recent-map-transition");
+        }
+        const longTask = lastState.longTask;
+        const recentLongTask = !!(longTask && Number.isFinite(longTask.tMs) && perfNow - (startedAtMs + longTask.tMs) <= 2000);
+        if (recentLongTask) reasons.push("recent-longtask");
+        const workerAge = snapshot.workerHeartbeat && snapshot.workerHeartbeat.lastHeartbeatAgeMs;
+        const workerOwnGap = snapshot.workerHeartbeat && snapshot.workerHeartbeat.lastWorkerGapMs;
+        const workerMainGap = snapshot.workerHeartbeat && snapshot.workerHeartbeat.lastMainReceiveGapMs;
+        let workerInterpretation = "unavailable";
+        if (snapshot.workerHeartbeat && snapshot.workerHeartbeat.started && workerAge != null) {
+            if (workerOwnGap >= Math.min(gapMs * .5, 1000)) {
+                workerInterpretation = "worker-also-gapped";
+                reasons.push("worker-gap");
+            } else if (workerMainGap >= gapMs * .5 || workerAge < 1000) {
+                workerInterpretation = "worker-likely-continued";
+                reasons.push("worker-likely-continued");
+            } else {
+                workerInterpretation = "worker-inconclusive";
+            }
+        }
+        let probablyGameplayFreeze = visible && focused && gapMs >= ANDRO_PERF_THRESHOLDS.frameGapConsoleMs;
+        if (reasons.includes("recent-map-transition") || reasons.includes("recent-pagehide") || reasons.includes("recent-pageshow") || reasons.includes("browser-freeze-event") || reasons.includes("browser-resume-event")) {
+            probablyGameplayFreeze = false;
+        }
+        let reason = "minor-frame-delay";
+        if (!visible) reason = "tab-hidden-or-suspended";
+        else if (!focused) reason = "tab-blurred-or-focus-throttled";
+        else if (reasons.includes("recent-map-transition")) reason = "map-transition-or-loading";
+        else if (recentLongTask) reason = "visible-focused-recent-longtask-main-thread";
+        else if (workerInterpretation === "worker-likely-continued") reason = "visible-focused-worker-continued-main-thread-or-render";
+        else if (workerInterpretation === "worker-also-gapped") reason = "visible-focused-worker-also-gapped-browser-os";
+        else if (probablyGameplayFreeze) reason = "visible-focused-no-js-cause-yet";
+        return {
+            visible: visible,
+            focused: focused,
+            probablyGameplayFreeze: probablyGameplayFreeze,
+            reason: reason,
+            reasons: reasons,
+            workerInterpretation: workerInterpretation
+        };
     }
 
     function packetPrefix(parts, startIndex) {
@@ -222,6 +532,148 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         return ANDRO_PERF_THRESHOLDS.drawEffectWarnMs;
     }
 
+    function recordLifecycleEvent(name, extra = null) {
+        if (!enabled) return;
+        const perfNow = nowMs();
+        updateLifecycleState();
+        if (name === "focus") {
+            lifecycle.lastFocusAtMs = perfNow;
+            lifecycle.lastFocusAt = new Date().toISOString();
+        } else if (name === "blur") {
+            lifecycle.lastBlurAtMs = perfNow;
+            lifecycle.lastBlurAt = new Date().toISOString();
+        } else if (name === "visibilitychange") {
+            lifecycle.lastVisibilityChangeAtMs = perfNow;
+            lifecycle.lastVisibilityChangeAt = new Date().toISOString();
+            lifecycle.lastVisibilityState = lifecycle.visibilityState;
+        } else if (name === "pagehide") {
+            lifecycle.lastPageHideAtMs = perfNow;
+            lifecycle.lastPageHideAt = new Date().toISOString();
+        } else if (name === "pageshow") {
+            lifecycle.lastPageShowAtMs = perfNow;
+            lifecycle.lastPageShowAt = new Date().toISOString();
+        } else if (name === "freeze") {
+            lifecycle.lastFreezeAtMs = perfNow;
+            lifecycle.lastFreezeAt = new Date().toISOString();
+        } else if (name === "resume") {
+            lifecycle.lastResumeAtMs = perfNow;
+            lifecycle.lastResumeAt = new Date().toISOString();
+        }
+        record("lifecycle", Object.assign({
+            event: name,
+            visibilityState: lifecycle.visibilityState,
+            focused: lifecycle.focused
+        }, extra || {}));
+    }
+
+    function installLifecycleHooks() {
+        if (!enabled || typeof window === "undefined") return;
+        try { window.addEventListener("focus", () => recordLifecycleEvent("focus")); } catch (_) {}
+        try { window.addEventListener("blur", () => recordLifecycleEvent("blur")); } catch (_) {}
+        try { window.addEventListener("pagehide", event => recordLifecycleEvent("pagehide", { persisted: !!event.persisted })); } catch (_) {}
+        try { window.addEventListener("pageshow", event => recordLifecycleEvent("pageshow", { persisted: !!event.persisted })); } catch (_) {}
+        try { document.addEventListener("visibilitychange", () => recordLifecycleEvent("visibilitychange")); } catch (_) {}
+        try { document.addEventListener("freeze", () => recordLifecycleEvent("freeze")); } catch (_) {}
+        try { document.addEventListener("resume", () => recordLifecycleEvent("resume")); } catch (_) {}
+        const noteInput = event => {
+            lastState.input = {
+                type: event.type,
+                key: event.key ? String(event.key).slice(0, 32) : null,
+                button: Number.isFinite(event.button) ? event.button : null,
+                at: new Date().toISOString(),
+                tMs: roundMs(nowMs() - startedAtMs)
+            };
+        };
+        try { window.addEventListener("pointerdown", noteInput, { passive: true }); } catch (_) {}
+        try { window.addEventListener("keydown", noteInput, { passive: true }); } catch (_) {}
+    }
+
+    function installLongTaskObserver() {
+        if (!enabled || typeof PerformanceObserver === "undefined") return;
+        try {
+            longTaskObserver = new PerformanceObserver(list => {
+                for (const entry of list.getEntries()) {
+                    const duration = Number(entry.duration || 0);
+                    if (duration < ANDRO_PERF_THRESHOLDS.longTaskWarnMs) continue;
+                    const attribution = Array.isArray(entry.attribution) ? entry.attribution.slice(0, 5).map(item => ({
+                        name: item.name || "",
+                        entryType: item.entryType || "",
+                        containerType: item.containerType || "",
+                        containerName: item.containerName || "",
+                        containerSrc: String(item.containerSrc || "").slice(-160),
+                        scriptUrl: String(item.scriptUrl || "").slice(-160)
+                    })) : [];
+                    const event = {
+                        name: entry.name || "longtask",
+                        entryType: entry.entryType || "longtask",
+                        startTime: roundMs(entry.startTime || 0),
+                        durationMs: roundMs(duration),
+                        attribution: attribution
+                    };
+                    lastState.longTask = Object.assign({
+                        at: new Date().toISOString(),
+                        tMs: roundMs(nowMs() - startedAtMs)
+                    }, event);
+                    record("longtask", event);
+                }
+            });
+            longTaskObserver.observe({ entryTypes: [ "longtask" ] });
+        } catch (e) {
+            record("longtask_observer_error", {
+                message: e && e.message ? String(e.message) : String(e)
+            });
+        }
+    }
+
+    function installWorkerHeartbeat() {
+        if (!enabled || typeof Worker === "undefined" || typeof Blob === "undefined" || typeof URL === "undefined") return;
+        workerState.supported = true;
+        try {
+            const workerSource = [
+                "let seq = 0;",
+                "setInterval(() => {",
+                "  seq += 1;",
+                "  postMessage({ type: 'heartbeat', seq, workerNow: Date.now() });",
+                "}, 100);"
+            ].join("\n");
+            const blobUrl = URL.createObjectURL(new Blob([ workerSource ], { type: "application/javascript" }));
+            heartbeatWorker = new Worker(blobUrl);
+            URL.revokeObjectURL(blobUrl);
+            workerState.started = true;
+            heartbeatWorker.onmessage = event => {
+                const perfNow = nowMs();
+                const data = event && event.data || {};
+                if (data.type !== "heartbeat") return;
+                if (workerState.lastHeartbeatAtMs != null) {
+                    const mainGap = perfNow - workerState.lastHeartbeatAtMs;
+                    workerState.lastMainReceiveGapMs = mainGap;
+                    if (mainGap > workerState.maxMainReceiveGapMs) workerState.maxMainReceiveGapMs = mainGap;
+                }
+                if (workerState.lastWorkerNowMs != null && Number.isFinite(data.workerNow)) {
+                    const workerGap = Number(data.workerNow) - workerState.lastWorkerNowMs;
+                    workerState.lastWorkerGapMs = workerGap;
+                    if (workerGap > workerState.maxWorkerGapMs) workerState.maxWorkerGapMs = workerGap;
+                }
+                workerState.lastHeartbeatAtMs = perfNow;
+                workerState.lastHeartbeatAt = new Date().toISOString();
+                workerState.lastWorkerNowMs = Number.isFinite(data.workerNow) ? Number(data.workerNow) : workerState.lastWorkerNowMs;
+                workerState.lastSeq = Number(data.seq) || workerState.lastSeq;
+                workerState.heartbeatCount++;
+            };
+            heartbeatWorker.onerror = event => {
+                workerState.failed = true;
+                record("worker_heartbeat_error", {
+                    message: event && event.message ? String(event.message) : "worker heartbeat error"
+                });
+            };
+        } catch (e) {
+            workerState.failed = true;
+            record("worker_heartbeat_error", {
+                message: e && e.message ? String(e.message) : String(e)
+            });
+        }
+    }
+
     const api = {
         enabled: enabled,
         thresholds: ANDRO_PERF_THRESHOLDS,
@@ -230,16 +682,59 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         record: record,
         recordFrameGap(gapMs) {
             if (!enabled || gapMs < ANDRO_PERF_THRESHOLDS.frameGapWarnMs) return;
+            const perfNow = nowMs();
+            const snapshot = collectSnapshot();
+            const classification = classifyFrameGap(gapMs, snapshot, perfNow);
+            const bin = getCurrentSecondBin(perfNow);
+            if (gapMs > bin.maxFrameGap) bin.maxFrameGap = gapMs;
             const level = gapMs >= ANDRO_PERF_THRESHOLDS.frameGapBigMs ? "500ms+" : gapMs >= ANDRO_PERF_THRESHOLDS.frameGapConsoleMs ? "250ms+" : "120ms+";
             record("frame_gap", {
                 gapMs: roundMs(gapMs),
-                level: level
+                level: level,
+                visible: classification.visible,
+                focused: classification.focused,
+                probablyGameplayFreeze: classification.probablyGameplayFreeze,
+                reason: classification.reason,
+                reasons: classification.reasons,
+                workerInterpretation: classification.workerInterpretation,
+                recentEvents: events.slice(-ANDRO_PERF_THRESHOLDS.frameGapContextEvents),
+                recentBins: getRecentBins(),
+                recentResources: gapMs >= ANDRO_PERF_THRESHOLDS.frameGapConsoleMs ? getRecentResources(perfNow) : [],
+                snapshot: snapshot
             });
         },
+        notePacket(opcode, parts, startIndex) {
+            if (!enabled) return;
+            const perfNow = nowMs();
+            const normalized = normalizeOpcodeForStats(opcode, parts, startIndex);
+            const bin = getCurrentSecondBin(perfNow);
+            bin.packets++;
+            bin.opcodes[normalized] = (bin.opcodes[normalized] || 0) + 1;
+            lastState.opcode = normalized;
+            lastState.packet = {
+                opcode: opcode || "",
+                normalizedOpcode: normalized,
+                prefix: packetPrefix(parts || [], startIndex || 0),
+                partCount: parts && parts.length || 0,
+                at: new Date().toISOString(),
+                tMs: roundMs(perfNow - startedAtMs)
+            };
+        },
         recordPacketHandler(opcode, durationMs, parts, startIndex) {
-            if (!enabled || durationMs < ANDRO_PERF_THRESHOLDS.packetHandlerWarnMs) return;
+            if (!enabled) return;
+            const normalized = normalizeOpcodeForStats(opcode, parts, startIndex);
+            lastState.handler = {
+                opcode: opcode || "",
+                normalizedOpcode: normalized,
+                durationMs: roundMs(durationMs),
+                prefix: packetPrefix(parts || [], startIndex || 0),
+                at: new Date().toISOString(),
+                tMs: roundMs(nowMs() - startedAtMs)
+            };
+            if (durationMs < ANDRO_PERF_THRESHOLDS.packetHandlerWarnMs) return;
             record("packet_handler_slow", {
                 opcode: opcode || "",
+                normalizedOpcode: normalized,
                 durationMs: roundMs(durationMs),
                 prefix: packetPrefix(parts || [], startIndex || 0),
                 partCount: parts && parts.length || 0
@@ -251,6 +746,9 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
             const backlogBefore = Number(data.backlogBefore || 0);
             const backlogAfter = Number(data.backlogAfter || 0);
             const processed = Number(data.processed || 0);
+            const bin = getCurrentSecondBin();
+            bin.drains++;
+            bin.maxRxBacklog = Math.max(bin.maxRxBacklog, backlogBefore, backlogAfter);
             if (duration < ANDRO_PERF_THRESHOLDS.rxDrainWarnMs && backlogBefore < ANDRO_PERF_THRESHOLDS.rxBacklogWarn && backlogAfter < ANDRO_PERF_THRESHOLDS.rxBacklogWarn && processed < ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn) return;
             record("rx_drain_slow", {
                 durationMs: roundMs(duration),
@@ -263,6 +761,28 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         },
         recordRender(label, durationMs, extra = null) {
             if (!enabled) return;
+            const bin = getCurrentSecondBin();
+            const duration = Number(durationMs || 0);
+            if (label === "drawTotal") {
+                bin.maxDrawTotal = Math.max(bin.maxDrawTotal, duration);
+                bin.drawTotalSum += duration;
+                bin.drawTotalCount++;
+            } else if (label === "drawEntities") {
+                bin.maxDrawEntities = Math.max(bin.maxDrawEntities, duration);
+                bin.drawEntitiesSum += duration;
+                bin.drawEntitiesCount++;
+            } else if (label === "drawMiniMap" || label === "minimapRebuild") {
+                bin.maxDrawMiniMap = Math.max(bin.maxDrawMiniMap, duration);
+                bin.drawMiniMapSum += duration;
+                bin.drawMiniMapCount++;
+            } else if (label === "drawLaserBeams") bin.maxDrawLaserBeams = Math.max(bin.maxDrawLaserBeams, duration);
+            else if (label === "drawExplosions") bin.maxDrawExplosions = Math.max(bin.maxDrawExplosions, duration);
+            lastState.draw = {
+                label: label,
+                durationMs: roundMs(duration),
+                at: new Date().toISOString(),
+                tMs: roundMs(nowMs() - startedAtMs)
+            };
             const threshold = getRenderWarnThreshold(label);
             if (durationMs < threshold) return;
             record("draw_slow", Object.assign({
@@ -272,7 +792,17 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
             }, extra || {}));
         },
         recordCleanup(label, durationMs, data = null) {
-            if (!enabled || durationMs < ANDRO_PERF_THRESHOLDS.cleanupWarnMs) return;
+            if (!enabled) return;
+            const duration = Number(durationMs || 0);
+            const bin = getCurrentSecondBin();
+            bin.maxCleanup = Math.max(bin.maxCleanup, duration);
+            lastState.cleanup = {
+                label: label,
+                durationMs: roundMs(duration),
+                at: new Date().toISOString(),
+                tMs: roundMs(nowMs() - startedAtMs)
+            };
+            if (durationMs < ANDRO_PERF_THRESHOLDS.cleanupWarnMs) return;
             record("cleanup_slow", Object.assign({
                 label: label,
                 durationMs: roundMs(durationMs),
@@ -289,6 +819,11 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
                 opcodeCounts: Object.assign({}, opcodeCounts),
                 slowest: JSON.parse(JSON.stringify(slowest)),
                 snapshot: collectSnapshot(),
+                lifecycle: Object.assign({}, lifecycle),
+                workerHeartbeat: Object.assign({}, workerState),
+                last: JSON.parse(JSON.stringify(lastState)),
+                recentBins: getRecentBins(ANDRO_PERF_THRESHOLDS.secondBinCount),
+                memory: getMemorySnapshot(),
                 thresholds: ANDRO_PERF_THRESHOLDS
             };
         },
@@ -296,6 +831,7 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
             return JSON.stringify({
                 generatedAt: new Date().toISOString(),
                 summary: api.summary(),
+                recentBins: getRecentBins(ANDRO_PERF_THRESHOLDS.secondBinCount),
                 events: events.slice()
             }, null, 2);
         },
@@ -304,6 +840,8 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
             for (const key of Object.keys(counts)) delete counts[key];
             for (const key of Object.keys(opcodeCounts)) delete opcodeCounts[key];
             for (const key of Object.keys(slowest)) delete slowest[key];
+            for (const key of Object.keys(lastRecordAtByKey)) delete lastRecordAtByKey[key];
+            secondBins.length = 0;
             seq = 1;
             return api.summary();
         },
@@ -324,6 +862,16 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
     };
 
     window.AndroPerf = api;
+
+    if (enabled) {
+        installLifecycleHooks();
+        installLongTaskObserver();
+        installWorkerHeartbeat();
+        recordLifecycleEvent("profiler-start", {
+            visibilityState: lifecycle.visibilityState,
+            focused: lifecycle.focused
+        });
+    }
 
     if (enabled && typeof requestAnimationFrame === "function") {
         let lastFrameAt = 0;
@@ -1795,6 +2343,9 @@ function handleServerLine(line) {
     }
     if (!opcode || opcode.trim() === "") {
         return;
+    }
+    if (window.AndroPerf && window.AndroPerf.enabled) {
+        window.AndroPerf.notePacket(opcode, parts, startIndex);
     }
     const handler = PACKET_HANDLERS[opcode];
     if (__PARITY_DEBUG_GAME_OPCODES.has(opcode)) {
