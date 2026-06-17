@@ -9,7 +9,7 @@ class Connexion
     public static function bdd() {     
         try 
         {
-            $bdd = new PDO('mysql:host=127.0.0.1;dbname=andromeda', 'root', '');
+            $bdd = new PDO('mysql:host=127.0.0.1;dbname=andromeda', 'root', 'lefaucheuristheking123');
             $bdd->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } 
         catch (Exception $e) 
