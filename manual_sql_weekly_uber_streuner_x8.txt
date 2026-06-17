@@ -1,0 +1,74 @@
+-- Manual SQL for weekly_uber_endurance_45 / Uber Endurance 4-5.
+-- Goal: disambiguate objective ID 50 from 29:Uber Streuner under utf8mb4_general_ci.
+-- Do not run an automatic progress migration with this file.
+
+-- 1) Check the objective before the change.
+SELECT
+    o.id,
+    o.mission_id,
+    m.code,
+    m.title,
+    o.objective_type,
+    o.target_key,
+    o.objective_label,
+    o.required_amount,
+    o.sort_order
+FROM site_weekly_mission_objectives o
+INNER JOIN site_weekly_missions m ON m.id = o.mission_id
+WHERE o.id = 50
+  AND o.mission_id = 13
+  AND m.code = 'weekly_uber_endurance_45';
+
+-- 2) Update only objective ID 50.
+-- BINARY prevents the case-insensitive collation from matching 29:Uber Streuner.
+UPDATE site_weekly_mission_objectives o
+INNER JOIN site_weekly_missions m ON m.id = o.mission_id
+SET o.target_key = '29:Uber StreuneR_X8'
+WHERE o.id = 50
+  AND o.mission_id = 13
+  AND m.code = 'weekly_uber_endurance_45'
+  AND o.objective_type = 'weekly_npc_kill'
+  AND BINARY o.target_key = BINARY '29:Uber StreuneR'
+  AND o.objective_label = 'Destroy 20 Uber StreuneR in 4-5';
+
+-- 3) Check the objective after the change.
+SELECT
+    o.id,
+    o.mission_id,
+    m.code,
+    m.title,
+    o.objective_type,
+    o.target_key,
+    o.objective_label,
+    o.required_amount,
+    o.sort_order
+FROM site_weekly_mission_objectives o
+INNER JOIN site_weekly_missions m ON m.id = o.mission_id
+WHERE o.id = 50
+  AND o.mission_id = 13
+  AND m.code = 'weekly_uber_endurance_45';
+
+-- Optional diagnostic only, not a migration:
+SELECT
+    player_id,
+    mission_id,
+    week_key,
+    objective_type,
+    target_key,
+    current_amount,
+    updated_at
+FROM site_player_weekly_mission_progress
+WHERE mission_id = 13
+  AND objective_type = 'weekly_npc_kill'
+  AND (
+      BINARY target_key = BINARY '29:Uber Streuner'
+      OR BINARY target_key = BINARY '29:Uber StreuneR'
+      OR BINARY target_key = BINARY '29:Uber StreuneR_X8'
+  )
+ORDER BY week_key, player_id, target_key;
+
+-- Note:
+-- Existing 29:Uber Streuner rows can already contain a mixed count from old
+-- small/big Uber Streuner kills because the old keys differed only by case.
+-- Decide separately whether to reset objective 50, leave it clean from zero,
+-- or perform a supervised manual migration.

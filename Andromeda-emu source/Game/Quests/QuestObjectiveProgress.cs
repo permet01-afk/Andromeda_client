@@ -385,6 +385,8 @@ namespace OrbitReborn_Emulator.Game.Quests
             string cleanName = CleanNpcName(npcName);
             switch (cleanName)
             {
+                case "Uber StreuneR":
+                    return "Uber StreuneR_X8";
                 case "Streuner":
                 case "Lordakia":
                 case "Saimon":
@@ -407,7 +409,6 @@ namespace OrbitReborn_Emulator.Game.Quests
                 case "Uber Lordakium":
                 case "Uber Kristallin":
                 case "Uber Kristallon":
-                case "Uber StreuneR":
                 case "Boss Cubikon":
                 case "Boss Protegit":
                     return cleanName;
