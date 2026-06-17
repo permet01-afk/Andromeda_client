@@ -521,6 +521,17 @@ function sendSelectShip(targetId) {
         console.log("[WS] Sending SES →", packet);
     }
     sendRaw(packet);
+    try {
+        const perf = window.AndroPerf;
+        if (perf && perf.enabled && typeof perf.noteTargetSelection === "function") {
+            const ent = typeof entities !== "undefined" && targetId != null ? entities[targetId] : null;
+            perf.noteTargetSelection(targetId, ent && ent.kind || null, {
+                targetName: ent && ent.name || "",
+                hpKnown: !!(ent && ent.hp != null),
+                shieldKnown: !!(ent && ent.shield != null)
+            });
+        }
+    } catch (_) {}
 }
 
 function sendLaserAttack(targetId) {

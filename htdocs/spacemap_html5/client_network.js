@@ -22,6 +22,10 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
     frameGapContextSeconds: 10,
     secondBinCount: 60,
     resourceLookbackMs: 10000,
+    syncGapThresholdsMs: Object.freeze([ 250, 500, 1000, 2000, 3000 ]),
+    syncConsoleMs: 1000,
+    syncGapThrottleMs: 1500,
+    packetBurstAfterGapRecentMs: 5000,
     ringSize: 500
 });
 
@@ -98,11 +102,236 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         maxWorkerGapMs: 0,
         heartbeatCount: 0
     };
+    const syncState = {
+        lastWsReceiveAtMs: null,
+        lastWsReceiveAt: null,
+        maxWsReceiveGapMs: 0,
+        lastWsReceiveGap: null,
+        lastUsefulEntityUpdateAtMs: nowMs(),
+        lastUsefulEntityUpdateAt: startedAtIso,
+        lastUsefulEntityUpdate: null,
+        lastEntityUpdateThresholdMs: 0,
+        maxEntityUpdateGapMs: 0,
+        lastEntityUpdateGap: null,
+        pendingTargetSelection: null,
+        maxTargetInfoDelayMs: 0,
+        lastTargetInfoDelay: null,
+        maxPacketBurstAfterGapMs: 0,
+        lastPacketBurstAfterGap: null,
+        lastSignificantGap: null,
+        lastPacketBurstRecordAtMs: null,
+        lastSyncFreeze: null,
+        probableReason: null,
+        activeDrain: null
+    };
     const secondBins = [];
     let lastSnapshotMap = null;
     let longTaskObserver = null;
     let heartbeatWorker = null;
     let seq = 1;
+
+    function getSyncThreshold(durationMs) {
+        const duration = Number(durationMs || 0);
+        let threshold = 0;
+        for (const value of ANDRO_PERF_THRESHOLDS.syncGapThresholdsMs) {
+            if (duration >= value) threshold = value; else break;
+        }
+        return threshold;
+    }
+
+    function getSyncCategory(durationMs) {
+        const duration = Number(durationMs || 0);
+        if (duration >= 3000) return "3000ms+";
+        if (duration >= 2000) return "2000-3000ms";
+        if (duration >= 1000) return "1000-2000ms";
+        if (duration >= 500) return "500-1000ms";
+        if (duration >= 250) return "250-500ms";
+        return "below-threshold";
+    }
+
+    function copyLastState(value) {
+        if (!value) return null;
+        try {
+            return JSON.parse(JSON.stringify(value));
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function topOpcodeList(opcodes, limit = 8) {
+        if (!opcodes) return [];
+        return Object.keys(opcodes).map(opcode => ({
+            opcode: opcode,
+            count: opcodes[opcode]
+        })).sort((a, b) => b.count - a.count || a.opcode.localeCompare(b.opcode)).slice(0, limit);
+    }
+
+    function compactPerfEvent(event) {
+        if (!event) return null;
+        const out = {
+            id: event.id,
+            at: event.at,
+            tMs: event.tMs,
+            type: event.type
+        };
+        for (const key of [ "durationMs", "gapMs", "previousGapMs", "thresholdMs", "level", "category", "reason", "probableReason", "targetId", "targetType", "opcode", "normalizedOpcode", "processed", "backlogBefore", "backlogAfter" ]) {
+            if (event[key] !== undefined) out[key] = event[key];
+        }
+        return out;
+    }
+
+    function getCurrentWsReceiveGapMs(perfNow = nowMs()) {
+        return syncState.lastWsReceiveAtMs == null ? null : roundMs(perfNow - syncState.lastWsReceiveAtMs);
+    }
+
+    function getCurrentEntityUpdateGapMs(perfNow = nowMs()) {
+        return syncState.lastUsefulEntityUpdateAtMs == null ? null : roundMs(perfNow - syncState.lastUsefulEntityUpdateAtMs);
+    }
+
+    function getCurrentTargetInfoDelayMs(perfNow = nowMs()) {
+        return syncState.pendingTargetSelection && syncState.pendingTargetSelection.selectedAtMs != null ? roundMs(perfNow - syncState.pendingTargetSelection.selectedAtMs) : null;
+    }
+
+    function shouldRecordSyncGap(kind, thresholdMs, perfNow) {
+        if (thresholdMs >= 1000) return true;
+        const key = `sync:${kind}:${thresholdMs}`;
+        const lastAt = lastRecordAtByKey[key] || 0;
+        if (perfNow - lastAt < ANDRO_PERF_THRESHOLDS.syncGapThrottleMs) return false;
+        lastRecordAtByKey[key] = perfNow;
+        return true;
+    }
+
+    function getSyncContext(snapshot, perfNow = nowMs()) {
+        const snap = snapshot || collectSnapshot();
+        return {
+            map: snap.map,
+            visibilityState: snap.visibilityState,
+            hasFocus: snap.hasFocus,
+            rxQueue: snap.rxQueue,
+            wsConnected: typeof window !== "undefined" ? window.__ANDRO_WS_CONNECTED === true : null,
+            currentWsReceiveGapMs: getCurrentWsReceiveGapMs(perfNow),
+            currentEntityUpdateGapMs: getCurrentEntityUpdateGapMs(perfNow),
+            currentTargetInfoDelayMs: getCurrentTargetInfoDelayMs(perfNow),
+            lastPacket: copyLastState(lastState.packet),
+            lastOpcode: lastState.opcode,
+            lastHandler: copyLastState(lastState.handler),
+            lastUsefulEntityUpdate: copyLastState(syncState.lastUsefulEntityUpdate),
+            lastDraw: copyLastState(lastState.draw),
+            targetSelection: copyLastState(syncState.pendingTargetSelection),
+            entities: snap.entities,
+            players: snap.players,
+            npcs: snap.npcs,
+            lasers: snap.lasers,
+            rockets: snap.rockets,
+            rocketSmoke: snap.rocketSmoke,
+            damageBubbles: snap.damageBubbles,
+            minimapOpen: snap.minimapOpen,
+            groupOpen: snap.groupOpen
+        };
+    }
+
+    function getSignalDuration(type, event) {
+        if (!event) return 0;
+        if (type === "frame_gap") return Number(event.gapMs || 0);
+        if (type === "packet_burst_after_gap") return Number(event.previousGapMs || event.durationMs || 0);
+        return Number(event.durationMs || event.gapMs || 0);
+    }
+
+    function inferSyncFreezeReason(type, event) {
+        if (type === "ws_receive_gap") return "websocket_receive_gap";
+        if (type === "entity_update_gap") return "packet_apply_gap";
+        if (type === "target_info_delay") return "target_info_delay";
+        if (type === "packet_burst_after_gap") return "packet_burst_after_gap";
+        if (type === "frame_gap") {
+            const reason = String(event && event.reason || "");
+            if (reason.includes("main-thread") || reason.includes("longtask")) return "browser_main_thread";
+            const draw = lastState.draw;
+            if (draw && Number(draw.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawTotalWarnMs) return "render_only";
+            return "unknown";
+        }
+        return "unknown";
+    }
+
+    function noteSignificantGap(source, durationMs, event) {
+        const duration = Number(durationMs || 0);
+        if (duration < ANDRO_PERF_THRESHOLDS.syncGapThresholdsMs[0]) return;
+        syncState.lastSignificantGap = {
+            source: source,
+            durationMs: roundMs(duration),
+            thresholdMs: getSyncThreshold(duration),
+            atMs: nowMs(),
+            eventId: event && event.id || null
+        };
+    }
+
+    function recordEntityUpdateGap(durationMs, source) {
+        const duration = Number(durationMs || 0);
+        const threshold = getSyncThreshold(duration);
+        if (!threshold) return null;
+        const perfNow = nowMs();
+        if (!shouldRecordSyncGap("entity_update_gap", threshold, perfNow)) return null;
+        const snapshot = collectSnapshot();
+        const event = record("entity_update_gap", Object.assign({
+            durationMs: roundMs(duration),
+            thresholdMs: threshold,
+            category: getSyncCategory(duration),
+            source: source || "watchdog",
+            lastUsefulPacket: copyLastState(syncState.lastUsefulEntityUpdate),
+            lastOpcode: lastState.opcode,
+            rxQueue: snapshot.rxQueue,
+            currentWsReceiveGapMs: getCurrentWsReceiveGapMs(perfNow),
+            snapshot: snapshot
+        }, getSyncContext(snapshot, perfNow)));
+        syncState.lastEntityUpdateThresholdMs = Math.max(syncState.lastEntityUpdateThresholdMs, threshold);
+        return event;
+    }
+
+    function recordSyncFreezeFromEvent(type, event) {
+        if (type === "sync_freeze") return;
+        if (type !== "ws_receive_gap" && type !== "entity_update_gap" && type !== "target_info_delay" && type !== "frame_gap" && type !== "packet_burst_after_gap") return;
+        const duration = getSignalDuration(type, event);
+        if (duration < 500) return;
+        const snapshot = event && event.snapshot || collectSnapshot();
+        const probableReason = inferSyncFreezeReason(type, event);
+        record("sync_freeze", Object.assign({
+            durationMs: roundMs(duration),
+            thresholdMs: getSyncThreshold(duration),
+            category: getSyncCategory(duration),
+            sourceEventType: type,
+            sourceEventId: event && event.id || null,
+            probableReason: probableReason
+        }, getSyncContext(snapshot), {
+            snapshot: snapshot
+        }));
+    }
+
+    function getTopSyncFreezeEvents(limit = 10) {
+        return events.filter(event => event && event.type === "sync_freeze").slice().sort((a, b) => Number(b.durationMs || 0) - Number(a.durationMs || 0)).slice(0, limit).map(compactPerfEvent);
+    }
+
+    function resetSyncStateForClear() {
+        const perfNow = nowMs();
+        syncState.lastWsReceiveAtMs = null;
+        syncState.lastWsReceiveAt = null;
+        syncState.maxWsReceiveGapMs = 0;
+        syncState.lastWsReceiveGap = null;
+        syncState.lastUsefulEntityUpdateAtMs = perfNow;
+        syncState.lastUsefulEntityUpdateAt = new Date().toISOString();
+        syncState.lastUsefulEntityUpdate = null;
+        syncState.lastEntityUpdateThresholdMs = 0;
+        syncState.maxEntityUpdateGapMs = 0;
+        syncState.lastEntityUpdateGap = null;
+        syncState.pendingTargetSelection = null;
+        syncState.maxTargetInfoDelayMs = 0;
+        syncState.lastTargetInfoDelay = null;
+        syncState.maxPacketBurstAfterGapMs = 0;
+        syncState.lastPacketBurstAfterGap = null;
+        syncState.lastSignificantGap = null;
+        syncState.lastPacketBurstRecordAtMs = null;
+        syncState.lastSyncFreeze = null;
+        syncState.probableReason = null;
+        syncState.activeDrain = null;
+    }
 
     function getArrayLength(value) {
         return Array.isArray(value) ? value.length : null;
@@ -300,6 +529,16 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
             lastLongTask: lastState.longTask,
             lastInput: lastState.input,
             lastMapTransition: lastState.mapTransition,
+            wsConnected: typeof window !== "undefined" ? window.__ANDRO_WS_CONNECTED === true : null,
+            currentWsReceiveGapMs: getCurrentWsReceiveGapMs(),
+            currentEntityUpdateGapMs: getCurrentEntityUpdateGapMs(),
+            currentTargetInfoDelayMs: getCurrentTargetInfoDelayMs(),
+            lastWsReceiveGap: syncState.lastWsReceiveGap,
+            lastEntityUpdateGap: syncState.lastEntityUpdateGap,
+            lastTargetInfoDelay: syncState.lastTargetInfoDelay,
+            lastPacketBurstAfterGap: syncState.lastPacketBurstAfterGap,
+            lastSyncFreeze: syncState.lastSyncFreeze,
+            probableReason: syncState.probableReason,
             entities: null,
             players: null,
             npcs: null,
@@ -404,6 +643,9 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         if (type === "draw_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawConsoleMs;
         if (type === "cleanup_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawConsoleMs;
         if (type === "longtask") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.longTaskConsoleMs;
+        if (type === "ws_receive_gap" || type === "entity_update_gap" || type === "target_info_delay" || type === "packet_burst_after_gap" || type === "sync_freeze") {
+            return getSignalDuration(type, data) >= ANDRO_PERF_THRESHOLDS.syncConsoleMs;
+        }
         return false;
     }
 
@@ -447,6 +689,30 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         if (type === "draw_slow") updateSlowest("draw", event);
         if (type === "cleanup_slow") updateSlowest("cleanup", event);
         if (type === "longtask") updateSlowest("longTask", event);
+        if (type === "ws_receive_gap") {
+            syncState.lastWsReceiveGap = compactPerfEvent(event);
+            syncState.maxWsReceiveGapMs = Math.max(syncState.maxWsReceiveGapMs, Number(event.durationMs || 0));
+            noteSignificantGap("ws_receive_gap", event.durationMs, event);
+        }
+        if (type === "entity_update_gap") {
+            syncState.lastEntityUpdateGap = compactPerfEvent(event);
+            syncState.maxEntityUpdateGapMs = Math.max(syncState.maxEntityUpdateGapMs, Number(event.durationMs || 0));
+            noteSignificantGap("entity_update_gap", event.durationMs, event);
+        }
+        if (type === "target_info_delay") {
+            syncState.lastTargetInfoDelay = compactPerfEvent(event);
+            syncState.maxTargetInfoDelayMs = Math.max(syncState.maxTargetInfoDelayMs, Number(event.durationMs || 0));
+        }
+        if (type === "packet_burst_after_gap") {
+            syncState.lastPacketBurstAfterGap = compactPerfEvent(event);
+            syncState.maxPacketBurstAfterGapMs = Math.max(syncState.maxPacketBurstAfterGapMs, Number(event.previousGapMs || event.durationMs || 0));
+        }
+        if (type === "sync_freeze") {
+            syncState.lastSyncFreeze = compactPerfEvent(event);
+            syncState.probableReason = event.probableReason || syncState.probableReason;
+        } else {
+            recordSyncFreezeFromEvent(type, event);
+        }
         if (shouldConsoleLog(type, event)) {
             try {
                 console.warn("[AndroPerf]", type, event);
@@ -703,6 +969,112 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
                 snapshot: snapshot
             });
         },
+        tickSyncWatchdog() {
+            if (!enabled) return;
+            const perfNow = nowMs();
+            const snapshot = collectSnapshot();
+            if (snapshot.visibilityState !== "visible" || snapshot.hasFocus === false || snapshot.map == null || snapshot.wsConnected !== true) return;
+            const entityGap = syncState.lastUsefulEntityUpdateAtMs == null ? 0 : perfNow - syncState.lastUsefulEntityUpdateAtMs;
+            const threshold = getSyncThreshold(entityGap);
+            if (!threshold || threshold <= syncState.lastEntityUpdateThresholdMs) return;
+            recordEntityUpdateGap(entityGap, "watchdog");
+        },
+        noteWsReceive(channel) {
+            if (!enabled || channel !== "game") return;
+            const perfNow = nowMs();
+            if (syncState.lastWsReceiveAtMs != null) {
+                const gap = perfNow - syncState.lastWsReceiveAtMs;
+                const threshold = getSyncThreshold(gap);
+                if (threshold && shouldRecordSyncGap("ws_receive_gap", threshold, perfNow)) {
+                    const snapshot = collectSnapshot();
+                    record("ws_receive_gap", Object.assign({
+                        durationMs: roundMs(gap),
+                        thresholdMs: threshold,
+                        category: getSyncCategory(gap),
+                        snapshot: snapshot
+                    }, getSyncContext(snapshot, perfNow)));
+                }
+            }
+            syncState.lastWsReceiveAtMs = perfNow;
+            syncState.lastWsReceiveAt = new Date().toISOString();
+        },
+        noteEntityUsefulUpdate(kind, data = null) {
+            if (!enabled) return;
+            const perfNow = nowMs();
+            if (syncState.lastUsefulEntityUpdateAtMs != null) {
+                const gap = perfNow - syncState.lastUsefulEntityUpdateAtMs;
+                const threshold = getSyncThreshold(gap);
+                if (threshold && threshold > syncState.lastEntityUpdateThresholdMs) {
+                    recordEntityUpdateGap(gap, "before_update");
+                }
+            }
+            const update = Object.assign({
+                kind: kind || "unknown",
+                at: new Date().toISOString(),
+                tMs: roundMs(perfNow - startedAtMs),
+                packet: copyLastState(lastState.packet),
+                opcode: lastState.opcode
+            }, data || {});
+            syncState.lastUsefulEntityUpdateAtMs = perfNow;
+            syncState.lastUsefulEntityUpdateAt = update.at;
+            syncState.lastUsefulEntityUpdate = update;
+            syncState.lastEntityUpdateThresholdMs = 0;
+        },
+        noteTargetSelection(targetId, targetType = null, data = null) {
+            if (!enabled || targetId == null) return;
+            const perfNow = nowMs();
+            const snapshot = collectSnapshot();
+            syncState.pendingTargetSelection = Object.assign({
+                targetId: targetId,
+                targetType: targetType || null,
+                selectedAt: new Date().toISOString(),
+                selectedAtMs: perfNow,
+                map: snapshot.map,
+                rxQueue: snapshot.rxQueue,
+                lastPacket: copyLastState(lastState.packet),
+                lastOpcode: lastState.opcode
+            }, data || {});
+        },
+        noteTargetInfoApplied(targetId, data = null) {
+            if (!enabled || targetId == null || !syncState.pendingTargetSelection) return;
+            if (String(syncState.pendingTargetSelection.targetId) !== String(targetId)) return;
+            const perfNow = nowMs();
+            const duration = perfNow - syncState.pendingTargetSelection.selectedAtMs;
+            const threshold = getSyncThreshold(duration);
+            const snapshot = collectSnapshot();
+            if (threshold) {
+                record("target_info_delay", Object.assign({
+                    durationMs: roundMs(duration),
+                    thresholdMs: threshold,
+                    category: getSyncCategory(duration),
+                    targetId: targetId,
+                    targetType: syncState.pendingTargetSelection.targetType,
+                    selectedAt: syncState.pendingTargetSelection.selectedAt,
+                    infoAppliedAt: new Date().toISOString(),
+                    currentWsReceiveGapMs: getCurrentWsReceiveGapMs(perfNow),
+                    currentEntityUpdateGapMs: getCurrentEntityUpdateGapMs(perfNow),
+                    rxQueue: snapshot.rxQueue,
+                    lastPacket: copyLastState(lastState.packet),
+                    lastOpcode: lastState.opcode,
+                    snapshot: snapshot
+                }, data || {}, getSyncContext(snapshot, perfNow)));
+            }
+            syncState.pendingTargetSelection = null;
+        },
+        beginRxDrain() {
+            if (!enabled) return null;
+            syncState.activeDrain = {
+                startedAtMs: nowMs(),
+                opcodes: Object.create(null)
+            };
+            return syncState.activeDrain;
+        },
+        endRxDrain(token) {
+            if (!enabled || !token || syncState.activeDrain !== token) return [];
+            const top = topOpcodeList(token.opcodes);
+            syncState.activeDrain = null;
+            return top;
+        },
         notePacket(opcode, parts, startIndex) {
             if (!enabled) return;
             const perfNow = nowMs();
@@ -710,6 +1082,9 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
             const bin = getCurrentSecondBin(perfNow);
             bin.packets++;
             bin.opcodes[normalized] = (bin.opcodes[normalized] || 0) + 1;
+            if (syncState.activeDrain && syncState.activeDrain.opcodes) {
+                syncState.activeDrain.opcodes[normalized] = (syncState.activeDrain.opcodes[normalized] || 0) + 1;
+            }
             lastState.opcode = normalized;
             lastState.packet = {
                 opcode: opcode || "",
@@ -749,12 +1124,35 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
             const bin = getCurrentSecondBin();
             bin.drains++;
             bin.maxRxBacklog = Math.max(bin.maxRxBacklog, backlogBefore, backlogAfter);
+            const topOpcodes = Array.isArray(data.topOpcodes) ? data.topOpcodes : [];
+            const recentGap = syncState.lastSignificantGap;
+            if (recentGap && processed > 0 && nowMs() - recentGap.atMs <= ANDRO_PERF_THRESHOLDS.packetBurstAfterGapRecentMs) {
+                const bursty = processed >= ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn || backlogBefore >= ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn || backlogAfter >= ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn || duration >= ANDRO_PERF_THRESHOLDS.rxDrainWarnMs;
+                const lastBurstAt = syncState.lastPacketBurstRecordAtMs || 0;
+                if (bursty && nowMs() - lastBurstAt >= ANDRO_PERF_THRESHOLDS.syncGapThrottleMs) {
+                    syncState.lastPacketBurstRecordAtMs = nowMs();
+                    record("packet_burst_after_gap", {
+                        previousGapMs: recentGap.durationMs,
+                        previousGapSource: recentGap.source,
+                        previousGapThresholdMs: recentGap.thresholdMs,
+                        processed: processed,
+                        backlogBefore: backlogBefore,
+                        backlogAfter: backlogAfter,
+                        durationMs: roundMs(duration),
+                        topOpcodes: topOpcodes,
+                        budgetMs: data.budgetMs,
+                        maxLines: data.maxLines
+                    });
+                    syncState.lastSignificantGap = null;
+                }
+            }
             if (duration < ANDRO_PERF_THRESHOLDS.rxDrainWarnMs && backlogBefore < ANDRO_PERF_THRESHOLDS.rxBacklogWarn && backlogAfter < ANDRO_PERF_THRESHOLDS.rxBacklogWarn && processed < ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn) return;
             record("rx_drain_slow", {
                 durationMs: roundMs(duration),
                 processed: processed,
                 backlogBefore: backlogBefore,
                 backlogAfter: backlogAfter,
+                topOpcodes: topOpcodes,
                 budgetMs: data.budgetMs,
                 maxLines: data.maxLines
             });
@@ -818,6 +1216,17 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
                 counts: Object.assign({}, counts),
                 opcodeCounts: Object.assign({}, opcodeCounts),
                 slowest: JSON.parse(JSON.stringify(slowest)),
+                maxWsReceiveGapMs: roundMs(syncState.maxWsReceiveGapMs),
+                maxEntityUpdateGapMs: roundMs(syncState.maxEntityUpdateGapMs),
+                maxTargetInfoDelayMs: roundMs(syncState.maxTargetInfoDelayMs),
+                maxPacketBurstAfterGapMs: roundMs(syncState.maxPacketBurstAfterGapMs),
+                lastWsReceiveGap: copyLastState(syncState.lastWsReceiveGap),
+                lastEntityUpdateGap: copyLastState(syncState.lastEntityUpdateGap),
+                lastTargetInfoDelay: copyLastState(syncState.lastTargetInfoDelay),
+                lastPacketBurstAfterGap: copyLastState(syncState.lastPacketBurstAfterGap),
+                lastSyncFreeze: copyLastState(syncState.lastSyncFreeze),
+                probableReason: syncState.probableReason,
+                topSyncFreezeEvents: getTopSyncFreezeEvents(),
                 snapshot: collectSnapshot(),
                 lifecycle: Object.assign({}, lifecycle),
                 workerHeartbeat: Object.assign({}, workerState),
@@ -842,6 +1251,7 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
             for (const key of Object.keys(slowest)) delete slowest[key];
             for (const key of Object.keys(lastRecordAtByKey)) delete lastRecordAtByKey[key];
             secondBins.length = 0;
+            resetSyncStateForClear();
             seq = 1;
             return api.summary();
         },
@@ -881,12 +1291,36 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
             } else if (lastFrameAt > 0) {
                 api.recordFrameGap(ts - lastFrameAt);
             }
+            api.tickSyncWatchdog();
             lastFrameAt = ts;
             requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
     }
 })();
+
+function __androPerfNoteEntityUpdate(kind, data = null) {
+    const perf = window.AndroPerf;
+    if (perf && perf.enabled && typeof perf.noteEntityUsefulUpdate === "function") {
+        perf.noteEntityUsefulUpdate(kind, data || null);
+    }
+}
+
+function __androPerfNoteTargetInfoApplied(targetId, packetKind, data = null) {
+    const perf = window.AndroPerf;
+    if (!perf || !perf.enabled || typeof perf.noteTargetInfoApplied !== "function") return;
+    let ent = null;
+    try {
+        ent = targetId != null && typeof entities !== "undefined" ? entities[targetId] : null;
+    } catch (_) {}
+    perf.noteTargetInfoApplied(targetId, Object.assign({
+        packetKind: packetKind || null,
+        targetType: ent && ent.kind || null,
+        hpKnown: !!(ent && ent.hp != null),
+        shieldKnown: !!(ent && ent.shield != null),
+        nameKnown: !!(ent && ent.name)
+    }, data || {}));
+}
 
 let ws = null;
 
@@ -1578,6 +2012,8 @@ function __processQueuedRxLine(item) {
 function __drainRxQueue() {
     __andromedaRxDrainScheduled = false;
     const startedAt = __rxNowMs();
+    const perf = window.AndroPerf;
+    const perfDrainToken = perf && perf.enabled && typeof perf.beginRxDrain === "function" ? perf.beginRxDrain() : null;
     const backlogBefore = Math.max(0, __andromedaRxLineQueue.length - __andromedaRxQueueHead);
     let processed = 0;
     while (__andromedaRxQueueHead < __andromedaRxLineQueue.length) {
@@ -1588,12 +2024,14 @@ function __drainRxQueue() {
         if (__rxNowMs() - startedAt >= RX_DRAIN_BUDGET_MS) break;
     }
     __compactRxQueueIfNeeded();
+    const topOpcodes = perfDrainToken && perf && typeof perf.endRxDrain === "function" ? perf.endRxDrain(perfDrainToken) : [];
     if (window.AndroPerf && window.AndroPerf.enabled) {
         window.AndroPerf.recordRxDrain({
             durationMs: __rxNowMs() - startedAt,
             processed: processed,
             backlogBefore: backlogBefore,
             backlogAfter: Math.max(0, __andromedaRxLineQueue.length - __andromedaRxQueueHead),
+            topOpcodes: topOpcodes,
             budgetMs: RX_DRAIN_BUDGET_MS,
             maxLines: RX_DRAIN_MAX_LINES
         });
@@ -1628,6 +2066,10 @@ function __decodeWsPayload(raw) {
 }
 
 function __enqueueRxFrame(channel, socketInstance, raw) {
+    const isActiveSocket = channel === "game" && ws === socketInstance || channel === "chat" && chatWs === socketInstance;
+    if (isActiveSocket && window.AndroPerf && window.AndroPerf.enabled && typeof window.AndroPerf.noteWsReceive === "function") {
+        window.AndroPerf.noteWsReceive(channel);
+    }
     __andromedaRxChain = __andromedaRxChain.then(async () => {
         if (channel === "game" && ws !== socketInstance) return;
         if (channel === "chat" && chatWs !== socketInstance) return;
@@ -3356,6 +3798,12 @@ function handlePacket_N(parts, i) {
         if (!isNaN(maxShield)) heroMaxShield = maxShield;
         if (!isNaN(hp)) heroHp = hp;
         if (!isNaN(maxHp)) heroMaxHp = maxHp;
+        __androPerfNoteEntityUpdate("hero_stats", {
+            entityId: id,
+            packetKind: "N",
+            hpKnown: !isNaN(hp),
+            shieldKnown: !isNaN(shield)
+        });
     } else {
         const ent = ensureEntity(id);
         if (name) ent.name = name;
@@ -3366,6 +3814,14 @@ function handlePacket_N(parts, i) {
         if (ent.hp != null && ent.maxHp != null && ent.hp >= ent.maxHp) {
             clearEntityClaim(id);
         }
+        __androPerfNoteEntityUpdate("entity_stats", {
+            entityId: id,
+            packetKind: "N",
+            targetType: ent.kind,
+            hpKnown: ent.hp != null,
+            shieldKnown: ent.shield != null
+        });
+        __androPerfNoteTargetInfoApplied(id, "N");
     }
 }
 
@@ -4125,6 +4581,12 @@ function handlePacket_H(parts, i) {
         shipY = y;
         cameraX = shipX;
         cameraY = shipY;
+        __androPerfNoteEntityUpdate("hero_position", {
+            entityId: typeof heroId !== "undefined" ? heroId : null,
+            packetKind: "H",
+            x: x,
+            y: y
+        });
     }
 }
 
@@ -4140,6 +4602,13 @@ function handlePacket_HPT(parts, i) {
     }
     if (typeof setHeroRepairing === "function" && heroRepairing && !isNaN(hp) && !isNaN(maxHp) && maxHp > 0 && hp >= maxHp) {
         setHeroRepairing(false);
+    }
+    if (!isNaN(hp) || !isNaN(maxHp)) {
+        __androPerfNoteEntityUpdate("hero_hp", {
+            entityId: typeof heroId !== "undefined" ? heroId : null,
+            packetKind: "HPT",
+            hpKnown: !isNaN(hp)
+        });
     }
 }
 
@@ -4256,6 +4725,12 @@ function handlePacket_move(parts, i) {
             moveTargetY = null;
             moveTargetFromMinimap = false;
         }
+        __androPerfNoteEntityUpdate("hero_move", {
+            entityId: id,
+            packetKind: "1",
+            x: x,
+            y: y
+        });
         return;
     }
     const ent = ensureEntity(id);
@@ -4271,6 +4746,13 @@ function handlePacket_move(parts, i) {
     } else {
         startEntityInterpolationTo(ent, x, y, dur, now);
     }
+    __androPerfNoteEntityUpdate("entity_move", {
+        entityId: id,
+        packetKind: "1",
+        targetType: ent.kind,
+        x: x,
+        y: y
+    });
 }
 
 function handlePacket_d(parts, i) {
@@ -4625,6 +5107,13 @@ function handlePacket_A(parts, i) {
             const newMaxSh = parseInt(maxShStr, 10);
             if (!isNaN(newShield)) heroShield = newShield;
             if (!isNaN(newMaxSh) && newMaxSh >= 0) heroMaxShield = newMaxSh;
+            if (!isNaN(newShield) || !isNaN(newMaxSh)) {
+                __androPerfNoteEntityUpdate("hero_shield", {
+                    entityId: typeof heroId !== "undefined" ? heroId : null,
+                    packetKind: "A|SHD",
+                    shieldKnown: !isNaN(newShield)
+                });
+            }
             break;
         }
 
@@ -4684,6 +5173,14 @@ function handlePacket_A(parts, i) {
                     }
                     applyDeltaBubble(prev, value, heroId, true);
                 }
+                if (type === "HPT" || type === "SHD") {
+                    __androPerfNoteEntityUpdate("hero_combat_stats", {
+                        entityId: targetId,
+                        packetKind: "A|HL",
+                        hpKnown: type === "HPT",
+                        shieldKnown: type === "SHD"
+                    });
+                }
             } else if (targetEnt) {
                 if (type === "HPT") {
                     const prev = targetEnt.hp;
@@ -4708,6 +5205,16 @@ function handlePacket_A(parts, i) {
                         }
                     }
                     applyDeltaBubble(prev, value, targetId, true);
+                }
+                if (type === "HPT" || type === "SHD") {
+                    __androPerfNoteEntityUpdate("entity_combat_stats", {
+                        entityId: targetId,
+                        packetKind: "A|HL",
+                        targetType: targetEnt.kind,
+                        hpKnown: targetEnt.hp != null,
+                        shieldKnown: targetEnt.shield != null
+                    });
+                    __androPerfNoteTargetInfoApplied(targetId, "A|HL");
                 }
             }
             break;
@@ -5144,6 +5651,13 @@ function handlePacket_f(parts, i) {
         }
     }
     applyPendingAttackLockForEntity(id);
+    __androPerfNoteEntityUpdate("player_spawn", {
+        entityId: id,
+        packetKind: "f|C",
+        targetType: "player",
+        x: x,
+        y: y
+    });
 }
 
 function handlePacket_portal(parts, i) {
@@ -5336,6 +5850,13 @@ function handlePacket_C(parts, i) {
     e.name = name;
     e.factionId = isNaN(factionId) ? 0 : factionId;
     applyPendingAttackLockForEntity(id);
+    __androPerfNoteEntityUpdate("npc_spawn", {
+        entityId: id,
+        packetKind: "C",
+        targetType: "npc",
+        x: x,
+        y: y
+    });
 }
 
 function handlePacket_CSS(parts, i) {}
@@ -6810,6 +7331,14 @@ function handlePacket_attackInfo(parts, i) {
             applyShieldHit(heroId, prevShield, shield);
             heroShield = shield;
         }
+        if (!isNaN(hp) || !isNaN(shield)) {
+            __androPerfNoteEntityUpdate("hero_combat_stats", {
+                entityId: targetId,
+                packetKind: "Y",
+                hpKnown: !isNaN(hp),
+                shieldKnown: !isNaN(shield)
+            });
+        }
     } else {
         const ent = entities[targetId];
         if (ent) {
@@ -6820,6 +7349,16 @@ function handlePacket_attackInfo(parts, i) {
             if (!isNaN(shield)) {
                 applyShieldHit(targetId, prevShield, shield);
                 ent.shield = shield;
+            }
+            if (!isNaN(hp) || !isNaN(shield)) {
+                __androPerfNoteEntityUpdate("entity_combat_stats", {
+                    entityId: targetId,
+                    packetKind: "Y",
+                    targetType: ent.kind,
+                    hpKnown: !isNaN(hp),
+                    shieldKnown: !isNaN(shield)
+                });
+                __androPerfNoteTargetInfoApplied(targetId, "Y");
             }
         }
     }
@@ -6907,6 +7446,11 @@ function handlePacket_remove(parts, i) {
         collectedBoxRequestIds.delete(e.id);
     }
     maybeClearMinimapEnemyWarningAfterForeignRemoval(e);
+    __androPerfNoteEntityUpdate("entity_remove", {
+        entityId: e.id,
+        packetKind: "2",
+        targetType: e.kind
+    });
 }
 
 function handlePacket_s(parts, i) {
@@ -7001,6 +7545,11 @@ function handlePacket_R(parts, i) {
         collectedBoxRequestIds.delete(ent.id);
     }
     maybeClearMinimapEnemyWarningAfterForeignRemoval(ent);
+    __androPerfNoteEntityUpdate("entity_remove", {
+        entityId: ent.id,
+        packetKind: "R",
+        targetType: ent.kind
+    });
 }
 
 function getLaserAmmoLabelById(ammoId) {
@@ -7307,6 +7856,10 @@ function handlePacket_K(parts, i) {
             flashClearEntityShipSkillVisualEffects(heroId);
         }
         if (typeof updateHtmlWindows === "function") updateHtmlWindows();
+        __androPerfNoteEntityUpdate("hero_kill", {
+            entityId: id,
+            packetKind: "K"
+        });
         return;
     }
     if (e) {
@@ -7329,6 +7882,11 @@ function handlePacket_K(parts, i) {
         unregisterEntityRuntimeActiveState(id);
         delete entities[id];
         if (loggedEntities.has(id)) loggedEntities.delete(id);
+        __androPerfNoteEntityUpdate("entity_kill", {
+            entityId: id,
+            packetKind: "K",
+            targetType: e.kind
+        });
     }
 }
 
