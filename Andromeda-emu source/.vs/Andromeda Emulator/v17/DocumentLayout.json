@@ -3,7 +3,11 @@
   "WorkspaceRootPath": "C:\\Users\\the_k\\OneDrive\\Desktop\\Git upload\\Andromeda_client\\Andromeda-emu source\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{FF1A2832-6C91-4013-9E43-FAF76040FC29}|Andromeda Emulator.csproj|c:\\users\\the_k\\onedrive\\desktop\\git upload\\andromeda_client\\andromeda-emu source\\game\\handlers\\fight.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{FF1A2832-6C91-4013-9E43-FAF76040FC29}|Andromeda Emulator.csproj|c:\\users\\the_k\\onedrive\\desktop\\git upload\\andromeda_client\\andromeda-emu source\\config\\configmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{FF1A2832-6C91-4013-9E43-FAF76040FC29}|Andromeda Emulator.csproj|solutionrelative:config\\configmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{FF1A2832-6C91-4013-9E43-FAF76040FC29}|Andromeda Emulator.csproj|C:\\Users\\the_k\\OneDrive\\Desktop\\Git upload\\Andromeda_client\\Andromeda-emu source\\game\\handlers\\fight.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{FF1A2832-6C91-4013-9E43-FAF76040FC29}|Andromeda Emulator.csproj|solutionrelative:game\\handlers\\fight.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -23,19 +27,31 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "Fight.cs",
-              "DocumentMoniker": "C:\\Users\\the_k\\OneDrive\\Desktop\\Git upload\\Andromeda_client\\Andromeda-emu source\\Game\\Handlers\\Fight.cs",
-              "RelativeDocumentMoniker": "Game\\Handlers\\Fight.cs",
-              "ToolTip": "C:\\Users\\the_k\\OneDrive\\Desktop\\Git upload\\Andromeda_client\\Andromeda-emu source\\Game\\Handlers\\Fight.cs",
-              "RelativeToolTip": "Game\\Handlers\\Fight.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAIYRAAAAAAAAAAAAAA==",
+              "Title": "ConfigManager.cs",
+              "DocumentMoniker": "C:\\Users\\the_k\\OneDrive\\Desktop\\Git upload\\Andromeda_client\\Andromeda-emu source\\Config\\ConfigManager.cs",
+              "RelativeDocumentMoniker": "Config\\ConfigManager.cs",
+              "ToolTip": "C:\\Users\\the_k\\OneDrive\\Desktop\\Git upload\\Andromeda_client\\Andromeda-emu source\\Config\\ConfigManager.cs",
+              "RelativeToolTip": "Config\\ConfigManager.cs",
+              "ViewState": "AgIAABgAAAAAAAAAAAAlwCwAAACJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-20T20:31:56.303Z",
+              "WhenOpened": "2026-06-17T08:32:06.714Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "Fight.cs",
+              "DocumentMoniker": "C:\\Users\\the_k\\OneDrive\\Desktop\\Git upload\\Andromeda_client\\Andromeda-emu source\\Game\\Handlers\\Fight.cs",
+              "RelativeDocumentMoniker": "Game\\Handlers\\Fight.cs",
+              "ToolTip": "C:\\Users\\the_k\\OneDrive\\Desktop\\Git upload\\Andromeda_client\\Andromeda-emu source\\Game\\Handlers\\Fight.cs",
+              "RelativeToolTip": "Game\\Handlers\\Fight.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-20T20:31:56.303Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "CharacterInfo.cs",
               "DocumentMoniker": "C:\\Users\\the_k\\OneDrive\\Desktop\\Git upload\\Andromeda_client\\Andromeda-emu source\\Game\\Characters\\CharacterInfo.cs",
               "RelativeDocumentMoniker": "Game\\Characters\\CharacterInfo.cs",
