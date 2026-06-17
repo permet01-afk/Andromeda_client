@@ -4913,11 +4913,106 @@ const FLASH_WINDOW_KEY_BY_ID = Object.fromEntries(Object.entries(FLASH_WINDOW_ID
 
 const FLASH_WINDOW_PERSISTENCE_STORAGE_KEY = "andromeda_flash_window_persistence_v1";
 
+const FLASH_WINDOW_RECOVERABLE_HEADER_X = 80;
+const FLASH_WINDOW_RECOVERABLE_TOP_ALLOWANCE = 40;
+const FLASH_WINDOW_RECOVERABLE_BOTTOM_Y = 20;
+
 let __flashPersistedWindowSettingsByKey = {};
 
 let __flashDisplayChatEnabled = true;
 
 let __flashMainMenuPosition = null;
+
+function getFlashWindowRecoverableBounds() {
+    const hudW = typeof getCurrentHudLogicalWidth === "function" ? getCurrentHudLogicalWidth() : window.innerWidth || 1920;
+    const hudH = typeof getCurrentHudLogicalHeight === "function" ? getCurrentHudLogicalHeight() : window.innerHeight || 1080;
+    return {
+        minLeft: -FLASH_WINDOW_RECOVERABLE_HEADER_X,
+        maxLeft: Math.max(-FLASH_WINDOW_RECOVERABLE_HEADER_X, hudW - FLASH_WINDOW_RECOVERABLE_HEADER_X),
+        minTop: -FLASH_WINDOW_RECOVERABLE_TOP_ALLOWANCE,
+        maxTop: Math.max(-FLASH_WINDOW_RECOVERABLE_TOP_ALLOWANCE, hudH - FLASH_WINDOW_RECOVERABLE_BOTTOM_Y)
+    };
+}
+
+function resolveRecoverableFlashWindowPosition(left, top) {
+    const bounds = getFlashWindowRecoverableBounds();
+    const safeLeft = Number.isFinite(left) ? left : 0;
+    const safeTop = Number.isFinite(top) ? top : 0;
+    return {
+        left: Math.min(Math.max(Math.round(safeLeft), bounds.minLeft), bounds.maxLeft),
+        top: Math.min(Math.max(Math.round(safeTop), bounds.minTop), bounds.maxTop)
+    };
+}
+
+function isRecoverableFlashWindowPosition(left, top) {
+    if (!Number.isFinite(left) || !Number.isFinite(top)) return false;
+    const bounds = getFlashWindowRecoverableBounds();
+    return left >= bounds.minLeft && left <= bounds.maxLeft && top >= bounds.minTop && top <= bounds.maxTop;
+}
+
+function getFlashWindowCurrentPosition(winEl) {
+    if (!winEl) return null;
+    let left = parseInt(winEl.style.left || "", 10);
+    let top = parseInt(winEl.style.top || "", 10);
+    if (Number.isFinite(left) && Number.isFinite(top)) {
+        return { left: left, top: top };
+    }
+    const hudPos = window.getHudElementPos ? window.getHudElementPos(winEl) : null;
+    if (hudPos && Number.isFinite(hudPos.x) && Number.isFinite(hudPos.y)) {
+        return {
+            left: Math.round(hudPos.x),
+            top: Math.round(hudPos.y)
+        };
+    }
+    return null;
+}
+
+function rememberRecoverableFlashWindowPosition(winEl, left, top) {
+    if (!winEl || !winEl.dataset || !isRecoverableFlashWindowPosition(left, top)) return false;
+    winEl.dataset.flashLastValidLeft = String(Math.round(left));
+    winEl.dataset.flashLastValidTop = String(Math.round(top));
+    return true;
+}
+
+function getRememberedFlashWindowPosition(winEl) {
+    if (!winEl || !winEl.dataset) return null;
+    const left = parseInt(winEl.dataset.flashLastValidLeft || "", 10);
+    const top = parseInt(winEl.dataset.flashLastValidTop || "", 10);
+    if (!isRecoverableFlashWindowPosition(left, top)) return null;
+    return { left: left, top: top };
+}
+
+function applyFlashWindowPosition(winEl, position) {
+    if (!winEl || !position) return;
+    winEl.style.transform = "none";
+    winEl.style.left = Math.round(position.left) + "px";
+    winEl.style.top = Math.round(position.top) + "px";
+}
+
+function ensureFlashWindowRecoverablePosition(winEl, options) {
+    if (!winEl) return { changed: false, valid: false, left: 0, top: 0 };
+    const current = getFlashWindowCurrentPosition(winEl) || { left: 0, top: 0 };
+    if (isRecoverableFlashWindowPosition(current.left, current.top)) {
+        rememberRecoverableFlashWindowPosition(winEl, current.left, current.top);
+        return {
+            changed: false,
+            valid: true,
+            left: current.left,
+            top: current.top
+        };
+    }
+    const opts = options || {};
+    const fallback = opts.lastValid && isRecoverableFlashWindowPosition(opts.lastValid.left, opts.lastValid.top) ? opts.lastValid : getRememberedFlashWindowPosition(winEl);
+    const next = fallback || resolveRecoverableFlashWindowPosition(current.left, current.top);
+    applyFlashWindowPosition(winEl, next);
+    rememberRecoverableFlashWindowPosition(winEl, next.left, next.top);
+    return {
+        changed: current.left !== next.left || current.top !== next.top,
+        valid: false,
+        left: next.left,
+        top: next.top
+    };
+}
 
 function getFlashCurrentResolutionId() {
     const cfg = window.ANDROMEDA_CONFIG || {};
@@ -4949,9 +5044,10 @@ function normalizeFlashWindowPersistenceEntry(key, entry) {
     const openRaw = entry.open;
     const open = typeof openRaw === "boolean" ? openRaw : parseInt(openRaw, 10) !== 0;
     if (!(Number.isFinite(left) && Number.isFinite(top))) return null;
+    const recovered = resolveRecoverableFlashWindowPosition(left, top);
     return {
-        left: left,
-        top: top,
+        left: recovered.left,
+        top: recovered.top,
         open: !!open
     };
 }
@@ -5011,11 +5107,12 @@ function parseFlashWindowSettingsPayload(value) {
         const top = parseInt(parts[i + 2], 10);
         const open = parseInt(parts[i + 3], 10) !== 0;
         if (!(Number.isFinite(left) && Number.isFinite(top))) continue;
-        entries[key] = {
+        const normalized = normalizeFlashWindowPersistenceEntry(key, {
             left: left,
             top: top,
             open: open
-        };
+        });
+        if (normalized) entries[key] = normalized;
     }
     return entries;
 }
@@ -5040,6 +5137,7 @@ function applyFlashWindowSettingEntryToRuntime(key, entry) {
         winEl.style.transform = "none";
         winEl.style.left = normalized.left + "px";
         winEl.style.top = normalized.top + "px";
+        ensureFlashWindowRecoverablePosition(winEl);
     }
     if (typeof windowStates === "object" && windowStates) {
         windowStates[key] = normalized.open;
@@ -5137,6 +5235,12 @@ function serializeCurrentFlashWindowSettingsValue() {
 function persistCurrentFlashWindowSettingsLocally() {
     __flashPersistedWindowSettingsByKey = buildCurrentFlashWindowSettingsEntries();
     persistFlashWindowPersistenceFallback();
+}
+
+function persistCorrectedFlashWindowSettingsLocally() {
+    try {
+        persistCurrentFlashWindowSettingsLocally();
+    } catch (_) {}
 }
 
 function sendCurrentFlashWindowSettingsToServer() {
@@ -5312,12 +5416,15 @@ function _getFlashResolutionNode() {
     return fallback;
 }
 
-function getFlashWindowDefaultPos(key, width, height) {
-    const persisted = getFlashPersistedWindowSetting(key);
-    if (persisted) return {
-        left: persisted.left,
-        top: persisted.top
-    };
+function getFlashWindowDefaultPos(key, width, height, options) {
+    const opts = options || {};
+    if (!opts.ignorePersisted) {
+        const persisted = getFlashPersistedWindowSetting(key);
+        if (persisted) return {
+            left: persisted.left,
+            top: persisted.top
+        };
+    }
     const id = FLASH_WINDOW_ID_BY_KEY[key];
     if (id === undefined) return WINDOW_DEFAULT_POS[key] || {
         top: 100,
@@ -8553,6 +8660,73 @@ function persistWindowGeometry(key, width, height) {
     writePersistedWindowGeometryStore(store);
 }
 
+function getRuntimeConfigForFlashWindowKey(key) {
+    const base = window.__runtimeWindowsConfig && window.__runtimeWindowsConfig[key] ? window.__runtimeWindowsConfig[key] : typeof WINDOWS_CONFIG !== "undefined" && WINDOWS_CONFIG && WINDOWS_CONFIG[key] ? WINDOWS_CONFIG[key] : {};
+    return typeof getFlashWindowRuntimeConfig === "function" ? getFlashWindowRuntimeConfig(key, base) : Object.assign({}, base);
+}
+
+function resetAndromedaWindowPositions() {
+    const keys = typeof WINDOW_RUNTIME_ALLOWLIST !== "undefined" ? Array.from(WINDOW_RUNTIME_ALLOWLIST) : Object.keys(FLASH_WINDOW_ID_BY_KEY);
+    const nextWindowSettings = {};
+    const resetKeys = [];
+    try {
+        localStorage.removeItem(WINDOW_GEOMETRY_STORAGE_KEY);
+    } catch (_) {}
+    __flashPersistedWindowSettingsByKey = {};
+    for (const key of keys) {
+        const cfg = getRuntimeConfigForFlashWindowKey(key);
+        const pos = getFlashWindowDefaultPos(key, cfg && cfg.w, cfg && cfg.h, {
+            ignorePersisted: true
+        });
+        const winEl = document.getElementById("win_" + key);
+        let finalPos = resolveRecoverableFlashWindowPosition(pos.left, pos.top);
+        if (winEl) {
+            if (winEl.dataset) {
+                delete winEl.dataset.flashUserWidth;
+                delete winEl.dataset.flashUserHeight;
+                delete winEl.dataset.flashLastValidLeft;
+                delete winEl.dataset.flashLastValidTop;
+            }
+            enforceFlashWindowBaseSize(key, winEl, cfg || {});
+            applyFlashWindowPosition(winEl, finalPos);
+            const recovery = ensureFlashWindowRecoverablePosition(winEl);
+            finalPos = {
+                left: recovery.left,
+                top: recovery.top
+            };
+            if (typeof syncFlashWindowContentBounds === "function") {
+                syncFlashWindowContentBounds(winEl);
+            }
+            resetKeys.push(key);
+        }
+        const meta = getFlashWindowMeta(key);
+        if (meta && meta.saveSettings) {
+            const open = typeof windowStates === "object" && windowStates && Object.prototype.hasOwnProperty.call(windowStates, key) ? !!windowStates[key] : !cfg.startMinimized;
+            nextWindowSettings[key] = {
+                left: finalPos.left,
+                top: finalPos.top,
+                open: open
+            };
+        }
+    }
+    __flashPersistedWindowSettingsByKey = nextWindowSettings;
+    persistFlashWindowPersistenceFallback();
+    if (typeof refreshWindowsVisibility === "function") {
+        refreshWindowsVisibility();
+    }
+    if (typeof saveInterfaceLayout === "function") {
+        saveInterfaceLayout();
+    }
+    return {
+        ok: true,
+        resetWindows: resetKeys,
+        geometryStorageCleared: true,
+        serverSettingsChanged: false
+    };
+}
+
+window.resetAndromedaWindowPositions = resetAndromedaWindowPositions;
+
 function resolveFlashWindowOuterSize(key, runtimeCfg, winEl) {
     const meta = getFlashWindowMeta(key);
     const o = resolveWindowOffsetProfile(runtimeCfg || {}).profile;
@@ -8680,6 +8854,7 @@ function createGenericWindow(key, cfg) {
         div.dataset.flashHeaderReserve = "0";
     }
     enforceFlashWindowBaseSize(key, div, runtimeCfg);
+    ensureFlashWindowRecoverablePosition(div);
     const title = runtimeCfg.title && String(runtimeCfg.title).trim() || runtimeCfg.titleKey && String(runtimeCfg.titleKey).trim() || key;
     const showZoom = !!runtimeCfg.zoomable;
     const showClose = !!runtimeCfg.closeable;
@@ -8970,6 +9145,7 @@ function refreshWindowsVisibility() {
     orderedKeys.push(...extraKeys);
     let slotIndex = 0;
     const openedNow = [];
+    let correctedWindowPosition = false;
     for (const key of orderedKeys) {
         if (key === "booster" && !hasBooster()) {
             const iconEl = document.getElementById("icon_" + key);
@@ -9024,6 +9200,8 @@ function refreshWindowsVisibility() {
                 const cfg = window.__runtimeWindowsConfig && window.__runtimeWindowsConfig[key] ? getFlashWindowRuntimeConfig(key, window.__runtimeWindowsConfig[key]) : null;
                 enforceFlashWindowBaseSize(key, winEl, cfg || {});
                 syncFlashWindowContentBounds(winEl);
+                const recovery = ensureFlashWindowRecoverablePosition(winEl);
+                if (recovery.changed) correctedWindowPosition = true;
                 if (key === "chat") {
                     if (typeof renderChatTabs === "function") renderChatTabs();
                     if (typeof syncChatScrollThumb === "function") syncChatScrollThumb();
@@ -9041,6 +9219,9 @@ function refreshWindowsVisibility() {
             }
         }
     }
+    if (correctedWindowPosition) {
+        persistCorrectedFlashWindowSettingsLocally();
+    }
     if (openedNow.length && typeof requestAnimationFrame === "function") {
         requestAnimationFrame(() => verifyFlashWindowContentRects(openedNow));
     }
@@ -9053,6 +9234,7 @@ function makeElementDraggable(elmnt, handle) {
     let startMouseY = 0;
     let startLeft = 0;
     let startTop = 0;
+    let lastValidDragPosition = null;
     handle.onmousedown = dragMouseDown;
     function dragMouseDown(e) {
         e = e || window.event;
@@ -9075,6 +9257,13 @@ function makeElementDraggable(elmnt, handle) {
         elmnt.style.transform = "none";
         elmnt.style.left = startLeft + "px";
         elmnt.style.top = startTop + "px";
+        lastValidDragPosition = isRecoverableFlashWindowPosition(startLeft, startTop) ? {
+            left: startLeft,
+            top: startTop
+        } : getRememberedFlashWindowPosition(elmnt);
+        if (lastValidDragPosition) {
+            rememberRecoverableFlashWindowPosition(elmnt, lastValidDragPosition.left, lastValidDragPosition.top);
+        }
         if (elmnt.dataset && elmnt.dataset.windowKey === "map" && typeof window.invalidateMinimapLayoutCache === "function") {
             window.invalidateMinimapLayoutCache();
         }
@@ -9095,6 +9284,13 @@ function makeElementDraggable(elmnt, handle) {
         const nextTop = Math.round(startTop + dy);
         elmnt.style.left = nextLeft + "px";
         elmnt.style.top = nextTop + "px";
+        if (isRecoverableFlashWindowPosition(nextLeft, nextTop)) {
+            lastValidDragPosition = {
+                left: nextLeft,
+                top: nextTop
+            };
+            rememberRecoverableFlashWindowPosition(elmnt, nextLeft, nextTop);
+        }
         if (elmnt.dataset && elmnt.dataset.windowKey === "map" && typeof window.invalidateMinimapLayoutCache === "function") {
             window.invalidateMinimapLayoutCache();
         }
@@ -9110,6 +9306,9 @@ function makeElementDraggable(elmnt, handle) {
         if (draggedKey === "map" && typeof window.invalidateMinimapLayoutCache === "function") {
             window.invalidateMinimapLayoutCache();
         }
+        ensureFlashWindowRecoverablePosition(elmnt, {
+            lastValid: lastValidDragPosition
+        });
         if (draggedKey) {
             const meta = getFlashWindowMeta(draggedKey);
             if (meta && meta.saveSettings) {
