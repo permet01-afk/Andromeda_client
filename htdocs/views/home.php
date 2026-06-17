@@ -278,9 +278,9 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
             <div class="discord-copy">
                 <h2>Join our Discord</h2>
                 <p>Chat with pilots, follow events and server news.</p>
-                <a class="discord-link" href="https://discord.gg/BEVpW6H7" target="_blank" rel="noopener noreferrer">discord.gg/BEVpW6H7</a>
+                <a class="discord-link" href="https://discord.gg/A8nQyxTfWU" target="_blank" rel="noopener noreferrer">discord.gg/BEVpW6H7</a>
             </div>
-            <a class="discord-cta" href="https://discord.gg/BEVpW6H7" target="_blank" rel="noopener noreferrer">Join Discord</a>
+            <a class="discord-cta" href="https://discord.gg/A8nQyxTfWU" target="_blank" rel="noopener noreferrer">Join Discord</a>
         </aside>
     </header>
 
