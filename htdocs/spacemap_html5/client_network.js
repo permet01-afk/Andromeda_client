@@ -614,7 +614,7 @@ const ANDRO_PERF_THRESHOLDS = Object.freeze({
         try { if (typeof portalJumpEffects !== "undefined") snapshot.portalJumpEffects = getArrayLength(portalJumpEffects); } catch (_) {}
         try { if (window.minimapServerMarkers instanceof Map) snapshot.minimapMarkers = window.minimapServerMarkers.size; } catch (_) {}
         try { if (typeof PENDING_ENTITY_VISUAL_CLEANUPS !== "undefined" && PENDING_ENTITY_VISUAL_CLEANUPS instanceof Map) snapshot.pendingVisualCleanup = PENDING_ENTITY_VISUAL_CLEANUPS.size; } catch (_) {}
-        try { if (typeof __andromedaRxLineQueue !== "undefined") snapshot.rxQueue = Math.max(0, __andromedaRxLineQueue.length - __andromedaRxQueueHead); } catch (_) {}
+        try { if (typeof __getRxBacklog === "function") { snapshot.rxQueue = __getRxBacklog("game") + __getRxBacklog("chat"); snapshot.rxQueueGame = __getRxBacklog("game"); snapshot.rxQueueChat = __getRxBacklog("chat"); } } catch (_) {}
         snapshot.minimapOpen = getWindowOpenByKey("map") || getWindowOpenByKey("minimap");
         snapshot.groupOpen = getWindowOpenByKey("group");
         updateBinSnapshot(getCurrentSecondBin(), snapshot);
@@ -1936,12 +1936,28 @@ const WS_TEXT_DECODER = new TextDecoder("utf-8");
 
 let __andromedaRxChain = Promise.resolve();
 
-const RX_DRAIN_BUDGET_MS = 4;
-const RX_DRAIN_MAX_LINES = 96;
+const RX_DRAIN_BASE_BUDGET_MS = 4;
+const RX_DRAIN_MAX_BUDGET_MS = 10;
+const RX_DRAIN_BASE_MAX_LINES = 96;
+const RX_DRAIN_HARD_MAX_LINES = 384;
+const RX_CHAT_MAX_LINES_PER_DRAIN = 32;
+const RX_MOVE_COALESCE_BACKLOG = 160;
+const RX_PRIORITY_SCAN_BACKLOG = 96;
+const RX_PRIORITY_SCAN_LIMIT = 256;
 
-const __andromedaRxLineQueue = [];
+const __andromedaRxQueues = {
+    game: {
+        lines: [],
+        head: 0
+    },
+    chat: {
+        lines: [],
+        head: 0
+    }
+};
 
-let __andromedaRxQueueHead = 0;
+const __rxPendingMoveByKey = new Map();
+const __rxEntityLifecycleSeqById = Object.create(null);
 
 let __andromedaRxDrainScheduled = false;
 
@@ -1949,27 +1965,36 @@ function __rxNowMs() {
     return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
 }
 
-function __compactRxQueueIfNeeded() {
-    if (__andromedaRxQueueHead <= 0) return;
-    if (__andromedaRxQueueHead < 1024 && __andromedaRxQueueHead * 2 < __andromedaRxLineQueue.length) return;
-    __andromedaRxLineQueue.splice(0, __andromedaRxQueueHead);
-    __andromedaRxQueueHead = 0;
+function __getRxQueueState(channel) {
+    return channel === "chat" ? __andromedaRxQueues.chat : __andromedaRxQueues.game;
+}
+
+function __getRxBacklog(channel) {
+    const q = __getRxQueueState(channel);
+    return Math.max(0, q.lines.length - q.head);
+}
+
+function __compactRxQueueIfNeeded(channel) {
+    const q = __getRxQueueState(channel);
+    if (q.head <= 0) return;
+    if (q.head < 1024 && q.head * 2 < q.lines.length) return;
+    q.lines.splice(0, q.head);
+    q.head = 0;
 }
 
 function __clearRxQueue(channel = null) {
-    if (!channel) {
-        __andromedaRxLineQueue.length = 0;
-        __andromedaRxQueueHead = 0;
-        return;
+    if (!channel || channel === "game") {
+        const game = __andromedaRxQueues.game;
+        game.lines.length = 0;
+        game.head = 0;
+        __rxPendingMoveByKey.clear();
+        for (const id in __rxEntityLifecycleSeqById) delete __rxEntityLifecycleSeqById[id];
     }
-    const pending = [];
-    for (let i = __andromedaRxQueueHead; i < __andromedaRxLineQueue.length; i++) {
-        const item = __andromedaRxLineQueue[i];
-        if (item && item.channel !== channel) pending.push(item);
+    if (!channel || channel === "chat") {
+        const chat = __andromedaRxQueues.chat;
+        chat.lines.length = 0;
+        chat.head = 0;
     }
-    __andromedaRxLineQueue.length = 0;
-    for (const item of pending) __andromedaRxLineQueue.push(item);
-    __andromedaRxQueueHead = 0;
 }
 
 function __scheduleRxDrain() {
@@ -1983,19 +2008,105 @@ function __scheduleRxDrain() {
     }
 }
 
+function __extractRxOpcodeAndArgs(line) {
+    const parts = String(line || "").split("|");
+    if (parts.length === 0) return null;
+    let opcode = parts[0];
+    let startIndex = 1;
+    if (opcode === "0") {
+        opcode = parts[1] || "";
+        startIndex = 2;
+    }
+    if (!opcode) return null;
+    return {
+        opcode: opcode,
+        args: parts.slice(startIndex)
+    };
+}
+
+function __getRxLifecycleSeq(entityId) {
+    const key = String(entityId);
+    return __rxEntityLifecycleSeqById[key] || 0;
+}
+
+function __bumpRxLifecycleSeq(entityId) {
+    const key = String(entityId);
+    __rxEntityLifecycleSeqById[key] = (__rxEntityLifecycleSeqById[key] || 0) + 1;
+    return __rxEntityLifecycleSeqById[key];
+}
+
+function __annotateGameRxItem(item) {
+    const meta = __extractRxOpcodeAndArgs(item.line);
+    if (!meta) return item;
+    item.opcode = meta.opcode;
+    const args = meta.args;
+    if (item.opcode === "1") {
+        const isHeroCorrection = args.length === 3;
+        const entityId = isHeroCorrection ? null : parseInt(args[0], 10);
+        if (!isHeroCorrection && Number.isFinite(entityId)) {
+            item.targetEntityId = entityId;
+            item.coalesceKey = String(entityId) + ":" + __getRxLifecycleSeq(entityId);
+        }
+        return item;
+    }
+    if (item.opcode === "Y") {
+        const targetId = parseInt(args[1], 10);
+        if (Number.isFinite(targetId)) item.targetEntityId = targetId;
+        return item;
+    }
+    if (item.opcode === "N" || item.opcode === "C" || item.opcode === "R" || item.opcode === "K" || item.opcode === "2") {
+        const entityId = parseInt(args[0], 10);
+        if (Number.isFinite(entityId)) {
+            item.targetEntityId = entityId;
+            if (item.opcode === "C" || item.opcode === "R" || item.opcode === "K" || item.opcode === "2") {
+                item.lifecycleEntityId = entityId;
+                __bumpRxLifecycleSeq(entityId);
+            }
+        }
+    }
+    return item;
+}
+
 function __queueRxLine(channel, line, fallback = false) {
     line = (line || "").trim();
     if (!line || line === "||") return;
-    __andromedaRxLineQueue.push({
+    const q = __getRxQueueState(channel);
+    const item = {
         channel: channel,
         line: line,
         fallback: !!fallback
-    });
+    };
+    if (channel === "game") {
+        __annotateGameRxItem(item);
+        if (item.coalesceKey) {
+            const gameBacklog = __getRxBacklog("game");
+            const previousMove = __rxPendingMoveByKey.get(item.coalesceKey);
+            if (gameBacklog >= RX_MOVE_COALESCE_BACKLOG && previousMove && !previousMove.processed && !previousMove.priorityConsumed) {
+                previousMove.obsolete = true;
+            }
+            __rxPendingMoveByKey.set(item.coalesceKey, item);
+        }
+    }
+    q.lines.push(item);
     __scheduleRxDrain();
 }
 
+function __releaseQueuedRxItem(item) {
+    if (!item) return;
+    item.processed = true;
+    if (item.coalesceKey && __rxPendingMoveByKey.get(item.coalesceKey) === item) {
+        __rxPendingMoveByKey.delete(item.coalesceKey);
+    }
+    if (item.priorityTaken) {
+        item.priorityConsumed = true;
+    }
+}
+
 function __processQueuedRxLine(item) {
-    if (!item || !item.line) return;
+    if (!item || !item.line || item.obsolete || item.priorityConsumed) {
+        __releaseQueuedRxItem(item);
+        return false;
+    }
     try {
         if (item.channel === "chat") {
             if (item.line.indexOf("%") !== -1) handleChatPacket(item.line); else handleServerLine(item.line);
@@ -2006,7 +2117,81 @@ function __processQueuedRxLine(item) {
         const prefix = item.channel === "chat" ? "[CHAT-WS]" : "[WS]";
         const mode = item.fallback ? " (fallback)" : "";
         console.error(`${prefix} Line processing error${mode}:`, e, item.line);
+    } finally {
+        __releaseQueuedRxItem(item);
     }
+    return true;
+}
+
+function __takeNextRxItem(channel) {
+    const q = __getRxQueueState(channel);
+    while (q.head < q.lines.length) {
+        const item = q.lines[q.head++];
+        if (!item || item.obsolete || item.priorityConsumed) {
+            __releaseQueuedRxItem(item);
+            continue;
+        }
+        return item;
+    }
+    return null;
+}
+
+function __isPriorityGameRxItem(item, blockedEntityIds) {
+    if (!item || item.obsolete || item.priorityConsumed) return false;
+    const targetId = item.targetEntityId;
+    const targetKey = targetId == null ? null : String(targetId);
+    if (targetKey && blockedEntityIds && blockedEntityIds.has(targetKey)) return false;
+    const pendingId = typeof pendingTargetSelectionId !== "undefined" ? pendingTargetSelectionId : null;
+    const selectedId = typeof selectedTargetId !== "undefined" ? selectedTargetId : null;
+    const hero = typeof heroId !== "undefined" ? heroId : null;
+    if (item.opcode === "N") {
+        if (pendingId != null && Number(targetId) === Number(pendingId)) return true;
+        if (pendingId == null && selectedId != null && Number(targetId) === Number(selectedId)) return true;
+        return false;
+    }
+    if (item.opcode === "Y") {
+        if (hero != null && Number(targetId) === Number(hero)) return true;
+        if (pendingId != null && Number(targetId) === Number(pendingId)) return true;
+        if (selectedId != null && Number(targetId) === Number(selectedId)) return true;
+    }
+    return false;
+}
+
+function __takePriorityGameRxItem(scanLimit) {
+    const q = __andromedaRxQueues.game;
+    const end = Math.min(q.lines.length, q.head + Math.max(0, scanLimit || 0));
+    const blockedEntityIds = new Set();
+    for (let idx = q.head; idx < end; idx++) {
+        const item = q.lines[idx];
+        if (!item || item.obsolete || item.priorityConsumed) continue;
+        if (item.lifecycleEntityId != null) blockedEntityIds.add(String(item.lifecycleEntityId));
+        if (__isPriorityGameRxItem(item, blockedEntityIds)) {
+            item.priorityTaken = true;
+            return item;
+        }
+    }
+    return null;
+}
+
+function __getRxDrainPlan(gameBacklog, chatBacklog) {
+    const totalBacklog = gameBacklog + chatBacklog;
+    let budgetMs = RX_DRAIN_BASE_BUDGET_MS;
+    let maxLines = RX_DRAIN_BASE_MAX_LINES;
+    if (gameBacklog >= 1500 || totalBacklog >= 1800) {
+        budgetMs = RX_DRAIN_MAX_BUDGET_MS;
+        maxLines = RX_DRAIN_HARD_MAX_LINES;
+    } else if (gameBacklog >= 700 || totalBacklog >= 900) {
+        budgetMs = 8;
+        maxLines = 288;
+    } else if (gameBacklog >= 250 || totalBacklog >= 350) {
+        budgetMs = 6;
+        maxLines = 192;
+    }
+    return {
+        budgetMs: budgetMs,
+        maxLines: maxLines,
+        chatMaxLines: RX_CHAT_MAX_LINES_PER_DRAIN
+    };
 }
 
 function __drainRxQueue() {
@@ -2014,29 +2199,52 @@ function __drainRxQueue() {
     const startedAt = __rxNowMs();
     const perf = window.AndroPerf;
     const perfDrainToken = perf && perf.enabled && typeof perf.beginRxDrain === "function" ? perf.beginRxDrain() : null;
-    const backlogBefore = Math.max(0, __andromedaRxLineQueue.length - __andromedaRxQueueHead);
+    const gameBacklogBefore = __getRxBacklog("game");
+    const chatBacklogBefore = __getRxBacklog("chat");
+    const plan = __getRxDrainPlan(gameBacklogBefore, chatBacklogBefore);
     let processed = 0;
-    while (__andromedaRxQueueHead < __andromedaRxLineQueue.length) {
-        const item = __andromedaRxLineQueue[__andromedaRxQueueHead++];
-        __processQueuedRxLine(item);
-        processed++;
-        if (processed >= RX_DRAIN_MAX_LINES) break;
-        if (__rxNowMs() - startedAt >= RX_DRAIN_BUDGET_MS) break;
+    let processedChat = 0;
+    let processedGame = 0;
+    while (processed < plan.maxLines && __rxNowMs() - startedAt < plan.budgetMs) {
+        let item = null;
+        if (__getRxBacklog("game") > 0) {
+            if (__getRxBacklog("game") >= RX_PRIORITY_SCAN_BACKLOG) {
+                item = __takePriorityGameRxItem(RX_PRIORITY_SCAN_LIMIT);
+            }
+            if (!item) item = __takeNextRxItem("game");
+        } else if (__getRxBacklog("chat") > 0 && processedChat < plan.chatMaxLines) {
+            item = __takeNextRxItem("chat");
+        } else {
+            break;
+        }
+        if (!item) break;
+        const applied = __processQueuedRxLine(item);
+        if (applied) {
+            processed++;
+            if (item.channel === "chat") processedChat++; else processedGame++;
+        }
     }
-    __compactRxQueueIfNeeded();
+    __compactRxQueueIfNeeded("game");
+    __compactRxQueueIfNeeded("chat");
     const topOpcodes = perfDrainToken && perf && typeof perf.endRxDrain === "function" ? perf.endRxDrain(perfDrainToken) : [];
     if (window.AndroPerf && window.AndroPerf.enabled) {
         window.AndroPerf.recordRxDrain({
             durationMs: __rxNowMs() - startedAt,
             processed: processed,
-            backlogBefore: backlogBefore,
-            backlogAfter: Math.max(0, __andromedaRxLineQueue.length - __andromedaRxQueueHead),
+            processedGame: processedGame,
+            processedChat: processedChat,
+            backlogBefore: gameBacklogBefore + chatBacklogBefore,
+            backlogBeforeGame: gameBacklogBefore,
+            backlogBeforeChat: chatBacklogBefore,
+            backlogAfter: __getRxBacklog("game") + __getRxBacklog("chat"),
+            backlogAfterGame: __getRxBacklog("game"),
+            backlogAfterChat: __getRxBacklog("chat"),
             topOpcodes: topOpcodes,
-            budgetMs: RX_DRAIN_BUDGET_MS,
-            maxLines: RX_DRAIN_MAX_LINES
+            budgetMs: plan.budgetMs,
+            maxLines: plan.maxLines
         });
     }
-    if (__andromedaRxQueueHead < __andromedaRxLineQueue.length) {
+    if (__getRxBacklog("game") > 0 || __getRxBacklog("chat") > 0) {
         __scheduleRxDrain();
     }
 }
@@ -2686,6 +2894,7 @@ function clearHeroAttackRuntimeState(options = {}) {
     }
     if (clearSelection) {
         selectedTargetId = null;
+        if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection();
     }
     isChasingTarget = false;
     if (!shouldPreserveMoveTarget) {
@@ -3787,6 +3996,7 @@ function handlePacket_N(parts, i) {
     const maxHp = parseInt(parts[i + 5], 10);
     if (isNaN(id)) return;
     if (id === -1) {
+        if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection();
         clearHeroAttackRuntimeState({
             clearSelection: true,
             preserveMinimapMove: true
@@ -3811,6 +4021,13 @@ function handlePacket_N(parts, i) {
         if (!isNaN(maxShield)) ent.maxShield = maxShield;
         if (!isNaN(hp)) ent.hp = hp;
         if (!isNaN(maxHp)) ent.maxHp = maxHp;
+        ent.targetStatsHydrated = ent.hp != null && ent.maxHp != null && ent.shield != null && ent.maxShield != null;
+        ent.targetStatsHydratedAt = __rxNowMs();
+        if (typeof confirmTargetSelectionFromServer === "function") {
+            confirmTargetSelectionFromServer(id, "N");
+        } else {
+            selectedTargetId = id;
+        }
         if (ent.hp != null && ent.maxHp != null && ent.hp >= ent.maxHp) {
             clearEntityClaim(id);
         }
@@ -3862,6 +4079,7 @@ function resetMapState(newMapId) {
     if (typeof clearSabLaserVisualJobs === "function") clearSabLaserVisualJobs();
     if (typeof clearRemovedEntitySnapshots === "function") clearRemovedEntitySnapshots();
     selectedTargetId = null;
+    if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection();
     currentLaserTargetId = null;
     attackIntentTargetId = null;
     confirmedAttackTargetId = null;
@@ -7350,6 +7568,10 @@ function handlePacket_attackInfo(parts, i) {
                 applyShieldHit(targetId, prevShield, shield);
                 ent.shield = shield;
             }
+            if (ent.hp != null && ent.shield != null && ent.maxHp != null && ent.maxShield != null) {
+                ent.targetStatsHydrated = true;
+                ent.targetStatsHydratedAt = __rxNowMs();
+            }
             if (!isNaN(hp) || !isNaN(shield)) {
                 __androPerfNoteEntityUpdate("entity_combat_stats", {
                     entityId: targetId,
@@ -7409,6 +7631,7 @@ function handlePacket_remove(parts, i) {
         }
     }
     if (!e) return;
+    if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection(e.id);
     if (e.kind === "player" || e.kind === "npc") {
         if (e.id === currentLaserTargetId || e.id === selectedTargetId) {
             if (typeof forceUnlock === "function") forceUnlock(e.id, { suppressServerStop: true, preserveMinimapMove: true });
@@ -7495,6 +7718,7 @@ function handlePacket_R(parts, i) {
     if (key == null) return;
     const ent = entities[key];
     if (!ent) return;
+    if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection(ent.id);
     const isMyCollection = pendingCollectBoxId != null && pendingCollectBoxId == ent.id || typeof hasCollectRequestPending === "function" && hasCollectRequestPending(ent.id) || typeof hasCollectRequestPending !== "function" && typeof collectedBoxRequestIds !== "undefined" && collectedBoxRequestIds.has(ent.id);
     if (ent.kind === "box") {
         if (!isMyCollection && ent.boxSpawnTime && Date.now() - ent.boxSpawnTime < 2e3) {
@@ -7743,6 +7967,7 @@ function forceUnlock(targetId, options = {}) {
     if (selectedTargetId === targetId) {
         selectedTargetId = null;
     }
+    if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection(targetId);
     if (currentLaserTargetId === targetId) {
         currentLaserTargetId = null;
         if (!suppressServerStop) {
@@ -7815,6 +8040,7 @@ function resolveExplosionType(entity, id, explicitType = null) {
 function handlePacket_K(parts, i) {
     const id = parseInt(parts[i], 10);
     const e = entities[id];
+    if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection(id);
     const explicitExplosionType = parts.length > i + 1 ? parts[i + 1] : null;
     if (typeof rememberRemovedEntitySnapshot === "function" && e) {
         rememberRemovedEntitySnapshot(e);

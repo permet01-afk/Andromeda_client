@@ -2364,6 +2364,12 @@ function syncSelectedTargetBarFadeState() {
     }
 }
 
+function isSelectedTargetStatsReady(ent) {
+    if (!ent) return false;
+    if (ent.targetStatsHydrated === true) return true;
+    return ent.hp != null && ent.maxHp != null && ent.shield != null && ent.maxShield != null;
+}
+
 function getSelectedTargetBarFadeAlpha(targetId) {
     if (targetId == null || selectedTargetId == null || targetId !== selectedTargetId) return 0;
     syncSelectedTargetBarFadeState();
@@ -4027,7 +4033,7 @@ function drawEntities() {
             const eDronesFrameIndex = eDefForDrones && eDefForDrones.frameCount > 1 ? getDirectionFrameIndex(eAngleForDrones, eDefForDrones.frameCount) : 0;
             drawDrones(e.x, e.y, e.drones, eAngleForDrones, eDronesFrameIndex);
         }
-        if (selectedTargetId !== null && e.id === selectedTargetId) {
+        if (selectedTargetId !== null && e.id === selectedTargetId && isSelectedTargetStatsReady(e)) {
             selectedTargetHpShieldBarOptions.referenceShipId = visualShipId;
             selectedTargetHpShieldBarOptions.alpha = getSelectedTargetBarFadeAlpha(e.id);
             drawHpShieldBars(entityScreenX, entityScreenY, spriteHeight, e.hp, e.maxHp, e.shield, e.maxShield, e.shipId, entityScale, selectedTargetHpShieldBarOptions);

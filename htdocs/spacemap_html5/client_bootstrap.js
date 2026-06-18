@@ -247,8 +247,12 @@ window.addEventListener("pagehide", () => stopBackgroundLogicLoop());
 
 window.selectGroupMember = function(id) {
     if (id && entities[id]) {
-        selectedTargetId = id;
-        sendSelectShip(id);
+        if (typeof requestTargetSelectionLikeFlash === "function") {
+            requestTargetSelectionLikeFlash(id);
+        } else {
+            selectedTargetId = null;
+            sendSelectShip(id);
+        }
         const groupInput = document.getElementById("groupInputName");
         if (groupInput && entities[id].name) {
             groupInput.value = entities[id].name;

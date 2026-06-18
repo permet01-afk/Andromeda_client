@@ -266,6 +266,62 @@ const empEffects = [];
 
 let selectedTargetId = null;
 
+let pendingTargetSelectionId = null;
+let pendingTargetSelectionStartedAt = 0;
+const TARGET_SELECTION_PENDING_TIMEOUT_MS = 15000;
+
+function getTargetSelectionNowMs() {
+    return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+}
+
+function normalizeTargetSelectionId(targetId) {
+    const id = typeof targetId === "number" ? targetId : parseInt(targetId, 10);
+    return Number.isFinite(id) ? id : null;
+}
+
+function clearPendingTargetSelection(targetId = null) {
+    if (targetId == null || pendingTargetSelectionId == null || Number(pendingTargetSelectionId) === Number(targetId)) {
+        pendingTargetSelectionId = null;
+        pendingTargetSelectionStartedAt = 0;
+    }
+}
+
+function isTargetSelectionPending(targetId = null) {
+    if (pendingTargetSelectionId == null) return false;
+    const now = getTargetSelectionNowMs();
+    if (pendingTargetSelectionStartedAt > 0 && now - pendingTargetSelectionStartedAt > TARGET_SELECTION_PENDING_TIMEOUT_MS) {
+        clearPendingTargetSelection();
+        return false;
+    }
+    return targetId == null || Number(pendingTargetSelectionId) === Number(targetId);
+}
+
+function requestTargetSelectionLikeFlash(targetId) {
+    const id = normalizeTargetSelectionId(targetId);
+    if (id == null) return false;
+    const alreadySelected = selectedTargetId != null && Number(selectedTargetId) === Number(id);
+    pendingTargetSelectionId = id;
+    pendingTargetSelectionStartedAt = getTargetSelectionNowMs();
+    if (!alreadySelected) selectedTargetId = null;
+    resetPendingRangeResume(id);
+    sendSelectShip(id);
+    return true;
+}
+
+function confirmTargetSelectionFromServer(targetId) {
+    const id = normalizeTargetSelectionId(targetId);
+    if (id == null) return false;
+    if (pendingTargetSelectionId != null) {
+        if (!isTargetSelectionPending(id)) return false;
+        if (pendingTargetSelectionId != null && Number(pendingTargetSelectionId) !== Number(id)) {
+            return false;
+        }
+    }
+    selectedTargetId = id;
+    clearPendingTargetSelection(id);
+    return true;
+}
+
 let currentLaserTargetId = null;
 
 let attackIntentTargetId = null;
@@ -585,6 +641,8 @@ function ensureEntity(id) {
             maxHp: null,
             shield: null,
             maxShield: null,
+            targetStatsHydrated: false,
+            targetStatsHydratedAt: 0,
             cargo: null,
             maxCargo: null,
             speed: null,
@@ -627,6 +685,8 @@ function ensureEntity(id) {
         if (!("gameTitleKey" in ent)) ent.gameTitleKey = "";
         if (!("maxHp" in ent)) ent.maxHp = null;
         if (!("maxShield" in ent)) ent.maxShield = null;
+        if (!("targetStatsHydrated" in ent)) ent.targetStatsHydrated = ent.hp != null && ent.maxHp != null && ent.shield != null && ent.maxShield != null;
+        if (!("targetStatsHydratedAt" in ent)) ent.targetStatsHydratedAt = 0;
         if (!("cargo" in ent)) ent.cargo = null;
         if (!("maxCargo" in ent)) ent.maxCargo = null;
         if (!("speed" in ent)) ent.speed = null;
@@ -1387,9 +1447,7 @@ canvas.addEventListener("mousedown", e => {
                 isChasingTarget = false;
             }
         }
-        selectedTargetId = clickedShip.id;
-        resetPendingRangeResume();
-        sendSelectShip(selectedTargetId);
+        requestTargetSelectionLikeFlash(clickedShip.id);
         if (clickedShip.kind === "player" && clickedShip.name) {
             const groupInput = document.getElementById("groupInputName");
             if (groupInput) {
@@ -1589,6 +1647,7 @@ function toggleLaserOnSelectedTarget() {
             }
         } catch (_) {}
         selectedTargetId = null;
+        clearPendingTargetSelection();
         attackIntentTargetId = null;
         isChasingTarget = false;
         return;
@@ -1682,6 +1741,7 @@ window.addEventListener("keydown", e => {
         } else if (selectedTargetId === heroId) {
             addInfoMessage("You cannot attack yourself.");
             selectedTargetId = null;
+            clearPendingTargetSelection();
         }
         return;
     }

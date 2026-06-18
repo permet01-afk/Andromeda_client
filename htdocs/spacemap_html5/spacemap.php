@@ -747,13 +747,13 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <script>window.__ANDRO_AUDIO_ASSET_MANIFEST = <?php echo json_encode($audioAssetManifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;</script>
 <script src="client_audio.js?v=1016"></script>
 <script src="client_config.js?v=1039"></script>
-<script src="client_network.js?v=1106"></script>
-<script src="client_entities.js?v=1016"></script>
+<script src="client_network.js?v=1107"></script>
+<script src="client_entities.js?v=1017"></script>
 <script src="client_combat.js?v=1021"></script>
-<script src="client_graphics.js?v=1104"></script>
+<script src="client_graphics.js?v=1105"></script>
 <script src="client_ui.js?v=1015"></script>
 <script src="client_quests.js?v=1008"></script>
-<script src="client_bootstrap.js?v=1017"></script>
+<script src="client_bootstrap.js?v=1018"></script>
 
 
 </body>
