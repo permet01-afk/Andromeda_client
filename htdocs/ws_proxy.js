@@ -27,21 +27,9 @@ const TCP_WRITE_QUEUE_MAX = parsePositiveIntEnv("TCP_WRITE_QUEUE_MAX", 512 * 102
 
 const BACKPRESSURE_CHECK_MS = parsePositiveIntEnv("BACKPRESSURE_CHECK_MS", 25);
 
-const BACKPRESSURE_LOG_THROTTLE_MS = parsePositiveIntEnv("BACKPRESSURE_LOG_THROTTLE_MS", 5000);
-
 const TCP_TO_WS_MAX_PACKETS_PER_TICK = parsePositiveIntEnv("TCP_TO_WS_MAX_PACKETS_PER_TICK", 256);
 
 const TCP_TO_WS_MAX_MS_PER_TICK = parsePositiveIntEnv("TCP_TO_WS_MAX_MS_PER_TICK", 4);
-
-const TCP_TO_WS_BURST_LOG_PACKETS = parsePositiveIntEnv("TCP_TO_WS_BURST_LOG_PACKETS", 512);
-
-const TCP_TO_WS_BURST_LOG_MS = parsePositiveIntEnv("TCP_TO_WS_BURST_LOG_MS", 8);
-
-const EVENT_LOOP_LAG_CHECK_MS = parsePositiveIntEnv("EVENT_LOOP_LAG_CHECK_MS", 1000);
-
-const EVENT_LOOP_LAG_WARN_MS = parsePositiveIntEnv("EVENT_LOOP_LAG_WARN_MS", 200);
-
-const EVENT_LOOP_LAG_LOG_THROTTLE_MS = parsePositiveIntEnv("EVENT_LOOP_LAG_LOG_THROTTLE_MS", 5000);
 
 const LOG_PACKETS = (process.env.LOG_PACKETS || "0") === "1";
 
@@ -111,24 +99,10 @@ const wss = new WebSocket.Server({
 server.listen(WS_PORT, "0.0.0.0", () => {
     console.log("========================================");
     console.log("[Proxy] WebSocket -> TCP started");
-    console.log(`[Proxy] Health check : http://0.0.0.0:${WS_PORT}/health`);
     console.log(`[Proxy] WS listening : ws://0.0.0.0:${WS_PORT}`);
     console.log(`[Proxy] TCP target  : ${TCP_HOST}:${TCP_PORT}`);
     console.log("========================================");
 });
-
-let lastEventLoopCheckAt = Date.now();
-let lastEventLoopLagLogAt = 0;
-const eventLoopLagTimer = setInterval(() => {
-    const now = Date.now();
-    const lagMs = now - lastEventLoopCheckAt - EVENT_LOOP_LAG_CHECK_MS;
-    lastEventLoopCheckAt = now;
-    if (lagMs < EVENT_LOOP_LAG_WARN_MS) return;
-    if (now - lastEventLoopLagLogAt < EVENT_LOOP_LAG_LOG_THROTTLE_MS) return;
-    lastEventLoopLagLogAt = now;
-    console.warn(`[EVENT_LOOP_LAG] lag=${lagMs}ms expected=${EVENT_LOOP_LAG_CHECK_MS}ms clients=${wss.clients.size}`);
-}, EVENT_LOOP_LAG_CHECK_MS);
-if (typeof eventLoopLagTimer.unref === "function") eventLoopLagTimer.unref();
 
 wss.on("connection", (ws, req) => {
     const ip = req?.socket?.remoteAddress || "unknown";
@@ -148,20 +122,6 @@ wss.on("connection", (ws, req) => {
     let tcpProcessScheduled = false;
     let tcpProcessing = false;
     let tcpBackpressured = false;
-    let lastBackpressureLogAt = 0;
-    let lastBurstLogAt = 0;
-    const logBackpressure = message => {
-        const now = Date.now();
-        if (now - lastBackpressureLogAt < BACKPRESSURE_LOG_THROTTLE_MS) return;
-        lastBackpressureLogAt = now;
-        console.warn("[BACKPRESSURE]", message);
-    };
-    const logBurst = message => {
-        const now = Date.now();
-        if (now - lastBurstLogAt < BACKPRESSURE_LOG_THROTTLE_MS) return;
-        lastBurstLogAt = now;
-        console.warn("[TCP_TO_WS_BURST]", message);
-    };
     const scheduleTcpBufferProcessing = () => {
         if (closed || tcpProcessScheduled) return;
         tcpProcessScheduled = true;
@@ -190,7 +150,6 @@ wss.on("connection", (ws, req) => {
         try {
             tcp.pause();
         } catch {}
-        logBackpressure(`${reason}; paused TCP read wsBuffered=${getWsBufferedAmount()} tcpBuffer=${tcpBuffer.length}`);
         scheduleWsResumeCheck();
     };
     function checkWsResume() {
@@ -273,8 +232,6 @@ wss.on("connection", (ws, req) => {
         tcpProcessing = true;
         const startedAt = Date.now();
         let scannedPackets = 0;
-        let sentPackets = 0;
-        let deferred = false;
         try {
             while (!closed) {
                 if (tcpPausedForWs) {
@@ -294,11 +251,9 @@ wss.on("connection", (ws, req) => {
                 } else {
                     if (!sendPacketToWs(packet)) break;
                     tcpBuffer = tcpBuffer.slice(d.idx + d.len);
-                    sentPackets++;
                 }
                 if (scannedPackets >= TCP_TO_WS_MAX_PACKETS_PER_TICK || Date.now() - startedAt >= TCP_TO_WS_MAX_MS_PER_TICK) {
                     if (findDelimiter(tcpBuffer)) {
-                        deferred = true;
                         scheduleTcpBufferProcessing();
                     }
                     break;
@@ -308,13 +263,9 @@ wss.on("connection", (ws, req) => {
             console.error("[TCP -> WS] error:", e.message);
             closeBoth("TCP->WS error", 1011, "tcp_to_ws_error");
         } finally {
-            const elapsedMs = Date.now() - startedAt;
             tcpProcessing = false;
             if (!closed && !tcpPausedForWs && findDelimiter(tcpBuffer)) {
                 scheduleTcpBufferProcessing();
-            }
-            if (sentPackets >= TCP_TO_WS_BURST_LOG_PACKETS || elapsedMs >= TCP_TO_WS_BURST_LOG_MS) {
-                logBurst(`ip=${ip} sent=${sentPackets} scanned=${scannedPackets} duration=${elapsedMs}ms deferred=${deferred ? 1 : 0} tcpBuffer=${tcpBuffer.length} wsBuffered=${getWsBufferedAmount()}`);
             }
         }
     }
@@ -332,7 +283,6 @@ wss.on("connection", (ws, req) => {
             const writeOk = tcp.write(payload);
             if (!writeOk) {
                 tcpBackpressured = true;
-                logBackpressure(`tcp.write returned false writableLength=${tcp.writableLength}`);
             }
             ensureTcpWriteRoom();
         } catch (e) {
@@ -357,7 +307,6 @@ wss.on("connection", (ws, req) => {
     tcp.on("drain", () => {
         if (tcpBackpressured) {
             tcpBackpressured = false;
-            logBackpressure("TCP write queue drained");
         }
     });
     ws.on("close", (code, reasonBuffer) => {

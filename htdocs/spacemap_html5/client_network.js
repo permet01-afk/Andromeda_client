@@ -1,1327 +1,3 @@
-const ANDRO_PERF_THRESHOLDS = Object.freeze({
-    frameGapWarnMs: 120,
-    frameGapConsoleMs: 250,
-    frameGapBigMs: 500,
-    packetHandlerWarnMs: 20,
-    packetHandlerConsoleMs: 50,
-    rxDrainWarnMs: 40,
-    rxDrainConsoleMs: 80,
-    rxBacklogWarn: 200,
-    rxBurstPacketsWarn: 64,
-    drawTotalWarnMs: 25,
-    drawEntitiesWarnMs: 15,
-    drawMinimapWarnMs: 10,
-    drawEffectWarnMs: 10,
-    cleanupWarnMs: 10,
-    drawConsoleMs: 50,
-    longTaskWarnMs: 50,
-    longTaskConsoleMs: 250,
-    lifecycleRecentMs: 3000,
-    mapTransitionRecentMs: 5000,
-    frameGapContextEvents: 20,
-    frameGapContextSeconds: 10,
-    secondBinCount: 60,
-    resourceLookbackMs: 10000,
-    syncGapThresholdsMs: Object.freeze([ 250, 500, 1000, 2000, 3000 ]),
-    syncConsoleMs: 1000,
-    syncGapThrottleMs: 1500,
-    packetBurstAfterGapRecentMs: 5000,
-    ringSize: 500
-});
-
-(function initAndroPerf() {
-    function nowMs() {
-        return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
-    }
-
-    function roundMs(value) {
-        return Math.round((Number(value) || 0) * 10) / 10;
-    }
-
-    function detectEnabled() {
-        try {
-            const params = new URLSearchParams(window.location.search || "");
-            if (params.get("androPerf") === "1") return true;
-            if (params.get("androPerf") === "0") return false;
-        } catch (_) {}
-        try {
-            return window.localStorage && window.localStorage.getItem("androPerf") === "1";
-        } catch (_) {
-            return false;
-        }
-    }
-
-    const enabled = detectEnabled();
-    const events = [];
-    const counts = Object.create(null);
-    const opcodeCounts = Object.create(null);
-    const slowest = Object.create(null);
-    const lastRecordAtByKey = Object.create(null);
-    const startedAtMs = nowMs();
-    const startedAtIso = new Date().toISOString();
-    const lifecycle = {
-        visibilityState: typeof document !== "undefined" ? document.visibilityState || "visible" : "unknown",
-        focused: typeof document !== "undefined" && typeof document.hasFocus === "function" ? document.hasFocus() : true,
-        lastFocusAtMs: null,
-        lastFocusAt: null,
-        lastBlurAtMs: null,
-        lastBlurAt: null,
-        lastVisibilityChangeAtMs: null,
-        lastVisibilityChangeAt: null,
-        lastVisibilityState: typeof document !== "undefined" ? document.visibilityState || "visible" : "unknown",
-        lastPageHideAtMs: null,
-        lastPageHideAt: null,
-        lastPageShowAtMs: null,
-        lastPageShowAt: null,
-        lastFreezeAtMs: null,
-        lastFreezeAt: null,
-        lastResumeAtMs: null,
-        lastResumeAt: null
-    };
-    const lastState = {
-        packet: null,
-        opcode: null,
-        handler: null,
-        draw: null,
-        cleanup: null,
-        longTask: null,
-        input: null,
-        mapTransition: null
-    };
-    const workerState = {
-        supported: false,
-        started: false,
-        failed: false,
-        lastHeartbeatAtMs: null,
-        lastHeartbeatAt: null,
-        lastWorkerNowMs: null,
-        lastSeq: 0,
-        lastMainReceiveGapMs: null,
-        maxMainReceiveGapMs: 0,
-        lastWorkerGapMs: null,
-        maxWorkerGapMs: 0,
-        heartbeatCount: 0
-    };
-    const syncState = {
-        lastWsReceiveAtMs: null,
-        lastWsReceiveAt: null,
-        maxWsReceiveGapMs: 0,
-        lastWsReceiveGap: null,
-        lastUsefulEntityUpdateAtMs: nowMs(),
-        lastUsefulEntityUpdateAt: startedAtIso,
-        lastUsefulEntityUpdate: null,
-        lastEntityUpdateThresholdMs: 0,
-        maxEntityUpdateGapMs: 0,
-        lastEntityUpdateGap: null,
-        pendingTargetSelection: null,
-        maxTargetInfoDelayMs: 0,
-        lastTargetInfoDelay: null,
-        maxPacketBurstAfterGapMs: 0,
-        lastPacketBurstAfterGap: null,
-        lastSignificantGap: null,
-        lastPacketBurstRecordAtMs: null,
-        lastSyncFreeze: null,
-        probableReason: null,
-        activeDrain: null
-    };
-    const secondBins = [];
-    let lastSnapshotMap = null;
-    let longTaskObserver = null;
-    let heartbeatWorker = null;
-    let seq = 1;
-
-    function getSyncThreshold(durationMs) {
-        const duration = Number(durationMs || 0);
-        let threshold = 0;
-        for (const value of ANDRO_PERF_THRESHOLDS.syncGapThresholdsMs) {
-            if (duration >= value) threshold = value; else break;
-        }
-        return threshold;
-    }
-
-    function getSyncCategory(durationMs) {
-        const duration = Number(durationMs || 0);
-        if (duration >= 3000) return "3000ms+";
-        if (duration >= 2000) return "2000-3000ms";
-        if (duration >= 1000) return "1000-2000ms";
-        if (duration >= 500) return "500-1000ms";
-        if (duration >= 250) return "250-500ms";
-        return "below-threshold";
-    }
-
-    function copyLastState(value) {
-        if (!value) return null;
-        try {
-            return JSON.parse(JSON.stringify(value));
-        } catch (_) {
-            return null;
-        }
-    }
-
-    function topOpcodeList(opcodes, limit = 8) {
-        if (!opcodes) return [];
-        return Object.keys(opcodes).map(opcode => ({
-            opcode: opcode,
-            count: opcodes[opcode]
-        })).sort((a, b) => b.count - a.count || a.opcode.localeCompare(b.opcode)).slice(0, limit);
-    }
-
-    function compactPerfEvent(event) {
-        if (!event) return null;
-        const out = {
-            id: event.id,
-            at: event.at,
-            tMs: event.tMs,
-            type: event.type
-        };
-        for (const key of [ "durationMs", "gapMs", "previousGapMs", "thresholdMs", "level", "category", "reason", "probableReason", "targetId", "targetType", "opcode", "normalizedOpcode", "processed", "backlogBefore", "backlogAfter" ]) {
-            if (event[key] !== undefined) out[key] = event[key];
-        }
-        return out;
-    }
-
-    function getCurrentWsReceiveGapMs(perfNow = nowMs()) {
-        return syncState.lastWsReceiveAtMs == null ? null : roundMs(perfNow - syncState.lastWsReceiveAtMs);
-    }
-
-    function getCurrentEntityUpdateGapMs(perfNow = nowMs()) {
-        return syncState.lastUsefulEntityUpdateAtMs == null ? null : roundMs(perfNow - syncState.lastUsefulEntityUpdateAtMs);
-    }
-
-    function getCurrentTargetInfoDelayMs(perfNow = nowMs()) {
-        return syncState.pendingTargetSelection && syncState.pendingTargetSelection.selectedAtMs != null ? roundMs(perfNow - syncState.pendingTargetSelection.selectedAtMs) : null;
-    }
-
-    function shouldRecordSyncGap(kind, thresholdMs, perfNow) {
-        if (thresholdMs >= 1000) return true;
-        const key = `sync:${kind}:${thresholdMs}`;
-        const lastAt = lastRecordAtByKey[key] || 0;
-        if (perfNow - lastAt < ANDRO_PERF_THRESHOLDS.syncGapThrottleMs) return false;
-        lastRecordAtByKey[key] = perfNow;
-        return true;
-    }
-
-    function getSyncContext(snapshot, perfNow = nowMs()) {
-        const snap = snapshot || collectSnapshot();
-        return {
-            map: snap.map,
-            visibilityState: snap.visibilityState,
-            hasFocus: snap.hasFocus,
-            rxQueue: snap.rxQueue,
-            wsConnected: typeof window !== "undefined" ? window.__ANDRO_WS_CONNECTED === true : null,
-            currentWsReceiveGapMs: getCurrentWsReceiveGapMs(perfNow),
-            currentEntityUpdateGapMs: getCurrentEntityUpdateGapMs(perfNow),
-            currentTargetInfoDelayMs: getCurrentTargetInfoDelayMs(perfNow),
-            lastPacket: copyLastState(lastState.packet),
-            lastOpcode: lastState.opcode,
-            lastHandler: copyLastState(lastState.handler),
-            lastUsefulEntityUpdate: copyLastState(syncState.lastUsefulEntityUpdate),
-            lastDraw: copyLastState(lastState.draw),
-            targetSelection: copyLastState(syncState.pendingTargetSelection),
-            entities: snap.entities,
-            players: snap.players,
-            npcs: snap.npcs,
-            lasers: snap.lasers,
-            rockets: snap.rockets,
-            rocketSmoke: snap.rocketSmoke,
-            damageBubbles: snap.damageBubbles,
-            minimapOpen: snap.minimapOpen,
-            groupOpen: snap.groupOpen
-        };
-    }
-
-    function getSignalDuration(type, event) {
-        if (!event) return 0;
-        if (type === "frame_gap") return Number(event.gapMs || 0);
-        if (type === "packet_burst_after_gap") return Number(event.previousGapMs || event.durationMs || 0);
-        return Number(event.durationMs || event.gapMs || 0);
-    }
-
-    function inferSyncFreezeReason(type, event) {
-        if (type === "ws_receive_gap") return "websocket_receive_gap";
-        if (type === "entity_update_gap") return "packet_apply_gap";
-        if (type === "target_info_delay") return "target_info_delay";
-        if (type === "packet_burst_after_gap") return "packet_burst_after_gap";
-        if (type === "frame_gap") {
-            const reason = String(event && event.reason || "");
-            if (reason.includes("main-thread") || reason.includes("longtask")) return "browser_main_thread";
-            const draw = lastState.draw;
-            if (draw && Number(draw.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawTotalWarnMs) return "render_only";
-            return "unknown";
-        }
-        return "unknown";
-    }
-
-    function noteSignificantGap(source, durationMs, event) {
-        const duration = Number(durationMs || 0);
-        if (duration < ANDRO_PERF_THRESHOLDS.syncGapThresholdsMs[0]) return;
-        syncState.lastSignificantGap = {
-            source: source,
-            durationMs: roundMs(duration),
-            thresholdMs: getSyncThreshold(duration),
-            atMs: nowMs(),
-            eventId: event && event.id || null
-        };
-    }
-
-    function recordEntityUpdateGap(durationMs, source) {
-        const duration = Number(durationMs || 0);
-        const threshold = getSyncThreshold(duration);
-        if (!threshold) return null;
-        const perfNow = nowMs();
-        if (!shouldRecordSyncGap("entity_update_gap", threshold, perfNow)) return null;
-        const snapshot = collectSnapshot();
-        const event = record("entity_update_gap", Object.assign({
-            durationMs: roundMs(duration),
-            thresholdMs: threshold,
-            category: getSyncCategory(duration),
-            source: source || "watchdog",
-            lastUsefulPacket: copyLastState(syncState.lastUsefulEntityUpdate),
-            lastOpcode: lastState.opcode,
-            rxQueue: snapshot.rxQueue,
-            currentWsReceiveGapMs: getCurrentWsReceiveGapMs(perfNow),
-            snapshot: snapshot
-        }, getSyncContext(snapshot, perfNow)));
-        syncState.lastEntityUpdateThresholdMs = Math.max(syncState.lastEntityUpdateThresholdMs, threshold);
-        return event;
-    }
-
-    function recordSyncFreezeFromEvent(type, event) {
-        if (type === "sync_freeze") return;
-        if (type !== "ws_receive_gap" && type !== "entity_update_gap" && type !== "target_info_delay" && type !== "frame_gap" && type !== "packet_burst_after_gap") return;
-        const duration = getSignalDuration(type, event);
-        if (duration < 500) return;
-        const snapshot = event && event.snapshot || collectSnapshot();
-        const probableReason = inferSyncFreezeReason(type, event);
-        record("sync_freeze", Object.assign({
-            durationMs: roundMs(duration),
-            thresholdMs: getSyncThreshold(duration),
-            category: getSyncCategory(duration),
-            sourceEventType: type,
-            sourceEventId: event && event.id || null,
-            probableReason: probableReason
-        }, getSyncContext(snapshot), {
-            snapshot: snapshot
-        }));
-    }
-
-    function getTopSyncFreezeEvents(limit = 10) {
-        return events.filter(event => event && event.type === "sync_freeze").slice().sort((a, b) => Number(b.durationMs || 0) - Number(a.durationMs || 0)).slice(0, limit).map(compactPerfEvent);
-    }
-
-    function resetSyncStateForClear() {
-        const perfNow = nowMs();
-        syncState.lastWsReceiveAtMs = null;
-        syncState.lastWsReceiveAt = null;
-        syncState.maxWsReceiveGapMs = 0;
-        syncState.lastWsReceiveGap = null;
-        syncState.lastUsefulEntityUpdateAtMs = perfNow;
-        syncState.lastUsefulEntityUpdateAt = new Date().toISOString();
-        syncState.lastUsefulEntityUpdate = null;
-        syncState.lastEntityUpdateThresholdMs = 0;
-        syncState.maxEntityUpdateGapMs = 0;
-        syncState.lastEntityUpdateGap = null;
-        syncState.pendingTargetSelection = null;
-        syncState.maxTargetInfoDelayMs = 0;
-        syncState.lastTargetInfoDelay = null;
-        syncState.maxPacketBurstAfterGapMs = 0;
-        syncState.lastPacketBurstAfterGap = null;
-        syncState.lastSignificantGap = null;
-        syncState.lastPacketBurstRecordAtMs = null;
-        syncState.lastSyncFreeze = null;
-        syncState.probableReason = null;
-        syncState.activeDrain = null;
-    }
-
-    function getArrayLength(value) {
-        return Array.isArray(value) ? value.length : null;
-    }
-
-    function getMemorySnapshot() {
-        try {
-            const memory = typeof performance !== "undefined" ? performance.memory : null;
-            if (!memory) return null;
-            return {
-                usedJSHeapSize: Number(memory.usedJSHeapSize) || 0,
-                totalJSHeapSize: Number(memory.totalJSHeapSize) || 0,
-                jsHeapSizeLimit: Number(memory.jsHeapSizeLimit) || 0
-            };
-        } catch (_) {
-            return null;
-        }
-    }
-
-    function updateLifecycleState() {
-        try {
-            lifecycle.visibilityState = typeof document !== "undefined" ? document.visibilityState || "visible" : "unknown";
-            lifecycle.focused = typeof document !== "undefined" && typeof document.hasFocus === "function" ? document.hasFocus() : true;
-        } catch (_) {}
-    }
-
-    function isoFromNow(perfNow) {
-        return new Date(Date.now() - Math.max(0, nowMs() - perfNow)).toISOString();
-    }
-
-    function getCurrentSecondBin(perfNow = nowMs()) {
-        const sec = Math.floor((perfNow - startedAtMs) / 1000);
-        let bin = secondBins.length ? secondBins[secondBins.length - 1] : null;
-        if (!bin || bin.sec !== sec) {
-            bin = {
-                sec: sec,
-                startMs: sec * 1000,
-                startAt: isoFromNow(startedAtMs + sec * 1000),
-                packets: 0,
-                opcodes: Object.create(null),
-                drains: 0,
-                maxRxBacklog: 0,
-                maxDrawTotal: 0,
-                maxDrawEntities: 0,
-                maxDrawMiniMap: 0,
-                maxDrawLaserBeams: 0,
-                maxDrawExplosions: 0,
-                drawTotalSum: 0,
-                drawTotalCount: 0,
-                drawEntitiesSum: 0,
-                drawEntitiesCount: 0,
-                drawMiniMapSum: 0,
-                drawMiniMapCount: 0,
-                maxCleanup: 0,
-                maxFrameGap: 0,
-                entities: null,
-                players: null,
-                npcs: null,
-                bossProtegits: null,
-                lasers: null,
-                damageBubbles: null,
-                minimapOpen: false,
-                groupOpen: false,
-                visibilityState: lifecycle.visibilityState,
-                focused: lifecycle.focused,
-                memory: null
-            };
-            secondBins.push(bin);
-            while (secondBins.length > ANDRO_PERF_THRESHOLDS.secondBinCount) secondBins.shift();
-        }
-        return bin;
-    }
-
-    function updateBinSnapshot(bin, snapshot) {
-        if (!bin || !snapshot) return;
-        bin.entities = snapshot.entities;
-        bin.players = snapshot.players;
-        bin.npcs = snapshot.npcs;
-        bin.bossProtegits = snapshot.bossProtegits;
-        bin.lasers = snapshot.lasers;
-        bin.damageBubbles = snapshot.damageBubbles;
-        bin.minimapOpen = !!snapshot.minimapOpen;
-        bin.groupOpen = !!snapshot.groupOpen;
-        bin.visibilityState = snapshot.visibilityState;
-        bin.focused = snapshot.hasFocus;
-        bin.memory = snapshot.memory;
-    }
-
-    function normalizeOpcodeForStats(opcode, parts, startIndex) {
-        const op = String(opcode || "");
-        const next = String(parts && parts[startIndex] || "");
-        if (op === "MM" && next.toUpperCase() === "SR") return "MM|SR";
-        if (op === "ps" && next.toLowerCase() === "upd") return "ps|upd";
-        if (op === "C" || op === "R" || op === "K" || op === "MM" || op === "a" || op === "Y" || op === "U" || op === "ps") return op;
-        return "other";
-    }
-
-    function getRecentBins(seconds = ANDRO_PERF_THRESHOLDS.frameGapContextSeconds) {
-        return secondBins.slice(-Math.max(1, seconds)).map(bin => ({
-            sec: bin.sec,
-            startMs: bin.startMs,
-            startAt: bin.startAt,
-            packets: bin.packets,
-            opcodes: Object.assign({}, bin.opcodes),
-            drains: bin.drains,
-            maxRxBacklog: roundMs(bin.maxRxBacklog),
-            maxDrawTotal: roundMs(bin.maxDrawTotal),
-            maxDrawEntities: roundMs(bin.maxDrawEntities),
-            maxDrawMiniMap: roundMs(bin.maxDrawMiniMap),
-            maxDrawLaserBeams: roundMs(bin.maxDrawLaserBeams),
-            maxDrawExplosions: roundMs(bin.maxDrawExplosions),
-            avgDrawTotal: bin.drawTotalCount > 0 ? roundMs(bin.drawTotalSum / bin.drawTotalCount) : 0,
-            avgDrawEntities: bin.drawEntitiesCount > 0 ? roundMs(bin.drawEntitiesSum / bin.drawEntitiesCount) : 0,
-            avgDrawMiniMap: bin.drawMiniMapCount > 0 ? roundMs(bin.drawMiniMapSum / bin.drawMiniMapCount) : 0,
-            maxCleanup: roundMs(bin.maxCleanup),
-            maxFrameGap: roundMs(bin.maxFrameGap),
-            entities: bin.entities,
-            players: bin.players,
-            npcs: bin.npcs,
-            bossProtegits: bin.bossProtegits,
-            lasers: bin.lasers,
-            damageBubbles: bin.damageBubbles,
-            minimapOpen: bin.minimapOpen,
-            groupOpen: bin.groupOpen,
-            visibilityState: bin.visibilityState,
-            focused: bin.focused,
-            memory: bin.memory
-        }));
-    }
-
-    function getRecentResources(perfNow = nowMs()) {
-        try {
-            if (!performance || typeof performance.getEntriesByType !== "function") return [];
-            const minStart = perfNow - ANDRO_PERF_THRESHOLDS.resourceLookbackMs;
-            return performance.getEntriesByType("resource").filter(entry => {
-                const end = Number(entry.responseEnd || entry.startTime || 0);
-                return end >= minStart;
-            }).slice(-25).map(entry => ({
-                name: String(entry.name || "").split("?")[0].slice(-160),
-                initiatorType: entry.initiatorType || "",
-                startTime: roundMs(entry.startTime || 0),
-                responseEnd: roundMs(entry.responseEnd || 0),
-                durationMs: roundMs(entry.duration || 0),
-                transferSize: Number(entry.transferSize || 0)
-            }));
-        } catch (_) {
-            return [];
-        }
-    }
-
-    function getWindowOpenByKey(key) {
-        try {
-            const selector = `.gameWindow[data-window-key="${key}"]`;
-            const el = document.querySelector(selector);
-            if (!el) return false;
-            const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
-            if (style && (style.display === "none" || style.visibility === "hidden")) return false;
-            return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-        } catch (_) {
-            return false;
-        }
-    }
-
-    function collectSnapshot() {
-        updateLifecycleState();
-        const snapshot = {
-            map: null,
-            visibilityState: lifecycle.visibilityState,
-            hasFocus: lifecycle.focused,
-            lastFocusAt: lifecycle.lastFocusAt,
-            lastBlurAt: lifecycle.lastBlurAt,
-            lastVisibilityChangeAt: lifecycle.lastVisibilityChangeAt,
-            lastPageHideAt: lifecycle.lastPageHideAt,
-            lastPageShowAt: lifecycle.lastPageShowAt,
-            lastFreezeAt: lifecycle.lastFreezeAt,
-            lastResumeAt: lifecycle.lastResumeAt,
-            memory: getMemorySnapshot(),
-            workerHeartbeat: {
-                supported: workerState.supported,
-                started: workerState.started,
-                failed: workerState.failed,
-                lastHeartbeatAt: workerState.lastHeartbeatAt,
-                lastHeartbeatAgeMs: workerState.lastHeartbeatAtMs == null ? null : roundMs(nowMs() - workerState.lastHeartbeatAtMs),
-                lastMainReceiveGapMs: workerState.lastMainReceiveGapMs == null ? null : roundMs(workerState.lastMainReceiveGapMs),
-                maxMainReceiveGapMs: roundMs(workerState.maxMainReceiveGapMs),
-                lastWorkerGapMs: workerState.lastWorkerGapMs == null ? null : roundMs(workerState.lastWorkerGapMs),
-                maxWorkerGapMs: roundMs(workerState.maxWorkerGapMs),
-                heartbeatCount: workerState.heartbeatCount
-            },
-            lastPacket: lastState.packet,
-            lastOpcode: lastState.opcode,
-            lastHandler: lastState.handler,
-            lastDraw: lastState.draw,
-            lastCleanup: lastState.cleanup,
-            lastLongTask: lastState.longTask,
-            lastInput: lastState.input,
-            lastMapTransition: lastState.mapTransition,
-            wsConnected: typeof window !== "undefined" ? window.__ANDRO_WS_CONNECTED === true : null,
-            currentWsReceiveGapMs: getCurrentWsReceiveGapMs(),
-            currentEntityUpdateGapMs: getCurrentEntityUpdateGapMs(),
-            currentTargetInfoDelayMs: getCurrentTargetInfoDelayMs(),
-            lastWsReceiveGap: syncState.lastWsReceiveGap,
-            lastEntityUpdateGap: syncState.lastEntityUpdateGap,
-            lastTargetInfoDelay: syncState.lastTargetInfoDelay,
-            lastPacketBurstAfterGap: syncState.lastPacketBurstAfterGap,
-            lastSyncFreeze: syncState.lastSyncFreeze,
-            probableReason: syncState.probableReason,
-            entities: null,
-            players: null,
-            npcs: null,
-            bossProtegits: null,
-            lasers: null,
-            sabShots: null,
-            sabRings: null,
-            rockets: null,
-            rocketSmoke: null,
-            damageBubbles: null,
-            explosions: null,
-            smartbombEffects: null,
-            empEffects: null,
-            portalJumpEffects: null,
-            minimapMarkers: null,
-            pendingVisualCleanup: null,
-            rxQueue: null,
-            minimapOpen: false,
-            groupOpen: false
-        };
-        try {
-            if (typeof currentMapId !== "undefined") snapshot.map = currentMapId;
-        } catch (_) {}
-        try {
-            if (snapshot.map != null && snapshot.map !== lastSnapshotMap) {
-                if (lastSnapshotMap !== null) {
-                    lastState.mapTransition = {
-                        from: lastSnapshotMap,
-                        to: snapshot.map,
-                        at: new Date().toISOString(),
-                        tMs: roundMs(nowMs() - startedAtMs)
-                    };
-                    snapshot.lastMapTransition = lastState.mapTransition;
-                }
-                lastSnapshotMap = snapshot.map;
-            }
-        } catch (_) {}
-        try {
-            if (typeof entities !== "undefined" && entities) {
-                const seen = new Set();
-                let players = 0;
-                let npcs = 0;
-                let bossProtegits = 0;
-                for (const key in entities) {
-                    const e = entities[key];
-                    if (!e || e.id == null) continue;
-                    const id = String(e.id);
-                    if (seen.has(id)) continue;
-                    seen.add(id);
-                    if (e.kind === "player") players++;
-                    if (e.kind === "npc") {
-                        npcs++;
-                        const shipId = Number(e.shipId ?? e.type ?? 0);
-                        const name = String(e.name || "").toLowerCase();
-                        if (shipId === 81 || name.includes("protegit")) bossProtegits++;
-                    }
-                }
-                snapshot.entities = seen.size;
-                snapshot.players = players;
-                snapshot.npcs = npcs;
-                snapshot.bossProtegits = bossProtegits;
-            }
-        } catch (_) {}
-        try { if (typeof laserBeams !== "undefined") snapshot.lasers = getArrayLength(laserBeams); } catch (_) {}
-        try { if (typeof sabShots !== "undefined") snapshot.sabShots = getArrayLength(sabShots); } catch (_) {}
-        try { if (typeof SAB_RING_STATE !== "undefined" && SAB_RING_STATE instanceof Map) snapshot.sabRings = SAB_RING_STATE.size; } catch (_) {}
-        try { if (typeof rocketAttacks !== "undefined") snapshot.rockets = getArrayLength(rocketAttacks); } catch (_) {}
-        try { if (typeof rocketSmokeParticles !== "undefined") snapshot.rocketSmoke = getArrayLength(rocketSmokeParticles); } catch (_) {}
-        try { if (typeof damageBubbles !== "undefined") snapshot.damageBubbles = getArrayLength(damageBubbles); } catch (_) {}
-        try { if (typeof explosions !== "undefined") snapshot.explosions = getArrayLength(explosions); } catch (_) {}
-        try { if (typeof smartbombEffects !== "undefined") snapshot.smartbombEffects = getArrayLength(smartbombEffects); } catch (_) {}
-        try { if (typeof empEffects !== "undefined") snapshot.empEffects = getArrayLength(empEffects); } catch (_) {}
-        try { if (typeof portalJumpEffects !== "undefined") snapshot.portalJumpEffects = getArrayLength(portalJumpEffects); } catch (_) {}
-        try { if (window.minimapServerMarkers instanceof Map) snapshot.minimapMarkers = window.minimapServerMarkers.size; } catch (_) {}
-        try { if (typeof PENDING_ENTITY_VISUAL_CLEANUPS !== "undefined" && PENDING_ENTITY_VISUAL_CLEANUPS instanceof Map) snapshot.pendingVisualCleanup = PENDING_ENTITY_VISUAL_CLEANUPS.size; } catch (_) {}
-        try { if (typeof __getRxBacklog === "function") { snapshot.rxQueue = __getRxBacklog("game") + __getRxBacklog("chat"); snapshot.rxQueueGame = __getRxBacklog("game"); snapshot.rxQueueChat = __getRxBacklog("chat"); } } catch (_) {}
-        snapshot.minimapOpen = getWindowOpenByKey("map") || getWindowOpenByKey("minimap");
-        snapshot.groupOpen = getWindowOpenByKey("group");
-        updateBinSnapshot(getCurrentSecondBin(), snapshot);
-        return snapshot;
-    }
-
-    function updateSlowest(bucket, event) {
-        const duration = Number(event.durationMs ?? event.gapMs ?? 0);
-        if (!Number.isFinite(duration)) return;
-        const current = slowest[bucket];
-        if (!current || duration > current.durationMs) {
-            slowest[bucket] = {
-                durationMs: duration,
-                type: event.type,
-                opcode: event.opcode || null,
-                label: event.label || null,
-                at: event.at
-            };
-        }
-    }
-
-    function shouldConsoleLog(type, data) {
-        if (type === "frame_gap") return Number(data.gapMs || 0) >= ANDRO_PERF_THRESHOLDS.frameGapConsoleMs;
-        if (type === "packet_handler_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.packetHandlerConsoleMs;
-        if (type === "rx_drain_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.rxDrainConsoleMs;
-        if (type === "draw_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawConsoleMs;
-        if (type === "cleanup_slow") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.drawConsoleMs;
-        if (type === "longtask") return Number(data.durationMs || 0) >= ANDRO_PERF_THRESHOLDS.longTaskConsoleMs;
-        if (type === "ws_receive_gap" || type === "entity_update_gap" || type === "target_info_delay" || type === "packet_burst_after_gap" || type === "sync_freeze") {
-            return getSignalDuration(type, data) >= ANDRO_PERF_THRESHOLDS.syncConsoleMs;
-        }
-        return false;
-    }
-
-    function shouldThrottleRecord(type, data, perfNow) {
-        if (shouldConsoleLog(type, data)) return false;
-        let key = "";
-        let throttleMs = 0;
-        if (type === "draw_slow") {
-            key = `${type}:${data.label || ""}`;
-            throttleMs = 250;
-        } else if (type === "cleanup_slow") {
-            key = `${type}:${data.label || ""}`;
-            throttleMs = 250;
-        } else {
-            return false;
-        }
-        const lastAt = lastRecordAtByKey[key] || 0;
-        if (perfNow - lastAt < throttleMs) return true;
-        lastRecordAtByKey[key] = perfNow;
-        return false;
-    }
-
-    function record(type, data = {}) {
-        if (!enabled) return null;
-        const perfNow = nowMs();
-        if (shouldThrottleRecord(type, data, perfNow)) return null;
-        const event = Object.assign({
-            id: seq++,
-            at: new Date().toISOString(),
-            tMs: roundMs(perfNow - startedAtMs),
-            type: type
-        }, data);
-        if (!event.snapshot) event.snapshot = collectSnapshot();
-        events.push(event);
-        while (events.length > ANDRO_PERF_THRESHOLDS.ringSize) events.shift();
-        counts[type] = (counts[type] || 0) + 1;
-        if (event.opcode) opcodeCounts[event.opcode] = (opcodeCounts[event.opcode] || 0) + 1;
-        if (type === "frame_gap") updateSlowest("frameGap", event);
-        if (type === "packet_handler_slow") updateSlowest("packetHandler", event);
-        if (type === "rx_drain_slow") updateSlowest("rxDrain", event);
-        if (type === "draw_slow") updateSlowest("draw", event);
-        if (type === "cleanup_slow") updateSlowest("cleanup", event);
-        if (type === "longtask") updateSlowest("longTask", event);
-        if (type === "ws_receive_gap") {
-            syncState.lastWsReceiveGap = compactPerfEvent(event);
-            syncState.maxWsReceiveGapMs = Math.max(syncState.maxWsReceiveGapMs, Number(event.durationMs || 0));
-            noteSignificantGap("ws_receive_gap", event.durationMs, event);
-        }
-        if (type === "entity_update_gap") {
-            syncState.lastEntityUpdateGap = compactPerfEvent(event);
-            syncState.maxEntityUpdateGapMs = Math.max(syncState.maxEntityUpdateGapMs, Number(event.durationMs || 0));
-            noteSignificantGap("entity_update_gap", event.durationMs, event);
-        }
-        if (type === "target_info_delay") {
-            syncState.lastTargetInfoDelay = compactPerfEvent(event);
-            syncState.maxTargetInfoDelayMs = Math.max(syncState.maxTargetInfoDelayMs, Number(event.durationMs || 0));
-        }
-        if (type === "packet_burst_after_gap") {
-            syncState.lastPacketBurstAfterGap = compactPerfEvent(event);
-            syncState.maxPacketBurstAfterGapMs = Math.max(syncState.maxPacketBurstAfterGapMs, Number(event.previousGapMs || event.durationMs || 0));
-        }
-        if (type === "sync_freeze") {
-            syncState.lastSyncFreeze = compactPerfEvent(event);
-            syncState.probableReason = event.probableReason || syncState.probableReason;
-        } else {
-            recordSyncFreezeFromEvent(type, event);
-        }
-        if (shouldConsoleLog(type, event)) {
-            try {
-                console.warn("[AndroPerf]", type, event);
-            } catch (_) {}
-        }
-        return event;
-    }
-
-    function msSince(perfNow, timestampMs) {
-        if (timestampMs == null) return Number.POSITIVE_INFINITY;
-        return perfNow - timestampMs;
-    }
-
-    function classifyFrameGap(gapMs, snapshot, perfNow) {
-        const visible = snapshot.visibilityState === "visible";
-        const focused = snapshot.hasFocus !== false;
-        const reasons = [];
-        if (!visible) reasons.push("document-not-visible");
-        if (!focused) reasons.push("document-not-focused");
-        if (msSince(perfNow, lifecycle.lastVisibilityChangeAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-visibilitychange");
-        if (msSince(perfNow, lifecycle.lastBlurAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-blur");
-        if (msSince(perfNow, lifecycle.lastFocusAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-focus");
-        if (msSince(perfNow, lifecycle.lastPageHideAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-pagehide");
-        if (msSince(perfNow, lifecycle.lastPageShowAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("recent-pageshow");
-        if (msSince(perfNow, lifecycle.lastFreezeAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("browser-freeze-event");
-        if (msSince(perfNow, lifecycle.lastResumeAtMs) <= ANDRO_PERF_THRESHOLDS.lifecycleRecentMs) reasons.push("browser-resume-event");
-        const transition = lastState.mapTransition;
-        if (transition && Number.isFinite(transition.tMs) && perfNow - (startedAtMs + transition.tMs) <= ANDRO_PERF_THRESHOLDS.mapTransitionRecentMs) {
-            reasons.push("recent-map-transition");
-        }
-        const longTask = lastState.longTask;
-        const recentLongTask = !!(longTask && Number.isFinite(longTask.tMs) && perfNow - (startedAtMs + longTask.tMs) <= 2000);
-        if (recentLongTask) reasons.push("recent-longtask");
-        const workerAge = snapshot.workerHeartbeat && snapshot.workerHeartbeat.lastHeartbeatAgeMs;
-        const workerOwnGap = snapshot.workerHeartbeat && snapshot.workerHeartbeat.lastWorkerGapMs;
-        const workerMainGap = snapshot.workerHeartbeat && snapshot.workerHeartbeat.lastMainReceiveGapMs;
-        let workerInterpretation = "unavailable";
-        if (snapshot.workerHeartbeat && snapshot.workerHeartbeat.started && workerAge != null) {
-            if (workerOwnGap >= Math.min(gapMs * .5, 1000)) {
-                workerInterpretation = "worker-also-gapped";
-                reasons.push("worker-gap");
-            } else if (workerMainGap >= gapMs * .5 || workerAge < 1000) {
-                workerInterpretation = "worker-likely-continued";
-                reasons.push("worker-likely-continued");
-            } else {
-                workerInterpretation = "worker-inconclusive";
-            }
-        }
-        let probablyGameplayFreeze = visible && focused && gapMs >= ANDRO_PERF_THRESHOLDS.frameGapConsoleMs;
-        if (reasons.includes("recent-map-transition") || reasons.includes("recent-pagehide") || reasons.includes("recent-pageshow") || reasons.includes("browser-freeze-event") || reasons.includes("browser-resume-event")) {
-            probablyGameplayFreeze = false;
-        }
-        let reason = "minor-frame-delay";
-        if (!visible) reason = "tab-hidden-or-suspended";
-        else if (!focused) reason = "tab-blurred-or-focus-throttled";
-        else if (reasons.includes("recent-map-transition")) reason = "map-transition-or-loading";
-        else if (recentLongTask) reason = "visible-focused-recent-longtask-main-thread";
-        else if (workerInterpretation === "worker-likely-continued") reason = "visible-focused-worker-continued-main-thread-or-render";
-        else if (workerInterpretation === "worker-also-gapped") reason = "visible-focused-worker-also-gapped-browser-os";
-        else if (probablyGameplayFreeze) reason = "visible-focused-no-js-cause-yet";
-        return {
-            visible: visible,
-            focused: focused,
-            probablyGameplayFreeze: probablyGameplayFreeze,
-            reason: reason,
-            reasons: reasons,
-            workerInterpretation: workerInterpretation
-        };
-    }
-
-    function packetPrefix(parts, startIndex) {
-        try {
-            return parts.slice(0, Math.min(parts.length, Math.max(startIndex + 4, 6))).map(part => String(part).slice(0, 80)).join("|");
-        } catch (_) {
-            return "";
-        }
-    }
-
-    function getRenderWarnThreshold(label) {
-        if (label === "drawTotal" || label === "renderFrame") return ANDRO_PERF_THRESHOLDS.drawTotalWarnMs;
-        if (label === "drawEntities") return ANDRO_PERF_THRESHOLDS.drawEntitiesWarnMs;
-        if (label === "drawMiniMap" || label === "minimapRebuild") return ANDRO_PERF_THRESHOLDS.drawMinimapWarnMs;
-        return ANDRO_PERF_THRESHOLDS.drawEffectWarnMs;
-    }
-
-    function recordLifecycleEvent(name, extra = null) {
-        if (!enabled) return;
-        const perfNow = nowMs();
-        updateLifecycleState();
-        if (name === "focus") {
-            lifecycle.lastFocusAtMs = perfNow;
-            lifecycle.lastFocusAt = new Date().toISOString();
-        } else if (name === "blur") {
-            lifecycle.lastBlurAtMs = perfNow;
-            lifecycle.lastBlurAt = new Date().toISOString();
-        } else if (name === "visibilitychange") {
-            lifecycle.lastVisibilityChangeAtMs = perfNow;
-            lifecycle.lastVisibilityChangeAt = new Date().toISOString();
-            lifecycle.lastVisibilityState = lifecycle.visibilityState;
-        } else if (name === "pagehide") {
-            lifecycle.lastPageHideAtMs = perfNow;
-            lifecycle.lastPageHideAt = new Date().toISOString();
-        } else if (name === "pageshow") {
-            lifecycle.lastPageShowAtMs = perfNow;
-            lifecycle.lastPageShowAt = new Date().toISOString();
-        } else if (name === "freeze") {
-            lifecycle.lastFreezeAtMs = perfNow;
-            lifecycle.lastFreezeAt = new Date().toISOString();
-        } else if (name === "resume") {
-            lifecycle.lastResumeAtMs = perfNow;
-            lifecycle.lastResumeAt = new Date().toISOString();
-        }
-        record("lifecycle", Object.assign({
-            event: name,
-            visibilityState: lifecycle.visibilityState,
-            focused: lifecycle.focused
-        }, extra || {}));
-    }
-
-    function installLifecycleHooks() {
-        if (!enabled || typeof window === "undefined") return;
-        try { window.addEventListener("focus", () => recordLifecycleEvent("focus")); } catch (_) {}
-        try { window.addEventListener("blur", () => recordLifecycleEvent("blur")); } catch (_) {}
-        try { window.addEventListener("pagehide", event => recordLifecycleEvent("pagehide", { persisted: !!event.persisted })); } catch (_) {}
-        try { window.addEventListener("pageshow", event => recordLifecycleEvent("pageshow", { persisted: !!event.persisted })); } catch (_) {}
-        try { document.addEventListener("visibilitychange", () => recordLifecycleEvent("visibilitychange")); } catch (_) {}
-        try { document.addEventListener("freeze", () => recordLifecycleEvent("freeze")); } catch (_) {}
-        try { document.addEventListener("resume", () => recordLifecycleEvent("resume")); } catch (_) {}
-        const noteInput = event => {
-            lastState.input = {
-                type: event.type,
-                key: event.key ? String(event.key).slice(0, 32) : null,
-                button: Number.isFinite(event.button) ? event.button : null,
-                at: new Date().toISOString(),
-                tMs: roundMs(nowMs() - startedAtMs)
-            };
-        };
-        try { window.addEventListener("pointerdown", noteInput, { passive: true }); } catch (_) {}
-        try { window.addEventListener("keydown", noteInput, { passive: true }); } catch (_) {}
-    }
-
-    function installLongTaskObserver() {
-        if (!enabled || typeof PerformanceObserver === "undefined") return;
-        try {
-            longTaskObserver = new PerformanceObserver(list => {
-                for (const entry of list.getEntries()) {
-                    const duration = Number(entry.duration || 0);
-                    if (duration < ANDRO_PERF_THRESHOLDS.longTaskWarnMs) continue;
-                    const attribution = Array.isArray(entry.attribution) ? entry.attribution.slice(0, 5).map(item => ({
-                        name: item.name || "",
-                        entryType: item.entryType || "",
-                        containerType: item.containerType || "",
-                        containerName: item.containerName || "",
-                        containerSrc: String(item.containerSrc || "").slice(-160),
-                        scriptUrl: String(item.scriptUrl || "").slice(-160)
-                    })) : [];
-                    const event = {
-                        name: entry.name || "longtask",
-                        entryType: entry.entryType || "longtask",
-                        startTime: roundMs(entry.startTime || 0),
-                        durationMs: roundMs(duration),
-                        attribution: attribution
-                    };
-                    lastState.longTask = Object.assign({
-                        at: new Date().toISOString(),
-                        tMs: roundMs(nowMs() - startedAtMs)
-                    }, event);
-                    record("longtask", event);
-                }
-            });
-            longTaskObserver.observe({ entryTypes: [ "longtask" ] });
-        } catch (e) {
-            record("longtask_observer_error", {
-                message: e && e.message ? String(e.message) : String(e)
-            });
-        }
-    }
-
-    function installWorkerHeartbeat() {
-        if (!enabled || typeof Worker === "undefined" || typeof Blob === "undefined" || typeof URL === "undefined") return;
-        workerState.supported = true;
-        try {
-            const workerSource = [
-                "let seq = 0;",
-                "setInterval(() => {",
-                "  seq += 1;",
-                "  postMessage({ type: 'heartbeat', seq, workerNow: Date.now() });",
-                "}, 100);"
-            ].join("\n");
-            const blobUrl = URL.createObjectURL(new Blob([ workerSource ], { type: "application/javascript" }));
-            heartbeatWorker = new Worker(blobUrl);
-            URL.revokeObjectURL(blobUrl);
-            workerState.started = true;
-            heartbeatWorker.onmessage = event => {
-                const perfNow = nowMs();
-                const data = event && event.data || {};
-                if (data.type !== "heartbeat") return;
-                if (workerState.lastHeartbeatAtMs != null) {
-                    const mainGap = perfNow - workerState.lastHeartbeatAtMs;
-                    workerState.lastMainReceiveGapMs = mainGap;
-                    if (mainGap > workerState.maxMainReceiveGapMs) workerState.maxMainReceiveGapMs = mainGap;
-                }
-                if (workerState.lastWorkerNowMs != null && Number.isFinite(data.workerNow)) {
-                    const workerGap = Number(data.workerNow) - workerState.lastWorkerNowMs;
-                    workerState.lastWorkerGapMs = workerGap;
-                    if (workerGap > workerState.maxWorkerGapMs) workerState.maxWorkerGapMs = workerGap;
-                }
-                workerState.lastHeartbeatAtMs = perfNow;
-                workerState.lastHeartbeatAt = new Date().toISOString();
-                workerState.lastWorkerNowMs = Number.isFinite(data.workerNow) ? Number(data.workerNow) : workerState.lastWorkerNowMs;
-                workerState.lastSeq = Number(data.seq) || workerState.lastSeq;
-                workerState.heartbeatCount++;
-            };
-            heartbeatWorker.onerror = event => {
-                workerState.failed = true;
-                record("worker_heartbeat_error", {
-                    message: event && event.message ? String(event.message) : "worker heartbeat error"
-                });
-            };
-        } catch (e) {
-            workerState.failed = true;
-            record("worker_heartbeat_error", {
-                message: e && e.message ? String(e.message) : String(e)
-            });
-        }
-    }
-
-    const api = {
-        enabled: enabled,
-        thresholds: ANDRO_PERF_THRESHOLDS,
-        nowMs: nowMs,
-        collectSnapshot: collectSnapshot,
-        record: record,
-        recordFrameGap(gapMs) {
-            if (!enabled || gapMs < ANDRO_PERF_THRESHOLDS.frameGapWarnMs) return;
-            const perfNow = nowMs();
-            const snapshot = collectSnapshot();
-            const classification = classifyFrameGap(gapMs, snapshot, perfNow);
-            const bin = getCurrentSecondBin(perfNow);
-            if (gapMs > bin.maxFrameGap) bin.maxFrameGap = gapMs;
-            const level = gapMs >= ANDRO_PERF_THRESHOLDS.frameGapBigMs ? "500ms+" : gapMs >= ANDRO_PERF_THRESHOLDS.frameGapConsoleMs ? "250ms+" : "120ms+";
-            record("frame_gap", {
-                gapMs: roundMs(gapMs),
-                level: level,
-                visible: classification.visible,
-                focused: classification.focused,
-                probablyGameplayFreeze: classification.probablyGameplayFreeze,
-                reason: classification.reason,
-                reasons: classification.reasons,
-                workerInterpretation: classification.workerInterpretation,
-                recentEvents: events.slice(-ANDRO_PERF_THRESHOLDS.frameGapContextEvents),
-                recentBins: getRecentBins(),
-                recentResources: gapMs >= ANDRO_PERF_THRESHOLDS.frameGapConsoleMs ? getRecentResources(perfNow) : [],
-                snapshot: snapshot
-            });
-        },
-        tickSyncWatchdog() {
-            if (!enabled) return;
-            const perfNow = nowMs();
-            const snapshot = collectSnapshot();
-            if (snapshot.visibilityState !== "visible" || snapshot.hasFocus === false || snapshot.map == null || snapshot.wsConnected !== true) return;
-            const entityGap = syncState.lastUsefulEntityUpdateAtMs == null ? 0 : perfNow - syncState.lastUsefulEntityUpdateAtMs;
-            const threshold = getSyncThreshold(entityGap);
-            if (!threshold || threshold <= syncState.lastEntityUpdateThresholdMs) return;
-            recordEntityUpdateGap(entityGap, "watchdog");
-        },
-        noteWsReceive(channel) {
-            if (!enabled || channel !== "game") return;
-            const perfNow = nowMs();
-            if (syncState.lastWsReceiveAtMs != null) {
-                const gap = perfNow - syncState.lastWsReceiveAtMs;
-                const threshold = getSyncThreshold(gap);
-                if (threshold && shouldRecordSyncGap("ws_receive_gap", threshold, perfNow)) {
-                    const snapshot = collectSnapshot();
-                    record("ws_receive_gap", Object.assign({
-                        durationMs: roundMs(gap),
-                        thresholdMs: threshold,
-                        category: getSyncCategory(gap),
-                        snapshot: snapshot
-                    }, getSyncContext(snapshot, perfNow)));
-                }
-            }
-            syncState.lastWsReceiveAtMs = perfNow;
-            syncState.lastWsReceiveAt = new Date().toISOString();
-        },
-        noteEntityUsefulUpdate(kind, data = null) {
-            if (!enabled) return;
-            const perfNow = nowMs();
-            if (syncState.lastUsefulEntityUpdateAtMs != null) {
-                const gap = perfNow - syncState.lastUsefulEntityUpdateAtMs;
-                const threshold = getSyncThreshold(gap);
-                if (threshold && threshold > syncState.lastEntityUpdateThresholdMs) {
-                    recordEntityUpdateGap(gap, "before_update");
-                }
-            }
-            const update = Object.assign({
-                kind: kind || "unknown",
-                at: new Date().toISOString(),
-                tMs: roundMs(perfNow - startedAtMs),
-                packet: copyLastState(lastState.packet),
-                opcode: lastState.opcode
-            }, data || {});
-            syncState.lastUsefulEntityUpdateAtMs = perfNow;
-            syncState.lastUsefulEntityUpdateAt = update.at;
-            syncState.lastUsefulEntityUpdate = update;
-            syncState.lastEntityUpdateThresholdMs = 0;
-        },
-        noteTargetSelection(targetId, targetType = null, data = null) {
-            if (!enabled || targetId == null) return;
-            const perfNow = nowMs();
-            const snapshot = collectSnapshot();
-            syncState.pendingTargetSelection = Object.assign({
-                targetId: targetId,
-                targetType: targetType || null,
-                selectedAt: new Date().toISOString(),
-                selectedAtMs: perfNow,
-                map: snapshot.map,
-                rxQueue: snapshot.rxQueue,
-                lastPacket: copyLastState(lastState.packet),
-                lastOpcode: lastState.opcode
-            }, data || {});
-        },
-        noteTargetInfoApplied(targetId, data = null) {
-            if (!enabled || targetId == null || !syncState.pendingTargetSelection) return;
-            if (String(syncState.pendingTargetSelection.targetId) !== String(targetId)) return;
-            const perfNow = nowMs();
-            const duration = perfNow - syncState.pendingTargetSelection.selectedAtMs;
-            const threshold = getSyncThreshold(duration);
-            const snapshot = collectSnapshot();
-            if (threshold) {
-                record("target_info_delay", Object.assign({
-                    durationMs: roundMs(duration),
-                    thresholdMs: threshold,
-                    category: getSyncCategory(duration),
-                    targetId: targetId,
-                    targetType: syncState.pendingTargetSelection.targetType,
-                    selectedAt: syncState.pendingTargetSelection.selectedAt,
-                    infoAppliedAt: new Date().toISOString(),
-                    currentWsReceiveGapMs: getCurrentWsReceiveGapMs(perfNow),
-                    currentEntityUpdateGapMs: getCurrentEntityUpdateGapMs(perfNow),
-                    rxQueue: snapshot.rxQueue,
-                    lastPacket: copyLastState(lastState.packet),
-                    lastOpcode: lastState.opcode,
-                    snapshot: snapshot
-                }, data || {}, getSyncContext(snapshot, perfNow)));
-            }
-            syncState.pendingTargetSelection = null;
-        },
-        beginRxDrain() {
-            if (!enabled) return null;
-            syncState.activeDrain = {
-                startedAtMs: nowMs(),
-                opcodes: Object.create(null)
-            };
-            return syncState.activeDrain;
-        },
-        endRxDrain(token) {
-            if (!enabled || !token || syncState.activeDrain !== token) return [];
-            const top = topOpcodeList(token.opcodes);
-            syncState.activeDrain = null;
-            return top;
-        },
-        notePacket(opcode, parts, startIndex) {
-            if (!enabled) return;
-            const perfNow = nowMs();
-            const normalized = normalizeOpcodeForStats(opcode, parts, startIndex);
-            const bin = getCurrentSecondBin(perfNow);
-            bin.packets++;
-            bin.opcodes[normalized] = (bin.opcodes[normalized] || 0) + 1;
-            if (syncState.activeDrain && syncState.activeDrain.opcodes) {
-                syncState.activeDrain.opcodes[normalized] = (syncState.activeDrain.opcodes[normalized] || 0) + 1;
-            }
-            lastState.opcode = normalized;
-            lastState.packet = {
-                opcode: opcode || "",
-                normalizedOpcode: normalized,
-                prefix: packetPrefix(parts || [], startIndex || 0),
-                partCount: parts && parts.length || 0,
-                at: new Date().toISOString(),
-                tMs: roundMs(perfNow - startedAtMs)
-            };
-        },
-        recordPacketHandler(opcode, durationMs, parts, startIndex) {
-            if (!enabled) return;
-            const normalized = normalizeOpcodeForStats(opcode, parts, startIndex);
-            lastState.handler = {
-                opcode: opcode || "",
-                normalizedOpcode: normalized,
-                durationMs: roundMs(durationMs),
-                prefix: packetPrefix(parts || [], startIndex || 0),
-                at: new Date().toISOString(),
-                tMs: roundMs(nowMs() - startedAtMs)
-            };
-            if (durationMs < ANDRO_PERF_THRESHOLDS.packetHandlerWarnMs) return;
-            record("packet_handler_slow", {
-                opcode: opcode || "",
-                normalizedOpcode: normalized,
-                durationMs: roundMs(durationMs),
-                prefix: packetPrefix(parts || [], startIndex || 0),
-                partCount: parts && parts.length || 0
-            });
-        },
-        recordRxDrain(data) {
-            if (!enabled || !data) return;
-            const duration = Number(data.durationMs || 0);
-            const backlogBefore = Number(data.backlogBefore || 0);
-            const backlogAfter = Number(data.backlogAfter || 0);
-            const processed = Number(data.processed || 0);
-            const bin = getCurrentSecondBin();
-            bin.drains++;
-            bin.maxRxBacklog = Math.max(bin.maxRxBacklog, backlogBefore, backlogAfter);
-            const topOpcodes = Array.isArray(data.topOpcodes) ? data.topOpcodes : [];
-            const recentGap = syncState.lastSignificantGap;
-            if (recentGap && processed > 0 && nowMs() - recentGap.atMs <= ANDRO_PERF_THRESHOLDS.packetBurstAfterGapRecentMs) {
-                const bursty = processed >= ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn || backlogBefore >= ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn || backlogAfter >= ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn || duration >= ANDRO_PERF_THRESHOLDS.rxDrainWarnMs;
-                const lastBurstAt = syncState.lastPacketBurstRecordAtMs || 0;
-                if (bursty && nowMs() - lastBurstAt >= ANDRO_PERF_THRESHOLDS.syncGapThrottleMs) {
-                    syncState.lastPacketBurstRecordAtMs = nowMs();
-                    record("packet_burst_after_gap", {
-                        previousGapMs: recentGap.durationMs,
-                        previousGapSource: recentGap.source,
-                        previousGapThresholdMs: recentGap.thresholdMs,
-                        processed: processed,
-                        backlogBefore: backlogBefore,
-                        backlogAfter: backlogAfter,
-                        durationMs: roundMs(duration),
-                        topOpcodes: topOpcodes,
-                        budgetMs: data.budgetMs,
-                        maxLines: data.maxLines
-                    });
-                    syncState.lastSignificantGap = null;
-                }
-            }
-            if (duration < ANDRO_PERF_THRESHOLDS.rxDrainWarnMs && backlogBefore < ANDRO_PERF_THRESHOLDS.rxBacklogWarn && backlogAfter < ANDRO_PERF_THRESHOLDS.rxBacklogWarn && processed < ANDRO_PERF_THRESHOLDS.rxBurstPacketsWarn) return;
-            record("rx_drain_slow", {
-                durationMs: roundMs(duration),
-                processed: processed,
-                backlogBefore: backlogBefore,
-                backlogAfter: backlogAfter,
-                topOpcodes: topOpcodes,
-                budgetMs: data.budgetMs,
-                maxLines: data.maxLines
-            });
-        },
-        recordRender(label, durationMs, extra = null) {
-            if (!enabled) return;
-            const bin = getCurrentSecondBin();
-            const duration = Number(durationMs || 0);
-            if (label === "drawTotal") {
-                bin.maxDrawTotal = Math.max(bin.maxDrawTotal, duration);
-                bin.drawTotalSum += duration;
-                bin.drawTotalCount++;
-            } else if (label === "drawEntities") {
-                bin.maxDrawEntities = Math.max(bin.maxDrawEntities, duration);
-                bin.drawEntitiesSum += duration;
-                bin.drawEntitiesCount++;
-            } else if (label === "drawMiniMap" || label === "minimapRebuild") {
-                bin.maxDrawMiniMap = Math.max(bin.maxDrawMiniMap, duration);
-                bin.drawMiniMapSum += duration;
-                bin.drawMiniMapCount++;
-            } else if (label === "drawLaserBeams") bin.maxDrawLaserBeams = Math.max(bin.maxDrawLaserBeams, duration);
-            else if (label === "drawExplosions") bin.maxDrawExplosions = Math.max(bin.maxDrawExplosions, duration);
-            lastState.draw = {
-                label: label,
-                durationMs: roundMs(duration),
-                at: new Date().toISOString(),
-                tMs: roundMs(nowMs() - startedAtMs)
-            };
-            const threshold = getRenderWarnThreshold(label);
-            if (durationMs < threshold) return;
-            record("draw_slow", Object.assign({
-                label: label,
-                durationMs: roundMs(durationMs),
-                thresholdMs: threshold
-            }, extra || {}));
-        },
-        recordCleanup(label, durationMs, data = null) {
-            if (!enabled) return;
-            const duration = Number(durationMs || 0);
-            const bin = getCurrentSecondBin();
-            bin.maxCleanup = Math.max(bin.maxCleanup, duration);
-            lastState.cleanup = {
-                label: label,
-                durationMs: roundMs(duration),
-                at: new Date().toISOString(),
-                tMs: roundMs(nowMs() - startedAtMs)
-            };
-            if (durationMs < ANDRO_PERF_THRESHOLDS.cleanupWarnMs) return;
-            record("cleanup_slow", Object.assign({
-                label: label,
-                durationMs: roundMs(durationMs),
-                thresholdMs: ANDRO_PERF_THRESHOLDS.cleanupWarnMs
-            }, data || {}));
-        },
-        summary() {
-            return {
-                enabled: enabled,
-                startedAt: startedAtIso,
-                uptimeMs: roundMs(nowMs() - startedAtMs),
-                eventCount: events.length,
-                counts: Object.assign({}, counts),
-                opcodeCounts: Object.assign({}, opcodeCounts),
-                slowest: JSON.parse(JSON.stringify(slowest)),
-                maxWsReceiveGapMs: roundMs(syncState.maxWsReceiveGapMs),
-                maxEntityUpdateGapMs: roundMs(syncState.maxEntityUpdateGapMs),
-                maxTargetInfoDelayMs: roundMs(syncState.maxTargetInfoDelayMs),
-                maxPacketBurstAfterGapMs: roundMs(syncState.maxPacketBurstAfterGapMs),
-                lastWsReceiveGap: copyLastState(syncState.lastWsReceiveGap),
-                lastEntityUpdateGap: copyLastState(syncState.lastEntityUpdateGap),
-                lastTargetInfoDelay: copyLastState(syncState.lastTargetInfoDelay),
-                lastPacketBurstAfterGap: copyLastState(syncState.lastPacketBurstAfterGap),
-                lastSyncFreeze: copyLastState(syncState.lastSyncFreeze),
-                probableReason: syncState.probableReason,
-                topSyncFreezeEvents: getTopSyncFreezeEvents(),
-                snapshot: collectSnapshot(),
-                lifecycle: Object.assign({}, lifecycle),
-                workerHeartbeat: Object.assign({}, workerState),
-                last: JSON.parse(JSON.stringify(lastState)),
-                recentBins: getRecentBins(ANDRO_PERF_THRESHOLDS.secondBinCount),
-                memory: getMemorySnapshot(),
-                thresholds: ANDRO_PERF_THRESHOLDS
-            };
-        },
-        dump() {
-            return JSON.stringify({
-                generatedAt: new Date().toISOString(),
-                summary: api.summary(),
-                recentBins: getRecentBins(ANDRO_PERF_THRESHOLDS.secondBinCount),
-                events: events.slice()
-            }, null, 2);
-        },
-        clear() {
-            events.length = 0;
-            for (const key of Object.keys(counts)) delete counts[key];
-            for (const key of Object.keys(opcodeCounts)) delete opcodeCounts[key];
-            for (const key of Object.keys(slowest)) delete slowest[key];
-            for (const key of Object.keys(lastRecordAtByKey)) delete lastRecordAtByKey[key];
-            secondBins.length = 0;
-            resetSyncStateForClear();
-            seq = 1;
-            return api.summary();
-        },
-        copy() {
-            const text = api.dump();
-            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-                return navigator.clipboard.writeText(text).then(() => text);
-            }
-            try {
-                if (typeof window.copy === "function") {
-                    window.copy(text);
-                    return text;
-                }
-            } catch (_) {}
-            console.warn("[AndroPerf] Clipboard API unavailable; use copy(AndroPerf.dump()) in DevTools.");
-            return text;
-        }
-    };
-
-    window.AndroPerf = api;
-
-    if (enabled) {
-        installLifecycleHooks();
-        installLongTaskObserver();
-        installWorkerHeartbeat();
-        recordLifecycleEvent("profiler-start", {
-            visibilityState: lifecycle.visibilityState,
-            focused: lifecycle.focused
-        });
-    }
-
-    if (enabled && typeof requestAnimationFrame === "function") {
-        let lastFrameAt = 0;
-        const tick = ts => {
-            if (typeof document !== "undefined" && document.hidden) {
-                lastFrameAt = ts;
-            } else if (lastFrameAt > 0) {
-                api.recordFrameGap(ts - lastFrameAt);
-            }
-            api.tickSyncWatchdog();
-            lastFrameAt = ts;
-            requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-    }
-})();
-
-function __androPerfNoteEntityUpdate(kind, data = null) {
-    const perf = window.AndroPerf;
-    if (perf && perf.enabled && typeof perf.noteEntityUsefulUpdate === "function") {
-        perf.noteEntityUsefulUpdate(kind, data || null);
-    }
-}
-
-function __androPerfNoteTargetInfoApplied(targetId, packetKind, data = null) {
-    const perf = window.AndroPerf;
-    if (!perf || !perf.enabled || typeof perf.noteTargetInfoApplied !== "function") return;
-    let ent = null;
-    try {
-        ent = targetId != null && typeof entities !== "undefined" ? entities[targetId] : null;
-    } catch (_) {}
-    perf.noteTargetInfoApplied(targetId, Object.assign({
-        packetKind: packetKind || null,
-        targetType: ent && ent.kind || null,
-        hpKnown: !!(ent && ent.hp != null),
-        shieldKnown: !!(ent && ent.shield != null),
-        nameKnown: !!(ent && ent.name)
-    }, data || {}));
-}
-
 let ws = null;
 
 let wsConnecting = false;
@@ -2197,8 +873,6 @@ function __getRxDrainPlan(gameBacklog, chatBacklog) {
 function __drainRxQueue() {
     __andromedaRxDrainScheduled = false;
     const startedAt = __rxNowMs();
-    const perf = window.AndroPerf;
-    const perfDrainToken = perf && perf.enabled && typeof perf.beginRxDrain === "function" ? perf.beginRxDrain() : null;
     const gameBacklogBefore = __getRxBacklog("game");
     const chatBacklogBefore = __getRxBacklog("chat");
     const plan = __getRxDrainPlan(gameBacklogBefore, chatBacklogBefore);
@@ -2226,24 +900,6 @@ function __drainRxQueue() {
     }
     __compactRxQueueIfNeeded("game");
     __compactRxQueueIfNeeded("chat");
-    const topOpcodes = perfDrainToken && perf && typeof perf.endRxDrain === "function" ? perf.endRxDrain(perfDrainToken) : [];
-    if (window.AndroPerf && window.AndroPerf.enabled) {
-        window.AndroPerf.recordRxDrain({
-            durationMs: __rxNowMs() - startedAt,
-            processed: processed,
-            processedGame: processedGame,
-            processedChat: processedChat,
-            backlogBefore: gameBacklogBefore + chatBacklogBefore,
-            backlogBeforeGame: gameBacklogBefore,
-            backlogBeforeChat: chatBacklogBefore,
-            backlogAfter: __getRxBacklog("game") + __getRxBacklog("chat"),
-            backlogAfterGame: __getRxBacklog("game"),
-            backlogAfterChat: __getRxBacklog("chat"),
-            topOpcodes: topOpcodes,
-            budgetMs: plan.budgetMs,
-            maxLines: plan.maxLines
-        });
-    }
     if (__getRxBacklog("game") > 0 || __getRxBacklog("chat") > 0) {
         __scheduleRxDrain();
     }
@@ -2274,10 +930,6 @@ function __decodeWsPayload(raw) {
 }
 
 function __enqueueRxFrame(channel, socketInstance, raw) {
-    const isActiveSocket = channel === "game" && ws === socketInstance || channel === "chat" && chatWs === socketInstance;
-    if (isActiveSocket && window.AndroPerf && window.AndroPerf.enabled && typeof window.AndroPerf.noteWsReceive === "function") {
-        window.AndroPerf.noteWsReceive(channel);
-    }
     __andromedaRxChain = __andromedaRxChain.then(async () => {
         if (channel === "game" && ws !== socketInstance) return;
         if (channel === "chat" && chatWs !== socketInstance) return;
@@ -2995,9 +1647,6 @@ function handleServerLine(line) {
     if (!opcode || opcode.trim() === "") {
         return;
     }
-    if (window.AndroPerf && window.AndroPerf.enabled) {
-        window.AndroPerf.notePacket(opcode, parts, startIndex);
-    }
     const handler = PACKET_HANDLERS[opcode];
     if (__PARITY_DEBUG_GAME_OPCODES.has(opcode)) {
         __parityDebug("opcode-game", {
@@ -3010,16 +1659,10 @@ function handleServerLine(line) {
     telemetry.lastGameOpcode = opcode;
     window.__flashLastGameOpcode = opcode;
     if (handler) {
-        const perf = window.AndroPerf;
-        const perfStartedAt = perf && perf.enabled ? __rxNowMs() : 0;
         try {
             handler(parts, startIndex);
         } catch (e) {
             console.error("[PACKET ERROR] opcode =", opcode, "| line =", line, "| parts =", parts, e);
-        } finally {
-            if (perfStartedAt && perf && perf.enabled) {
-                perf.recordPacketHandler(opcode, __rxNowMs() - perfStartedAt, parts, startIndex);
-            }
         }
     } else {
         logUnknownPacket(opcode, parts);
@@ -4008,12 +2651,6 @@ function handlePacket_N(parts, i) {
         if (!isNaN(maxShield)) heroMaxShield = maxShield;
         if (!isNaN(hp)) heroHp = hp;
         if (!isNaN(maxHp)) heroMaxHp = maxHp;
-        __androPerfNoteEntityUpdate("hero_stats", {
-            entityId: id,
-            packetKind: "N",
-            hpKnown: !isNaN(hp),
-            shieldKnown: !isNaN(shield)
-        });
     } else {
         const ent = ensureEntity(id);
         if (name) ent.name = name;
@@ -4031,14 +2668,6 @@ function handlePacket_N(parts, i) {
         if (ent.hp != null && ent.maxHp != null && ent.hp >= ent.maxHp) {
             clearEntityClaim(id);
         }
-        __androPerfNoteEntityUpdate("entity_stats", {
-            entityId: id,
-            packetKind: "N",
-            targetType: ent.kind,
-            hpKnown: ent.hp != null,
-            shieldKnown: ent.shield != null
-        });
-        __androPerfNoteTargetInfoApplied(id, "N");
     }
 }
 
@@ -4799,12 +3428,6 @@ function handlePacket_H(parts, i) {
         shipY = y;
         cameraX = shipX;
         cameraY = shipY;
-        __androPerfNoteEntityUpdate("hero_position", {
-            entityId: typeof heroId !== "undefined" ? heroId : null,
-            packetKind: "H",
-            x: x,
-            y: y
-        });
     }
 }
 
@@ -4822,11 +3445,6 @@ function handlePacket_HPT(parts, i) {
         setHeroRepairing(false);
     }
     if (!isNaN(hp) || !isNaN(maxHp)) {
-        __androPerfNoteEntityUpdate("hero_hp", {
-            entityId: typeof heroId !== "undefined" ? heroId : null,
-            packetKind: "HPT",
-            hpKnown: !isNaN(hp)
-        });
     }
 }
 
@@ -4943,12 +3561,6 @@ function handlePacket_move(parts, i) {
             moveTargetY = null;
             moveTargetFromMinimap = false;
         }
-        __androPerfNoteEntityUpdate("hero_move", {
-            entityId: id,
-            packetKind: "1",
-            x: x,
-            y: y
-        });
         return;
     }
     const ent = ensureEntity(id);
@@ -4964,13 +3576,6 @@ function handlePacket_move(parts, i) {
     } else {
         startEntityInterpolationTo(ent, x, y, dur, now);
     }
-    __androPerfNoteEntityUpdate("entity_move", {
-        entityId: id,
-        packetKind: "1",
-        targetType: ent.kind,
-        x: x,
-        y: y
-    });
 }
 
 function handlePacket_d(parts, i) {
@@ -5326,11 +3931,6 @@ function handlePacket_A(parts, i) {
             if (!isNaN(newShield)) heroShield = newShield;
             if (!isNaN(newMaxSh) && newMaxSh >= 0) heroMaxShield = newMaxSh;
             if (!isNaN(newShield) || !isNaN(newMaxSh)) {
-                __androPerfNoteEntityUpdate("hero_shield", {
-                    entityId: typeof heroId !== "undefined" ? heroId : null,
-                    packetKind: "A|SHD",
-                    shieldKnown: !isNaN(newShield)
-                });
             }
             break;
         }
@@ -5392,12 +3992,6 @@ function handlePacket_A(parts, i) {
                     applyDeltaBubble(prev, value, heroId, true);
                 }
                 if (type === "HPT" || type === "SHD") {
-                    __androPerfNoteEntityUpdate("hero_combat_stats", {
-                        entityId: targetId,
-                        packetKind: "A|HL",
-                        hpKnown: type === "HPT",
-                        shieldKnown: type === "SHD"
-                    });
                 }
             } else if (targetEnt) {
                 if (type === "HPT") {
@@ -5425,14 +4019,6 @@ function handlePacket_A(parts, i) {
                     applyDeltaBubble(prev, value, targetId, true);
                 }
                 if (type === "HPT" || type === "SHD") {
-                    __androPerfNoteEntityUpdate("entity_combat_stats", {
-                        entityId: targetId,
-                        packetKind: "A|HL",
-                        targetType: targetEnt.kind,
-                        hpKnown: targetEnt.hp != null,
-                        shieldKnown: targetEnt.shield != null
-                    });
-                    __androPerfNoteTargetInfoApplied(targetId, "A|HL");
                 }
             }
             break;
@@ -5869,13 +4455,6 @@ function handlePacket_f(parts, i) {
         }
     }
     applyPendingAttackLockForEntity(id);
-    __androPerfNoteEntityUpdate("player_spawn", {
-        entityId: id,
-        packetKind: "f|C",
-        targetType: "player",
-        x: x,
-        y: y
-    });
 }
 
 function handlePacket_portal(parts, i) {
@@ -6068,13 +4647,6 @@ function handlePacket_C(parts, i) {
     e.name = name;
     e.factionId = isNaN(factionId) ? 0 : factionId;
     applyPendingAttackLockForEntity(id);
-    __androPerfNoteEntityUpdate("npc_spawn", {
-        entityId: id,
-        packetKind: "C",
-        targetType: "npc",
-        x: x,
-        y: y
-    });
 }
 
 function handlePacket_CSS(parts, i) {}
@@ -7151,8 +5723,6 @@ function runEntityVisualCleanupJob(job) {
 
 function flushEntityVisualCleanups() {
     entityVisualCleanupScheduled = false;
-    const startedAt = __rxNowMs();
-    const backlogBefore = PENDING_ENTITY_VISUAL_CLEANUPS.size;
     let processed = 0;
     while (PENDING_ENTITY_VISUAL_CLEANUPS.size > 0) {
         const first = PENDING_ENTITY_VISUAL_CLEANUPS.keys().next();
@@ -7167,13 +5737,6 @@ function flushEntityVisualCleanups() {
     }
     if (PENDING_ENTITY_VISUAL_CLEANUPS.size > 0) {
         scheduleEntityVisualCleanupFlush();
-    }
-    if (window.AndroPerf && window.AndroPerf.enabled) {
-        window.AndroPerf.recordCleanup("entityVisualCleanup", __rxNowMs() - startedAt, {
-            processed: processed,
-            backlogBefore: backlogBefore,
-            backlogAfter: PENDING_ENTITY_VISUAL_CLEANUPS.size
-        });
     }
 }
 
@@ -7550,12 +6113,6 @@ function handlePacket_attackInfo(parts, i) {
             heroShield = shield;
         }
         if (!isNaN(hp) || !isNaN(shield)) {
-            __androPerfNoteEntityUpdate("hero_combat_stats", {
-                entityId: targetId,
-                packetKind: "Y",
-                hpKnown: !isNaN(hp),
-                shieldKnown: !isNaN(shield)
-            });
         }
     } else {
         const ent = entities[targetId];
@@ -7573,14 +6130,6 @@ function handlePacket_attackInfo(parts, i) {
                 ent.targetStatsHydratedAt = __rxNowMs();
             }
             if (!isNaN(hp) || !isNaN(shield)) {
-                __androPerfNoteEntityUpdate("entity_combat_stats", {
-                    entityId: targetId,
-                    packetKind: "Y",
-                    targetType: ent.kind,
-                    hpKnown: !isNaN(hp),
-                    shieldKnown: !isNaN(shield)
-                });
-                __androPerfNoteTargetInfoApplied(targetId, "Y");
             }
         }
     }
@@ -7669,11 +6218,6 @@ function handlePacket_remove(parts, i) {
         collectedBoxRequestIds.delete(e.id);
     }
     maybeClearMinimapEnemyWarningAfterForeignRemoval(e);
-    __androPerfNoteEntityUpdate("entity_remove", {
-        entityId: e.id,
-        packetKind: "2",
-        targetType: e.kind
-    });
 }
 
 function handlePacket_s(parts, i) {
@@ -7769,11 +6313,6 @@ function handlePacket_R(parts, i) {
         collectedBoxRequestIds.delete(ent.id);
     }
     maybeClearMinimapEnemyWarningAfterForeignRemoval(ent);
-    __androPerfNoteEntityUpdate("entity_remove", {
-        entityId: ent.id,
-        packetKind: "R",
-        targetType: ent.kind
-    });
 }
 
 function getLaserAmmoLabelById(ammoId) {
@@ -8082,10 +6621,6 @@ function handlePacket_K(parts, i) {
             flashClearEntityShipSkillVisualEffects(heroId);
         }
         if (typeof updateHtmlWindows === "function") updateHtmlWindows();
-        __androPerfNoteEntityUpdate("hero_kill", {
-            entityId: id,
-            packetKind: "K"
-        });
         return;
     }
     if (e) {
@@ -8108,11 +6643,6 @@ function handlePacket_K(parts, i) {
         unregisterEntityRuntimeActiveState(id);
         delete entities[id];
         if (loggedEntities.has(id)) loggedEntities.delete(id);
-        __androPerfNoteEntityUpdate("entity_kill", {
-            entityId: id,
-            packetKind: "K",
-            targetType: e.kind
-        });
     }
 }
 

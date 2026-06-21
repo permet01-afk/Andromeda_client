@@ -521,17 +521,6 @@ function sendSelectShip(targetId) {
         console.log("[WS] Sending SES →", packet);
     }
     sendRaw(packet);
-    try {
-        const perf = window.AndroPerf;
-        if (perf && perf.enabled && typeof perf.noteTargetSelection === "function") {
-            const ent = typeof entities !== "undefined" && targetId != null ? entities[targetId] : null;
-            perf.noteTargetSelection(targetId, ent && ent.kind || null, {
-                targetName: ent && ent.name || "",
-                hpKnown: !!(ent && ent.hp != null),
-                shieldKnown: !!(ent && ent.shield != null)
-            });
-        }
-    } catch (_) {}
 }
 
 function sendLaserAttack(targetId) {
@@ -4278,30 +4267,3 @@ function drawPvpOverlay() {
         ctx.restore();
     }
 }
-
-(function installAndroPerfCombatDrawHooks() {
-    if (!window.AndroPerf || !window.AndroPerf.enabled) return;
-    function wrap(label, fn) {
-        if (typeof fn !== "function" || fn.__androPerfWrapped) return fn;
-        const wrapped = function() {
-            const startedAt = performance.now();
-            try {
-                return fn.apply(this, arguments);
-            } finally {
-                window.AndroPerf.recordRender(label, performance.now() - startedAt);
-            }
-        };
-        wrapped.__androPerfWrapped = true;
-        return wrapped;
-    }
-    drawLaserBeams = wrap("drawLaserBeams", drawLaserBeams);
-    drawRocketAttacks = wrap("drawRocketAttacks", drawRocketAttacks);
-    drawSabShots = wrap("drawSabShots", drawSabShots);
-    drawDamageBubbles = wrap("drawDamageBubbles", drawDamageBubbles);
-    drawExplosions = wrap("drawExplosions", drawExplosions);
-    drawSmartbombEffects = wrap("drawSmartbombEffects", drawSmartbombEffects);
-    drawEmpEffects = wrap("drawEmpEffects", drawEmpEffects);
-    drawPortalJumpEffects = wrap("drawPortalJumpEffects", drawPortalJumpEffects);
-    drawHullDamageEffects = wrap("drawHullDamageEffects", drawHullDamageEffects);
-    drawRocketDamageEffects = wrap("drawRocketDamageEffects", drawRocketDamageEffects);
-})();
