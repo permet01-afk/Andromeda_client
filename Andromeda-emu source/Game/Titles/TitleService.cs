@@ -462,17 +462,9 @@ namespace OrbitReborn_Emulator.Game.Titles
 
             DataRow state = GetMostWantedState(client);
             int oldPlayerId = state == null ? 0 : GetInt(state, "holder_player_id");
-            int oldNpcId = state == null ? 0 : GetInt(state, "holder_npc_id");
             Session oldPlayerSession = oldPlayerId > 0 ? SessionManager.GetSessionByCharacterId(oldPlayerId) : null;
 
-            if (oldNpcId > 0)
-            {
-                Npc oldNpc = FindNpcById(oldNpcId);
-                if (oldNpc != null)
-                {
-                    SetNpcTitle(oldNpc, string.Empty, true);
-                }
-            }
+            ClearMostWantedFromNpcs(true);
 
             if (oldPlayerId > 0)
             {
@@ -598,18 +590,18 @@ namespace OrbitReborn_Emulator.Game.Titles
             return null;
         }
 
-        private static void ClearMostWantedFromNpcs()
+        private static void ClearMostWantedFromNpcs(bool mapWideNotify = false)
         {
             foreach (Npc npc in NpcAI.NpcList.Keys)
             {
                 if (npc != null && string.Equals(npc.GameTitle, MostWantedTitleKey, StringComparison.Ordinal))
                 {
-                    SetNpcTitle(npc, string.Empty, true);
+                    SetNpcTitle(npc, string.Empty, true, mapWideNotify);
                 }
             }
         }
 
-        private static void SetNpcTitle(Npc npc, string titleKey, bool notify)
+        private static void SetNpcTitle(Npc npc, string titleKey, bool notify, bool mapWideNotify = false)
         {
             if (npc == null || string.Equals(npc.GameTitle, titleKey, StringComparison.Ordinal))
             {
@@ -622,7 +614,14 @@ namespace OrbitReborn_Emulator.Game.Titles
             if (notify && instance != null)
             {
                 ServerMessage packet = PacketComposer.Compose("n", "pt|" + npc.Id + "|" + npc.GameTitle);
-                instance.BroadcastMessageInRange(packet, npc.Id, false);
+                if (mapWideNotify)
+                {
+                    instance.BroadcastMessage(packet, false);
+                }
+                else
+                {
+                    instance.BroadcastMessageInRange(packet, npc.Id, false);
+                }
             }
         }
 

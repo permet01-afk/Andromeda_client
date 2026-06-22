@@ -63,6 +63,15 @@ function getGameXmlColorPattern(key, fallback) {
     return fallback;
 }
 
+function normalizeRelationClanTag(value) {
+    if (value == null) return "";
+    return String(value).trim().replace(/^\[|\]$/g, "").toLowerCase();
+}
+
+function isEntityInvisibleOnMinimap(e) {
+    return false;
+}
+
 function isEntitySameMapGroupMember(e) {
     if (!e || e.id == null) return false;
     try {
@@ -84,11 +93,20 @@ function getRelationColorKeyForEntity(e) {
     }
     if (isEntitySameMapGroupMember(e)) return "sameGroup";
     const myClanId = typeof heroClanId === "number" && heroClanId > 0 ? heroClanId : 0;
-    if (myClanId && e.clanId && e.clanId === myClanId) {
+    const entityClanId = parseInt(e.clanId, 10) || 0;
+    if (myClanId && entityClanId && entityClanId === myClanId) {
         return "sameClan";
     }
+    if (!myClanId || !entityClanId) {
+        const myClanTag = normalizeRelationClanTag(typeof heroClanTag !== "undefined" ? heroClanTag : window.heroClanTag);
+        const entityClanTag = normalizeRelationClanTag(e.clanTag);
+        if (myClanTag && entityClanTag && myClanTag === entityClanTag) {
+            return "sameClan";
+        }
+    }
     const myFaction = window.heroFactionId || window.ANDROMEDA_CONFIG && window.ANDROMEDA_CONFIG.factionId || 0;
-    if (myFaction && e.factionId && e.factionId === myFaction) {
+    const entityFaction = parseInt(e.factionId, 10) || 0;
+    if (myFaction && entityFaction && entityFaction === parseInt(myFaction, 10)) {
         return "sameFraction";
     }
     return "enemy";
@@ -140,11 +158,11 @@ function getMinimapEntityColor(e) {
       case "sameGroup":
         return getGameXmlColorPattern("sameGroup", "#FFD700");
       case "sameClan":
-        return "#33ff33";
+        return getGameXmlColorPattern("sameClan", "#33ff33");
       case "sameFraction":
-        return "#0099ff";
+        return getGameXmlColorPattern("sameFraction", "#0099ff");
       case "enemy":
-        return "#ff0000";
+        return getGameXmlColorPattern("enemy", "#cc0000");
       default:
         return "#ffffff";
     }

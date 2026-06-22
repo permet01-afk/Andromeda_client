@@ -2881,17 +2881,23 @@ function handlePacket_n(parts, i) {
         const targetId = parseInt(parts[i + 1], 10);
         const state = parseInt(parts[i + 2], 10);
         const invisible = state === 1;
+        let minimapChanged = false;
         if (!isNaN(targetId)) {
             if (targetId === heroId) {
                 heroCloaked = invisible;
+                minimapChanged = true;
             } else {
                 const ent = getExistingVisualEntity(targetId);
                 if (!ent) return;
                 ent.invisible = invisible;
+                minimapChanged = true;
                 if (typeof window.__flashRefreshEntityInteractionAfterInv === "function") {
                     window.__flashRefreshEntityInteractionAfterInv(targetId, invisible);
                 }
             }
+        }
+        if (minimapChanged && typeof window.invalidateMinimapEntityRenderCache === "function") {
+            window.invalidateMinimapEntityRenderCache();
         }
     } else if (sub === "SMB") {
         const targetId = parseInt(parts[i + 1], 10);
