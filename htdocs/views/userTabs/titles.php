@@ -229,6 +229,9 @@ $renderTitleCard = function (array $card, bool $selectionMode = false) use ($esc
                         </div>
                         <h3><?php echo $escapeTitle($card['label'] ?? 'Unknown title'); ?></h3>
                         <p><?php echo $escapeTitle($card['condition'] ?? ''); ?></p>
+                        <?php if (!empty($card['holder_text'])) { ?>
+                            <div class="title-card__progress-text"><?php echo $escapeTitle($card['holder_text']); ?></div>
+                        <?php } ?>
                         <?php if (!empty($card['expires_at'])) { ?>
                             <div class="title-card__progress-text">Expires: <?php echo $escapeTitle($card['expires_at']); ?></div>
                         <?php } ?>

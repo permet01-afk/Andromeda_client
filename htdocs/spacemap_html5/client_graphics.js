@@ -6129,15 +6129,15 @@ function bindBitmapStates(el, states, isSelectedFn = null) {
 const SEPROM_SAFE_LEVELS = [ {
     level: 1,
     cost: 3e4,
-    capacity: 3e3
+    capacity: 6e3
 }, {
     level: 2,
     cost: 6e4,
-    capacity: 6e3
+    capacity: 12e3
 }, {
     level: 3,
     cost: 9e4,
-    capacity: 1e4
+    capacity: 2e4
 } ];
 
 const TRADE_SELL_BUTTON_BITMAP_STATES = {

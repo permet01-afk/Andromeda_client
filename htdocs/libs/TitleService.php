@@ -108,6 +108,7 @@ class TitleService
         $currentTitle = (string)($user['game_title'] ?? '');
         $selectedTitle = $this->getSelectedPermanentTitle();
         $temporary = $this->getActiveTemporaryOverride();
+        $mostWantedHolderLabel = $this->getMostWantedHolderLabel();
         $unlockedMap = $this->getUnlockedPermanentMap();
         $progressMap = $this->getProgressMap();
 
@@ -119,7 +120,7 @@ class TitleService
             'selected_title' => $selectedTitle,
             'selected_label' => self::getTitleLabel($selectedTitle),
             'beginner' => $this->buildBeginnerCard($user, $currentTitle),
-            'temporary_titles' => $this->buildTemporaryCards($temporary),
+            'temporary_titles' => $this->buildTemporaryCards($temporary, $mostWantedHolderLabel),
             'permanent_titles' => $this->buildPermanentCards($unlockedMap, $progressMap, $selectedTitle, !empty($temporary)),
         ];
     }
@@ -313,9 +314,10 @@ class TitleService
         ];
     }
 
-    private function buildTemporaryCards(array $activeTemporary): array
+    private function buildTemporaryCards(array $activeTemporary, string $mostWantedHolderLabel): array
     {
         $activeKey = (string)($activeTemporary['title_key'] ?? '');
+        $mostWantedHolderText = $mostWantedHolderLabel !== '' ? 'Current holder: ' . $mostWantedHolderLabel : '';
         return [
             [
                 'title_key' => self::MOST_WANTED_TITLE,
@@ -323,6 +325,7 @@ class TitleService
                 'type' => 'Temporary',
                 'status' => $activeKey === self::MOST_WANTED_TITLE ? 'Active' : 'Not active',
                 'condition' => 'Kill the current title holder. Expires after 7 days.',
+                'holder_text' => $mostWantedHolderText,
                 'expires_at' => $activeKey === self::MOST_WANTED_TITLE ? ($activeTemporary['expires_at'] ?? null) : null,
             ],
             [
@@ -476,6 +479,36 @@ class TitleService
         ]);
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return is_array($rows) ? $rows : [];
+    }
+
+    private function getMostWantedHolderLabel(): string
+    {
+        $stmt = $this->db->prepare(
+            'SELECT trs.holder_type, u.username
+             FROM title_runtime_state trs
+             LEFT JOIN users u ON u.id = trs.holder_player_id
+             WHERE trs.state_key = :state_key
+               AND trs.title_key = :title_key
+             LIMIT 1'
+        );
+        $stmt->execute([
+            ':state_key' => 'most_wanted',
+            ':title_key' => self::MOST_WANTED_TITLE,
+        ]);
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!is_array($row)) {
+            return '';
+        }
+
+        $holderType = strtolower(trim((string)($row['holder_type'] ?? '')));
+        if ($holderType === 'player') {
+            return trim((string)($row['username'] ?? ''));
+        }
+        if ($holderType === 'npc') {
+            return 'NPC';
+        }
+        return '';
     }
 
     private function getUnlockedPermanentMap(): array

@@ -6772,9 +6772,9 @@ function labOreIdToKey(id) {
 
 function getSepromSafeCapacityForLevel(level) {
     const lvl = Math.max(0, Math.min(3, parseInt(level, 10) || 0));
-    if (lvl === 1) return 3000;
-    if (lvl === 2) return 6000;
-    if (lvl === 3) return 10000;
+    if (lvl === 1) return 6000;
+    if (lvl === 2) return 12000;
+    if (lvl === 3) return 20000;
     return 0;
 }
 

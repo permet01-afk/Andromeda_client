@@ -4682,11 +4682,11 @@ namespace OrbitReborn_Emulator.Game.Characters
             switch (level)
             {
                 case 1:
-                    return 3000;
-                case 2:
                     return 6000;
+                case 2:
+                    return 12000;
                 case 3:
-                    return 10000;
+                    return 20000;
                 default:
                     return 0;
             }
