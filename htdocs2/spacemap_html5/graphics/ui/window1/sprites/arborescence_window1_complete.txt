@@ -1,0 +1,51 @@
+================================================================================= 
+ARBORESCENCE DÉTAILLÉE DU DOSSIER SPRITES (WINDOW1.SWF) 
+================================================================================= 
+├── Dossier: DefineSprite_27 
+│   ├── Fichiers: 1.png 
+│   ├── Dossier: DefineSprite_37 
+│   │   ├── Fichiers: 1.png 
+│   │   ├── Dossier: DefineSprite_39 
+│   │   │   ├── Fichiers: 1.png 
+│   │   │   ├── Dossier: DefineSprite_41 
+│   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   ├── Dossier: DefineSprite_48 
+│   │   │   │   │   ├── Fichiers: 1.png, 2.png 
+│   │   │   │   │   ├── Dossier: DefineSprite_53 
+│   │   │   │   │   │   ├── Fichiers: 1.png, 2.png 
+│   │   │   │   │   │   ├── Dossier: DefineSprite_58 
+│   │   │   │   │   │   │   ├── Fichiers: 1.png, 2.png 
+│   │   │   │   │   │   │   ├── Dossier: DefineSprite_60 
+│   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_61 
+│   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_62_windowContainer6 
+│   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_65 
+│   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png, 2.png 
+│   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_68 
+│   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_69 
+│   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_70_windowContainer5 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_73 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_75_windowContainer4 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png, 2.png 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_77 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_79_windowContainer3 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_82 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_84_windowContainer2 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_86 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Dossier: DefineSprite_88_windowContainer1 
+│   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   │   ├── Fichiers: 1.png 
+ 
+================================================================================= 
+TERMINÉ. Veuillez copier le contenu du fichier ci-dessous. 
+================================================================================= 
