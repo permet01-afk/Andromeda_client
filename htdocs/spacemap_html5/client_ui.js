@@ -514,6 +514,9 @@ function initSettingsWindow() {
         if (typeof window.sendFlashSettingsChunkFromState === "function") {
             window.sendFlashSettingsChunkFromState(appliedSettings);
         }
+        if (typeof window.resetAndromedaWindowPositions === "function") {
+            window.resetAndromedaWindowPositions({ syncServer: true });
+        }
         applySettingsToUi(win, appliedSettings);
     });
     applySettingsToUi(win, appliedSettings);
@@ -1764,4 +1767,3 @@ window.addEventListener("load", initGroupWindow);
 let lastTime = performance.now();
 
 let shieldAnimTime = 0;
-

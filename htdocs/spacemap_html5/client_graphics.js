@@ -5233,10 +5233,11 @@ function persistCorrectedFlashWindowSettingsLocally() {
 }
 
 function sendCurrentFlashWindowSettingsToServer() {
-    if (typeof sendSetting !== "function") return;
+    if (typeof sendSetting !== "function") return false;
     const payload = serializeCurrentFlashWindowSettingsValue();
-    if (!payload) return;
+    if (!payload) return false;
     sendSetting(`WINDOW_SETTINGS,${getFlashCurrentResolutionId()}`, payload);
+    return true;
 }
 
 function applyFlashMainMenuPositionSettingValue(value, options) {
@@ -8654,7 +8655,8 @@ function getRuntimeConfigForFlashWindowKey(key) {
     return typeof getFlashWindowRuntimeConfig === "function" ? getFlashWindowRuntimeConfig(key, base) : Object.assign({}, base);
 }
 
-function resetAndromedaWindowPositions() {
+function resetAndromedaWindowPositions(options = {}) {
+    const opts = options && typeof options === "object" ? options : {};
     const keys = typeof WINDOW_RUNTIME_ALLOWLIST !== "undefined" ? Array.from(WINDOW_RUNTIME_ALLOWLIST) : Object.keys(FLASH_WINDOW_ID_BY_KEY);
     const nextWindowSettings = {};
     const resetKeys = [];
@@ -8706,11 +8708,12 @@ function resetAndromedaWindowPositions() {
     if (typeof saveInterfaceLayout === "function") {
         saveInterfaceLayout();
     }
+    const serverSettingsChanged = opts.syncServer && typeof sendCurrentFlashWindowSettingsToServer === "function" ? !!sendCurrentFlashWindowSettingsToServer() : false;
     return {
         ok: true,
         resetWindows: resetKeys,
         geometryStorageCleared: true,
-        serverSettingsChanged: false
+        serverSettingsChanged: serverSettingsChanged
     };
 }
 
