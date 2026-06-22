@@ -1370,6 +1370,7 @@ function renderGroupList() {
 let groupShipIconClassMap = null;
 
 const groupShipIconAssetIds = new Set([ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 98, 99, 100, 101, 103, 111 ]);
+const groupVengeanceIconShipTypes = new Set([ 8, 17, 18, 116, 129 ]);
 
 function getGroupShipIconClassMap() {
     if (groupShipIconClassMap) return groupShipIconClassMap;
@@ -1392,6 +1393,9 @@ function resolveGroupShipIconAssetId(shipType) {
     const numericShipType = parseInt(shipType, 10);
     if (!Number.isFinite(numericShipType) || numericShipType <= 0) {
         return 0;
+    }
+    if (groupVengeanceIconShipTypes.has(numericShipType)) {
+        return 8;
     }
     const iconClassMap = getGroupShipIconClassMap();
     const iconClassID = Number.isFinite(iconClassMap[numericShipType]) ? iconClassMap[numericShipType] : null;
