@@ -2026,6 +2026,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 }
 
+                if (Spaceball.IsSpaceballNpc(npcTarget))
+                {
+                    Fight.StopCurrentShipSkill(attacker, true);
+                    Fight.SendShipSkillStatus(attacker);
+                    return;
+                }
+
                 npcTarget.UpdateAttackers(attacker.CharacterId, damagePerTick);
 
                 if (npcTarget.ShipHp - damagePerTick > 0)
@@ -2115,7 +2122,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                     Npc targetNpc = Fight.ResolveSelectedNpcTarget(Session);
                     if (targetNpc != null)
+                    {
+                        if (skillType == 5 && Spaceball.IsSpaceballNpc(targetNpc))
+                            return;
                         targetId = targetNpc.Id;
+                    }
                 }
 
                 if (targetId == 0)
@@ -4362,6 +4373,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void KillNPC(MapInstance map, Npc npc, Session session)
         {
+            if (Spaceball.IsSpaceballNpc(npc))
+            {
+                npc.ShipHp = npc.ShipMaxHp > 0 ? npc.ShipMaxHp : 1;
+                npc.ShipShield = npc.ShipMaxShield > 0 ? npc.ShipMaxShield : Math.Max(0, npc.ShipShield);
+                npc.IsDestroying = false;
+                return;
+            }
+
             npc.Destroy(map);
         }
 
@@ -4460,6 +4479,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
         {
             if (session == null || session.CharacterInfo == null || npc == null || instance == null)
                 return;
+            if (Spaceball.IsSpaceballNpc(npc))
+                return;
             if (!CanSessionAttackNpc(session, npc))
                 return;
 
@@ -4499,6 +4520,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private static void ApplyShieldOnlyDamageToNpc(Session session, Npc npc, int damage, MapInstance instance)
         {
             if (session == null || session.CharacterInfo == null || npc == null || instance == null)
+                return;
+            if (Spaceball.IsSpaceballNpc(npc))
                 return;
             if (!CanSessionAttackNpc(session, npc))
                 return;

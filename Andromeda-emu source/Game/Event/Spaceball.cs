@@ -101,6 +101,14 @@ namespace OrbitReborn_Emulator.Game.Event
                 return Spaceball.mActive && mapId == SpaceballMapId;
         }
 
+        public static bool IsSpaceballNpc(Npc npc)
+        {
+            return npc != null
+                && npc.ShipId == SpaceballShipId
+                && npc.MapId == SpaceballMapId
+                && string.Equals(npc.Name, "Spaceball", StringComparison.OrdinalIgnoreCase);
+        }
+
         public static void ShowHud(Session Session)
         {
             if (!Spaceball.mActive)
