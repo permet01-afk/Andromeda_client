@@ -1,4 +1,4 @@
--- Andromeda Pilot Bio / Skill Tree V1.3 manual SQL.
+-- Andromeda Pilot Bio / Skill Tree V1.4 manual SQL.
 -- Make a full database backup before running this file.
 -- Run and validate locally/test first, then only run live after validation.
 -- This file creates/seeds Pilot Bio tables and migrates existing players to Pilot Bio.
@@ -78,16 +78,10 @@ VALUES
   ('shield_mechanics', 'Shield Mechanics', 'Improves how much damage your shields can absorb.', 'defense', 7, 5, 'active', 'shield_absorption', '[72,74,76,78,82]', '[]'),
   ('tactics', 'Tactics', 'Increases experience gained from aliens.', 'progression', 8, 5, 'later', 'alien_xp_percent', '[2,4,6,8,12]', '[]'),
   ('logistics', 'Logistics', 'Expands your cargo bay.', 'progression', 9, 5, 'later', 'cargo_capacity_percent', '[4,8,12,16,25]', '[]'),
-  ('luck_i', 'Luck I', 'Increases Uridium found in bonus boxes.', 'progression', 10, 2, 'later', 'bonus_box_uridium_percent', '[2,4]', '[]'),
-  ('luck_ii', 'Luck II', 'Further increases Uridium found in bonus boxes.', 'progression', 11, 3, 'later', 'bonus_box_uridium_percent', '[6,8,12]', '[{"node":"luck_i","level":2}]'),
   ('cruelty_i', 'Cruelty I', 'Increases honor gained from enemies.', 'progression', 12, 2, 'later', 'honor_percent', '[4,8]', '[]'),
   ('cruelty_ii', 'Cruelty II', 'Further increases honor gained from enemies.', 'progression', 13, 3, 'later', 'honor_percent', '[12,18,25]', '[{"node":"cruelty_i","level":2}]'),
-  ('tractor_beam_i', 'Tractor Beam I', 'Increases cargo collected from cargo boxes.', 'progression', 14, 5, 'later', 'cargo_box_loot_percent', '[1,2,3,4,6]', '[]'),
-  ('tractor_beam_ii', 'Tractor Beam II', 'Increases rewards collected from bonus boxes.', 'progression', 15, 5, 'later', 'bonus_box_loot_percent', '[2,6,10,15,20]', '[{"node":"tractor_beam_i","level":5}]'),
   ('greed', 'Greed', 'Increases credits gained from aliens.', 'progression', 16, 5, 'later', 'alien_credit_percent', '[4,8,12,18,25]', '[]'),
   ('smartbomb_tech', 'Smartbomb Tech', 'Improves Smart Bomb damage.', 'offense', 17, 2, 'active', 'smartbomb_damage', '[25000,35000]', '[]'),
-  ('detonation_ii', 'Detonation II', 'Further increases mine damage.', 'offense', 18, 3, 'later', 'mine_damage_percent', '[21,28,50]', '[]'),
-  ('explosives', 'Explosives', 'Increases mine explosion radius.', 'offense', 19, 5, 'later', 'mine_radius_percent', '[4,8,12,18,25]', '[]'),
   ('heat_seeking_missiles', 'Heat-Seeking Missiles', 'Improves rocket accuracy.', 'offense', 20, 5, 'later', 'rocket_hit_chance_percent', '[1,2,4,6,10]', '[]'),
   ('bounty_hunter_i', 'Bounty Hunter I', 'Increases laser damage against players.', 'offense', 21, 2, 'active', 'pvp_laser_damage_percent', '[2,4]', '[]'),
   ('bounty_hunter_ii', 'Bounty Hunter II', 'Further increases laser damage against players.', 'offense', 22, 3, 'active', 'pvp_laser_damage_percent', '[6,8,12]', '[{"node":"bounty_hunter_i","level":2}]'),
@@ -104,6 +98,20 @@ ON DUPLICATE KEY UPDATE
   effect_key = VALUES(effect_key),
   effect_values_json = VALUES(effect_values_json),
   prerequisites_json = VALUES(prerequisites_json);
+
+-- V1.4 retires nodes that are not useful for Andromeda balancing.
+-- Clean DB restores will not create them. If an older Pilot Bio seed already exists,
+-- this keeps the rows for FK safety but excludes them from UI/schema readiness.
+UPDATE pilot_bio_nodes
+SET status = 'disabled'
+WHERE node_code IN (
+  'luck_i',
+  'luck_ii',
+  'tractor_beam_i',
+  'tractor_beam_ii',
+  'detonation_ii',
+  'explosives'
+);
 
 INSERT INTO pilot_bio_point_costs (point_number, logfile_cost) VALUES
 (1, 30),
@@ -166,7 +174,7 @@ ON DUPLICATE KEY UPDATE logfile_cost = VALUES(logfile_cost);
 --   hp_lvl 3 or 4          -> Ship Hull I level 2 + Ship Hull II level 1
 --   hp_lvl 5 to 9          -> Ship Hull I level 2 + Ship Hull II level 2
 --   hp_lvl 10 (+50,000 HP) -> Ship Hull I level 2 + Ship Hull II level 3
--- Ship Hull I and II are additive in V1.3, so max Pilot Bio Ship Hull gives +60,000 HP total.
+-- Ship Hull I and II are additive in V1.4, so max Pilot Bio Ship Hull gives +60,000 HP total.
 -- A legacy hp_lvl 10 pilot gains +10,000 HP compared to old full Ship Integrity after migration.
 -- hp_lvl 4 and 6-9 are rounded down to the lower Pilot Bio HP tier.
 -- Optional compensation for those intermediate HP tiers can be decided later.
@@ -328,8 +336,13 @@ WHERE s.user_id IS NULL;
 SELECT n.node_code, n.display_name, n.status, COUNT(l.user_id) AS pilots_with_level, COALESCE(SUM(l.level), 0) AS total_levels
 FROM pilot_bio_nodes n
 LEFT JOIN player_pilot_bio_levels l ON l.node_code = n.node_code AND l.level > 0
+WHERE n.status <> 'disabled'
 GROUP BY n.node_code, n.display_name, n.status
 ORDER BY n.visual_slot ASC;
+
+SELECT COUNT(*) AS visible_pilot_bio_nodes
+FROM pilot_bio_nodes
+WHERE status <> 'disabled';
 
 SELECT COALESCE(SUM(spent_points), 0) AS total_spent_points, COALESCE(SUM(research_points), 0) AS total_research_points
 FROM player_pilot_bio_state;

@@ -45,11 +45,22 @@ if (session_status() === PHP_SESSION_ACTIVE) {
 }
 
 $pilotBio = $pilotBioService->getViewModel();
-$pilotBioSlots = range(1, 25);
+$pilotBioTrackLabels = [
+    'defense' => 'Defense',
+    'progression' => 'Progression',
+    'offense' => 'Offense',
+];
 
-$nodesBySlot = [];
+$nodesByTrack = [];
+foreach ($pilotBioTrackLabels as $trackCode => $trackLabel) {
+    $nodesByTrack[$trackCode] = [];
+}
 foreach ($pilotBio['catalog'] as $pilotNode) {
-    $nodesBySlot[(int)$pilotNode['slot']] = $pilotNode;
+    $trackCode = (string)($pilotNode['track'] ?? '');
+    if (!isset($nodesByTrack[$trackCode])) {
+        $nodesByTrack[$trackCode] = [];
+    }
+    $nodesByTrack[$trackCode][] = $pilotNode;
 }
 
 $escapePilot = static function ($value): string {
@@ -241,14 +252,34 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
 
     .pilot-bio-tree-grid {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 0.8rem;
-        max-width: 760px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.9rem;
+        max-width: 1040px;
         margin: 0 auto;
+        overflow: visible;
+    }
+
+    .pilot-bio-track {
         border: 1px solid rgba(94, 214, 255, 0.12);
         background: rgba(0, 0, 0, 0.18);
         border-radius: 7px;
         padding: 1rem;
+        overflow: visible;
+    }
+
+    .pilot-bio-track-title {
+        margin: 0 0 0.85rem;
+        color: var(--pilot-accent);
+        font-size: 0.78rem;
+        letter-spacing: 0;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .pilot-bio-track-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+        gap: 0.8rem 0.65rem;
         overflow: visible;
     }
 
@@ -417,16 +448,10 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
     #pilot_skill_7 { background-position: -296px 0; }
     #pilot_skill_8 { background-position: -1628px 0; }
     #pilot_skill_9 { background-position: -1184px 0; }
-    #pilot_skill_10 { background-position: -1480px 0; }
-    #pilot_skill_11 { background-position: -1998px 0; }
     #pilot_skill_12 { background-position: -1702px 0; }
     #pilot_skill_13 { background-position: -1036px 0; }
-    #pilot_skill_14 { background-position: -1850px 0; }
-    #pilot_skill_15 { background-position: -666px 0; }
     #pilot_skill_16 { background-position: -888px 0; }
     #pilot_skill_17 { background-position: -740px 0; }
-    #pilot_skill_18 { background-position: -1258px 0; }
-    #pilot_skill_19 { background-position: -814px 0; }
     #pilot_skill_20 { background-position: -1110px 0; }
     #pilot_skill_21 { background-position: -1776px 0; }
     #pilot_skill_22 { background-position: -2072px 0; }
@@ -474,7 +499,11 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
         }
 
         .pilot-bio-tree-grid {
+            grid-template-columns: 1fr;
             gap: 0.55rem;
+        }
+
+        .pilot-bio-track {
             padding: 0.75rem;
         }
 
@@ -550,57 +579,67 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
 
         <div class="pilot-bio-tree" aria-label="Pilot Bio Skill Tree">
             <div class="pilot-bio-tree-grid">
-                <?php foreach ($pilotBioSlots as $slot) {
-                    $node = $nodesBySlot[$slot];
-                    $classes = ['pilot-bio-node'];
-                    $columnNumber = (($slot - 1) % 5) + 1;
-                    if ($columnNumber === 1) $classes[] = 'tooltip-left';
-                    if ($columnNumber === 5) $classes[] = 'tooltip-right';
-                    if ($node['status'] !== 'active') $classes[] = 'is-later';
-                    if (!empty($node['is_locked'])) $classes[] = 'is-locked';
-                    if (!empty($node['can_upgrade'])) $classes[] = 'can-upgrade';
-                    if (!empty($node['is_maxed'])) $classes[] = 'is-maxed';
-                    $statusLabel = 'Later';
-                    if ($node['is_maxed']) {
-                        $statusLabel = 'Maxed';
-                    } elseif ($node['can_upgrade']) {
-                        $statusLabel = 'Available';
-                    } elseif ($node['status'] === 'active' && $stateReady) {
-                        $statusLabel = $node['is_locked'] ? 'Locked' : 'No points';
-                    } elseif ($node['status'] === 'active') {
-                        $statusLabel = 'Migration required';
+                <?php foreach ($pilotBioTrackLabels as $trackCode => $trackLabel) {
+                    $trackNodes = $nodesByTrack[$trackCode] ?? [];
+                    if (empty($trackNodes)) {
+                        continue;
                     }
                 ?>
-                    <div class="<?php echo implode(' ', $classes); ?>">
-                        <form method="post">
-                            <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
-                            <input type="hidden" name="pilot_bio_action" value="upgrade_node">
-                            <input type="hidden" name="node_code" value="<?php echo $escapePilot($node['node_code']); ?>">
-                            <button class="pilot-bio-node-button" type="submit"<?php echo empty($node['can_upgrade']) ? ' disabled' : ''; ?> aria-label="<?php echo $escapePilot($node['display_name']); ?>">
-                                <span class="pilot-bio-node-icon" id="pilot_skill_<?php echo (int)$node['slot']; ?>"></span>
-                                <span class="pilot-bio-points"><?php echo (int)$node['level']; ?>/<?php echo (int)$node['max_level']; ?></span>
-                            </button>
-                        </form>
-                        <div class="pilot-bio-node-name"><?php echo $escapePilot($node['display_name']); ?></div>
-                        <div class="pilot-bio-node-status"><?php echo $escapePilot($statusLabel); ?></div>
-                        <div class="pilot-bio-node-tooltip">
-                            <strong><?php echo $escapePilot($node['display_name']); ?></strong>
-                            <em>Level <?php echo (int)$node['level']; ?>/<?php echo (int)$node['max_level']; ?> - <?php echo $escapePilot($statusLabel); ?></em>
-                            <span><?php echo $escapePilot($node['description']); ?></span>
-                            <span>Current: <?php echo $escapePilot($node['effect_text']); ?></span>
-                            <?php if (!$node['is_maxed']) { ?>
-                                <span>Next level: <?php echo $escapePilot($node['next_effect_text']); ?></span>
-                            <?php } ?>
-                            <span>Cost: <?php echo ($node['status'] === 'active') ? '1 Research Point per level' : 'Not available in V1'; ?></span>
-                            <span>Prerequisite: <?php echo $escapePilot($node['prerequisite_text']); ?></span>
-                            <?php if ($node['v1_note'] !== '') { ?>
-                                <span><?php echo $escapePilot($node['v1_note']); ?></span>
-                            <?php } ?>
-                            <?php if (!$stateReady && $node['status'] === 'active') { ?>
-                                <span>Pilot Bio migration is required before this node can be upgraded.</span>
+                    <section class="pilot-bio-track pilot-bio-track-<?php echo $escapePilot($trackCode); ?>">
+                        <h3 class="pilot-bio-track-title"><?php echo $escapePilot($trackLabel); ?></h3>
+                        <div class="pilot-bio-track-grid">
+                            <?php foreach ($trackNodes as $nodeIndex => $node) {
+                                $classes = ['pilot-bio-node'];
+                                if ($nodeIndex === 0) $classes[] = 'tooltip-left';
+                                if ($nodeIndex === count($trackNodes) - 1) $classes[] = 'tooltip-right';
+                                if ($node['status'] !== 'active') $classes[] = 'is-later';
+                                if (!empty($node['is_locked'])) $classes[] = 'is-locked';
+                                if (!empty($node['can_upgrade'])) $classes[] = 'can-upgrade';
+                                if (!empty($node['is_maxed'])) $classes[] = 'is-maxed';
+                                $statusLabel = 'Later';
+                                if ($node['is_maxed']) {
+                                    $statusLabel = 'Maxed';
+                                } elseif ($node['can_upgrade']) {
+                                    $statusLabel = 'Available';
+                                } elseif ($node['status'] === 'active' && $stateReady) {
+                                    $statusLabel = $node['is_locked'] ? 'Locked' : 'No points';
+                                } elseif ($node['status'] === 'active') {
+                                    $statusLabel = 'Migration required';
+                                }
+                            ?>
+                                <div class="<?php echo implode(' ', $classes); ?>">
+                                    <form method="post">
+                                        <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
+                                        <input type="hidden" name="pilot_bio_action" value="upgrade_node">
+                                        <input type="hidden" name="node_code" value="<?php echo $escapePilot($node['node_code']); ?>">
+                                        <button class="pilot-bio-node-button" type="submit"<?php echo empty($node['can_upgrade']) ? ' disabled' : ''; ?> aria-label="<?php echo $escapePilot($node['display_name']); ?>">
+                                            <span class="pilot-bio-node-icon" id="pilot_skill_<?php echo (int)$node['slot']; ?>"></span>
+                                            <span class="pilot-bio-points"><?php echo (int)$node['level']; ?>/<?php echo (int)$node['max_level']; ?></span>
+                                        </button>
+                                    </form>
+                                    <div class="pilot-bio-node-name"><?php echo $escapePilot($node['display_name']); ?></div>
+                                    <div class="pilot-bio-node-status"><?php echo $escapePilot($statusLabel); ?></div>
+                                    <div class="pilot-bio-node-tooltip">
+                                        <strong><?php echo $escapePilot($node['display_name']); ?></strong>
+                                        <em>Level <?php echo (int)$node['level']; ?>/<?php echo (int)$node['max_level']; ?> - <?php echo $escapePilot($statusLabel); ?></em>
+                                        <span><?php echo $escapePilot($node['description']); ?></span>
+                                        <span>Current: <?php echo $escapePilot($node['effect_text']); ?></span>
+                                        <?php if (!$node['is_maxed']) { ?>
+                                            <span>Next level: <?php echo $escapePilot($node['next_effect_text']); ?></span>
+                                        <?php } ?>
+                                        <span>Cost: <?php echo ($node['status'] === 'active') ? '1 Research Point per level' : 'Not available in V1'; ?></span>
+                                        <span>Prerequisite: <?php echo $escapePilot($node['prerequisite_text']); ?></span>
+                                        <?php if ($node['v1_note'] !== '') { ?>
+                                            <span><?php echo $escapePilot($node['v1_note']); ?></span>
+                                        <?php } ?>
+                                        <?php if (!$stateReady && $node['status'] === 'active') { ?>
+                                            <span>Pilot Bio migration is required before this node can be upgraded.</span>
+                                        <?php } ?>
+                                    </div>
+                                </div>
                             <?php } ?>
                         </div>
-                    </div>
+                    </section>
                 <?php } ?>
             </div>
         </div>

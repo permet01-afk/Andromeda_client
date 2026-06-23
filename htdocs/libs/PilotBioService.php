@@ -123,30 +123,6 @@ class PilotBioService
                 'prerequisites' => [],
             ],
             [
-                'slot' => 10,
-                'node_code' => 'luck_i',
-                'display_name' => 'Luck I',
-                'description' => 'Increases Uridium found in bonus boxes.',
-                'track' => 'progression',
-                'max_level' => 2,
-                'status' => 'later',
-                'effect_key' => 'bonus_box_uridium_percent',
-                'effect_values' => [2, 4],
-                'prerequisites' => [],
-            ],
-            [
-                'slot' => 11,
-                'node_code' => 'luck_ii',
-                'display_name' => 'Luck II',
-                'description' => 'Further increases Uridium found in bonus boxes.',
-                'track' => 'progression',
-                'max_level' => 3,
-                'status' => 'later',
-                'effect_key' => 'bonus_box_uridium_percent',
-                'effect_values' => [6, 8, 12],
-                'prerequisites' => [['node' => 'luck_i', 'level' => 2]],
-            ],
-            [
                 'slot' => 12,
                 'node_code' => 'cruelty_i',
                 'display_name' => 'Cruelty I',
@@ -171,30 +147,6 @@ class PilotBioService
                 'prerequisites' => [['node' => 'cruelty_i', 'level' => 2]],
             ],
             [
-                'slot' => 14,
-                'node_code' => 'tractor_beam_i',
-                'display_name' => 'Tractor Beam I',
-                'description' => 'Increases cargo collected from cargo boxes.',
-                'track' => 'progression',
-                'max_level' => 5,
-                'status' => 'later',
-                'effect_key' => 'cargo_box_loot_percent',
-                'effect_values' => [1, 2, 3, 4, 6],
-                'prerequisites' => [],
-            ],
-            [
-                'slot' => 15,
-                'node_code' => 'tractor_beam_ii',
-                'display_name' => 'Tractor Beam II',
-                'description' => 'Increases rewards collected from bonus boxes.',
-                'track' => 'progression',
-                'max_level' => 5,
-                'status' => 'later',
-                'effect_key' => 'bonus_box_loot_percent',
-                'effect_values' => [2, 6, 10, 15, 20],
-                'prerequisites' => [['node' => 'tractor_beam_i', 'level' => 5]],
-            ],
-            [
                 'slot' => 16,
                 'node_code' => 'greed',
                 'display_name' => 'Greed',
@@ -216,30 +168,6 @@ class PilotBioService
                 'status' => 'active',
                 'effect_key' => 'smartbomb_damage',
                 'effect_values' => [25000, 35000],
-                'prerequisites' => [],
-            ],
-            [
-                'slot' => 18,
-                'node_code' => 'detonation_ii',
-                'display_name' => 'Detonation II',
-                'description' => 'Further increases mine damage.',
-                'track' => 'offense',
-                'max_level' => 3,
-                'status' => 'later',
-                'effect_key' => 'mine_damage_percent',
-                'effect_values' => [21, 28, 50],
-                'prerequisites' => [],
-            ],
-            [
-                'slot' => 19,
-                'node_code' => 'explosives',
-                'display_name' => 'Explosives',
-                'description' => 'Increases mine explosion radius.',
-                'track' => 'offense',
-                'max_level' => 5,
-                'status' => 'later',
-                'effect_key' => 'mine_radius_percent',
-                'effect_values' => [4, 8, 12, 18, 25],
                 'prerequisites' => [],
             ],
             [
@@ -562,9 +490,9 @@ class PilotBioService
                 return false;
             }
 
-            $nodeStmt = $this->db->prepare('SELECT COUNT(*) FROM pilot_bio_nodes');
+            $nodeStmt = $this->db->prepare("SELECT COUNT(*) FROM pilot_bio_nodes WHERE status <> 'disabled'");
             $nodeStmt->execute();
-            $ready = ((int)$nodeStmt->fetchColumn()) >= 25;
+            $ready = ((int)$nodeStmt->fetchColumn()) >= count(self::catalog());
             return $ready;
         } catch (Throwable $e) {
             $ready = false;
