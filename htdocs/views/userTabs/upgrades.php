@@ -26,6 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pilot_bio_action'])) 
             $result = $pilotBioService->exchangeResearchPoint();
         } elseif ($action === 'upgrade_node') {
             $result = $pilotBioService->upgradeNode((string)($_POST['node_code'] ?? ''));
+        } elseif ($action === 'reset_bio') {
+            $result = $pilotBioService->resetPilotBio();
         }
     }
 
@@ -187,6 +189,14 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
         font-size: 0.9rem;
     }
 
+    .pilot-bio-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
     .pilot-bio-button {
         border: 1px solid var(--pilot-accent);
         background: rgba(94, 214, 255, 0.1);
@@ -210,6 +220,17 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
         color: #7f8b9a;
         cursor: not-allowed;
         box-shadow: none;
+    }
+
+    .pilot-bio-button.is-reset {
+        border-color: rgba(248, 113, 113, 0.58);
+        background: rgba(248, 113, 113, 0.08);
+    }
+
+    .pilot-bio-button.is-reset:hover {
+        background: rgba(248, 113, 113, 0.92);
+        color: #ffffff;
+        box-shadow: 0 0 16px rgba(248, 113, 113, 0.24);
     }
 
     .pilot-bio-tree {
@@ -441,6 +462,12 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
             align-items: stretch;
         }
 
+        .pilot-bio-actions,
+        .pilot-bio-exchange {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
         .pilot-bio-resources {
             min-width: 0;
             grid-template-columns: 1fr;
@@ -498,18 +525,27 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
     <section class="pilot-bio-card">
         <div class="pilot-bio-toolbar">
             <h2>Skill Tree</h2>
-            <form method="post" class="pilot-bio-exchange">
-                <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
-                <input type="hidden" name="pilot_bio_action" value="exchange_point">
-                <span>
-                    <?php if ($nextPointCost === null) { ?>
-                        Maximum Research Points reached
-                    <?php } else { ?>
-                        Next Research Point: <?php echo number_format((int)$nextPointCost); ?> Logfiles
-                    <?php } ?>
-                </span>
-                <button class="pilot-bio-button" type="submit"<?php echo (!$schemaReady || !$stateReady || $nextPointCost === null || $logfiles < (int)$nextPointCost) ? ' disabled' : ''; ?>>Exchange Logfiles</button>
-            </form>
+            <div class="pilot-bio-actions">
+                <form method="post" class="pilot-bio-exchange">
+                    <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
+                    <input type="hidden" name="pilot_bio_action" value="exchange_point">
+                    <span>
+                        <?php if ($nextPointCost === null) { ?>
+                            Maximum Research Points reached
+                        <?php } else { ?>
+                            Next Research Point: <?php echo number_format((int)$nextPointCost); ?> Logfiles
+                        <?php } ?>
+                    </span>
+                    <button class="pilot-bio-button" type="submit"<?php echo (!$schemaReady || !$stateReady || $nextPointCost === null || $logfiles < (int)$nextPointCost) ? ' disabled' : ''; ?>>Exchange Logfiles</button>
+                </form>
+                <?php if ($stateReady) { ?>
+                    <form method="post" onsubmit="return confirm('This will reset all Pilot Bio skills and return spent Research Points. Continue?');">
+                        <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
+                        <input type="hidden" name="pilot_bio_action" value="reset_bio">
+                        <button class="pilot-bio-button is-reset" type="submit">Reset Pilot Bio</button>
+                    </form>
+                <?php } ?>
+            </div>
         </div>
 
         <div class="pilot-bio-tree" aria-label="Pilot Bio Skill Tree">

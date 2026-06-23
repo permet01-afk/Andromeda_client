@@ -506,6 +506,37 @@ class PilotBioService
         }
     }
 
+    public function resetPilotBio(): array
+    {
+        if (!$this->isSchemaReady()) {
+            return ['success' => false, 'message' => 'Pilot Bio database schema is not installed yet.'];
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $state = $this->lockState();
+            if ($state === null) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Pilot Bio reset is only available for migrated pilots.'];
+            }
+
+            $resetLevels = $this->db->prepare('UPDATE player_pilot_bio_levels SET level = 0 WHERE user_id = :player_id');
+            $resetLevels->execute([':player_id' => $this->playerId]);
+
+            $returnPoints = $this->db->prepare('UPDATE player_pilot_bio_state SET research_points = research_points + spent_points, spent_points = 0 WHERE user_id = :player_id LIMIT 1');
+            $returnPoints->execute([':player_id' => $this->playerId]);
+
+            $this->db->commit();
+            return ['success' => true, 'message' => 'Pilot Bio has been reset. Your spent Research Points were returned.'];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return ['success' => false, 'message' => 'Pilot Bio reset failed.'];
+        }
+    }
+
     private function isSchemaReady(): bool
     {
         static $ready = null;
