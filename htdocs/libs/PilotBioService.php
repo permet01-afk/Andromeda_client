@@ -337,8 +337,12 @@ class PilotBioService
             $byCode[$node['node_code']] = $node;
         }
 
+        $legacySkills = $this->parseLegacySkilltree($resources['skilltree']);
+        $maxPointNumber = $schemaReady ? $this->getMaxPointNumber() : 50;
         $nextPointNumber = $state ? ((int)$state['research_points'] + (int)$state['spent_points'] + 1) : 1;
-        $nextPointCost = $schemaReady ? $this->getPointCost($nextPointNumber) : $this->fallbackPointCost($nextPointNumber);
+        $nextPointCost = ($nextPointNumber <= $maxPointNumber)
+            ? ($schemaReady ? $this->getPointCost($nextPointNumber) : $this->fallbackPointCost($nextPointNumber))
+            : null;
 
         foreach ($catalog as &$node) {
             $code = $node['node_code'];
@@ -354,6 +358,11 @@ class PilotBioService
                 && !$node['is_locked']
                 && (int)$state['research_points'] > 0;
             $node['effect_text'] = $this->effectText($node, $node['level']);
+            $node['next_effect_text'] = $node['is_maxed']
+                ? 'Maximum level reached.'
+                : $this->effectText($node, $node['level'] + 1);
+            $node['prerequisite_text'] = $this->prerequisiteText($node, $byCode);
+            $node['v1_note'] = $this->v1NoteText($node);
         }
         unset($node);
 
@@ -366,6 +375,9 @@ class PilotBioService
             'levels' => $levels,
             'next_point_number' => $nextPointNumber,
             'next_point_cost' => $nextPointCost,
+            'max_research_points' => $maxPointNumber,
+            'legacy_skills' => $legacySkills,
+            'migration_summary' => $this->migrationSummary($resources, $legacySkills),
         ];
     }
 
@@ -391,6 +403,11 @@ class PilotBioService
             }
 
             $pointNumber = (int)$state['research_points'] + (int)$state['spent_points'] + 1;
+            if ($pointNumber > $this->getMaxPointNumber()) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Maximum Research Points reached.'];
+            }
+
             $cost = $this->getPointCost($pointNumber);
 
             if ((int)$user['logfiles'] < $cost) {
@@ -587,6 +604,21 @@ class PilotBioService
         return $this->fallbackPointCost($pointNumber);
     }
 
+    private function getMaxPointNumber(): int
+    {
+        try {
+            $stmt = $this->db->prepare('SELECT MAX(point_number) FROM pilot_bio_point_costs');
+            $stmt->execute();
+            $maxPoint = $stmt->fetchColumn();
+            if ($maxPoint !== false) {
+                return max(1, (int)$maxPoint);
+            }
+        } catch (Throwable $e) {
+        }
+
+        return 50;
+    }
+
     private function fallbackPointCost(int $pointNumber): int
     {
         return max(30, (int)ceil(30 * pow(1.1, max(0, $pointNumber - 1))));
@@ -608,6 +640,17 @@ class PilotBioService
     private function effectText(array $node, int $level): string
     {
         if ($level <= 0) {
+            switch ($node['effect_key']) {
+                case 'shield_absorption':
+                    return '70% base shield absorption';
+                case 'repair_bot':
+                    return '10,000 HP per repair tick';
+                case 'smartbomb_damage':
+                    return '20,000 Smart Bomb damage';
+                default:
+                    break;
+            }
+
             return 'No active bonus yet.';
         }
 
@@ -646,6 +689,120 @@ class PilotBioService
             default:
                 return 'Active bonus.';
         }
+    }
+
+    private function prerequisiteText(array $node, array $byCode): string
+    {
+        if (empty($node['prerequisites'])) {
+            return 'None';
+        }
+
+        $parts = [];
+        foreach ($node['prerequisites'] as $prerequisite) {
+            $requiredNode = (string)($prerequisite['node'] ?? '');
+            $requiredLevel = (int)($prerequisite['level'] ?? 0);
+            $name = $byCode[$requiredNode]['display_name'] ?? $requiredNode;
+            $parts[] = $name . ' level ' . $requiredLevel;
+        }
+
+        return implode(', ', $parts);
+    }
+
+    private function v1NoteText(array $node): string
+    {
+        if ($node['status'] !== 'active') {
+            if ($node['node_code'] === 'shield_engineering') {
+                return 'Later: shield capacity bonus is not active in V1.';
+            }
+
+            return 'Later: this node is visible for the future Pilot Bio tree and cannot be upgraded in V1.';
+        }
+
+        if ($node['node_code'] === 'bounty_hunter_ii') {
+            return 'Fat lasers unlock when Bounty Hunter II is maxed.';
+        }
+
+        return '';
+    }
+
+    private function parseLegacySkilltree(string $skilltree): array
+    {
+        $skills = [];
+        foreach (explode('/', $skilltree) as $entry) {
+            $parts = explode(':', $entry, 2);
+            if (count($parts) !== 2) {
+                continue;
+            }
+
+            $key = trim($parts[0]);
+            if ($key === '') {
+                continue;
+            }
+
+            $skills[$key] = max(0, (int)$parts[1]);
+        }
+
+        return $skills;
+    }
+
+    private function migrationSummary(array $resources, array $legacySkills): array
+    {
+        $hpMigration = $this->shipHullMigration((int)$resources['hp_lvl']);
+        $dmg = min(5, (int)($legacySkills['dmg'] ?? 0));
+        $shdAbs = min(3, (int)($legacySkills['shd_abs'] ?? 0));
+        $rep = min(3, (int)($legacySkills['rep'] ?? 0));
+        $smb = min(2, (int)($legacySkills['smb'] ?? 0));
+        $shreg = min(5, (int)($legacySkills['shreg'] ?? 0));
+        $rck = min(5, (int)($legacySkills['rck'] ?? 0));
+
+        return [
+            'Ship Hull' => $hpMigration,
+            'Alien Hunter' => $dmg > 0 ? 'Level ' . $dmg : 'No legacy damage level found.',
+            'Bounty Hunter I' => $dmg > 0 ? 'Level ' . min(2, $dmg) : 'No legacy damage level found.',
+            'Bounty Hunter II' => $dmg >= 3 ? 'Level ' . min(3, $dmg - 2) : 'No Bounty Hunter II level from legacy damage.',
+            'Shield Mechanics' => $shdAbs > 0 ? 'Level ' . ($shdAbs === 3 ? 5 : ($shdAbs === 2 ? 3 : 1)) : 'No legacy shield absorption level found.',
+            'Engineering' => $rep > 0 ? 'Level ' . ($rep === 3 ? 5 : $rep) : 'No legacy repair level found.',
+            'Smartbomb Tech' => $smb > 0 ? 'Level ' . $smb : 'No legacy Smartbomb level found.',
+            'Shield Regeneration' => $shreg > 0 ? 'Refund ' . $shreg . ' Research Point' . ($shreg === 1 ? '' : 's') . ' because Shield Regeneration is not active in V1.' : 'No Shield Regeneration refund.',
+            'Rocket Fusion' => $rck > 0 ? 'Ignored in V1. Rocket bonuses are marked for later balancing.' : 'No legacy rocket level found.',
+            'Legacy hp in skilltree' => ((int)($legacySkills['hp'] ?? 0) > 0) ? 'Ignored in V1. Ship Hull migration uses users.hp_lvl as the source of truth.' : 'No separate legacy hp skill found.',
+        ];
+    }
+
+    private function shipHullMigration(int $hpLevel): string
+    {
+        $hpLevel = max(0, min(10, $hpLevel));
+        $legacyBonus = $hpLevel * 5000;
+        $shipHullI = 0;
+        $shipHullII = 0;
+        $pilotBonus = 0;
+
+        if ($hpLevel >= 10) {
+            $shipHullI = 2;
+            $shipHullII = 3;
+            $pilotBonus = 50000;
+        } elseif ($hpLevel >= 5) {
+            $shipHullI = 2;
+            $shipHullII = 2;
+            $pilotBonus = 25000;
+        } elseif ($hpLevel >= 3) {
+            $shipHullI = 2;
+            $shipHullII = 1;
+            $pilotBonus = 15000;
+        } elseif ($hpLevel >= 2) {
+            $shipHullI = 2;
+            $pilotBonus = 10000;
+        } elseif ($hpLevel >= 1) {
+            $shipHullI = 1;
+            $pilotBonus = 5000;
+        }
+
+        $summary = 'hp_lvl ' . $hpLevel . ' gives +' . number_format($legacyBonus) . ' HP legacy; migrate to Ship Hull I level ' . $shipHullI . ' and Ship Hull II level ' . $shipHullII . ' for +' . number_format($pilotBonus) . ' HP.';
+        if ($legacyBonus > $pilotBonus) {
+            $summary .= ' This rounds down by ' . number_format($legacyBonus - $pilotBonus) . ' HP; review manual compensation if needed.';
+        }
+
+        return $summary;
     }
 }
 ?>
