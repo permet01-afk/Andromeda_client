@@ -2814,7 +2814,7 @@ function spawnShieldBurstAt(x, y, sprite = "hit", options = {}) {
             heroShieldDamageCount++;
         } else if (entities[targetId]) {
             const ent = entities[targetId];
-            if (ent.kind !== "player") return;
+            if (ent.kind !== "player" && ent.kind !== "npc") return;
             if (!Number.isFinite(ent.shieldDamageCount)) ent.shieldDamageCount = 0;
             if (ent.shieldDamageCount >= 9) return;
             ent.shieldDamageCount++;
