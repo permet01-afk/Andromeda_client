@@ -153,7 +153,7 @@ $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
                 <ul class="submenu" aria-label="User menu">
                     <li><a class="submenu-link" href="view.php?page=user&amp;tab=infos">Informations</a></li>
                     <li><a class="submenu-link" href="view.php?page=company">Company Change</a></li>
-                    <li><a class="submenu-link" href="view.php?page=user&amp;tab=upgrades">Upgrades</a></li>
+                    <li><a class="submenu-link" href="view.php?page=user&amp;tab=upgrades">Pilot Bio</a></li>
                     <li><a class="submenu-link" href="view.php?page=user&amp;tab=configurations">Configurations</a></li>
                     <li><a class="submenu-link" href="view.php?page=user&amp;tab=quests">Quest</a></li>
                     <li><a class="submenu-link" href="view.php?page=user&amp;tab=titles">Titles</a></li>

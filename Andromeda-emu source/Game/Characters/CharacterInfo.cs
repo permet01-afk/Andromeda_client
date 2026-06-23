@@ -3379,6 +3379,9 @@ namespace OrbitReborn_Emulator.Game.Characters
                 num4 = 0;
             else if (num4 > 10)
                 num4 = 10;
+            Dictionary<string, int> pilotBioLevels;
+            Dictionary<string, string> pilotBioEffectValues;
+            bool pilotBioActive = this.TryLoadPilotBio(MySqlClient, out pilotBioLevels, out pilotBioEffectValues);
             int num5 = getInt32("dmg_lvl", 0);
             if (num5 > 25 || num5 < 0)
                 num5 = 0;
@@ -3443,7 +3446,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.RefreshEquippedExtras(MySqlClient);
 
             this.mShipMaxHp = baseHp2010;
-            this.mShipMaxHp += 5000 * num4;
+            this.mShipMaxHp += pilotBioActive ? this.GetPilotBioHpBonus(pilotBioLevels, pilotBioEffectValues) : 5000 * num4;
 
             int currentHp = getInt32("current_hp", this.mShipMaxHp);
             int storedMaxHp = getInt32("max_hp", this.mShipMaxHp);
@@ -3615,8 +3618,17 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.MultiplierAgainstPlayers = 1.0;
             this.MultiplierAgainstNpcs = 1.0;
             this.FatLasers = 0;
+            this.ShieldAbsorption = 0.7;
+            this.ShieldMechanics = 0;
+            this.SmbDamages = 20000;
+            this.RepairBotHp = 10000;
+            this.ShRegen = 7000;
 
-            if (this.mSkillTree.ContainsKey("dmg"))
+            if (pilotBioActive)
+            {
+                this.ApplyPilotBioPassives(pilotBioLevels, pilotBioEffectValues);
+            }
+            else if (this.mSkillTree.ContainsKey("dmg"))
             {
                 int lvl = this.mSkillTree["dmg"];
                 if (lvl < 0) lvl = 0;
@@ -3635,7 +3647,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
 
 
-            if (this.mSkillTree.ContainsKey("shd_abs") && this.mSkillTree["shd_abs"] > 0)
+            if (!pilotBioActive && this.mSkillTree.ContainsKey("shd_abs") && this.mSkillTree["shd_abs"] > 0)
             {
                 switch (this.mSkillTree["shd_abs"])
                 {
@@ -3652,7 +3664,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 }
             }
 
-            if (this.mSkillTree.ContainsKey("smb") && this.mSkillTree["smb"] > 0)
+            if (!pilotBioActive && this.mSkillTree.ContainsKey("smb") && this.mSkillTree["smb"] > 0)
             {
                 switch (this.mSkillTree["smb"])
                 {
@@ -3665,7 +3677,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 }
             }
 
-            if (this.mSkillTree.ContainsKey("rep") && this.mSkillTree["rep"] > 0)
+            if (!pilotBioActive && this.mSkillTree.ContainsKey("rep") && this.mSkillTree["rep"] > 0)
             {
                 switch (this.mSkillTree["rep"])
                 {
@@ -3683,7 +3695,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
 
 
-            if (this.mSkillTree.ContainsKey("shreg") && this.mSkillTree["shreg"] > 0)
+            if (!pilotBioActive && this.mSkillTree.ContainsKey("shreg") && this.mSkillTree["shreg"] > 0)
             {
                 switch (this.mSkillTree["shreg"])
                 {
@@ -3743,6 +3755,163 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.Members.Clear();
             this.InvitationSend.Clear();
             this.InvitationReceive.Clear();
+        }
+
+
+        private bool TryLoadPilotBio(SqlDatabaseClient client, out Dictionary<string, int> levels, out Dictionary<string, string> effectValues)
+        {
+            levels = new Dictionary<string, int>();
+            effectValues = new Dictionary<string, string>();
+
+            if (client == null)
+                return false;
+
+            try
+            {
+                client.ClearParameters();
+                client.SetParameter("uid", (object)this.mId);
+                DataTable table = client.ExecuteQueryTable(
+                    "SELECT n.node_code, n.effect_values_json, COALESCE(l.level, 0) AS level " +
+                    "FROM pilot_bio_nodes n " +
+                    "INNER JOIN player_pilot_bio_state s ON s.user_id = @uid " +
+                    "LEFT JOIN player_pilot_bio_levels l ON l.user_id = @uid AND l.node_code = n.node_code " +
+                    "ORDER BY n.visual_slot ASC"
+                );
+
+                if (table == null || table.Rows.Count == 0)
+                    return false;
+
+                foreach (DataRow row in table.Rows)
+                {
+                    string code = Convert.ToString(row["node_code"]);
+                    if (string.IsNullOrWhiteSpace(code))
+                        continue;
+
+                    int level = 0;
+                    try { level = Convert.ToInt32(row["level"]); } catch { level = 0; }
+                    if (level < 0) level = 0;
+
+                    levels[code] = level;
+                    if (row.Table.Columns.Contains("effect_values_json") && row["effect_values_json"] != DBNull.Value)
+                        effectValues[code] = Convert.ToString(row["effect_values_json"]);
+                }
+
+                return true;
+            }
+            catch
+            {
+                try { client.ResetCommand(); } catch { }
+                levels.Clear();
+                effectValues.Clear();
+                return false;
+            }
+        }
+
+        private int GetPilotBioHpBonus(Dictionary<string, int> levels, Dictionary<string, string> effectValues)
+        {
+            int shipHull2 = this.GetPilotBioLevel(levels, "ship_hull_ii", 3);
+            if (shipHull2 > 0)
+                return this.GetPilotBioIntValue(effectValues, "ship_hull_ii", shipHull2, new int[] { 15000, 25000, 50000 });
+
+            int shipHull1 = this.GetPilotBioLevel(levels, "ship_hull_i", 2);
+            if (shipHull1 > 0)
+                return this.GetPilotBioIntValue(effectValues, "ship_hull_i", shipHull1, new int[] { 5000, 10000 });
+
+            return 0;
+        }
+
+        private void ApplyPilotBioPassives(Dictionary<string, int> levels, Dictionary<string, string> effectValues)
+        {
+            int alienHunter = this.GetPilotBioLevel(levels, "alien_hunter", 5);
+            if (alienHunter > 0)
+            {
+                int percent = this.GetPilotBioIntValue(effectValues, "alien_hunter", alienHunter, new int[] { 2, 4, 6, 8, 12 });
+                this.MultiplierAgainstNpcs = 1.0 + percent / 100.0;
+            }
+
+            int bountyHunter2 = this.GetPilotBioLevel(levels, "bounty_hunter_ii", 3);
+            if (bountyHunter2 > 0)
+            {
+                int percent = this.GetPilotBioIntValue(effectValues, "bounty_hunter_ii", bountyHunter2, new int[] { 6, 8, 12 });
+                this.MultiplierAgainstPlayers = 1.0 + percent / 100.0;
+                if (bountyHunter2 >= 3)
+                    this.FatLasers = 1;
+            }
+            else
+            {
+                int bountyHunter1 = this.GetPilotBioLevel(levels, "bounty_hunter_i", 2);
+                if (bountyHunter1 > 0)
+                {
+                    int percent = this.GetPilotBioIntValue(effectValues, "bounty_hunter_i", bountyHunter1, new int[] { 2, 4 });
+                    this.MultiplierAgainstPlayers = 1.0 + percent / 100.0;
+                }
+            }
+
+            int shieldMechanics = this.GetPilotBioLevel(levels, "shield_mechanics", 5);
+            if (shieldMechanics > 0)
+            {
+                int absorption = this.GetPilotBioIntValue(effectValues, "shield_mechanics", shieldMechanics, new int[] { 72, 74, 76, 78, 82 });
+                this.ShieldAbsorption = absorption / 100.0;
+                if (shieldMechanics >= 5)
+                    this.ShieldMechanics = 1;
+            }
+
+            int engineering = this.GetPilotBioLevel(levels, "engineering", 5);
+            if (engineering > 0)
+                this.RepairBotHp = this.GetPilotBioIntValue(effectValues, "engineering", engineering, new int[] { 15000, 20000, 25000, 27500, 30000 });
+
+            int smartbombTech = this.GetPilotBioLevel(levels, "smartbomb_tech", 2);
+            if (smartbombTech > 0)
+                this.SmbDamages = this.GetPilotBioIntValue(effectValues, "smartbomb_tech", smartbombTech, new int[] { 25000, 35000 });
+        }
+
+        private int GetPilotBioLevel(Dictionary<string, int> levels, string code, int maxLevel)
+        {
+            int level;
+            if (!levels.TryGetValue(code, out level))
+                return 0;
+            if (level < 0) return 0;
+            if (level > maxLevel) return maxLevel;
+            return level;
+        }
+
+        private int GetPilotBioIntValue(Dictionary<string, string> effectValues, string code, int level, int[] fallbackValues)
+        {
+            int[] values = this.ParsePilotBioEffectValues(effectValues, code);
+            if (values == null || values.Length == 0)
+                values = fallbackValues;
+
+            if (level <= 0)
+                return 0;
+
+            int index = level - 1;
+            if (index >= values.Length)
+                index = values.Length - 1;
+
+            return values[index];
+        }
+
+        private int[] ParsePilotBioEffectValues(Dictionary<string, string> effectValues, string code)
+        {
+            string raw;
+            if (!effectValues.TryGetValue(code, out raw) || string.IsNullOrWhiteSpace(raw))
+                return null;
+
+            raw = raw.Trim();
+            raw = raw.Trim('[', ']');
+            if (string.IsNullOrWhiteSpace(raw))
+                return null;
+
+            string[] parts = raw.Split(',');
+            List<int> values = new List<int>();
+            foreach (string part in parts)
+            {
+                int parsed;
+                if (int.TryParse(part.Trim(), out parsed))
+                    values.Add(parsed);
+            }
+
+            return values.Count > 0 ? values.ToArray() : null;
         }
 
 

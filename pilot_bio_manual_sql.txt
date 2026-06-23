@@ -1,0 +1,290 @@
+-- Andromeda Pilot Bio / Skill Tree V1 manual SQL.
+-- Execute manually only after validating the patch.
+-- This file is not imported automatically and does not modify andromeda.sql.
+
+CREATE TABLE IF NOT EXISTS pilot_bio_nodes (
+  id INT NOT NULL AUTO_INCREMENT,
+  node_code VARCHAR(64) NOT NULL,
+  display_name VARCHAR(96) NOT NULL,
+  description_en VARCHAR(255) NOT NULL,
+  track ENUM('defense','progression','offense') NOT NULL,
+  visual_slot TINYINT UNSIGNED NOT NULL,
+  max_level TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  status ENUM('active','later','visual_only','disabled') NOT NULL DEFAULT 'later',
+  effect_key VARCHAR(64) DEFAULT NULL,
+  effect_values_json TEXT DEFAULT NULL,
+  prerequisites_json TEXT DEFAULT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_pilot_bio_nodes_code (node_code),
+  UNIQUE KEY uq_pilot_bio_nodes_slot (visual_slot),
+  KEY idx_pilot_bio_nodes_track_slot (track, visual_slot)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS player_pilot_bio_state (
+  user_id INT NOT NULL,
+  research_points INT UNSIGNED NOT NULL DEFAULT 0,
+  spent_points INT UNSIGNED NOT NULL DEFAULT 0,
+  reset_count INT UNSIGNED NOT NULL DEFAULT 0,
+  migrated_from_legacy TINYINT(1) NOT NULL DEFAULT 0,
+  legacy_skilltree_snapshot VARCHAR(255) DEFAULT NULL,
+  legacy_hp_lvl_snapshot INT DEFAULT NULL,
+  legacy_shreg_refund_points INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id),
+  CONSTRAINT fk_player_pilot_bio_state_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS player_pilot_bio_levels (
+  user_id INT NOT NULL,
+  node_code VARCHAR(64) NOT NULL,
+  level TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, node_code),
+  KEY idx_player_pilot_bio_levels_node (node_code),
+  CONSTRAINT fk_player_pilot_bio_levels_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_player_pilot_bio_levels_node
+    FOREIGN KEY (node_code) REFERENCES pilot_bio_nodes(node_code)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS pilot_bio_point_costs (
+  point_number INT UNSIGNED NOT NULL,
+  logfile_cost INT UNSIGNED NOT NULL,
+  PRIMARY KEY (point_number)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO pilot_bio_nodes
+  (node_code, display_name, description_en, track, visual_slot, max_level, status, effect_key, effect_values_json, prerequisites_json)
+VALUES
+  ('ship_hull_i', 'Ship Hull I', 'Increases your ship maximum HP.', 'defense', 1, 2, 'active', 'ship_hull_hp', '[5000,10000]', '[]'),
+  ('ship_hull_ii', 'Ship Hull II', 'Further increases your ship maximum HP.', 'defense', 2, 3, 'active', 'ship_hull_hp', '[15000,25000,50000]', '[{"node":"ship_hull_i","level":2}]'),
+  ('engineering', 'Engineering', 'Improves your repair bot.', 'defense', 3, 5, 'active', 'repair_bot', '[15000,20000,25000,27500,30000]', '[]'),
+  ('shield_engineering', 'Shield Engineering', 'Increases your maximum shield strength.', 'defense', 4, 5, 'later', 'shield_max_percent', '[4,8,12,18,25]', '[]'),
+  ('evasive_maneuvers_i', 'Evasive Maneuvers I', 'Makes your ship harder to hit.', 'defense', 5, 2, 'later', 'enemy_hit_chance_reduction', '[2,4]', '[]'),
+  ('evasive_maneuvers_ii', 'Evasive Maneuvers II', 'Further improves your chance to avoid enemy fire.', 'defense', 6, 3, 'later', 'enemy_hit_chance_reduction', '[6,8,12]', '[{"node":"evasive_maneuvers_i","level":2}]'),
+  ('shield_mechanics', 'Shield Mechanics', 'Improves how much damage your shields can absorb.', 'defense', 7, 5, 'active', 'shield_absorption', '[72,74,76,78,82]', '[]'),
+  ('tactics', 'Tactics', 'Increases experience gained from aliens.', 'progression', 8, 5, 'later', 'alien_xp_percent', '[2,4,6,8,12]', '[]'),
+  ('logistics', 'Logistics', 'Expands your cargo bay.', 'progression', 9, 5, 'later', 'cargo_capacity_percent', '[4,8,12,16,25]', '[]'),
+  ('luck_i', 'Luck I', 'Increases Uridium found in bonus boxes.', 'progression', 10, 2, 'later', 'bonus_box_uridium_percent', '[2,4]', '[]'),
+  ('luck_ii', 'Luck II', 'Further increases Uridium found in bonus boxes.', 'progression', 11, 3, 'later', 'bonus_box_uridium_percent', '[6,8,12]', '[{"node":"luck_i","level":2}]'),
+  ('cruelty_i', 'Cruelty I', 'Increases honor gained from enemies.', 'progression', 12, 2, 'later', 'honor_percent', '[4,8]', '[]'),
+  ('cruelty_ii', 'Cruelty II', 'Further increases honor gained from enemies.', 'progression', 13, 3, 'later', 'honor_percent', '[12,18,25]', '[{"node":"cruelty_i","level":2}]'),
+  ('tractor_beam_i', 'Tractor Beam I', 'Increases cargo collected from cargo boxes.', 'progression', 14, 5, 'later', 'cargo_box_loot_percent', '[1,2,3,4,6]', '[]'),
+  ('tractor_beam_ii', 'Tractor Beam II', 'Increases rewards collected from bonus boxes.', 'progression', 15, 5, 'later', 'bonus_box_loot_percent', '[2,6,10,15,20]', '[{"node":"tractor_beam_i","level":5}]'),
+  ('greed', 'Greed', 'Increases credits gained from aliens.', 'progression', 16, 5, 'later', 'alien_credit_percent', '[4,8,12,18,25]', '[]'),
+  ('smartbomb_tech', 'Smartbomb Tech', 'Improves Smart Bomb damage.', 'offense', 17, 2, 'active', 'smartbomb_damage', '[25000,35000]', '[]'),
+  ('detonation_ii', 'Detonation II', 'Further increases mine damage.', 'offense', 18, 3, 'later', 'mine_damage_percent', '[21,28,50]', '[]'),
+  ('explosives', 'Explosives', 'Increases mine explosion radius.', 'offense', 19, 5, 'later', 'mine_radius_percent', '[4,8,12,18,25]', '[]'),
+  ('heat_seeking_missiles', 'Heat-Seeking Missiles', 'Improves rocket accuracy.', 'offense', 20, 5, 'later', 'rocket_hit_chance_percent', '[1,2,4,6,10]', '[]'),
+  ('bounty_hunter_i', 'Bounty Hunter I', 'Increases laser damage against players.', 'offense', 21, 2, 'active', 'pvp_laser_damage_percent', '[2,4]', '[]'),
+  ('bounty_hunter_ii', 'Bounty Hunter II', 'Further increases laser damage against players.', 'offense', 22, 3, 'active', 'pvp_laser_damage_percent', '[6,8,12]', '[{"node":"bounty_hunter_i","level":2}]'),
+  ('rocket_fusion', 'Rocket Fusion', 'Increases rocket damage.', 'offense', 23, 5, 'later', 'rocket_damage_percent', '[2,4,6,8,15]', '[]'),
+  ('alien_hunter', 'Alien Hunter', 'Increases laser damage against aliens.', 'offense', 24, 5, 'active', 'pve_laser_damage_percent', '[2,4,6,8,12]', '[]'),
+  ('electro_optics', 'Electro-Optics', 'Improves laser accuracy.', 'offense', 25, 5, 'later', 'laser_accuracy_percent', '[5,10,15,20,25]', '[]')
+ON DUPLICATE KEY UPDATE
+  display_name = VALUES(display_name),
+  description_en = VALUES(description_en),
+  track = VALUES(track),
+  visual_slot = VALUES(visual_slot),
+  max_level = VALUES(max_level),
+  status = VALUES(status),
+  effect_key = VALUES(effect_key),
+  effect_values_json = VALUES(effect_values_json),
+  prerequisites_json = VALUES(prerequisites_json);
+
+INSERT INTO pilot_bio_point_costs (point_number, logfile_cost) VALUES
+(1, 30),
+(2, 33),
+(3, 37),
+(4, 40),
+(5, 44),
+(6, 49),
+(7, 54),
+(8, 59),
+(9, 65),
+(10, 71),
+(11, 78),
+(12, 86),
+(13, 95),
+(14, 104),
+(15, 114),
+(16, 126),
+(17, 138),
+(18, 152),
+(19, 167),
+(20, 184),
+(21, 202),
+(22, 223),
+(23, 245),
+(24, 269),
+(25, 296),
+(26, 326),
+(27, 358),
+(28, 394),
+(29, 433),
+(30, 476),
+(31, 524),
+(32, 576),
+(33, 634),
+(34, 697),
+(35, 767),
+(36, 844),
+(37, 928),
+(38, 1021),
+(39, 1123),
+(40, 1235),
+(41, 1358),
+(42, 1494),
+(43, 1643),
+(44, 1808),
+(45, 1988),
+(46, 2187),
+(47, 2406),
+(48, 2646),
+(49, 2911),
+(50, 3202)
+ON DUPLICATE KEY UPDATE logfile_cost = VALUES(logfile_cost);
+
+-- Optional migration proposal. Review before running.
+-- This creates a Pilot Bio state for every user and stores legacy snapshots.
+-- After this state exists for a user, the emulator uses Pilot Bio passives instead of users.skilltree/hp_lvl.
+/*
+INSERT INTO player_pilot_bio_state
+  (user_id, research_points, spent_points, migrated_from_legacy, legacy_skilltree_snapshot, legacy_hp_lvl_snapshot, legacy_shreg_refund_points)
+SELECT
+  id,
+  0,
+  0,
+  1,
+  skilltree,
+  hp_lvl,
+  CASE
+    WHEN skilltree LIKE '%shreg:5%' THEN 5
+    WHEN skilltree LIKE '%shreg:4%' THEN 4
+    WHEN skilltree LIKE '%shreg:3%' THEN 3
+    WHEN skilltree LIKE '%shreg:2%' THEN 2
+    WHEN skilltree LIKE '%shreg:1%' THEN 1
+    ELSE 0
+  END
+FROM users
+ON DUPLICATE KEY UPDATE
+  migrated_from_legacy = VALUES(migrated_from_legacy),
+  legacy_skilltree_snapshot = VALUES(legacy_skilltree_snapshot),
+  legacy_hp_lvl_snapshot = VALUES(legacy_hp_lvl_snapshot),
+  legacy_shreg_refund_points = VALUES(legacy_shreg_refund_points);
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT id, 'ship_hull_i',
+  CASE
+    WHEN hp_lvl >= 2 THEN 2
+    WHEN hp_lvl >= 1 THEN 1
+    ELSE 0
+  END
+FROM users
+WHERE hp_lvl > 0
+ON DUPLICATE KEY UPDATE level = GREATEST(level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT id, 'ship_hull_ii',
+  CASE
+    WHEN hp_lvl >= 10 THEN 3
+    WHEN hp_lvl >= 5 THEN 2
+    WHEN hp_lvl >= 3 THEN 1
+    ELSE 0
+  END
+FROM users
+WHERE hp_lvl >= 3
+ON DUPLICATE KEY UPDATE level = GREATEST(level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT id, 'alien_hunter',
+  CASE
+    WHEN skilltree LIKE '%dmg:5%' THEN 5
+    WHEN skilltree LIKE '%dmg:4%' THEN 4
+    WHEN skilltree LIKE '%dmg:3%' THEN 3
+    WHEN skilltree LIKE '%dmg:2%' THEN 2
+    WHEN skilltree LIKE '%dmg:1%' THEN 1
+    ELSE 0
+  END
+FROM users
+WHERE skilltree LIKE '%dmg:%'
+ON DUPLICATE KEY UPDATE level = GREATEST(level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT id, 'bounty_hunter_i',
+  CASE
+    WHEN skilltree LIKE '%dmg:5%' OR skilltree LIKE '%dmg:4%' OR skilltree LIKE '%dmg:3%' OR skilltree LIKE '%dmg:2%' THEN 2
+    WHEN skilltree LIKE '%dmg:1%' THEN 1
+    ELSE 0
+  END
+FROM users
+WHERE skilltree LIKE '%dmg:%'
+ON DUPLICATE KEY UPDATE level = GREATEST(level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT id, 'bounty_hunter_ii',
+  CASE
+    WHEN skilltree LIKE '%dmg:5%' THEN 3
+    WHEN skilltree LIKE '%dmg:4%' THEN 2
+    WHEN skilltree LIKE '%dmg:3%' THEN 1
+    ELSE 0
+  END
+FROM users
+WHERE skilltree LIKE '%dmg:3%' OR skilltree LIKE '%dmg:4%' OR skilltree LIKE '%dmg:5%'
+ON DUPLICATE KEY UPDATE level = GREATEST(level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT id, 'shield_mechanics',
+  CASE
+    WHEN skilltree LIKE '%shd_abs:3%' THEN 5
+    WHEN skilltree LIKE '%shd_abs:2%' THEN 3
+    WHEN skilltree LIKE '%shd_abs:1%' THEN 1
+    ELSE 0
+  END
+FROM users
+WHERE skilltree LIKE '%shd_abs:%'
+ON DUPLICATE KEY UPDATE level = GREATEST(level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT id, 'engineering',
+  CASE
+    WHEN skilltree LIKE '%rep:3%' THEN 5
+    WHEN skilltree LIKE '%rep:2%' THEN 2
+    WHEN skilltree LIKE '%rep:1%' THEN 1
+    ELSE 0
+  END
+FROM users
+WHERE skilltree LIKE '%rep:%'
+ON DUPLICATE KEY UPDATE level = GREATEST(level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT id, 'smartbomb_tech',
+  CASE
+    WHEN skilltree LIKE '%smb:2%' THEN 2
+    WHEN skilltree LIKE '%smb:1%' THEN 1
+    ELSE 0
+  END
+FROM users
+WHERE skilltree LIKE '%smb:%'
+ON DUPLICATE KEY UPDATE level = GREATEST(level, VALUES(level));
+
+UPDATE player_pilot_bio_state s
+SET spent_points = (
+  SELECT COALESCE(SUM(level), 0)
+  FROM player_pilot_bio_levels l
+  WHERE l.user_id = s.user_id
+);
+
+UPDATE player_pilot_bio_state
+SET research_points = research_points + legacy_shreg_refund_points
+WHERE legacy_shreg_refund_points > 0;
+*/
+

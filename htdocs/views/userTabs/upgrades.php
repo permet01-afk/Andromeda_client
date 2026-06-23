@@ -1,458 +1,536 @@
 <?php
 
-require_once __DIR__ . '/../../libs/ShopPurchaseService.php';
+require_once __DIR__ . '/../../libs/PilotBioService.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     @session_start();
 }
 
-$sth = $db->prepare("SELECT username, grade, factionid, clanid, credits, uridium, rankpoints, user_kill, npc_kill, max_hp, speed, damages, 
-max_shield, drones, apis_built, zeus_built, dmg_lvl, hp_lvl, shd_lvl, speed_lvl, logfiles, booty_keys, drone_parts, skilltree, booster_dmg_time,
-booster_shd_time, booster_spd_time, booster_npc_time, shipId 
-FROM users WHERE id = :id LIMIT 1");
-$sth->execute(array(':id' => $_SESSION['player_id']));
-$datauser = $sth->fetchAll();
-
-require_once('./libs/Laboratory.php');
-$lab = new Laboratory($_SESSION['player_id'], $datauser[0]['skilltree'], $datauser[0]['logfiles'], $db );
-
-
-$message_status = "";
-$message_type = "";
-
-if (!empty($_SESSION['upgrade_flash']) && is_array($_SESSION['upgrade_flash'])) {
-    $message_status = (string)($_SESSION['upgrade_flash']['message'] ?? '');
-    $message_type = (string)($_SESSION['upgrade_flash']['type'] ?? 'success');
-    unset($_SESSION['upgrade_flash']);
+if (empty($_SESSION['pilot_bio_csrf_token'])) {
+    $_SESSION['pilot_bio_csrf_token'] = bin2hex(random_bytes(32));
 }
 
-if (session_status() === PHP_SESSION_ACTIVE) {
-    session_write_close();
-}
+$pilotBioCsrfToken = $_SESSION['pilot_bio_csrf_token'];
+$pilotBioFlash = $_SESSION['pilot_bio_flash'] ?? null;
+unset($_SESSION['pilot_bio_flash']);
 
-if(isset($_GET['buy'])) {
-    $buymessage = buy($_GET['buy'],$datauser,$lab,$db);
-    $type = (strpos($buymessage, 'Error') !== false) ? 'error' : 'success';
+$pilotBioService = new PilotBioService($db, (int)$_SESSION['player_id']);
 
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        @session_start();
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pilot_bio_action'])) {
+    $postedToken = (string)($_POST['pilot_bio_csrf_token'] ?? '');
+    $result = ['success' => false, 'message' => 'Invalid request.'];
+
+    if (hash_equals($pilotBioCsrfToken, $postedToken)) {
+        $action = (string)$_POST['pilot_bio_action'];
+        if ($action === 'exchange_point') {
+            $result = $pilotBioService->exchangeResearchPoint();
+        } elseif ($action === 'upgrade_node') {
+            $result = $pilotBioService->upgradeNode((string)($_POST['node_code'] ?? ''));
+        }
     }
-    $_SESSION['upgrade_flash'] = [
-        'message' => $buymessage,
-        'type' => $type,
+
+    $_SESSION['pilot_bio_flash'] = [
+        'message' => $result['message'],
+        'type' => $result['success'] ? 'success' : 'error',
     ];
 
     header('Location: view.php?page=user&tab=upgrades');
     exit;
 }
 
-
-function buy($item,$datauser,$lab,$db)
-{
-    
-    if($item == 'healt_upgrade')
-    {
-        $service = new ShopPurchaseService($db, (int)$_SESSION['player_id']);
-        return $service->buyHpUpgrade();
-    }
-    
-    
-    else if(in_array($item, ['dmgskill','shd_absskill','repskill','smbskill','shregskill']))
-    {
-        $skill_map = [
-            'dmgskill' => 'dmg',
-            'shd_absskill' => 'shd_abs',
-            'repskill' => 'rep',
-            'smbskill' => 'smb',
-            'shregskill' => 'shreg'
-            
-            
-        ];
-
-        
-        if (!isset($skill_map[$item])) return "Error: Invalid Skill";
-
-        $skill = $skill_map[$item];
-        if($lab->buy_skill($skill)) {
-            return "Purchase success !";
-        } else {
-            return "Error : Not enough logfiles or maximum level reached!";
-        }
-    }
-    return "Error: Unknown item";
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
 }
+
+$pilotBio = $pilotBioService->getViewModel();
+$pilotBioRows = [
+    [[1, 2, 3], [4, 5], [6, 7, 8]],
+    [[9, 10], [11, 12, 13], [14, 15, 16]],
+    [[17, 18], [19, 20, 21, 22], [23, 24, 25]],
+];
+
+$nodesBySlot = [];
+foreach ($pilotBio['catalog'] as $pilotNode) {
+    $nodesBySlot[(int)$pilotNode['slot']] = $pilotNode;
+}
+
+$escapePilot = static function ($value): string {
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+};
+
+$state = $pilotBio['state'];
+$schemaReady = (bool)$pilotBio['schema_ready'];
+$stateReady = $schemaReady && $state !== null;
+$researchPoints = $stateReady ? (int)$state['research_points'] : 0;
+$spentPoints = $stateReady ? (int)$state['spent_points'] : 0;
+$logfiles = (int)$pilotBio['resources']['logfiles'];
+$nextPointCost = (int)$pilotBio['next_point_cost'];
 ?>
 
 <style>
-    :root {
-        --color-surface: #0b1221;
-        --color-border: #1e293b;
-        --color-accent: #5eead4; /* Cyan theme */
-        --color-success: #4ade80; /* Green theme */
-        --color-danger: #f87171; /* Red theme */
-        --color-text-muted: #94a3b8;
-    }
-
-    /* Layout général */
-    .upgrades-layout {
+    .pilot-bio-shell {
+        --pilot-bg: #07111f;
+        --pilot-panel: rgba(8, 18, 33, 0.92);
+        --pilot-border: rgba(92, 210, 255, 0.32);
+        --pilot-accent: #5ed6ff;
+        --pilot-accent-soft: rgba(94, 214, 255, 0.18);
+        --pilot-active: #8ee6ff;
+        --pilot-disabled: #687386;
+        color: #d7e7f7;
         display: flex;
         flex-direction: column;
-        gap: 2rem;
+        gap: 1.25rem;
     }
 
-    /* Cartes principales */
-    .upgrade-card {
-        background: var(--color-surface);
-        border: 1px solid var(--color-border);
+    .pilot-bio-hero,
+    .pilot-bio-card {
+        background:
+            radial-gradient(circle at top left, rgba(94, 214, 255, 0.14), transparent 34%),
+            linear-gradient(145deg, rgba(8, 18, 33, 0.97), rgba(5, 10, 19, 0.95));
+        border: 1px solid var(--pilot-border);
         border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35), inset 0 0 22px rgba(94, 214, 255, 0.05);
     }
 
-    .card-header {
-        background: rgba(8, 14, 26, 0.6);
-        border-bottom: 1px solid var(--color-border);
-        padding: 1rem 1.5rem;
+    .pilot-bio-hero {
+        padding: 1.35rem 1.5rem;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.25rem;
+    }
+
+    .pilot-bio-title {
+        margin: 0 0 0.35rem;
+        color: #ffffff;
+        font-size: 1.55rem;
+        letter-spacing: 0;
+    }
+
+    .pilot-bio-subtitle {
+        margin: 0;
+        color: #9eb4c9;
+        line-height: 1.45;
+        max-width: 740px;
+    }
+
+    .pilot-bio-resources {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(120px, 1fr));
+        gap: 0.65rem;
+        min-width: 390px;
+    }
+
+    .pilot-bio-resource {
+        border: 1px solid rgba(94, 214, 255, 0.2);
+        background: rgba(3, 8, 16, 0.52);
+        border-radius: 6px;
+        padding: 0.75rem;
+    }
+
+    .pilot-bio-resource span {
+        display: block;
+        color: #7f93a8;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+    }
+
+    .pilot-bio-resource strong {
+        color: #ffffff;
+        font-size: 1.05rem;
+    }
+
+    .pilot-bio-message {
+        border-radius: 7px;
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(94, 214, 255, 0.24);
+        background: rgba(94, 214, 255, 0.08);
+        color: #cfefff;
+    }
+
+    .pilot-bio-message.is-error {
+        border-color: rgba(248, 113, 113, 0.42);
+        background: rgba(248, 113, 113, 0.1);
+        color: #fecaca;
+    }
+
+    .pilot-bio-message.is-success {
+        border-color: rgba(74, 222, 128, 0.36);
+        background: rgba(74, 222, 128, 0.1);
+        color: #bbf7d0;
+    }
+
+    .pilot-bio-card {
+        padding: 1.25rem;
+    }
+
+    .pilot-bio-toolbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(94, 214, 255, 0.16);
+        margin-bottom: 1rem;
     }
 
-    .card-title {
-        color: var(--color-accent);
-        font-weight: 700;
-        text-transform: uppercase;
-        font-size: 1.1rem;
+    .pilot-bio-toolbar h2 {
         margin: 0;
+        color: var(--pilot-accent);
+        font-size: 1.08rem;
+        text-transform: uppercase;
     }
 
-    .card-body {
-        padding: 1.5rem;
+    .pilot-bio-exchange {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #91a8bd;
+        font-size: 0.9rem;
     }
 
-    /* Grille des Skills */
-    .skills-grid {
+    .pilot-bio-button {
+        border: 1px solid var(--pilot-accent);
+        background: rgba(94, 214, 255, 0.1);
+        color: #ffffff;
+        border-radius: 5px;
+        padding: 0.65rem 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+    }
+
+    .pilot-bio-button:hover {
+        background: var(--pilot-accent);
+        color: #06101d;
+        box-shadow: 0 0 16px rgba(94, 214, 255, 0.26);
+    }
+
+    .pilot-bio-button:disabled {
+        border-color: rgba(124, 139, 156, 0.34);
+        background: rgba(124, 139, 156, 0.08);
+        color: #7f8b9a;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    .pilot-bio-tree {
+        overflow-x: auto;
+        padding: 0.25rem 0 0.45rem;
+    }
+
+    .pilot-bio-tree-grid {
+        min-width: 930px;
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: 1fr 1fr 1.16fr;
+        gap: 1rem;
     }
 
-    /* Élément Skill individuel */
-    .skill-item {
-        background: rgba(255,255,255,0.03);
-        border: 1px solid rgba(255,255,255,0.05);
-        border-radius: 6px;
-        padding: 1.2rem;
+    .pilot-bio-column {
+        display: grid;
+        grid-template-rows: repeat(3, minmax(95px, auto));
+        gap: 1rem;
+        border: 1px solid rgba(94, 214, 255, 0.12);
+        background: rgba(0, 0, 0, 0.18);
+        border-radius: 7px;
+        padding: 0.9rem;
+    }
+
+    .pilot-bio-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 0.65rem;
+    }
+
+    .pilot-bio-node {
+        position: relative;
+        width: 82px;
         display: flex;
         flex-direction: column;
-        gap: 0.8rem;
-        transition: transform 0.2s, background 0.2s, border-color 0.2s;
-    }
-    .skill-item:hover {
-        background: rgba(255,255,255,0.05);
-        border-color: rgba(94, 234, 212, 0.3);
-        transform: translateY(-2px);
+        align-items: center;
+        gap: 0.35rem;
     }
 
-    .skill-header {
-        margin-bottom: 5px;
+    .pilot-bio-node-button {
+        border: 0;
+        padding: 0;
+        width: 74px;
+        height: 85px;
+        cursor: pointer;
+        background: none;
     }
-    .skill-name {
-        font-weight: bold;
-        color: #fff;
-        font-size: 1.1rem;
+
+    .pilot-bio-node-button:disabled {
+        cursor: default;
+    }
+
+    .pilot-bio-node-icon {
+        width: 74px;
+        height: 85px;
         display: block;
+        background-image: url("img/pilotbio/skilltree_texture.png");
+        background-repeat: no-repeat;
+        filter: drop-shadow(0 0 7px rgba(94, 214, 255, 0.22));
+        opacity: 0.92;
     }
 
-    .skill-desc {
-        font-size: 0.85rem;
-        color: var(--color-text-muted);
-        min-height: 40px;
-        line-height: 1.4;
+    .pilot-bio-node.is-locked .pilot-bio-node-icon,
+    .pilot-bio-node.is-later .pilot-bio-node-icon {
+        filter: grayscale(1);
+        opacity: 0.45;
     }
 
-    /* --- Indicateurs à "Pips" (Points) --- */
-    .skill-status-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: 10px 0 15px 0;
-        padding: 8px 12px;
-        background: rgba(0,0,0,0.2);
-        border-radius: 4px;
+    .pilot-bio-node.can-upgrade .pilot-bio-node-icon {
+        filter: drop-shadow(0 0 12px rgba(94, 214, 255, 0.5));
     }
 
-    .level-text {
-        font-family: 'Courier New', monospace; /* Police technique */
-        font-weight: bold;
-        color: var(--color-accent);
-        font-size: 0.9rem;
+    .pilot-bio-node.is-maxed .pilot-bio-node-icon {
+        filter: drop-shadow(0 0 14px rgba(74, 222, 128, 0.48));
     }
 
-    .pips-visual {
-        display: flex;
-        gap: 6px; 
-    }
-
-    .pip {
-        width: 10px;
-        height: 10px;
-        border-radius: 2px; 
-        border: 1px solid var(--color-border);
-        background: rgba(255,255,255,0.05);
-        transition: all 0.3s ease;
-    }
-
-    .pip.active {
-        background: var(--color-accent);
-        border-color: var(--color-accent);
-        box-shadow: 0 0 8px var(--color-accent);
-    }
-    
-    /* Variante verte pour la santé */
-    .pip.health-type.active {
-        background: var(--color-success);
-        border-color: var(--color-success);
-        box-shadow: 0 0 8px var(--color-success);
-    }
-
-    /* Boutons */
-    .btn-upgrade {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        padding: 10px 15px;
-        background: rgba(30, 41, 59, 0.5);
-        border: 1px solid var(--color-accent);
-        color: #fff;
-        text-decoration: none;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
-    .btn-upgrade:hover {
-        background: var(--color-accent);
-        color: #0b1221;
-        box-shadow: 0 0 15px rgba(94, 234, 212, 0.3);
-    }
-    /* Variante bouton vert pour la santé */
-    .btn-upgrade.btn-health {
-         border-color: var(--color-success);
-    }
-    .btn-upgrade.btn-health:hover {
-         background: var(--color-success);
-          box-shadow: 0 0 15px rgba(74, 222, 128, 0.3);
-    }
-
-    .btn-upgrade.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        border-color: var(--color-border) !important;
-        background: transparent !important;
-        color: var(--color-text-muted) !important;
+    .pilot-bio-points {
+        position: absolute;
+        top: 66px;
+        width: 74px;
+        text-align: center;
+        color: #ffffff;
+        font-size: 0.72rem;
+        text-shadow: 0 1px 4px #000;
         pointer-events: none;
-        box-shadow: none !important;
-    }
-    .cost-badge {
-        font-size: 0.8rem;
-        opacity: 0.9;
-        font-weight: normal;
     }
 
-    .btn-upgrade.has-tooltip {
-        position: relative;
-        overflow: visible;
+    .pilot-bio-node-name {
+        width: 100%;
+        min-height: 2.25rem;
+        color: #dcecff;
+        font-size: 0.72rem;
+        line-height: 1.15;
+        text-align: center;
     }
-    .btn-upgrade.has-tooltip::after {
-        content: attr(data-tooltip);
+
+    .pilot-bio-node-status {
+        color: #88a1b7;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+    }
+
+    .pilot-bio-node.can-upgrade .pilot-bio-node-status {
+        color: var(--pilot-active);
+    }
+
+    .pilot-bio-node.is-maxed .pilot-bio-node-status {
+        color: #86efac;
+    }
+
+    .pilot-bio-node-tooltip {
         position: absolute;
         left: 50%;
         bottom: calc(100% + 10px);
         transform: translateX(-50%) translateY(4px);
-        background: rgba(6, 12, 22, 0.96);
-        border: 1px solid var(--color-border, #1e293b);
-        color: #e2e8f0;
-        padding: 8px 10px;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        line-height: 1.35;
-        width: max-content;
-        max-width: 220px;
-        text-align: center;
-        pointer-events: none;
+        z-index: 30;
+        width: 250px;
+        border: 1px solid rgba(94, 214, 255, 0.32);
+        background: rgba(3, 8, 16, 0.97);
+        color: #dcecff;
+        padding: 0.75rem;
+        border-radius: 7px;
+        box-shadow: 0 14px 24px rgba(0, 0, 0, 0.4);
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
-        z-index: 50;
-        box-shadow: 0 8px 18px rgba(0,0,0,0.28);
-    }
-    .btn-upgrade.has-tooltip::before {
-        content: '';
-        position: absolute;
-        left: 50%;
-        bottom: calc(100% + 4px);
-        transform: translateX(-50%);
-        border: 6px solid transparent;
-        border-top-color: var(--color-border, #1e293b);
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.15s ease, visibility 0.15s ease;
-        z-index: 49;
         pointer-events: none;
+        transition: opacity 0.14s ease, transform 0.14s ease, visibility 0.14s ease;
     }
-    .btn-upgrade.has-tooltip:hover::after,
-    .btn-upgrade.has-tooltip:hover::before {
+
+    .pilot-bio-node:hover .pilot-bio-node-tooltip,
+    .pilot-bio-node:focus-within .pilot-bio-node-tooltip {
         opacity: 1;
         visibility: visible;
-    }
-    .btn-upgrade.has-tooltip:hover::after {
         transform: translateX(-50%) translateY(0);
     }
 
-    /* Messages */
-    .msg-box {
-        padding: 1rem;
-        border-radius: 6px;
-        margin-bottom: 1.5rem;
-        text-align: center;
-        font-weight: bold;
+    .pilot-bio-node-tooltip strong {
+        display: block;
+        color: #ffffff;
+        margin-bottom: 0.35rem;
     }
-    .msg-success { background: rgba(74, 222, 128, 0.1); border: 1px solid var(--color-success); color: var(--color-success); }
-    .msg-error { background: rgba(248, 113, 113, 0.1); border: 1px solid var(--color-danger); color: var(--color-danger); }
 
+    .pilot-bio-node-tooltip span {
+        display: block;
+        color: #8ea5bb;
+        font-size: 0.78rem;
+        line-height: 1.35;
+        margin-top: 0.35rem;
+    }
+
+    #pilot_skill_1 { background-position: -1406px 0; }
+    #pilot_skill_2 { background-position: -444px 0; }
+    #pilot_skill_3 { background-position: -962px 0; }
+    #pilot_skill_4 { background-position: -1332px 0; }
+    #pilot_skill_5 { background-position: -370px 0; }
+    #pilot_skill_6 { background-position: -518px 0; }
+    #pilot_skill_7 { background-position: -296px 0; }
+    #pilot_skill_8 { background-position: -1628px 0; }
+    #pilot_skill_9 { background-position: -1184px 0; }
+    #pilot_skill_10 { background-position: -1480px 0; }
+    #pilot_skill_11 { background-position: -1998px 0; }
+    #pilot_skill_12 { background-position: -1702px 0; }
+    #pilot_skill_13 { background-position: -1036px 0; }
+    #pilot_skill_14 { background-position: -1850px 0; }
+    #pilot_skill_15 { background-position: -666px 0; }
+    #pilot_skill_16 { background-position: -888px 0; }
+    #pilot_skill_17 { background-position: -740px 0; }
+    #pilot_skill_18 { background-position: -1258px 0; }
+    #pilot_skill_19 { background-position: -814px 0; }
+    #pilot_skill_20 { background-position: -1110px 0; }
+    #pilot_skill_21 { background-position: -1776px 0; }
+    #pilot_skill_22 { background-position: -2072px 0; }
+    #pilot_skill_23 { background-position: -592px 0; }
+    #pilot_skill_24 { background-position: -1554px 0; }
+    #pilot_skill_25 { background-position: -1924px 0; }
+
+    .pilot-bio-legacy {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem;
+        color: #9eb4c9;
+        font-size: 0.9rem;
+    }
+
+    .pilot-bio-legacy-item {
+        border: 1px solid rgba(94, 214, 255, 0.14);
+        background: rgba(3, 8, 16, 0.34);
+        border-radius: 6px;
+        padding: 0.75rem;
+    }
+
+    @media (max-width: 900px) {
+        .pilot-bio-hero,
+        .pilot-bio-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .pilot-bio-resources {
+            min-width: 0;
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
-<div class="upgrades-layout">
-
-    <?php if(!empty($message_status)): ?>
-        <div class="msg-box <?= ($message_type == 'success') ? 'msg-success' : 'msg-error' ?>">
-            <?= htmlspecialchars($message_status) ?>
+<div class="pilot-bio-shell">
+    <header class="pilot-bio-hero">
+        <div>
+            <h1 class="pilot-bio-title">Pilot Bio</h1>
+            <p class="pilot-bio-subtitle">Use Research Points to improve your pilot skills. V1 keeps proven Andromeda effects active while future DarkOrbit-like nodes remain visible but locked for later balancing.</p>
         </div>
-    <?php endif; ?>
-
-    <div class="upgrade-card">
-        <div class="card-header">
-            <h2 class="card-title" style="color: var(--color-success);">Ship Integrity</h2>
-            <div style="color: var(--color-text-muted); font-size: 0.9rem;">
-                Resources: <span style="color:#fff;"><?= number_format($datauser[0]['uridium']) ?> U.</span>
+        <div class="pilot-bio-resources">
+            <div class="pilot-bio-resource">
+                <span>Research Points</span>
+                <strong><?php echo number_format($researchPoints); ?></strong>
+            </div>
+            <div class="pilot-bio-resource">
+                <span>Spent Points</span>
+                <strong><?php echo number_format($spentPoints); ?></strong>
+            </div>
+            <div class="pilot-bio-resource">
+                <span>Logfiles</span>
+                <strong><?php echo number_format($logfiles); ?></strong>
             </div>
         </div>
-        <div class="card-body">
-            
-            <?php
-                
-                $currentHpLvl = $datauser[0]['hp_lvl'];
-                $maxHpLvl = 10; 
-                $hpPrice = pow($currentHpLvl * 20, 2) + 100;
-                $isMaxed = ($currentHpLvl >= $maxHpLvl);
-            ?>
+    </header>
 
-            <div class="skill-item" style="border-color: rgba(74, 222, 128, 0.2);">
-                <div class="skill-header">
-                    <span class="skill-name">Hull Reinforced Plating</span>
-                </div>
-                <p class="skill-desc">
-                    Reinforces the ship's structure layout. Increases base Hitpoints by <strong style="color:var(--color-success);">+5,000</strong> per level.
-                </p>
-                
-                <div class="skill-status-container">
-                    <span class="level-text" style="color: var(--color-success);">Level <?= $currentHpLvl ?> / <?= $maxHpLvl ?></span>
-                    <div class="pips-visual">
-                        <?php for($i = 1; $i <= $maxHpLvl; $i++): ?>
-                            <div class="pip health-type <?= ($i <= $currentHpLvl) ? 'active' : '' ?>"></div>
-                        <?php endfor; ?>
-                    </div>
-                </div>
-
-                <?php if(!$isMaxed): ?>
-                    <a href="view.php?page=user&tab=upgrades&buy=healt_upgrade" class="btn-upgrade btn-health">
-                        <span>UPGRADE HULL</span>
-                        <span class="cost-badge"><?= number_format($hpPrice) ?> Uridium</span>
-                    </a>
-                <?php else: ?>
-                    <div class="btn-upgrade disabled">
-                        <span>MAXIMUM LEVEL REACHED</span>
-                    </div>
-                <?php endif; ?>
-            </div>
-
+    <?php if ($pilotBioFlash && is_array($pilotBioFlash)) { ?>
+        <div class="pilot-bio-message is-<?php echo $escapePilot($pilotBioFlash['type'] ?? 'error'); ?>">
+            <?php echo $escapePilot($pilotBioFlash['message'] ?? ''); ?>
         </div>
-    </div>
+    <?php } ?>
 
-    <div class="upgrade-card">
-        <div class="card-header">
-            <h2 class="card-title">Tech Laboratory</h2>
-            <div style="color: var(--color-text-muted); font-size: 0.9rem;">
-                Resources: <span style="color:#fff;"><?= number_format($datauser[0]['logfiles']) ?> Logfiles</span>
+    <?php if (!$schemaReady) { ?>
+        <div class="pilot-bio-message is-error">
+            Pilot Bio database schema is not installed yet. Apply the manual SQL file before enabling research.
+        </div>
+    <?php } elseif (!$stateReady) { ?>
+        <div class="pilot-bio-message">
+            Pilot Bio is ready, but this pilot has not been migrated yet. Legacy upgrades remain untouched until migration is applied manually.
+        </div>
+    <?php } ?>
+
+    <section class="pilot-bio-card">
+        <div class="pilot-bio-toolbar">
+            <h2>Skill Tree</h2>
+            <form method="post" class="pilot-bio-exchange">
+                <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
+                <input type="hidden" name="pilot_bio_action" value="exchange_point">
+                <span>Next Research Point: <?php echo number_format($nextPointCost); ?> Logfiles</span>
+                <button class="pilot-bio-button" type="submit"<?php echo (!$schemaReady || !$stateReady || $logfiles < $nextPointCost) ? ' disabled' : ''; ?>>Exchange Logfiles</button>
+            </form>
+        </div>
+
+        <div class="pilot-bio-tree" aria-label="Pilot Bio Skill Tree">
+            <div class="pilot-bio-tree-grid">
+                <?php foreach ($pilotBioRows as $column) { ?>
+                    <div class="pilot-bio-column">
+                        <?php foreach ($column as $row) { ?>
+                            <div class="pilot-bio-row">
+                                <?php foreach ($row as $slot) {
+                                    $node = $nodesBySlot[$slot];
+                                    $classes = ['pilot-bio-node'];
+                                    if ($node['status'] !== 'active') $classes[] = 'is-later';
+                                    if (!empty($node['is_locked'])) $classes[] = 'is-locked';
+                                    if (!empty($node['can_upgrade'])) $classes[] = 'can-upgrade';
+                                    if (!empty($node['is_maxed'])) $classes[] = 'is-maxed';
+                                    $statusLabel = 'Later';
+                                    if ($node['is_maxed']) {
+                                        $statusLabel = 'Maxed';
+                                    } elseif ($node['can_upgrade']) {
+                                        $statusLabel = 'Available';
+                                    } elseif ($node['status'] === 'active' && $stateReady) {
+                                        $statusLabel = $node['is_locked'] ? 'Locked' : 'No points';
+                                    } elseif ($node['status'] === 'active') {
+                                        $statusLabel = 'Migration required';
+                                    }
+                                ?>
+                                    <div class="<?php echo implode(' ', $classes); ?>">
+                                        <form method="post">
+                                            <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
+                                            <input type="hidden" name="pilot_bio_action" value="upgrade_node">
+                                            <input type="hidden" name="node_code" value="<?php echo $escapePilot($node['node_code']); ?>">
+                                            <button class="pilot-bio-node-button" type="submit"<?php echo empty($node['can_upgrade']) ? ' disabled' : ''; ?> aria-label="<?php echo $escapePilot($node['display_name']); ?>">
+                                                <span class="pilot-bio-node-icon" id="pilot_skill_<?php echo (int)$node['slot']; ?>"></span>
+                                                <span class="pilot-bio-points"><?php echo (int)$node['level']; ?>/<?php echo (int)$node['max_level']; ?></span>
+                                            </button>
+                                        </form>
+                                        <div class="pilot-bio-node-name"><?php echo $escapePilot($node['display_name']); ?></div>
+                                        <div class="pilot-bio-node-status"><?php echo $escapePilot($statusLabel); ?></div>
+                                        <div class="pilot-bio-node-tooltip">
+                                            <strong><?php echo $escapePilot($node['display_name']); ?></strong>
+                                            <?php echo $escapePilot($node['description']); ?>
+                                            <span><?php echo $escapePilot($node['effect_text']); ?></span>
+                                            <?php if ($node['status'] !== 'active') { ?>
+                                                <span>Not available in V1.</span>
+                                            <?php } elseif (!empty($node['is_locked'])) { ?>
+                                                <span>Prerequisites required.</span>
+                                            <?php } ?>
+                                        </div>
+                                    </div>
+                                <?php } ?>
+                            </div>
+                        <?php } ?>
+                    </div>
+                <?php } ?>
             </div>
         </div>
-        <div class="card-body">
-            
-            <div class="skills-grid">
+    </section>
 
-                <?php
-                
-                
-                $skillsConfig = [
-                    [ 'id' => 'dmg', 'buy_code' => 'dmgskill', 'name' => 'Laser Engineering', 'max' => 5, 'desc_key' => 'dmg' ],
-                    
-                    [ 'id' => 'shd_abs', 'buy_code' => 'shd_absskill', 'name' => 'Shield Mechanics', 'max' => 3, 'desc_key' => 'shd_abs' ],
-                    [ 'id' => 'shreg', 'buy_code' => 'shregskill', 'name' => 'Shield Regeneration', 'max' => 5, 'desc_key' => 'shreg' ],
-                    
-                    [ 'id' => 'rep', 'buy_code' => 'repskill', 'name' => 'Repair Bot Tech', 'max' => 3, 'desc_key' => 'rep' ],
-                    [ 'id' => 'smb', 'buy_code' => 'smbskill', 'name' => 'Smartbomb Tech', 'max' => 2, 'desc_key' => 'smb' ]
-                ];
-
-                foreach($skillsConfig as $sk):
-                    $currentLvl = $lab->skills[$sk['id']];
-                    $maxLvl = $sk['max'];
-                    
-                    
-                    $price = method_exists($lab, 'get_skill_Prix') ? $lab->get_skill_Prix($sk['id']) : "???"; 
-                    
-                    
-                    $description = $lab->get_skill_description($sk['desc_key']);
-
-                    
-                    if($sk['id'] === 'dmg') {
-                        $description = "Increases Laser Damage on NPCs and Players by <strong style='color:#fff'>2%</strong> per level (Max 10%).";
-                    }
-
-                    $isSkillMaxed = ($currentLvl >= $maxLvl);
-                ?>
-
-                <div class="skill-item">
-                    <div class="skill-header">
-                        <span class="skill-name"><?= $sk['name'] ?></span>
-                    </div>
-                    
-                    <div class="skill-desc"><?= $description ?></div>
-
-                     <div class="skill-status-container">
-                        <span class="level-text">Lvl <?= $currentLvl ?> / <?= $maxLvl ?></span>
-                        <div class="pips-visual">
-                             <?php for($i = 1; $i <= $maxLvl; $i++): ?>
-                                <div class="pip <?= ($i <= $currentLvl) ? 'active' : '' ?>"></div>
-                            <?php endfor; ?>
-                        </div>
-                    </div>
-
-                    <?php if(!$isSkillMaxed): ?>
-                        <a href="view.php?page=user&tab=upgrades&buy=<?= $sk['buy_code'] ?>" class="btn-upgrade has-tooltip" data-tooltip="You currently have <?= number_format($datauser[0]['logfiles']) ?> Logfiles.">
-                            <span>RESEARCH</span>
-                            <span class="cost-badge"><?= number_format((float)$price) ?> Logfiles</span>
-                        </a>
-                    <?php else: ?>
-                        <div class="btn-upgrade disabled">
-                            <span>RESEARCH COMPLETED</span>
-                        </div>
-                    <?php endif; ?>
-                </div>
-
-                <?php endforeach; ?>
-
-            </div> </div>
-    </div>
+    <section class="pilot-bio-card">
+        <div class="pilot-bio-toolbar">
+            <h2>Legacy Migration Snapshot</h2>
+        </div>
+        <div class="pilot-bio-legacy">
+            <div class="pilot-bio-legacy-item">Ship Integrity level: <?php echo number_format((int)$pilotBio['resources']['hp_lvl']); ?></div>
+            <div class="pilot-bio-legacy-item">Legacy skilltree: <?php echo $escapePilot($pilotBio['resources']['skilltree']); ?></div>
+            <div class="pilot-bio-legacy-item">Shield Regeneration is intentionally not part of Pilot Bio V1.</div>
+        </div>
+    </section>
 </div>

@@ -14,8 +14,8 @@ $tabs = [
         'href' => 'view.php?page=user&amp;tab=infos',
     ],
     'upgrades' => [
-        'label' => 'Upgrades',
-        'description' => 'Boost ship stats, drones, and research tree.',
+        'label' => 'Pilot Bio',
+        'description' => 'Spend Research Points in your pilot skill tree.',
         'href' => 'view.php?page=user&amp;tab=upgrades',
     ],
     'quests' => [
