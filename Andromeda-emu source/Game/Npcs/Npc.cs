@@ -2288,7 +2288,9 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 int xpGain = Convert.ToInt32(xpBase * num2);
                 int honorGain = Convert.ToInt32(honorBase * num2);
+                int32_1 = sessionByCharacterId.CharacterInfo.ApplyPilotBioAlienCreditBonus(int32_1);
                 xpGain = sessionByCharacterId.CharacterInfo.ApplyPilotBioAlienXpBonus(xpGain);
+                honorGain = sessionByCharacterId.CharacterInfo.ApplyPilotBioAlienHonorBonus(honorGain);
 
                 bool leveledUp = false;
                 bool questProgressChanged = false;

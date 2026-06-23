@@ -47,6 +47,8 @@ namespace OrbitReborn_Emulator.Game.Characters
         public double MultiplierAgainstNpcs = 1.0;
         public double MultiplierAgainstPlayers = 1.0;
         public double PilotBioAlienXpMultiplier = 1.0;
+        public double PilotBioAlienHonorMultiplier = 1.0;
+        public double PilotBioAlienCreditMultiplier = 1.0;
         public double PilotBioNormalRocketDamageMultiplier = 1.0;
         public double ShieldAbsorption = 0.7;
         public int SmbDamages = 20000;
@@ -3636,6 +3638,8 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.MultiplierAgainstPlayers = 1.0;
             this.MultiplierAgainstNpcs = 1.0;
             this.PilotBioAlienXpMultiplier = 1.0;
+            this.PilotBioAlienHonorMultiplier = 1.0;
+            this.PilotBioAlienCreditMultiplier = 1.0;
             this.PilotBioNormalRocketDamageMultiplier = 1.0;
             this.FatLasers = 0;
             this.ShieldAbsorption = 0.7;
@@ -3873,6 +3877,16 @@ namespace OrbitReborn_Emulator.Game.Characters
             return ApplyPilotBioMultiplier(value, this.PilotBioAlienXpMultiplier);
         }
 
+        public int ApplyPilotBioAlienHonorBonus(int value)
+        {
+            return ApplyPilotBioMultiplier(value, this.PilotBioAlienHonorMultiplier);
+        }
+
+        public int ApplyPilotBioAlienCreditBonus(int value)
+        {
+            return ApplyPilotBioMultiplier(value, this.PilotBioAlienCreditMultiplier);
+        }
+
         public int ApplyPilotBioNormalRocketDamageBonus(int rocketId, int value)
         {
             if (rocketId < 1 || rocketId > 4)
@@ -3926,6 +3940,13 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.SmbDamages = this.GetPilotBioIntValue(effectValues, "smartbomb_tech", smartbombTech, new int[] { 25000, 35000 });
 
             this.PilotBioAlienXpMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "tactics", 5, new int[] { 2, 4, 6, 8, 12 });
+            int cruelty1 = this.GetPilotBioLevel(levels, "cruelty_i", 2);
+            int cruelty2 = this.GetPilotBioLevel(levels, "cruelty_ii", 3);
+            if (cruelty1 >= 2 && cruelty2 > 0)
+                this.PilotBioAlienHonorMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "cruelty_ii", 3, new int[] { 12, 18, 25 });
+            else
+                this.PilotBioAlienHonorMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "cruelty_i", 2, new int[] { 4, 8 });
+            this.PilotBioAlienCreditMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "greed", 5, new int[] { 4, 8, 12, 18, 25 });
             this.PilotBioNormalRocketDamageMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "rocket_fusion", 5, new int[] { 2, 4, 6, 8, 15 });
         }
 
