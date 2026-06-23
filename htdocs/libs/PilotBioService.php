@@ -35,7 +35,7 @@ class PilotBioService
                 'max_level' => 3,
                 'status' => 'active',
                 'effect_key' => 'ship_hull_hp',
-                'effect_values' => [15000, 25000, 50000],
+                'effect_values' => [5000, 15000, 50000],
                 'prerequisites' => [['node' => 'ship_hull_i', 'level' => 2]],
             ],
             [
@@ -326,6 +326,12 @@ class PilotBioService
 
         if ($schemaReady) {
             $state = $this->getState();
+            $legacySkills = $this->parseLegacySkilltree($resources['skilltree']);
+            if ($state === null && !$this->hasLegacyInvestment($resources, $legacySkills)) {
+                $this->createEmptyStateForNewPilot($resources);
+                $state = $this->getState();
+            }
+
             if ($state !== null) {
                 $levels = $this->getLevels();
             }
@@ -337,7 +343,7 @@ class PilotBioService
             $byCode[$node['node_code']] = $node;
         }
 
-        $legacySkills = $this->parseLegacySkilltree($resources['skilltree']);
+        $legacySkills = $legacySkills ?? $this->parseLegacySkilltree($resources['skilltree']);
         $maxPointNumber = $schemaReady ? $this->getMaxPointNumber() : 50;
         $nextPointNumber = $state ? ((int)$state['research_points'] + (int)$state['spent_points'] + 1) : 1;
         $nextPointCost = ($nextPointNumber <= $maxPointNumber)
@@ -578,6 +584,23 @@ class PilotBioService
         ];
     }
 
+    private function createEmptyStateForNewPilot(array $resources): void
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'INSERT IGNORE INTO player_pilot_bio_state
+                 (user_id, research_points, spent_points, migrated_from_legacy, legacy_skilltree_snapshot, legacy_hp_lvl_snapshot, legacy_shreg_refund_points)
+                 VALUES (:player_id, 0, 0, 0, :skilltree, :hp_lvl, 0)'
+            );
+            $stmt->execute([
+                ':player_id' => $this->playerId,
+                ':skilltree' => $resources['skilltree'],
+                ':hp_lvl' => (int)$resources['hp_lvl'],
+            ]);
+        } catch (Throwable $e) {
+        }
+    }
+
     private function getState(): ?array
     {
         $stmt = $this->db->prepare('SELECT research_points, spent_points, reset_count, migrated_from_legacy FROM player_pilot_bio_state WHERE user_id = :player_id LIMIT 1');
@@ -756,6 +779,21 @@ class PilotBioService
         return '';
     }
 
+    private function hasLegacyInvestment(array $resources, array $legacySkills): bool
+    {
+        if ((int)$resources['hp_lvl'] > 0) {
+            return true;
+        }
+
+        foreach ($legacySkills as $level) {
+            if ((int)$level > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function parseLegacySkilltree(string $skilltree): array
     {
         $skills = [];
@@ -811,7 +849,7 @@ class PilotBioService
         if ($hpLevel >= 10) {
             $shipHullI = 2;
             $shipHullII = 3;
-            $pilotBonus = 50000;
+            $pilotBonus = 60000;
         } elseif ($hpLevel >= 5) {
             $shipHullI = 2;
             $shipHullII = 2;
@@ -831,6 +869,8 @@ class PilotBioService
         $summary = 'hp_lvl ' . $hpLevel . ' gives +' . number_format($legacyBonus) . ' HP legacy; migrate to Ship Hull I level ' . $shipHullI . ' and Ship Hull II level ' . $shipHullII . ' for +' . number_format($pilotBonus) . ' HP.';
         if ($legacyBonus > $pilotBonus) {
             $summary .= ' This rounds down by ' . number_format($legacyBonus - $pilotBonus) . ' HP; review manual compensation if needed.';
+        } elseif ($pilotBonus > $legacyBonus) {
+            $summary .= ' This gives +' . number_format($pilotBonus - $legacyBonus) . ' HP compared to legacy because Ship Hull I and II are additive.';
         }
 
         return $summary;

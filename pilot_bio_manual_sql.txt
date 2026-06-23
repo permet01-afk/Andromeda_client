@@ -1,4 +1,4 @@
--- Andromeda Pilot Bio / Skill Tree V1.2 manual SQL.
+-- Andromeda Pilot Bio / Skill Tree V1.3 manual SQL.
 -- Make a full database backup before running this file.
 -- Run and validate locally/test first, then only run live after validation.
 -- This file creates/seeds Pilot Bio tables and migrates existing players to Pilot Bio.
@@ -70,7 +70,7 @@ INSERT INTO pilot_bio_nodes
   (node_code, display_name, description_en, track, visual_slot, max_level, status, effect_key, effect_values_json, prerequisites_json)
 VALUES
   ('ship_hull_i', 'Ship Hull I', 'Increases your ship maximum HP.', 'defense', 1, 2, 'active', 'ship_hull_hp', '[5000,10000]', '[]'),
-  ('ship_hull_ii', 'Ship Hull II', 'Further increases your ship maximum HP.', 'defense', 2, 3, 'active', 'ship_hull_hp', '[15000,25000,50000]', '[{"node":"ship_hull_i","level":2}]'),
+  ('ship_hull_ii', 'Ship Hull II', 'Further increases your ship maximum HP.', 'defense', 2, 3, 'active', 'ship_hull_hp', '[5000,15000,50000]', '[{"node":"ship_hull_i","level":2}]'),
   ('engineering', 'Engineering', 'Improves your repair bot.', 'defense', 3, 5, 'active', 'repair_bot', '[15000,20000,25000,27500,30000]', '[]'),
   ('shield_engineering', 'Shield Engineering', 'Increases your maximum shield strength.', 'defense', 4, 5, 'later', 'shield_max_percent', '[4,8,12,18,25]', '[]'),
   ('evasive_maneuvers_i', 'Evasive Maneuvers I', 'Makes your ship harder to hit.', 'defense', 5, 2, 'later', 'enemy_hit_chance_reduction', '[2,4]', '[]'),
@@ -159,150 +159,161 @@ INSERT INTO pilot_bio_point_costs (point_number, logfile_cost) VALUES
 ON DUPLICATE KEY UPDATE logfile_cost = VALUES(logfile_cost);
 
 -- STEP 2 - Automatic global migration.
--- This migrates existing players to Pilot Bio state and levels.
+-- This migrates players that do not already have a Pilot Bio state.
 -- hp_lvl mapping used by V1:
 --   hp_lvl 1  (+5,000 HP)  -> Ship Hull I level 1
 --   hp_lvl 2  (+10,000 HP) -> Ship Hull I level 2
 --   hp_lvl 3 or 4          -> Ship Hull I level 2 + Ship Hull II level 1
 --   hp_lvl 5 to 9          -> Ship Hull I level 2 + Ship Hull II level 2
 --   hp_lvl 10 (+50,000 HP) -> Ship Hull I level 2 + Ship Hull II level 3
+-- Ship Hull I and II are additive in V1.3, so max Pilot Bio Ship Hull gives +60,000 HP total.
+-- A legacy hp_lvl 10 pilot gains +10,000 HP compared to old full Ship Integrity after migration.
 -- hp_lvl 4 and 6-9 are rounded down to the lower Pilot Bio HP tier.
 -- Optional compensation for those intermediate HP tiers can be decided later.
 -- Shield Regeneration is not active in V1, so old shreg levels are refunded as Research Points.
 -- Rocket bonuses and legacy skilltree hp are ignored in V1.
 
+START TRANSACTION;
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT u.id, 'ship_hull_i',
+  CASE
+    WHEN u.hp_lvl >= 2 THEN 2
+    WHEN u.hp_lvl >= 1 THEN 1
+    ELSE 0
+  END
+FROM users u
+WHERE u.hp_lvl > 0
+  AND NOT EXISTS (SELECT 1 FROM player_pilot_bio_state s WHERE s.user_id = u.id)
+ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT u.id, 'ship_hull_ii',
+  CASE
+    WHEN u.hp_lvl >= 10 THEN 3
+    WHEN u.hp_lvl >= 5 THEN 2
+    WHEN u.hp_lvl >= 3 THEN 1
+    ELSE 0
+  END
+FROM users u
+WHERE u.hp_lvl >= 3
+  AND NOT EXISTS (SELECT 1 FROM player_pilot_bio_state s WHERE s.user_id = u.id)
+ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT u.id, 'alien_hunter',
+  CASE
+    WHEN u.skilltree LIKE '%dmg:5%' THEN 5
+    WHEN u.skilltree LIKE '%dmg:4%' THEN 4
+    WHEN u.skilltree LIKE '%dmg:3%' THEN 3
+    WHEN u.skilltree LIKE '%dmg:2%' THEN 2
+    WHEN u.skilltree LIKE '%dmg:1%' THEN 1
+    ELSE 0
+  END
+FROM users u
+WHERE u.skilltree LIKE '%dmg:%'
+  AND NOT EXISTS (SELECT 1 FROM player_pilot_bio_state s WHERE s.user_id = u.id)
+ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT u.id, 'bounty_hunter_i',
+  CASE
+    WHEN u.skilltree LIKE '%dmg:5%' OR u.skilltree LIKE '%dmg:4%' OR u.skilltree LIKE '%dmg:3%' OR u.skilltree LIKE '%dmg:2%' THEN 2
+    WHEN u.skilltree LIKE '%dmg:1%' THEN 1
+    ELSE 0
+  END
+FROM users u
+WHERE u.skilltree LIKE '%dmg:%'
+  AND NOT EXISTS (SELECT 1 FROM player_pilot_bio_state s WHERE s.user_id = u.id)
+ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT u.id, 'bounty_hunter_ii',
+  CASE
+    WHEN u.skilltree LIKE '%dmg:5%' THEN 3
+    WHEN u.skilltree LIKE '%dmg:4%' THEN 2
+    WHEN u.skilltree LIKE '%dmg:3%' THEN 1
+    ELSE 0
+  END
+FROM users u
+WHERE (u.skilltree LIKE '%dmg:3%' OR u.skilltree LIKE '%dmg:4%' OR u.skilltree LIKE '%dmg:5%')
+  AND NOT EXISTS (SELECT 1 FROM player_pilot_bio_state s WHERE s.user_id = u.id)
+ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT u.id, 'shield_mechanics',
+  CASE
+    WHEN u.skilltree LIKE '%shd_abs:3%' THEN 5
+    WHEN u.skilltree LIKE '%shd_abs:2%' THEN 3
+    WHEN u.skilltree LIKE '%shd_abs:1%' THEN 1
+    ELSE 0
+  END
+FROM users u
+WHERE u.skilltree LIKE '%shd_abs:%'
+  AND NOT EXISTS (SELECT 1 FROM player_pilot_bio_state s WHERE s.user_id = u.id)
+ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT u.id, 'engineering',
+  CASE
+    WHEN u.skilltree LIKE '%rep:3%' THEN 5
+    WHEN u.skilltree LIKE '%rep:2%' THEN 2
+    WHEN u.skilltree LIKE '%rep:1%' THEN 1
+    ELSE 0
+  END
+FROM users u
+WHERE u.skilltree LIKE '%rep:%'
+  AND NOT EXISTS (SELECT 1 FROM player_pilot_bio_state s WHERE s.user_id = u.id)
+ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
+
+INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
+SELECT u.id, 'smartbomb_tech',
+  CASE
+    WHEN u.skilltree LIKE '%smb:2%' THEN 2
+    WHEN u.skilltree LIKE '%smb:1%' THEN 1
+    ELSE 0
+  END
+FROM users u
+WHERE u.skilltree LIKE '%smb:%'
+  AND NOT EXISTS (SELECT 1 FROM player_pilot_bio_state s WHERE s.user_id = u.id)
+ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
+
 INSERT INTO player_pilot_bio_state
   (user_id, research_points, spent_points, migrated_from_legacy, legacy_skilltree_snapshot, legacy_hp_lvl_snapshot, legacy_shreg_refund_points)
 SELECT
-  id,
+  u.id,
   CASE
-    WHEN skilltree LIKE '%shreg:5%' THEN 5
-    WHEN skilltree LIKE '%shreg:4%' THEN 4
-    WHEN skilltree LIKE '%shreg:3%' THEN 3
-    WHEN skilltree LIKE '%shreg:2%' THEN 2
-    WHEN skilltree LIKE '%shreg:1%' THEN 1
+    WHEN u.skilltree LIKE '%shreg:5%' THEN 5
+    WHEN u.skilltree LIKE '%shreg:4%' THEN 4
+    WHEN u.skilltree LIKE '%shreg:3%' THEN 3
+    WHEN u.skilltree LIKE '%shreg:2%' THEN 2
+    WHEN u.skilltree LIKE '%shreg:1%' THEN 1
     ELSE 0
   END,
   0,
   1,
-  skilltree,
-  hp_lvl,
+  u.skilltree,
+  u.hp_lvl,
   CASE
-    WHEN skilltree LIKE '%shreg:5%' THEN 5
-    WHEN skilltree LIKE '%shreg:4%' THEN 4
-    WHEN skilltree LIKE '%shreg:3%' THEN 3
-    WHEN skilltree LIKE '%shreg:2%' THEN 2
-    WHEN skilltree LIKE '%shreg:1%' THEN 1
+    WHEN u.skilltree LIKE '%shreg:5%' THEN 5
+    WHEN u.skilltree LIKE '%shreg:4%' THEN 4
+    WHEN u.skilltree LIKE '%shreg:3%' THEN 3
+    WHEN u.skilltree LIKE '%shreg:2%' THEN 2
+    WHEN u.skilltree LIKE '%shreg:1%' THEN 1
     ELSE 0
   END
-FROM users
-ON DUPLICATE KEY UPDATE
-  migrated_from_legacy = VALUES(migrated_from_legacy),
-  legacy_skilltree_snapshot = VALUES(legacy_skilltree_snapshot),
-  legacy_hp_lvl_snapshot = VALUES(legacy_hp_lvl_snapshot),
-  legacy_shreg_refund_points = VALUES(legacy_shreg_refund_points);
-
-INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
-SELECT id, 'ship_hull_i',
-  CASE
-    WHEN hp_lvl >= 2 THEN 2
-    WHEN hp_lvl >= 1 THEN 1
-    ELSE 0
-  END
-FROM users
-WHERE hp_lvl > 0
-ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
-
-INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
-SELECT id, 'ship_hull_ii',
-  CASE
-    WHEN hp_lvl >= 10 THEN 3
-    WHEN hp_lvl >= 5 THEN 2
-    WHEN hp_lvl >= 3 THEN 1
-    ELSE 0
-  END
-FROM users
-WHERE hp_lvl >= 3
-ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
-
-INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
-SELECT id, 'alien_hunter',
-  CASE
-    WHEN skilltree LIKE '%dmg:5%' THEN 5
-    WHEN skilltree LIKE '%dmg:4%' THEN 4
-    WHEN skilltree LIKE '%dmg:3%' THEN 3
-    WHEN skilltree LIKE '%dmg:2%' THEN 2
-    WHEN skilltree LIKE '%dmg:1%' THEN 1
-    ELSE 0
-  END
-FROM users
-WHERE skilltree LIKE '%dmg:%'
-ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
-
-INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
-SELECT id, 'bounty_hunter_i',
-  CASE
-    WHEN skilltree LIKE '%dmg:5%' OR skilltree LIKE '%dmg:4%' OR skilltree LIKE '%dmg:3%' OR skilltree LIKE '%dmg:2%' THEN 2
-    WHEN skilltree LIKE '%dmg:1%' THEN 1
-    ELSE 0
-  END
-FROM users
-WHERE skilltree LIKE '%dmg:%'
-ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
-
-INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
-SELECT id, 'bounty_hunter_ii',
-  CASE
-    WHEN skilltree LIKE '%dmg:5%' THEN 3
-    WHEN skilltree LIKE '%dmg:4%' THEN 2
-    WHEN skilltree LIKE '%dmg:3%' THEN 1
-    ELSE 0
-  END
-FROM users
-WHERE skilltree LIKE '%dmg:3%' OR skilltree LIKE '%dmg:4%' OR skilltree LIKE '%dmg:5%'
-ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
-
-INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
-SELECT id, 'shield_mechanics',
-  CASE
-    WHEN skilltree LIKE '%shd_abs:3%' THEN 5
-    WHEN skilltree LIKE '%shd_abs:2%' THEN 3
-    WHEN skilltree LIKE '%shd_abs:1%' THEN 1
-    ELSE 0
-  END
-FROM users
-WHERE skilltree LIKE '%shd_abs:%'
-ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
-
-INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
-SELECT id, 'engineering',
-  CASE
-    WHEN skilltree LIKE '%rep:3%' THEN 5
-    WHEN skilltree LIKE '%rep:2%' THEN 2
-    WHEN skilltree LIKE '%rep:1%' THEN 1
-    ELSE 0
-  END
-FROM users
-WHERE skilltree LIKE '%rep:%'
-ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
-
-INSERT INTO player_pilot_bio_levels (user_id, node_code, level)
-SELECT id, 'smartbomb_tech',
-  CASE
-    WHEN skilltree LIKE '%smb:2%' THEN 2
-    WHEN skilltree LIKE '%smb:1%' THEN 1
-    ELSE 0
-  END
-FROM users
-WHERE skilltree LIKE '%smb:%'
-ON DUPLICATE KEY UPDATE level = GREATEST(player_pilot_bio_levels.level, VALUES(level));
+FROM users u
+WHERE NOT EXISTS (SELECT 1 FROM player_pilot_bio_state s WHERE s.user_id = u.id);
 
 UPDATE player_pilot_bio_state s
 SET spent_points = (
   SELECT COALESCE(SUM(level), 0)
   FROM player_pilot_bio_levels l
   WHERE l.user_id = s.user_id
-);
+)
+WHERE s.migrated_from_legacy = 1;
+
+COMMIT;
 
 -- STEP 3 - Verification queries.
 

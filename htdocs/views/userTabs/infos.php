@@ -94,7 +94,59 @@ if ($baseSpeed2010 <= 0) $baseSpeed2010 = 250;
 $hpLvl = (int)($u['hp_lvl'] ?? 0);
 if ($hpLvl < 0 || $hpLvl > 10) $hpLvl = 0;
 
-$shipHp = $baseHp2010 + (5000 * $hpLvl);
+$pilotBioActiveForStats = false;
+$pilotBioLevelsForStats = [];
+$pilotBioEffectsForStats = [];
+
+try {
+    $pilotBioStmt = $db->prepare("
+        SELECT n.node_code, n.effect_values_json, COALESCE(l.level, 0) AS level
+        FROM pilot_bio_nodes n
+        INNER JOIN player_pilot_bio_state s ON s.user_id = :pid
+        LEFT JOIN player_pilot_bio_levels l ON l.user_id = :pid AND l.node_code = n.node_code
+        WHERE n.node_code IN ('ship_hull_i', 'ship_hull_ii')
+    ");
+    $pilotBioStmt->execute([':pid' => $pid]);
+    $pilotBioRows = $pilotBioStmt->fetchAll(PDO::FETCH_ASSOC);
+    if (!empty($pilotBioRows)) {
+        $pilotBioActiveForStats = true;
+        foreach ($pilotBioRows as $pilotBioRow) {
+            $pilotBioCode = (string)($pilotBioRow['node_code'] ?? '');
+            if ($pilotBioCode === '') {
+                continue;
+            }
+            $pilotBioLevelsForStats[$pilotBioCode] = max(0, (int)($pilotBioRow['level'] ?? 0));
+            $decodedEffectValues = json_decode((string)($pilotBioRow['effect_values_json'] ?? ''), true);
+            if (is_array($decodedEffectValues)) {
+                $pilotBioEffectsForStats[$pilotBioCode] = array_values(array_map('intval', $decodedEffectValues));
+            }
+        }
+    }
+} catch (Throwable $e) {
+    $pilotBioActiveForStats = false;
+    $pilotBioLevelsForStats = [];
+    $pilotBioEffectsForStats = [];
+}
+
+$getPilotBioHpValue = static function (string $nodeCode, int $level, array $fallbackValues) use ($pilotBioEffectsForStats): int {
+    if ($level <= 0) {
+        return 0;
+    }
+    $values = $pilotBioEffectsForStats[$nodeCode] ?? $fallbackValues;
+    if (empty($values)) {
+        return 0;
+    }
+    $index = min($level, count($values)) - 1;
+    return (int)$values[$index];
+};
+
+$pilotBioHpBonus = 0;
+if ($pilotBioActiveForStats) {
+    $pilotBioHpBonus += $getPilotBioHpValue('ship_hull_i', min(2, (int)($pilotBioLevelsForStats['ship_hull_i'] ?? 0)), [5000, 10000]);
+    $pilotBioHpBonus += $getPilotBioHpValue('ship_hull_ii', min(3, (int)($pilotBioLevelsForStats['ship_hull_ii'] ?? 0)), [5000, 15000, 50000]);
+}
+
+$shipHp = $baseHp2010 + ($pilotBioActiveForStats ? $pilotBioHpBonus : (5000 * $hpLvl));
 
 $now = time();
 $hasBoosterHp = ((int)($u['booster_hp_time'] ?? 0) > $now);

@@ -3809,15 +3809,17 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         private int GetPilotBioHpBonus(Dictionary<string, int> levels, Dictionary<string, string> effectValues)
         {
-            int shipHull2 = this.GetPilotBioLevel(levels, "ship_hull_ii", 3);
-            if (shipHull2 > 0)
-                return this.GetPilotBioIntValue(effectValues, "ship_hull_ii", shipHull2, new int[] { 15000, 25000, 50000 });
+            int total = 0;
 
             int shipHull1 = this.GetPilotBioLevel(levels, "ship_hull_i", 2);
             if (shipHull1 > 0)
-                return this.GetPilotBioIntValue(effectValues, "ship_hull_i", shipHull1, new int[] { 5000, 10000 });
+                total += this.GetPilotBioIntValue(effectValues, "ship_hull_i", shipHull1, new int[] { 5000, 10000 });
 
-            return 0;
+            int shipHull2 = this.GetPilotBioLevel(levels, "ship_hull_ii", 3);
+            if (shipHull2 > 0)
+                total += this.GetPilotBioIntValue(effectValues, "ship_hull_ii", shipHull2, new int[] { 5000, 15000, 50000 });
+
+            return total;
         }
 
         private void ApplyPilotBioPassives(Dictionary<string, int> levels, Dictionary<string, string> effectValues)
