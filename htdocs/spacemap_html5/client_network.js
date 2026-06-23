@@ -5938,6 +5938,13 @@ function handlePacket_laserAttack(parts, i) {
             addEntry(0, 0, 0);
             showShield = false;
         });
+        const scheduleShieldImpact = entry => {
+            if (!entry || !entry.showShieldDamage || typeof triggerLaserImpactEffect !== "function") return;
+            const delay = Math.max(0, Number(entry.duration) || 0);
+            setTimeout(() => {
+                triggerLaserImpactEffect(entry);
+            }, delay);
+        };
         try {
             if (playSound && window.AudioManager && typeof window.AudioManager.playLaserShot === "function") {
                 const lastEntry = entries[entries.length - 1];
@@ -5975,6 +5982,7 @@ function handlePacket_laserAttack(parts, i) {
                         beam.offsetEndY = entry.offsetEndY;
                         beam.hitHandled = false;
                         beam.salvoSlot = entry.salvoSlot;
+                        scheduleShieldImpact(beam);
                         entriesBySlot.delete(slot);
                     } else {
                         laserBeams.splice(idx, 1);
@@ -5983,11 +5991,13 @@ function handlePacket_laserAttack(parts, i) {
             }
             for (const entry of entriesBySlot.values()) {
                 laserBeams.push(entry);
+                scheduleShieldImpact(entry);
             }
             return;
         }
         for (const entry of entries) {
             laserBeams.push(entry);
+            scheduleShieldImpact(entry);
         }
     };
     const maybeSpawnEnergyLeechEcho = createdAt => {

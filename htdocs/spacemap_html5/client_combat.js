@@ -1661,15 +1661,18 @@ function updateLaserBeams(now) {
         const beam = laserBeams[i];
         const elapsed = now - beam.createdAt;
         if (elapsed >= beam.duration) {
-            if (!beam.hitHandled) {
-                handleLaserImpact(beam);
-                beam.hitHandled = true;
-            }
+            triggerLaserImpactEffect(beam);
             continue;
         }
         laserBeams[keepCount++] = beam;
     }
     laserBeams.length = keepCount;
+}
+
+function triggerLaserImpactEffect(beam) {
+    if (!beam || beam.hitHandled) return;
+    handleLaserImpact(beam);
+    beam.hitHandled = true;
 }
 
 function handleLaserImpact(beam) {
