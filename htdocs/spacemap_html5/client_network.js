@@ -3982,19 +3982,7 @@ function handlePacket_A(parts, i) {
                 } else if (type === "SHD") {
                     const prev = heroShield;
                     heroShield = value;
-                    if (prev != null && value < prev) {
-                        const angle = normalizeShieldImpactVisualAngle(getRecentBeamAngleForTarget(heroId));
-                        const radius = computeShieldImpactRadius(snapshotEntityById(heroId));
-                        if (angle != null) {
-                            spawnShieldBurstAt(shipX, shipY, "hit", {
-                                angle: angle,
-                                radius: radius,
-                                targetId: heroId,
-                                followTarget: true
-                            });
-                        }
-                        if (heroRepairing && typeof setHeroRepairing === "function") setHeroRepairing(false);
-                    }
+                    if (prev != null && value < prev && heroRepairing && typeof setHeroRepairing === "function") setHeroRepairing(false);
                     applyDeltaBubble(prev, value, heroId, true);
                 }
                 if (type === "HPT" || type === "SHD") {
@@ -4010,18 +3998,6 @@ function handlePacket_A(parts, i) {
                 } else if (type === "SHD") {
                     const prev = targetEnt.shield;
                     targetEnt.shield = value;
-                    if (prev != null && value < prev && targetEnt.kind === "player") {
-                        const angle = normalizeShieldImpactVisualAngle(getRecentBeamAngleForTarget(targetId));
-                        const radius = computeShieldImpactRadius(snapshotEntityById(targetId));
-                        if (angle != null) {
-                            spawnShieldBurstAt(targetEnt.x, targetEnt.y, "hit", {
-                                angle: angle,
-                                radius: radius,
-                                targetId: targetId,
-                                followTarget: true
-                            });
-                        }
-                    }
                     applyDeltaBubble(prev, value, targetId, true);
                 }
                 if (type === "HPT" || type === "SHD") {
@@ -6087,35 +6063,13 @@ function handlePacket_attackInfo(parts, i) {
     updateEntityClaim(targetId, attackerId);
     const hp = hpRaw !== undefined ? parseInt(hpRaw, 10) : NaN;
     const shield = shRaw !== undefined ? parseFloat(shRaw) : NaN;
-    const applyShieldHit = (id, prev, next) => {
-        if (prev != null && !isNaN(next) && next < prev) {
-            let angle = computeShieldImpactAngle(attackerId, targetId);
-            if (angle == null) {
-                const beamAngle = getRecentBeamAngleForTarget(id);
-                angle = normalizeShieldImpactVisualAngle(beamAngle);
-            }
-            const radius = computeShieldImpactRadius(snapshotEntityById(id));
-            const sx = heroId !== null && id === heroId ? shipX : entities[id]?.x || 0;
-            const sy = heroId !== null && id === heroId ? shipY : entities[id]?.y || 0;
-            if (angle != null) {
-                spawnShieldBurstAt(sx, sy, "hit", {
-                    angle: angle,
-                    radius: radius,
-                    targetId: id,
-                    followTarget: true
-                });
-            }
-        }
-    };
     let prevHp = null;
     let prevShieldForBubble = null;
     if (heroId !== null && targetId === heroId) {
         prevHp = heroHp;
         prevShieldForBubble = heroShield;
-        const prevShield = heroShield;
         if (!isNaN(hp)) heroHp = hp;
         if (!isNaN(shield)) {
-            applyShieldHit(heroId, prevShield, shield);
             heroShield = shield;
         }
         if (!isNaN(hp) || !isNaN(shield)) {
@@ -6125,10 +6079,8 @@ function handlePacket_attackInfo(parts, i) {
         if (ent) {
             prevHp = ent.hp;
             prevShieldForBubble = ent.shield;
-            const prevShield = ent.shield;
             if (!isNaN(hp)) ent.hp = hp;
             if (!isNaN(shield)) {
-                applyShieldHit(targetId, prevShield, shield);
                 ent.shield = shield;
             }
             if (ent.hp != null && ent.shield != null && ent.maxHp != null && ent.maxShield != null) {
