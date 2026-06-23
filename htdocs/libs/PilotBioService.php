@@ -704,6 +704,10 @@ class PilotBioService
             return 'Fat lasers unlock when Bounty Hunter II is maxed.';
         }
 
+        if ($node['node_code'] === 'shield_mechanics') {
+            return 'At max level, shield damage impacts become visible around your ship.';
+        }
+
         return '';
     }
 
