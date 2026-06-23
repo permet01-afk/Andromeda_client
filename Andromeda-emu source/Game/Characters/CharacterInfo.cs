@@ -46,6 +46,8 @@ namespace OrbitReborn_Emulator.Game.Characters
         private CDictionnary<string, int> mSkillTree = new CDictionnary<string, int>();
         public double MultiplierAgainstNpcs = 1.0;
         public double MultiplierAgainstPlayers = 1.0;
+        public double PilotBioAlienXpMultiplier = 1.0;
+        public double PilotBioNormalRocketDamageMultiplier = 1.0;
         public double ShieldAbsorption = 0.7;
         public int SmbDamages = 20000;
         public int RepairBotHp = 10000;
@@ -102,6 +104,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         private int mRocketLauncherTypeCfgA = 0;
         private int mRocketLauncherTypeCfgB = 0;
         private int mBaseCargo2010 = 0;
+        private double mPilotBioCargoCapacityMultiplier = 1.0;
         private int mSepromSafeLevel = 0;
         private int mSepromSafeStored = 0;
         private static bool mSepromSafeTableEnsured = false;
@@ -3440,6 +3443,10 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (baseCargo2010 <= 0)
                 baseCargo2010 = 1000;
 
+            this.mPilotBioCargoCapacityMultiplier = pilotBioActive
+                ? this.GetPilotBioPercentMultiplier(pilotBioLevels, pilotBioEffectValues, "logistics", 5, new int[] { 4, 8, 12, 16, 25 })
+                : 1.0;
+
             this.mBaseCargo2010 = baseCargo2010;
             this.mShipMaxCargo = baseCargo2010;
 
@@ -3538,6 +3545,17 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.mConfig2.Shield = this.mConfig2.MaxShield;
             }
 
+            double pilotBioShieldMultiplier = pilotBioActive
+                ? this.GetPilotBioPercentMultiplier(pilotBioLevels, pilotBioEffectValues, "shield_engineering", 5, new int[] { 4, 8, 12, 18, 25 })
+                : 1.0;
+            if (pilotBioShieldMultiplier > 1.0)
+            {
+                this.mConfig1.MaxShield = ApplyPilotBioMultiplier(this.mConfig1.MaxShield, pilotBioShieldMultiplier);
+                this.mConfig2.MaxShield = ApplyPilotBioMultiplier(this.mConfig2.MaxShield, pilotBioShieldMultiplier);
+                this.mConfig1.Shield = this.mConfig1.MaxShield;
+                this.mConfig2.Shield = this.mConfig2.MaxShield;
+            }
+
 
 
             if (this.IsAdmin)
@@ -3617,6 +3635,8 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             this.MultiplierAgainstPlayers = 1.0;
             this.MultiplierAgainstNpcs = 1.0;
+            this.PilotBioAlienXpMultiplier = 1.0;
+            this.PilotBioNormalRocketDamageMultiplier = 1.0;
             this.FatLasers = 0;
             this.ShieldAbsorption = 0.7;
             this.ShieldMechanics = 0;
@@ -3822,6 +3842,45 @@ namespace OrbitReborn_Emulator.Game.Characters
             return total;
         }
 
+        private double GetPilotBioPercentMultiplier(Dictionary<string, int> levels, Dictionary<string, string> effectValues, string code, int maxLevel, int[] fallbackValues)
+        {
+            int level = this.GetPilotBioLevel(levels, code, maxLevel);
+            if (level <= 0)
+                return 1.0;
+
+            int percent = this.GetPilotBioIntValue(effectValues, code, level, fallbackValues);
+            if (percent <= 0)
+                return 1.0;
+
+            return 1.0 + percent / 100.0;
+        }
+
+        private static int ApplyPilotBioMultiplier(int value, double multiplier)
+        {
+            if (value <= 0 || multiplier <= 0.0 || Math.Abs(multiplier - 1.0) < 0.0001)
+                return value;
+
+            double result = Math.Round(value * multiplier);
+            if (result > int.MaxValue)
+                return int.MaxValue;
+            if (result < 0)
+                return 0;
+            return (int)result;
+        }
+
+        public int ApplyPilotBioAlienXpBonus(int value)
+        {
+            return ApplyPilotBioMultiplier(value, this.PilotBioAlienXpMultiplier);
+        }
+
+        public int ApplyPilotBioNormalRocketDamageBonus(int rocketId, int value)
+        {
+            if (rocketId < 1 || rocketId > 4)
+                return value;
+
+            return ApplyPilotBioMultiplier(value, this.PilotBioNormalRocketDamageMultiplier);
+        }
+
         private void ApplyPilotBioPassives(Dictionary<string, int> levels, Dictionary<string, string> effectValues)
         {
             int alienHunter = this.GetPilotBioLevel(levels, "alien_hunter", 5);
@@ -3865,6 +3924,9 @@ namespace OrbitReborn_Emulator.Game.Characters
             int smartbombTech = this.GetPilotBioLevel(levels, "smartbomb_tech", 2);
             if (smartbombTech > 0)
                 this.SmbDamages = this.GetPilotBioIntValue(effectValues, "smartbomb_tech", smartbombTech, new int[] { 25000, 35000 });
+
+            this.PilotBioAlienXpMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "tactics", 5, new int[] { 2, 4, 6, 8, 12 });
+            this.PilotBioNormalRocketDamageMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "rocket_fusion", 5, new int[] { 2, 4, 6, 8, 15 });
         }
 
         private int GetPilotBioLevel(Dictionary<string, int> levels, string code, int maxLevel)
@@ -6280,7 +6342,11 @@ namespace OrbitReborn_Emulator.Game.Characters
                 baseCargo = (this.mShipMaxCargo > 0 ? this.mShipMaxCargo : 1000);
 
             int multiplier = this.HasCargoCompressor ? 2 : 1;
-            this.mShipMaxCargo = baseCargo * multiplier;
+            int maxCargo = baseCargo * multiplier;
+            if (this.mPilotBioCargoCapacityMultiplier > 1.0)
+                maxCargo = ApplyPilotBioMultiplier(maxCargo, this.mPilotBioCargoCapacityMultiplier);
+
+            this.mShipMaxCargo = maxCargo;
         }
 
         public string GetCpuItemsPayload(bool includeRocketLauncherCpu)

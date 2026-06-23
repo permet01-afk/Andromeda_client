@@ -2937,7 +2937,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (rocketId == 10)
                     damage = 0;
                 else
+                {
                     damage = Math.Max(0, baseDamage + rng.Next(-200, 200));
+                    damage = session.CharacterInfo.ApplyPilotBioNormalRocketDamageBonus(rocketId, damage);
+                }
 
                 int targetId = context != null ? context.TargetId : session.CharacterInfo.SelectedPlayerRocket;
                 int targetSpawnSeq = context != null ? context.TargetSpawnSeq : session.CharacterInfo.SelectedPlayerRocketSpawnSeq;

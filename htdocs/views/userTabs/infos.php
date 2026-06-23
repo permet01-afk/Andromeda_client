@@ -104,7 +104,7 @@ try {
         FROM pilot_bio_nodes n
         INNER JOIN player_pilot_bio_state s ON s.user_id = :pid
         LEFT JOIN player_pilot_bio_levels l ON l.user_id = :pid AND l.node_code = n.node_code
-        WHERE n.node_code IN ('ship_hull_i', 'ship_hull_ii')
+        WHERE n.node_code IN ('ship_hull_i', 'ship_hull_ii', 'shield_engineering')
     ");
     $pilotBioStmt->execute([':pid' => $pid]);
     $pilotBioRows = $pilotBioStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -146,6 +146,23 @@ if ($pilotBioActiveForStats) {
     $pilotBioHpBonus += $getPilotBioHpValue('ship_hull_ii', min(3, (int)($pilotBioLevelsForStats['ship_hull_ii'] ?? 0)), [5000, 15000, 50000]);
 }
 
+$getPilotBioPercentValue = static function (string $nodeCode, int $level, array $fallbackValues) use ($pilotBioEffectsForStats): int {
+    if ($level <= 0) {
+        return 0;
+    }
+    $values = $pilotBioEffectsForStats[$nodeCode] ?? $fallbackValues;
+    if (empty($values)) {
+        return 0;
+    }
+    $index = min($level, count($values)) - 1;
+    return max(0, (int)$values[$index]);
+};
+
+$pilotBioShieldEngineeringPercent = 0;
+if ($pilotBioActiveForStats) {
+    $pilotBioShieldEngineeringPercent = $getPilotBioPercentValue('shield_engineering', min(5, (int)($pilotBioLevelsForStats['shield_engineering'] ?? 0)), [4, 8, 12, 18, 25]);
+}
+
 $shipHp = $baseHp2010 + ($pilotBioActiveForStats ? $pilotBioHpBonus : (5000 * $hpLvl));
 
 $now = time();
@@ -180,6 +197,7 @@ foreach ($rows as $r) {
     if ($spd <= 0) $spd = $fallbackSpeed;
     if ($bonusDmgPct > 0) $dmg += (int)($dmg * ($bonusDmgPct / 100));
     if ($bonusShdPct > 0) $shd += (int)($shd * ($bonusShdPct / 100));
+    if ($pilotBioShieldEngineeringPercent > 0) $shd = (int)round($shd * (1 + ($pilotBioShieldEngineeringPercent / 100)));
     if ($hasBoosterDmg) $dmg += (int)($dmg * 0.10);
     if ($hasBoosterShd) $shd += (int)($shd * 0.25);
     if ($hasBoosterSpd) $spd += 20;
