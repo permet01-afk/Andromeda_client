@@ -2569,7 +2569,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 int ammoType = Invasion.GetNpcLaserPattern(this);
 
-                ServerMessage npcAttackMessage = PacketComposer.Compose("a", this.Id.ToString() + "|" + sessionByCharacterId.CharacterId + "|" + ammoType + "|0|0");
+                ServerMessage npcAttackMessage = PacketComposer.Compose("a", this.Id.ToString() + "|" + sessionByCharacterId.CharacterId + "|" + ammoType + "|" + sessionByCharacterId.CharacterInfo.ShieldMechanics + "|0");
                 if (GalaxyGateWaveService.IsGateMap(this.MapId))
                     sessionByCharacterId.SendData(npcAttackMessage);
                 else
