@@ -318,7 +318,7 @@ class PilotBioService
     public function exchangeResearchPoint(): array
     {
         if (!$this->isSchemaReady()) {
-            return ['success' => false, 'message' => 'Pilot Bio database schema is not installed yet.'];
+            return ['success' => false, 'message' => 'Pilot Bio is temporarily unavailable. Please try again later.'];
         }
 
         try {
@@ -327,7 +327,7 @@ class PilotBioService
             $state = $this->lockState();
             if ($state === null) {
                 $this->db->rollBack();
-                return ['success' => false, 'message' => 'Pilot Bio migration is required before exchanging Logfiles.'];
+                return ['success' => false, 'message' => 'Pilot Bio is not available for this pilot yet.'];
             }
 
             $user = $this->lockUserResources();
@@ -371,7 +371,7 @@ class PilotBioService
     public function upgradeNode(string $nodeCode): array
     {
         if (!$this->isSchemaReady()) {
-            return ['success' => false, 'message' => 'Pilot Bio database schema is not installed yet.'];
+            return ['success' => false, 'message' => 'Pilot Bio is temporarily unavailable. Please try again later.'];
         }
 
         $catalog = [];
@@ -394,7 +394,7 @@ class PilotBioService
             $state = $this->lockState();
             if ($state === null) {
                 $this->db->rollBack();
-                return ['success' => false, 'message' => 'Pilot Bio migration is required before upgrading nodes.'];
+                return ['success' => false, 'message' => 'Pilot Bio is not available for this pilot yet.'];
             }
 
             $levels = $this->getLevels(true);
@@ -443,7 +443,7 @@ class PilotBioService
     public function resetPilotBio(): array
     {
         if (!$this->isSchemaReady()) {
-            return ['success' => false, 'message' => 'Pilot Bio database schema is not installed yet.'];
+            return ['success' => false, 'message' => 'Pilot Bio is temporarily unavailable. Please try again later.'];
         }
 
         try {
@@ -452,7 +452,7 @@ class PilotBioService
             $state = $this->lockState();
             if ($state === null) {
                 $this->db->rollBack();
-                return ['success' => false, 'message' => 'Pilot Bio reset is only available for migrated pilots.'];
+                return ['success' => false, 'message' => 'Pilot Bio reset is not available for this pilot yet.'];
             }
 
             $resetLevels = $this->db->prepare('UPDATE player_pilot_bio_levels SET level = 0 WHERE user_id = :player_id');
@@ -695,10 +695,10 @@ class PilotBioService
     {
         if ($node['status'] !== 'active') {
             if ($node['node_code'] === 'shield_engineering') {
-                return 'Later: shield capacity bonus is not active in V1.';
+                return 'This skill is not available yet.';
             }
 
-            return 'Later: this node is visible for the future Pilot Bio tree and cannot be upgraded in V1.';
+            return 'This skill is not available yet.';
         }
 
         if ($node['node_code'] === 'bounty_hunter_ii') {
@@ -763,15 +763,15 @@ class PilotBioService
 
         return [
             'Ship Hull' => $hpMigration,
-            'Alien Hunter' => $dmg > 0 ? 'Level ' . $dmg : 'No legacy damage level found.',
-            'Bounty Hunter I' => $dmg > 0 ? 'Level ' . min(2, $dmg) : 'No legacy damage level found.',
-            'Bounty Hunter II' => $dmg >= 3 ? 'Level ' . min(3, $dmg - 2) : 'No Bounty Hunter II level from legacy damage.',
-            'Shield Mechanics' => $shdAbs > 0 ? 'Level ' . ($shdAbs === 3 ? 5 : ($shdAbs === 2 ? 3 : 1)) : 'No legacy shield absorption level found.',
-            'Engineering' => $rep > 0 ? 'Level ' . ($rep === 3 ? 5 : $rep) : 'No legacy repair level found.',
-            'Smartbomb Tech' => $smb > 0 ? 'Level ' . $smb : 'No legacy Smartbomb level found.',
-            'Shield Regeneration' => $shreg > 0 ? 'Refund ' . $shreg . ' Research Point' . ($shreg === 1 ? '' : 's') . ' because Shield Regeneration is not active in V1.' : 'No Shield Regeneration refund.',
-            'Rocket Fusion' => $rck > 0 ? 'Ignored in V1. Rocket bonuses are marked for later balancing.' : 'No legacy rocket level found.',
-            'Legacy hp in skilltree' => ((int)($legacySkills['hp'] ?? 0) > 0) ? 'Ignored in V1. Ship Hull migration uses users.hp_lvl as the source of truth.' : 'No separate legacy hp skill found.',
+            'Alien Hunter' => $dmg > 0 ? 'Level ' . $dmg : 'No previous damage level found.',
+            'Bounty Hunter I' => $dmg > 0 ? 'Level ' . min(2, $dmg) : 'No previous damage level found.',
+            'Bounty Hunter II' => $dmg >= 3 ? 'Level ' . min(3, $dmg - 2) : 'No Bounty Hunter II level found.',
+            'Shield Mechanics' => $shdAbs > 0 ? 'Level ' . ($shdAbs === 3 ? 5 : ($shdAbs === 2 ? 3 : 1)) : 'No previous shield absorption level found.',
+            'Engineering' => $rep > 0 ? 'Level ' . ($rep === 3 ? 5 : $rep) : 'No previous repair level found.',
+            'Smartbomb Tech' => $smb > 0 ? 'Level ' . $smb : 'No previous Smartbomb level found.',
+            'Shield Regeneration' => $shreg > 0 ? 'Refund ' . $shreg . ' Research Point' . ($shreg === 1 ? '' : 's') . ' because Shield Regeneration is not available.' : 'No Shield Regeneration refund.',
+            'Rocket Fusion' => $rck > 0 ? 'Not available.' : 'No previous rocket level found.',
+            'Previous HP skill' => ((int)($legacySkills['hp'] ?? 0) > 0) ? 'Not available. Ship Hull uses Ship Integrity as the source of truth.' : 'No separate previous HP skill found.',
         ];
     }
 
@@ -803,11 +803,11 @@ class PilotBioService
             $pilotBonus = 5000;
         }
 
-        $summary = 'hp_lvl ' . $hpLevel . ' gives +' . number_format($legacyBonus) . ' HP legacy; migrate to Ship Hull I level ' . $shipHullI . ' and Ship Hull II level ' . $shipHullII . ' for +' . number_format($pilotBonus) . ' HP.';
+        $summary = 'Ship Integrity level ' . $hpLevel . ' gives +' . number_format($legacyBonus) . ' HP; Ship Hull I level ' . $shipHullI . ' and Ship Hull II level ' . $shipHullII . ' give +' . number_format($pilotBonus) . ' HP.';
         if ($legacyBonus > $pilotBonus) {
-            $summary .= ' This rounds down by ' . number_format($legacyBonus - $pilotBonus) . ' HP; review manual compensation if needed.';
+            $summary .= ' This rounds down by ' . number_format($legacyBonus - $pilotBonus) . ' HP.';
         } elseif ($pilotBonus > $legacyBonus) {
-            $summary .= ' This gives +' . number_format($pilotBonus - $legacyBonus) . ' HP compared to legacy because Ship Hull I and II are additive.';
+            $summary .= ' This gives +' . number_format($pilotBonus - $legacyBonus) . ' HP because Ship Hull I and II are additive.';
         }
 
         return $summary;

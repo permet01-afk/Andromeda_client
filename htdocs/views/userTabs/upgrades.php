@@ -459,27 +459,6 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
     #pilot_skill_24 { background-position: -1554px 0; }
     #pilot_skill_25 { background-position: -1924px 0; }
 
-    .pilot-bio-legacy {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 0.75rem;
-        color: #9eb4c9;
-        font-size: 0.9rem;
-    }
-
-    .pilot-bio-legacy-item {
-        border: 1px solid rgba(94, 214, 255, 0.14);
-        background: rgba(3, 8, 16, 0.34);
-        border-radius: 6px;
-        padding: 0.75rem;
-    }
-
-    .pilot-bio-legacy-item strong {
-        display: block;
-        color: #ffffff;
-        margin-bottom: 0.25rem;
-    }
-
     @media (max-width: 900px) {
         .pilot-bio-hero,
         .pilot-bio-toolbar {
@@ -517,7 +496,7 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
     <header class="pilot-bio-hero">
         <div>
             <h1 class="pilot-bio-title">Pilot Bio</h1>
-            <p class="pilot-bio-subtitle">Use Research Points to improve your pilot skills. V1 keeps proven Andromeda effects active while future DarkOrbit-like nodes remain visible but locked for later balancing.</p>
+            <p class="pilot-bio-subtitle">Use Research Points to improve your pilot skills.</p>
         </div>
         <div class="pilot-bio-resources">
             <div class="pilot-bio-resource">
@@ -543,11 +522,11 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
 
     <?php if (!$schemaReady) { ?>
         <div class="pilot-bio-message is-error">
-            Pilot Bio database schema is not installed yet. Apply the manual SQL file before enabling research.
+            Pilot Bio is temporarily unavailable. Please try again later.
         </div>
     <?php } elseif (!$stateReady) { ?>
         <div class="pilot-bio-message">
-            Pilot Bio is installed, but this pilot has not been migrated yet. Legacy upgrades remain active. Pilot Bio upgrades are locked until a manual migration is applied.
+            Pilot Bio is not available for this pilot yet.
         </div>
     <?php } ?>
 
@@ -596,7 +575,7 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
                                 if (!empty($node['is_locked'])) $classes[] = 'is-locked';
                                 if (!empty($node['can_upgrade'])) $classes[] = 'can-upgrade';
                                 if (!empty($node['is_maxed'])) $classes[] = 'is-maxed';
-                                $statusLabel = 'Later';
+                                $statusLabel = 'Unavailable';
                                 if ($node['is_maxed']) {
                                     $statusLabel = 'Maxed';
                                 } elseif ($node['can_upgrade']) {
@@ -604,7 +583,7 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
                                 } elseif ($node['status'] === 'active' && $stateReady) {
                                     $statusLabel = $node['is_locked'] ? 'Locked' : 'No points';
                                 } elseif ($node['status'] === 'active') {
-                                    $statusLabel = 'Migration required';
+                                    $statusLabel = 'Unavailable';
                                 }
                             ?>
                                 <div class="<?php echo implode(' ', $classes); ?>">
@@ -627,13 +606,13 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
                                         <?php if (!$node['is_maxed']) { ?>
                                             <span>Next level: <?php echo $escapePilot($node['next_effect_text']); ?></span>
                                         <?php } ?>
-                                        <span>Cost: <?php echo ($node['status'] === 'active') ? '1 Research Point per level' : 'Not available in V1'; ?></span>
+                                        <span>Cost: <?php echo ($node['status'] === 'active') ? '1 Research Point per level' : 'Not available'; ?></span>
                                         <span>Prerequisite: <?php echo $escapePilot($node['prerequisite_text']); ?></span>
                                         <?php if ($node['v1_note'] !== '') { ?>
                                             <span><?php echo $escapePilot($node['v1_note']); ?></span>
                                         <?php } ?>
                                         <?php if (!$stateReady && $node['status'] === 'active') { ?>
-                                            <span>Pilot Bio migration is required before this node can be upgraded.</span>
+                                            <span>Pilot Bio is not available for this pilot yet.</span>
                                         <?php } ?>
                                     </div>
                                 </div>
@@ -645,21 +624,4 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
         </div>
     </section>
 
-    <section class="pilot-bio-card">
-        <div class="pilot-bio-toolbar">
-            <h2>Legacy Migration Snapshot</h2>
-        </div>
-        <div class="pilot-bio-legacy">
-            <div class="pilot-bio-legacy-item"><strong>Ship Integrity level</strong><?php echo number_format((int)$pilotBio['resources']['hp_lvl']); ?></div>
-            <div class="pilot-bio-legacy-item"><strong>Legacy skilltree</strong><?php echo $escapePilot($pilotBio['resources']['skilltree']); ?></div>
-            <div class="pilot-bio-legacy-item"><strong>Migration status</strong><?php echo $stateReady ? 'Pilot Bio state exists for this pilot.' : 'Manual migration required before Pilot Bio upgrades can be used.'; ?></div>
-            <?php foreach ($pilotBio['migration_summary'] as $migrationName => $migrationText) { ?>
-                <div class="pilot-bio-legacy-item">
-                    <strong><?php echo $escapePilot($migrationName); ?></strong>
-                    <?php echo $escapePilot($migrationText); ?>
-                </div>
-            <?php } ?>
-            <div class="pilot-bio-legacy-item"><strong>Research Point cap</strong><?php echo number_format($maxResearchPoints); ?> points seeded in the manual SQL cost table.</div>
-        </div>
-    </section>
 </div>
