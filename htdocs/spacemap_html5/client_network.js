@@ -6082,7 +6082,7 @@ function handlePacket_laserAttack(parts, i) {
             const timeoutId = setTimeout(() => {
                 const state = RSB_BURST_STATE.get(String(attackerId));
                 if (!state || state.seq !== seq) return;
-                spawnBeamEntries(performance.now(), isFirst);
+                spawnBeamEntries(performance.now(), isFirst ? showShieldDamage : false);
             }, delay);
             const state = RSB_BURST_STATE.get(String(attackerId));
             if (state) state.timeouts.push(timeoutId);

@@ -235,7 +235,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     return;
                 }
 
-                Session existingGameplaySession = SessionManager.GetSessionByCharacterIdCache(CharacterId);
+                Session existingGameplaySession = SessionManager.GetSessionByCharacterId(CharacterId);
                 if (existingGameplaySession != null && !object.ReferenceEquals(existingGameplaySession, this))
                 {
                     if (existingGameplaySession.AttachSocketFromReconnect(this))

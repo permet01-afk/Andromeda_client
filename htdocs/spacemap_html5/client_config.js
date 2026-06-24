@@ -8233,6 +8233,18 @@ function showActionTooltip(e, item) {
     }
 
     const code = typeof flashGetCooldownCodeForItem === "function" ? flashGetCooldownCodeForItem(item) : item.cooldownCode || item.code || null;
+    if (item.type === "tech") {
+        const techCode = String(item.code || code || "").toUpperCase();
+        if (techCode && window.heroTechRuntimeState && window.heroTechRuntimeState[techCode]) {
+            const state = typeof flashNormalizeTechRuntimeReadyState === "function" ? flashNormalizeTechRuntimeReadyState(techCode) || window.heroTechRuntimeState[techCode] : window.heroTechRuntimeState[techCode];
+            const nowSeconds = Date.now() / 1e3;
+            const activeUntil = state ? Number(state.activeUntil) || 0 : 0;
+            const activeRemaining = state && state.active && activeUntil > nowSeconds ? Math.ceil(activeUntil - nowSeconds) : 0;
+            if (activeRemaining > 0) {
+                rows.push(`<div class="ttRow"><span class="ttLabel" style="color:#66d9ff">${escapeHtml(flashActionLocaleText("active", "Active"))}:</span><span class="ttVal" style="color:#66d9ff">${activeRemaining}s</span></div>`);
+            }
+        }
+    }
     if (code && typeof getCooldownInfo === "function") {
         const cd = getCooldownInfo(code);
         if (cd) {
