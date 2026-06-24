@@ -2566,6 +2566,13 @@ function resolveDamageBubblePosition(b, out = null) {
         shipId: null,
         isHero: false
     };
+    if (Number.isFinite(b.snapshotX) && Number.isFinite(b.snapshotY)) {
+        position.x = b.snapshotX;
+        position.y = b.snapshotY;
+        position.shipId = b.snapshotShipId ?? (b.entityId === heroId ? heroShipId : null);
+        position.isHero = b.entityId === heroId;
+        return position;
+    }
     if (b.entityId === heroId) {
         position.x = shipX;
         position.y = shipY;
@@ -2577,22 +2584,12 @@ function resolveDamageBubblePosition(b, out = null) {
     if (ent) {
         const liveVisualLifeId = typeof ensureEntityVisualLife === "function" ? ensureEntityVisualLife(ent) : ent.visualLifeId;
         if (b.visualLifeId == null || liveVisualLifeId === b.visualLifeId) {
-            b.snapshotX = ent.x;
-            b.snapshotY = ent.y;
-            b.snapshotShipId = ent.shipId ?? ent.type ?? null;
             position.x = ent.x;
             position.y = ent.y;
             position.shipId = ent.shipId ?? ent.type ?? null;
             position.isHero = false;
             return position;
         }
-    }
-    if (Number.isFinite(b.snapshotX) && Number.isFinite(b.snapshotY)) {
-        position.x = b.snapshotX;
-        position.y = b.snapshotY;
-        position.shipId = b.snapshotShipId ?? null;
-        position.isHero = false;
-        return position;
     }
     const removedSnapshot = typeof getRemovedEntitySnapshot === "function" ? getRemovedEntitySnapshot(b.entityId) : null;
     if (removedSnapshot && Number.isFinite(removedSnapshot.x) && Number.isFinite(removedSnapshot.y)) {

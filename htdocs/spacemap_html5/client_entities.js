@@ -20,11 +20,11 @@ const labPrices = {};
 
 const damageBubbles = [];
 
-const DAMAGE_BUBBLE_STACK_WINDOW_MS = 120;
+const DAMAGE_BUBBLE_STACK_SLOT_COUNT = 5;
 
-const DAMAGE_BUBBLE_STACK_STEP_PX = 12;
+const DAMAGE_BUBBLE_STACK_STEP_PX = 18;
 
-const DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX = 36;
+const DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX = DAMAGE_BUBBLE_STACK_STEP_PX * (DAMAGE_BUBBLE_STACK_SLOT_COUNT - 1);
 
 const DAMAGE_BUBBLE_MAX_ACTIVE = 160;
 
@@ -122,6 +122,35 @@ function getEntityVisualLifeId(id) {
     return ent ? ensureEntityVisualLife(ent) : null;
 }
 
+function getDamageBubbleDurationMs() {
+    const duration = typeof DAMAGE_BUBBLE_DURATION !== "undefined" ? Number(DAMAGE_BUBBLE_DURATION) : 1500;
+    return Number.isFinite(duration) && duration > 0 ? duration : 1500;
+}
+
+function getDamageBubbleStackIndex(entityId, now) {
+    if (entityId == null) return 0;
+    const duration = getDamageBubbleDurationMs();
+    const usedSlots = new Set();
+    let activeCount = 0;
+    for (let i = damageBubbles.length - 1; i >= 0; i--) {
+        const bubble = damageBubbles[i];
+        if (!bubble || bubble.entityId !== entityId) continue;
+        const age = now - bubble.createdAt;
+        if (age < 0 || age > duration) continue;
+        activeCount++;
+        let slot = Number.isFinite(bubble.stackIndex) ? Math.floor(bubble.stackIndex) : NaN;
+        if (!Number.isFinite(slot)) {
+            const offset = Number.isFinite(bubble.stackOffsetY) ? bubble.stackOffsetY : 0;
+            slot = Math.round(offset / DAMAGE_BUBBLE_STACK_STEP_PX);
+        }
+        usedSlots.add(Math.max(0, slot) % DAMAGE_BUBBLE_STACK_SLOT_COUNT);
+    }
+    for (let slot = 0; slot < DAMAGE_BUBBLE_STACK_SLOT_COUNT; slot++) {
+        if (!usedSlots.has(slot)) return slot;
+    }
+    return activeCount % DAMAGE_BUBBLE_STACK_SLOT_COUNT;
+}
+
 function rememberRemovedEntitySnapshot(ent) {
     if (!ent || ent.id == null) return null;
     const now = performance.now();
@@ -208,14 +237,8 @@ function pushDamageBubble(entityId, delta, isHealHint = false, colorId = null, s
     const signed = parseInt(delta, 10);
     if (isNaN(signed) || signed === 0) return;
     const now = performance.now();
-    let stackOffsetY = 0;
-    for (let i = damageBubbles.length - 1; i >= 0; i--) {
-        const bubble = damageBubbles[i];
-        if (!bubble || now - bubble.createdAt > DAMAGE_BUBBLE_STACK_WINDOW_MS) break;
-        if (bubble.entityId === entityId) {
-            stackOffsetY = Math.min(DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX, stackOffsetY + DAMAGE_BUBBLE_STACK_STEP_PX);
-        }
-    }
+    const stackIndex = getDamageBubbleStackIndex(entityId, now);
+    const stackOffsetY = Math.min(DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX, stackIndex * DAMAGE_BUBBLE_STACK_STEP_PX);
     const isHeal = isHealHint || signed > 0;
     const cid = colorId !== null && colorId !== undefined ? colorId : isHeal ? 2 : 0;
     const plus = showPlus !== null && showPlus !== undefined ? showPlus : false;
@@ -230,6 +253,7 @@ function pushDamageBubble(entityId, delta, isHealHint = false, colorId = null, s
         isHeal: isHeal,
         colorId: cid,
         showPlus: plus,
+        stackIndex: stackIndex,
         stackOffsetY: stackOffsetY,
         createdAt: now
     });
@@ -239,14 +263,8 @@ function pushDamageBubble(entityId, delta, isHealHint = false, colorId = null, s
 function pushMissBubble(entityId, colorId = 0, snapshot = null) {
     if (entityId == null) return;
     const now = performance.now();
-    let stackOffsetY = 0;
-    for (let i = damageBubbles.length - 1; i >= 0; i--) {
-        const bubble = damageBubbles[i];
-        if (!bubble || now - bubble.createdAt > DAMAGE_BUBBLE_STACK_WINDOW_MS) break;
-        if (bubble.entityId === entityId) {
-            stackOffsetY = Math.min(DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX, stackOffsetY + DAMAGE_BUBBLE_STACK_STEP_PX);
-        }
-    }
+    const stackIndex = getDamageBubbleStackIndex(entityId, now);
+    const stackOffsetY = Math.min(DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX, stackIndex * DAMAGE_BUBBLE_STACK_STEP_PX);
     const snap = snapshot || captureEntityEffectSnapshot(entityId);
     const cid = colorId !== null && colorId !== undefined && !isNaN(parseInt(colorId, 10)) ? parseInt(colorId, 10) : 0;
     damageBubbles.push({
@@ -260,6 +278,7 @@ function pushMissBubble(entityId, colorId = 0, snapshot = null) {
         isHeal: false,
         colorId: cid,
         showPlus: false,
+        stackIndex: stackIndex,
         stackOffsetY: stackOffsetY,
         createdAt: now
     });
