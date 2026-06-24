@@ -41,6 +41,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private const int ROCKET_LAUNCHER_EFFECT_DELAY_MIN_MS = 750;
         private const int ROCKET_LAUNCHER_EFFECT_DELAY_MAX_MS = 2000;
         private const int RSB_COOLDOWN_MS = 3000;
+        private const int LASER_BASE_ACCURACY_PERCENT = 85;
+        private const int ROCKET_BASE_ACCURACY_PERCENT = 75;
+        private const int HIT_CHANCE_MIN_PERCENT = 50;
+        private const int HIT_CHANCE_MAX_PERCENT = 100;
         private static readonly Dictionary<int, RocketLauncherRuntimeState> RocketLauncherStates = new Dictionary<int, RocketLauncherRuntimeState>();
         private static readonly object RocketLauncherStatesSync = new object();
         private static readonly CDictionnary<int, byte> KillInProgress = new CDictionnary<int, byte>();
@@ -278,6 +282,141 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     && observer.CharacterId != session.CharacterId
                     && ShouldReceiveSessionScopedMessage(observer, session);
             });
+        }
+
+        private static int ClampHitChancePercent(int value)
+        {
+            if (value < HIT_CHANCE_MIN_PERCENT)
+                return HIT_CHANCE_MIN_PERCENT;
+            if (value > HIT_CHANCE_MAX_PERCENT)
+                return HIT_CHANCE_MAX_PERCENT;
+            return value;
+        }
+
+        public static int CalculateLaserHitChancePercent(int attackerAccuracyBonus, int targetEvasionBonus)
+        {
+            return ClampHitChancePercent(LASER_BASE_ACCURACY_PERCENT + attackerAccuracyBonus - targetEvasionBonus);
+        }
+
+        public static int CalculateRocketHitChancePercent(int attackerAccuracyBonus, int targetEvasionBonus, int rocketId)
+        {
+            if (!IsNormalDirectDamageRocket(rocketId))
+                return HIT_CHANCE_MAX_PERCENT;
+            return ClampHitChancePercent(ROCKET_BASE_ACCURACY_PERCENT + attackerAccuracyBonus - targetEvasionBonus);
+        }
+
+        public static bool RollHitChance(int hitChancePercent, Random rng)
+        {
+            int chance = ClampHitChancePercent(hitChancePercent);
+            if (chance >= HIT_CHANCE_MAX_PERCENT)
+                return true;
+            Random random = rng ?? new Random();
+            return random.Next(0, 100) < chance;
+        }
+
+        private static bool IsNormalDirectDamageRocket(int rocketId)
+        {
+            return rocketId >= 1 && rocketId <= 4;
+        }
+
+        private static int GetPilotBioEvasionBonus(Session target)
+        {
+            return target != null && target.CharacterInfo != null ? target.CharacterInfo.PilotBioEvasionBonus : 0;
+        }
+
+        private static bool RollPlayerLaserHit(Session attacker, Session target)
+        {
+            int attackerBonus = attacker != null && attacker.CharacterInfo != null ? attacker.CharacterInfo.PilotBioLaserAccuracyBonus : 0;
+            int hitChance = CalculateLaserHitChancePercent(attackerBonus, GetPilotBioEvasionBonus(target));
+            Random rng = attacker != null && attacker.CharacterInfo != null ? attacker.CharacterInfo.RandomDamage : null;
+            return RollHitChance(hitChance, rng);
+        }
+
+        private static bool RollPlayerRocketHit(Session attacker, Session target, int rocketId)
+        {
+            int attackerBonus = attacker != null && attacker.CharacterInfo != null ? attacker.CharacterInfo.PilotBioRocketAccuracyBonus : 0;
+            int hitChance = CalculateRocketHitChancePercent(attackerBonus, GetPilotBioEvasionBonus(target), rocketId);
+            Random rng = attacker != null && attacker.CharacterInfo != null ? attacker.CharacterInfo.RandomDamage : null;
+            return RollHitChance(hitChance, rng);
+        }
+
+        private static ServerMessage ComposeMissAgainstTarget(int targetId)
+        {
+            return PacketComposer.Compose("M", "L|" + (object)targetId + "|0");
+        }
+
+        private static ServerMessage ComposeMissOnHero()
+        {
+            return PacketComposer.Compose("Z", "L|0");
+        }
+
+        private static void SendMissToNpcTarget(MapInstance instance, Session attacker, Npc target)
+        {
+            if (target == null)
+                return;
+            SendNpcScopedMessage(instance, target, ComposeMissAgainstTarget(target.Id), attacker);
+        }
+
+        private static void SendMissToPlayerTarget(MapInstance instance, Session attacker, Session target)
+        {
+            if (target == null || target.CharacterInfo == null)
+                return;
+
+            target.SendData(ComposeMissOnHero());
+
+            if (instance == null || IsSessionInGalaxyGate(attacker) || IsSessionInGalaxyGate(target))
+                return;
+
+            ServerMessage observerMessage = ComposeMissAgainstTarget(target.CharacterId);
+            byte[] data = observerMessage.ToDeltas();
+            HashSet<int> sentSessionIds = new HashSet<int>();
+
+            foreach (MapActor actor in instance.GetUserActorSnapshot())
+            {
+                if (actor == null || actor.Type != MapActorType.UserCharacter || actor.ReferenceSessionId <= 0)
+                    continue;
+
+                if (!sentSessionIds.Add(actor.ReferenceSessionId))
+                    continue;
+
+                Session observer = SessionManager.GetSessionById(actor.ReferenceSessionId);
+                if (observer == null || observer.CharacterInfo == null || observer.CharacterId == target.CharacterId)
+                    continue;
+
+                if (ShouldReceivePlayerScopedCombatMessage(observer, attacker, target))
+                    observer.SendData(data);
+            }
+        }
+
+        public static void SendNpcLaserMiss(MapInstance instance, Npc attackerNpc, Session target)
+        {
+            if (target == null || target.CharacterInfo == null)
+                return;
+
+            target.SendData(ComposeMissOnHero());
+
+            if (instance == null || GalaxyGateWaveService.IsGateMap(target.CurrentMapId))
+                return;
+
+            ServerMessage observerMessage = ComposeMissAgainstTarget(target.CharacterId);
+            byte[] data = observerMessage.ToDeltas();
+            HashSet<int> sentSessionIds = new HashSet<int>();
+
+            foreach (MapActor actor in instance.GetUserActorSnapshot())
+            {
+                if (actor == null || actor.Type != MapActorType.UserCharacter || actor.ReferenceSessionId <= 0)
+                    continue;
+
+                if (!sentSessionIds.Add(actor.ReferenceSessionId))
+                    continue;
+
+                Session observer = SessionManager.GetSessionById(actor.ReferenceSessionId);
+                if (observer == null || observer.CharacterInfo == null || observer.CharacterId == target.CharacterId)
+                    continue;
+
+                if (ShouldReceiveNpcScopedMessage(observer, attackerNpc, target))
+                    observer.SendData(data);
+            }
         }
 
         private static void SendNpcTargetOwnershipVisual(Session session, Npc npc)
@@ -2973,6 +3112,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                             session.CharacterInfo.UpdateLaserRocketReff();
                     }
 
+                    if (IsNormalDirectDamageRocket(rocketId) && !Fight.RollPlayerRocketHit(session, null, rocketId))
+                    {
+                        SendMissToNpcTarget(instanceByMapId, session, npc);
+                        return;
+                    }
+
                     if (npc.ShipId == 442)
                     {
                         if (session.CharacterInfo.SelectedAmmo == 5)
@@ -3022,8 +3167,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         session.CharacterInfo.UpdateLaserRocketReff();
                 }
 
-                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId);
+                if (IsNormalDirectDamageRocket(rocketId) && !Fight.RollPlayerRocketHit(session, targetSession, rocketId))
+                {
+                    SendMissToPlayerTarget(instanceByMapId, session, targetSession);
+                    return;
+                }
 
+                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId);
             }
             catch (Exception ex)
             {
@@ -3382,8 +3532,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 double num = now - Session.CharacterInfo.LastRSB75;
 
                 Session.CharacterInfo.AttackingRepBug = true;
+                bool missed = damage && !Fight.RollPlayerLaserHit(Session, null);
 
-                if (num < 0.0 || num >= 300.0)
+                if (missed)
+                {
+                    SendMissToNpcTarget(Instance, Session, Npc);
+                }
+                else if (num < 0.0 || num >= 300.0)
                 {
                     SendNpcScopedMessage(Instance, Npc, PacketComposer.Compose(
                         "a",
@@ -3391,11 +3546,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     ), Session);
                 }
 
-                if (damage)
+                if (damage && !missed)
                 {
                     Fight.DoDamageNpc(Instance, Session, Npc, Ammo);
                     if (Ammo == 6)
                         Fight.StartRsbCooldown(Session);
+                }
+                else if (missed && Ammo == 6)
+                {
+                    Fight.StartRsbCooldown(Session);
                 }
 
                 Session.CharacterInfo.PreviousAttacked = Npc.Id;
@@ -3603,8 +3762,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 double now = DateTime.Now.TimeOfDay.TotalMilliseconds;
                 double num = now - Session.CharacterInfo.LastRSB75;
+                bool missed = damage && !Fight.RollPlayerLaserHit(Session, Ennemy);
 
-                if (num < 0.0 || num >= 300.0)
+                if (missed)
+                {
+                    SendMissToPlayerTarget(Instance, Session, Ennemy);
+                }
+                else if (num < 0.0 || num >= 300.0)
                 {
                     SendPlayerScopedCombatMessage(Instance, Session, Ennemy, PacketComposer.Compose(
                         "a",
@@ -3614,11 +3778,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 Session.CharacterInfo.Attacking = true;
 
-                if (damage)
+                if (damage && !missed)
                 {
                     Fight.DoDamage(Instance, Session, Ennemy, Ammo);
                     if (Ammo == 6)
                         Fight.StartRsbCooldown(Session);
+                }
+                else if (missed && Ammo == 6)
+                {
+                    Fight.StartRsbCooldown(Session);
                 }
 
                 Session.CharacterInfo.PreviousAttacked = 0;

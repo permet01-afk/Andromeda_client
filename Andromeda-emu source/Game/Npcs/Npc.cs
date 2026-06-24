@@ -2570,6 +2570,17 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 this.mLastDamageTick = nowTick;
 
                 int ammoType = Invasion.GetNpcLaserPattern(this);
+                int hitChance = Fight.CalculateLaserHitChancePercent(0, sessionByCharacterId.CharacterInfo.PilotBioEvasionBonus);
+                bool hit;
+                lock (DmgRandLock)
+                {
+                    hit = Fight.RollHitChance(hitChance, DmgRand);
+                }
+                if (!hit)
+                {
+                    Fight.SendNpcLaserMiss(instanceByMapId, this, sessionByCharacterId);
+                    return;
+                }
 
                 ServerMessage npcAttackMessage = PacketComposer.Compose("a", this.Id.ToString() + "|" + sessionByCharacterId.CharacterId + "|" + ammoType + "|" + sessionByCharacterId.CharacterInfo.ShieldMechanics + "|" + this.FatLasers);
                 if (GalaxyGateWaveService.IsGateMap(this.MapId))

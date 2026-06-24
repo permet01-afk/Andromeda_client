@@ -66,10 +66,10 @@ class PilotBioService
                 'slot' => 5,
                 'node_code' => 'evasive_maneuvers_i',
                 'display_name' => 'Evasive Maneuvers I',
-                'description' => 'Makes your ship harder to hit.',
+                'description' => 'Reduces the chance enemies hit you.',
                 'track' => 'defense',
                 'max_level' => 2,
-                'status' => 'later',
+                'status' => 'active',
                 'effect_key' => 'enemy_hit_chance_reduction',
                 'effect_values' => [2, 4],
                 'prerequisites' => [],
@@ -78,10 +78,10 @@ class PilotBioService
                 'slot' => 6,
                 'node_code' => 'evasive_maneuvers_ii',
                 'display_name' => 'Evasive Maneuvers II',
-                'description' => 'Further improves your chance to avoid enemy fire.',
+                'description' => 'Further reduces the chance enemies hit you.',
                 'track' => 'defense',
                 'max_level' => 3,
-                'status' => 'later',
+                'status' => 'active',
                 'effect_key' => 'enemy_hit_chance_reduction',
                 'effect_values' => [6, 8, 12],
                 'prerequisites' => [['node' => 'evasive_maneuvers_i', 'level' => 2]],
@@ -177,7 +177,7 @@ class PilotBioService
                 'description' => 'Improves rocket accuracy.',
                 'track' => 'offense',
                 'max_level' => 5,
-                'status' => 'later',
+                'status' => 'active',
                 'effect_key' => 'rocket_hit_chance_percent',
                 'effect_values' => [1, 2, 4, 6, 10],
                 'prerequisites' => [],
@@ -237,9 +237,9 @@ class PilotBioService
                 'description' => 'Improves laser accuracy.',
                 'track' => 'offense',
                 'max_level' => 5,
-                'status' => 'later',
+                'status' => 'active',
                 'effect_key' => 'laser_accuracy_percent',
-                'effect_values' => [5, 10, 15, 20, 25],
+                'effect_values' => [2, 4, 6, 8, 12],
                 'prerequisites' => [],
             ],
         ];
@@ -649,12 +649,13 @@ class PilotBioService
                 return number_format((int)$value) . ' HP per repair tick';
             case 'shield_absorption':
                 return number_format((int)$value) . '% shield absorption';
+            case 'enemy_hit_chance_reduction':
+                return '-' . number_format((int)$value) . '% enemy hit chance';
             case 'smartbomb_damage':
                 return number_format((int)$value) . ' Smart Bomb damage';
             case 'pve_laser_damage_percent':
             case 'pvp_laser_damage_percent':
             case 'shield_max_percent':
-            case 'enemy_hit_chance_reduction':
             case 'alien_xp_percent':
             case 'cargo_capacity_percent':
             case 'bonus_box_uridium_percent':

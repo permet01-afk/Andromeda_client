@@ -73,8 +73,8 @@ VALUES
   ('ship_hull_ii', 'Ship Hull II', 'Further increases your ship maximum HP.', 'defense', 2, 3, 'active', 'ship_hull_hp', '[5000,15000,50000]', '[{"node":"ship_hull_i","level":2}]'),
   ('engineering', 'Engineering', 'Improves your repair bot.', 'defense', 3, 5, 'active', 'repair_bot', '[15000,20000,25000,27500,30000]', '[]'),
   ('shield_engineering', 'Shield Engineering', 'Increases your maximum shield strength.', 'defense', 4, 5, 'active', 'shield_max_percent', '[4,8,12,18,25]', '[]'),
-  ('evasive_maneuvers_i', 'Evasive Maneuvers I', 'Makes your ship harder to hit.', 'defense', 5, 2, 'later', 'enemy_hit_chance_reduction', '[2,4]', '[]'),
-  ('evasive_maneuvers_ii', 'Evasive Maneuvers II', 'Further improves your chance to avoid enemy fire.', 'defense', 6, 3, 'later', 'enemy_hit_chance_reduction', '[6,8,12]', '[{"node":"evasive_maneuvers_i","level":2}]'),
+  ('evasive_maneuvers_i', 'Evasive Maneuvers I', 'Reduces the chance enemies hit you.', 'defense', 5, 2, 'active', 'enemy_hit_chance_reduction', '[2,4]', '[]'),
+  ('evasive_maneuvers_ii', 'Evasive Maneuvers II', 'Further reduces the chance enemies hit you.', 'defense', 6, 3, 'active', 'enemy_hit_chance_reduction', '[6,8,12]', '[{"node":"evasive_maneuvers_i","level":2}]'),
   ('shield_mechanics', 'Shield Mechanics', 'Improves how much damage your shields can absorb.', 'defense', 7, 5, 'active', 'shield_absorption', '[72,74,76,78,82]', '[]'),
   ('tactics', 'Tactics', 'Increases experience gained from aliens.', 'progression', 8, 5, 'active', 'alien_xp_percent', '[2,4,6,8,12]', '[]'),
   ('logistics', 'Logistics', 'Expands your cargo bay.', 'progression', 9, 5, 'active', 'cargo_capacity_percent', '[4,8,12,16,25]', '[]'),
@@ -82,12 +82,12 @@ VALUES
   ('cruelty_ii', 'Cruelty II', 'Further increases honor gained from aliens.', 'progression', 13, 3, 'active', 'honor_percent', '[12,18,25]', '[{"node":"cruelty_i","level":2}]'),
   ('greed', 'Greed', 'Increases credits gained from aliens.', 'progression', 16, 5, 'active', 'alien_credit_percent', '[4,8,12,18,25]', '[]'),
   ('smartbomb_tech', 'Smartbomb Tech', 'Improves Smart Bomb damage.', 'offense', 17, 2, 'active', 'smartbomb_damage', '[25000,35000]', '[]'),
-  ('heat_seeking_missiles', 'Heat-Seeking Missiles', 'Improves rocket accuracy.', 'offense', 20, 5, 'later', 'rocket_hit_chance_percent', '[1,2,4,6,10]', '[]'),
+  ('heat_seeking_missiles', 'Heat-Seeking Missiles', 'Improves rocket accuracy.', 'offense', 20, 5, 'active', 'rocket_hit_chance_percent', '[1,2,4,6,10]', '[]'),
   ('bounty_hunter_i', 'Bounty Hunter I', 'Increases laser damage against players.', 'offense', 21, 2, 'active', 'pvp_laser_damage_percent', '[2,4]', '[]'),
   ('bounty_hunter_ii', 'Bounty Hunter II', 'Further increases laser damage against players.', 'offense', 22, 3, 'active', 'pvp_laser_damage_percent', '[6,8,12]', '[{"node":"bounty_hunter_i","level":2}]'),
   ('rocket_fusion', 'Rocket Fusion', 'Increases rocket damage.', 'offense', 23, 5, 'active', 'rocket_damage_percent', '[2,4,6,8,15]', '[]'),
   ('alien_hunter', 'Alien Hunter', 'Increases laser damage against aliens.', 'offense', 24, 5, 'active', 'pve_laser_damage_percent', '[2,4,6,8,12]', '[]'),
-  ('electro_optics', 'Electro-Optics', 'Improves laser accuracy.', 'offense', 25, 5, 'later', 'laser_accuracy_percent', '[5,10,15,20,25]', '[]')
+  ('electro_optics', 'Electro-Optics', 'Improves laser accuracy.', 'offense', 25, 5, 'active', 'laser_accuracy_percent', '[2,4,6,8,12]', '[]')
 ON DUPLICATE KEY UPDATE
   display_name = VALUES(display_name),
   description_en = VALUES(description_en),
@@ -179,7 +179,7 @@ ON DUPLICATE KEY UPDATE logfile_cost = VALUES(logfile_cost);
 -- hp_lvl 4 and 6-9 are rounded down to the lower Pilot Bio HP tier.
 -- Optional compensation for those intermediate HP tiers can be decided later.
 -- Shield Regeneration is not active in V1, so old shreg levels are refunded as Research Points.
--- Rocket bonuses and legacy skilltree hp are ignored in V1.
+-- Legacy rck and legacy skilltree hp are ignored by the automatic migration.
 
 START TRANSACTION;
 

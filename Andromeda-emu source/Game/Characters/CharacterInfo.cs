@@ -50,6 +50,9 @@ namespace OrbitReborn_Emulator.Game.Characters
         public double PilotBioAlienHonorMultiplier = 1.0;
         public double PilotBioAlienCreditMultiplier = 1.0;
         public double PilotBioNormalRocketDamageMultiplier = 1.0;
+        public int PilotBioLaserAccuracyBonus = 0;
+        public int PilotBioRocketAccuracyBonus = 0;
+        public int PilotBioEvasionBonus = 0;
         public double ShieldAbsorption = 0.7;
         public int SmbDamages = 20000;
         public int RepairBotHp = 10000;
@@ -2481,6 +2484,9 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.mClanNap = new CList<int>();
             this.FatLasers = 0;
             this.ShieldMechanics = 0;
+            this.PilotBioLaserAccuracyBonus = 0;
+            this.PilotBioRocketAccuracyBonus = 0;
+            this.PilotBioEvasionBonus = 0;
             this.Drones = "";
             this.mLevel = 1;
             this.mAttackSpeed = 800;
@@ -3641,6 +3647,9 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.PilotBioAlienHonorMultiplier = 1.0;
             this.PilotBioAlienCreditMultiplier = 1.0;
             this.PilotBioNormalRocketDamageMultiplier = 1.0;
+            this.PilotBioLaserAccuracyBonus = 0;
+            this.PilotBioRocketAccuracyBonus = 0;
+            this.PilotBioEvasionBonus = 0;
             this.FatLasers = 0;
             this.ShieldAbsorption = 0.7;
             this.ShieldMechanics = 0;
@@ -3948,6 +3957,21 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.PilotBioAlienHonorMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "cruelty_i", 2, new int[] { 4, 8 });
             this.PilotBioAlienCreditMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "greed", 5, new int[] { 4, 8, 12, 18, 25 });
             this.PilotBioNormalRocketDamageMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "rocket_fusion", 5, new int[] { 2, 4, 6, 8, 15 });
+
+            int electroOptics = this.GetPilotBioLevel(levels, "electro_optics", 5);
+            if (electroOptics > 0)
+                this.PilotBioLaserAccuracyBonus = this.GetPilotBioIntValue(effectValues, "electro_optics", electroOptics, new int[] { 2, 4, 6, 8, 12 });
+
+            int heatSeekingMissiles = this.GetPilotBioLevel(levels, "heat_seeking_missiles", 5);
+            if (heatSeekingMissiles > 0)
+                this.PilotBioRocketAccuracyBonus = this.GetPilotBioIntValue(effectValues, "heat_seeking_missiles", heatSeekingMissiles, new int[] { 1, 2, 4, 6, 10 });
+
+            int evasive1 = this.GetPilotBioLevel(levels, "evasive_maneuvers_i", 2);
+            int evasive2 = this.GetPilotBioLevel(levels, "evasive_maneuvers_ii", 3);
+            if (evasive1 >= 2 && evasive2 > 0)
+                this.PilotBioEvasionBonus = this.GetPilotBioIntValue(effectValues, "evasive_maneuvers_ii", evasive2, new int[] { 6, 8, 12 });
+            else if (evasive1 > 0)
+                this.PilotBioEvasionBonus = this.GetPilotBioIntValue(effectValues, "evasive_maneuvers_i", evasive1, new int[] { 2, 4 });
         }
 
         private int GetPilotBioLevel(Dictionary<string, int> levels, string code, int maxLevel)
