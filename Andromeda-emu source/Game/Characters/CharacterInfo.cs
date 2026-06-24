@@ -225,6 +225,8 @@ namespace OrbitReborn_Emulator.Game.Characters
         private double mLastTechEla;
         private double mLastTechEci;
         private double mEnergyLeechUntil;
+        private double mRocketProbabilityMaximizerUntil;
+        private double mRocketProbabilityMaximizerCooldownUntil;
         private double mLastISH;
         private double mLastSMB;
         private int mSMBLocX;
@@ -246,6 +248,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         private readonly object mBoosterRefreshLock = new object();
         private int mBattleRepairCount;
         private System.Threading.Timer mEnergyLeechTimer;
+        private System.Threading.Timer mRocketProbabilityMaximizerTimer;
         private System.Threading.Timer mPortalJumpTimer;
         private System.Threading.Timer mRocketAttackTimer;
         public System.Threading.Timer SpeedDebuffTimer;
@@ -1453,6 +1456,48 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
+        public double RocketProbabilityMaximizerUntil
+        {
+            get
+            {
+                return this.mRocketProbabilityMaximizerUntil;
+            }
+            set
+            {
+                this.mRocketProbabilityMaximizerUntil = value;
+            }
+        }
+
+        public double RocketProbabilityMaximizerCooldownUntil
+        {
+            get
+            {
+                return this.mRocketProbabilityMaximizerCooldownUntil;
+            }
+            set
+            {
+                this.mRocketProbabilityMaximizerCooldownUntil = value;
+            }
+        }
+
+        public bool RocketProbabilityMaximizerActive
+        {
+            get
+            {
+                return this.mRocketProbabilityMaximizerUntil > UnixTimestamp.GetCurrent();
+            }
+        }
+
+        public int RocketProbabilityMaximizerSecondsLeft
+        {
+            get
+            {
+                if (!this.RocketProbabilityMaximizerActive)
+                    return 0;
+                return Math.Max(0, Convert.ToInt32(Math.Ceiling(this.mRocketProbabilityMaximizerUntil - UnixTimestamp.GetCurrent())));
+            }
+        }
+
         public double LastISH
         {
             get
@@ -1515,6 +1560,19 @@ namespace OrbitReborn_Emulator.Game.Characters
             get
             {
                 int int32 = Convert.ToInt32(Math.Round(60.0 - (UnixTimestamp.GetCurrent() - this.mLastTechEci)));
+                if (int32 <= 0)
+                    return 0;
+                return int32;
+            }
+        }
+
+        public int CoolDownTechRpm
+        {
+            get
+            {
+                if (this.RocketProbabilityMaximizerActive)
+                    return 0;
+                int int32 = Convert.ToInt32(Math.Ceiling(this.mRocketProbabilityMaximizerCooldownUntil - UnixTimestamp.GetCurrent()));
                 if (int32 <= 0)
                     return 0;
                 return int32;
@@ -2011,6 +2069,18 @@ namespace OrbitReborn_Emulator.Game.Characters
             set
             {
                 this.mEnergyLeechTimer = value;
+            }
+        }
+
+        public System.Threading.Timer RocketProbabilityMaximizerTimer
+        {
+            get
+            {
+                return this.mRocketProbabilityMaximizerTimer;
+            }
+            set
+            {
+                this.mRocketProbabilityMaximizerTimer = value;
             }
         }
 

@@ -1792,6 +1792,11 @@ function getRocketWorldPositions(beam, now = performance.now()) {
         const gapScale = 1 - linearProgress;
         tx += (Number(beam.initialTargetGapX) || 0) * gapScale;
         ty += (Number(beam.initialTargetGapY) || 0) * gapScale;
+    } else if (beam.auto) {
+        ensureRocketPrecisionGuidance(beam);
+        const gapScale = 1 - linearProgress;
+        tx += (Number(beam.initialTargetGapX) || 0) * gapScale;
+        ty += (Number(beam.initialTargetGapY) || 0) * gapScale;
     }
     const positions = beam._worldPositions || (beam._worldPositions = {
         ax: 0,
@@ -2115,6 +2120,70 @@ const ROCKET_LAUNCHER_DURATION_MIN_MS = 750;
 const ROCKET_LAUNCHER_DURATION_MAX_MS = 2000;
 const ROCKET_LAUNCHER_TRACKING_GAP = 800;
 const ROCKET_LAUNCHER_IMPACT_SPREAD = 40;
+const ROCKET_PRECISION_TRACKING_GAP = 800;
+const ROCKET_PRECISION_PULSE_FRAME_COUNT = 11;
+const ROCKET_PRECISION_PULSE_FPS = 24;
+const ROCKET_PRECISION_PULSE_SCALE = 2;
+const ROCKET_PRECISION_PULSE_LOCAL_X = -30;
+const rocketPrecisionPulseFrameCache = [];
+const rocketPrecisionPulseTintCache = [];
+
+function ensureRocketPrecisionGuidance(beam) {
+    if (!beam || beam.precisionGuidanceInitialized) return;
+    beam.precisionGuidanceInitialized = true;
+    beam.initialTargetGapX = (Math.random() * 2 - 1) * ROCKET_PRECISION_TRACKING_GAP;
+    beam.initialTargetGapY = (Math.random() * 2 - 1) * ROCKET_PRECISION_TRACKING_GAP;
+}
+
+function getRocketPrecisionPulseFrame(frameIndex) {
+    const frameCount = ROCKET_PRECISION_PULSE_FRAME_COUNT;
+    let idx = frameIndex % frameCount;
+    if (idx < 0) idx += frameCount;
+    if (rocketPrecisionPulseFrameCache[idx]) return rocketPrecisionPulseFrameCache[idx];
+    const img = typeof andromedaCreateImage === "function"
+        ? andromedaCreateImage("graphics/mines/minePulse/" + (idx + 1) + ".png")
+        : new Image;
+    if (!img.src) img.src = "graphics/mines/minePulse/" + (idx + 1) + ".png";
+    rocketPrecisionPulseFrameCache[idx] = img;
+    return img;
+}
+
+function getRocketPrecisionPulseSprite(frameIndex) {
+    const frameCount = ROCKET_PRECISION_PULSE_FRAME_COUNT;
+    let idx = frameIndex % frameCount;
+    if (idx < 0) idx += frameCount;
+    if (rocketPrecisionPulseTintCache[idx]) return rocketPrecisionPulseTintCache[idx];
+    const img = getRocketPrecisionPulseFrame(idx);
+    if (!img || !img.complete || img.width <= 0 || img.height <= 0) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const pulseCtx = canvas.getContext("2d");
+    if (!pulseCtx) return img;
+    pulseCtx.drawImage(img, 0, 0);
+    pulseCtx.globalCompositeOperation = "source-in";
+    pulseCtx.fillStyle = "rgb(255, 35, 35)";
+    pulseCtx.fillRect(0, 0, canvas.width, canvas.height);
+    rocketPrecisionPulseTintCache[idx] = canvas;
+    return canvas;
+}
+
+function drawRocketPrecisionPulse(projX, projY, angle, now) {
+    const frame = Math.floor((now || performance.now()) / (1e3 / ROCKET_PRECISION_PULSE_FPS));
+    const img = getRocketPrecisionPulseSprite(frame);
+    if (!img || img.width <= 0 || img.height <= 0) return;
+    const scale = ROCKET_PRECISION_PULSE_SCALE;
+    const drawW = img.width * scale;
+    const drawH = img.height * scale;
+    const drawX = ROCKET_PRECISION_PULSE_LOCAL_X - drawW / 2;
+    const drawY = -drawH / 2;
+    ctx.save();
+    ctx.translate(mapToScreenX(projX), mapToScreenY(projY));
+    ctx.rotate(angle);
+    ctx.globalAlpha = .85;
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    ctx.restore();
+}
 
 function spawnRocketLauncherAirstrike(attackerId, targetId, rocketId, count, missFlag = false) {
     const launcherCount = Math.max(1, Math.min(12, parseInt(count, 10) || 0));
@@ -2306,6 +2375,9 @@ function drawRocketAttacks() {
         const travelAngle = Math.atan2(ty - ay, tx - ax);
         emitRocketSmoke(beam, projX, projY, travelAngle, spriteWidth, now);
         const angle = travelAngle + Math.PI;
+        if (beam.auto) {
+            drawRocketPrecisionPulse(projX, projY, angle, now);
+        }
         ctx.save();
         ctx.translate(mapToScreenX(projX), mapToScreenY(projY));
         ctx.rotate(angle);

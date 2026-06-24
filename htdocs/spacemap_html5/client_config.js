@@ -6760,6 +6760,7 @@ const FLASH_TECH_CODE_ALIASES = Object.freeze({
 const FLASH_TECH_IMPLICIT_OWNERSHIP = Object.freeze({
     ELA: true,
     ECI: true,
+    RPM: true,
     SBU: true,
     BRB: true
 });
@@ -8357,7 +8358,7 @@ const FLASH_ACTION_MENU_BUTTON_BINDINGS = Object.freeze({
 
     54: { type: "tech", id: 1, code: "ELA", label: "Energy Leech", supported: true },
     51: { type: "tech", id: 2, code: "ECI", label: "Chain Impulse", supported: true },
-    55: { type: "tech", id: 3, code: "RPM", label: "Precision Targeter", supported: false },
+    55: { type: "tech", id: 3, code: "RPM", label: "Precision Targeter", supported: true },
     53: { type: "tech", id: 4, code: "SBU", label: "Shield Backup", supported: true },
     59: { type: "tech", id: 5, code: "BRB", label: "Battle Repair Bot", supported: true },
 
@@ -9562,10 +9563,6 @@ function flashBuildActionMenuDefinitionFromXml(xmlDoc) {
 
 function flashIsActionItemVisible(item) {
     if (!item) return false;
-    if (item.categoryKey === "tech") {
-        const techCode = String(item.code || (typeof TECH_ID_TO_CODE !== "undefined" ? TECH_ID_TO_CODE[item.id] : "") || "").toUpperCase();
-        if (techCode === "RPM") return false;
-    }
     if (item.categoryKey === "ability") {
         const skillMap = window.heroSkillAvailability && typeof window.heroSkillAvailability === "object" ? window.heroSkillAvailability : null;
         const abilityId = flashResolveSkillAbilityId(item.id || item.code || "");
@@ -10554,7 +10551,6 @@ function flashQuickbarAnchorIsValid(x, y) {
 function flashBuildFallbackQuickbarItem(buttonId) {
     const numericId = parseInt(buttonId, 10);
     if (!Number.isFinite(numericId) || numericId <= 0) return null;
-    if (numericId === 55) return null;
     const binding = FLASH_ACTION_MENU_BUTTON_BINDINGS[numericId];
     if (!binding) return null;
     const item = {
@@ -10586,7 +10582,6 @@ function flashBuildFallbackQuickbarItem(buttonId) {
 function flashGetQuickbarDisplayItemByButtonId(buttonId) {
     const numericId = parseInt(buttonId, 10);
     if (!Number.isFinite(numericId) || numericId <= 0) return null;
-    if (numericId === 55) return null;
     if (typeof flashGetActionMenuDefinition === "function") {
         try {
             const def = flashGetActionMenuDefinition();
@@ -10633,7 +10628,6 @@ function flashResolveQuickbarButtonId(item) {
     }
     if (type === "tech") {
         const code = String(item.code || "").toUpperCase();
-        if (code === "RPM" || Number(item.id) === 3) return null;
         if (code && FLASH_QUICKBAR_BUTTON_ID_BY_ITEM.tech[code]) return FLASH_QUICKBAR_BUTTON_ID_BY_ITEM.tech[code];
         return FLASH_QUICKBAR_BUTTON_ID_BY_ITEM.tech[Number(item.id)] || null;
     }

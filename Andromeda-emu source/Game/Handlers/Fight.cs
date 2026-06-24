@@ -32,6 +32,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private const int TECH_CHAIN_IMPULSE_COOLDOWN_SECONDS = 60;
         private const int TECH_CHAIN_IMPULSE_MAX_TARGETS = 7;
         private const int TECH_CHAIN_IMPULSE_RADIUS = 700;
+        private const int TECH_ROCKET_PROBABILITY_MAXIMIZER_DURATION_SECONDS = 600;
+        private const int TECH_ROCKET_PROBABILITY_MAXIMIZER_COOLDOWN_SECONDS = 360;
         private const int TECH_SHIELD_BACKUP_VISUAL_SECONDS = 5;
         private const int VENOM_TOTAL_PULSES = 36;
         private const int VENOM_INITIAL_DAMAGE = 1500;
@@ -317,6 +319,19 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private static bool IsNormalDirectDamageRocket(int rocketId)
         {
             return rocketId >= 1 && rocketId <= 4;
+        }
+
+        private static bool IsPrecisionTargeterRocket(int rocketId)
+        {
+            return rocketId == 1 || rocketId == 2 || rocketId == 3;
+        }
+
+        private static bool IsPrecisionTargeterRocketGuided(Session session, int rocketId)
+        {
+            return IsPrecisionTargeterRocket(rocketId)
+                && session != null
+                && session.CharacterInfo != null
+                && session.CharacterInfo.RocketProbabilityMaximizerActive;
         }
 
         private static int ResolveRocketSmokePattern(Session session, int rocketId)
@@ -1283,6 +1298,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.SendData(PacketComposer.Compose("A", "CLD|ELA|" + (object)Session.CharacterInfo.CoolDownTechEla));
             if (Session.CharacterInfo.CoolDownTechEci > 0)
                 Session.SendData(PacketComposer.Compose("A", "CLD|ECI|" + (object)Session.CharacterInfo.CoolDownTechEci));
+            if (Session.CharacterInfo.CoolDownTechRpm > 0)
+                Session.SendData(PacketComposer.Compose("A", "CLD|RPM|" + (object)Session.CharacterInfo.CoolDownTechRpm));
             if (Session.CharacterInfo.CoolDownTechSh > 0)
                 Session.SendData(PacketComposer.Compose("A", "CLD|SBU|" + (object)Session.CharacterInfo.CoolDownTechSh));
             if (Session.CharacterInfo.CoolDownTechHp > 0)
@@ -1296,6 +1313,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             if (Session.CharacterInfo.EnergyLeechActive)
                 Session.SendData(PacketComposer.Compose("TX", "A|0|ELA|" + (object)Session.CharacterId + "|" + (object)Session.CharacterInfo.EnergyLeechSecondsLeft));
+
+            if (Session.CharacterInfo.RocketProbabilityMaximizerActive)
+                Session.SendData(PacketComposer.Compose("TX", "A|0|RPM|" + (object)Session.CharacterId + "|" + (object)Session.CharacterInfo.RocketProbabilityMaximizerSecondsLeft));
 
             int shieldBackupSecondsLeft = Math.Max(0, (int)Math.Ceiling((double)TECH_SHIELD_BACKUP_VISUAL_SECONDS - (UnixTimestamp.GetCurrent() - Session.CharacterInfo.LastTechSh)));
             if (shieldBackupSecondsLeft > 0)
@@ -1346,7 +1366,21 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                     break;
                 case 3:
-                    status = 0;
+                    amount = 1;
+                    if (session.CharacterInfo.RocketProbabilityMaximizerActive)
+                    {
+                        status = 2;
+                        secondsLeft = session.CharacterInfo.RocketProbabilityMaximizerSecondsLeft;
+                    }
+                    else if (session.CharacterInfo.CoolDownTechRpm > 0)
+                    {
+                        status = 3;
+                        secondsLeft = session.CharacterInfo.CoolDownTechRpm;
+                    }
+                    else
+                    {
+                        status = 1;
+                    }
                     break;
                 case 4:
                     amount = 1;
@@ -1807,6 +1841,60 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
 
             Fight.SendTechStatus(session);
+        }
+
+        private static void ActivateRocketProbabilityMaximizer(Session session, MapInstance instance)
+        {
+            if (session == null || session.CharacterInfo == null || instance == null)
+                return;
+            if (session.CharacterInfo.RocketProbabilityMaximizerActive || session.CharacterInfo.CoolDownTechRpm > 0)
+                return;
+
+            double now = UnixTimestamp.GetCurrent();
+            session.CharacterInfo.RocketProbabilityMaximizerUntil = now + (double)TECH_ROCKET_PROBABILITY_MAXIMIZER_DURATION_SECONDS;
+            session.CharacterInfo.RocketProbabilityMaximizerCooldownUntil = 0.0;
+
+            if (session.CharacterInfo.RocketProbabilityMaximizerTimer != null)
+            {
+                session.CharacterInfo.RocketProbabilityMaximizerTimer.Dispose();
+                session.CharacterInfo.RocketProbabilityMaximizerTimer = null;
+            }
+
+            session.CharacterInfo.RocketProbabilityMaximizerTimer = new System.Threading.Timer(
+                new TimerCallback(Fight.StopRocketProbabilityMaximizer),
+                (object)session,
+                TECH_ROCKET_PROBABILITY_MAXIMIZER_DURATION_SECONDS * 1000,
+                Timeout.Infinite
+            );
+
+            session.SendData(PacketComposer.Compose("TX", "A|0|RPM|" + (object)session.CharacterId + "|" + (object)TECH_ROCKET_PROBABILITY_MAXIMIZER_DURATION_SECONDS));
+            Fight.SendTechStatus(session);
+        }
+
+        private static void StopRocketProbabilityMaximizer(object state)
+        {
+            try
+            {
+                Session session = state as Session;
+                if (session == null || session.CharacterInfo == null)
+                    return;
+
+                if (session.CharacterInfo.RocketProbabilityMaximizerTimer != null)
+                {
+                    session.CharacterInfo.RocketProbabilityMaximizerTimer.Dispose();
+                    session.CharacterInfo.RocketProbabilityMaximizerTimer = null;
+                }
+
+                session.CharacterInfo.RocketProbabilityMaximizerUntil = 0.0;
+                session.CharacterInfo.RocketProbabilityMaximizerCooldownUntil = UnixTimestamp.GetCurrent() + (double)TECH_ROCKET_PROBABILITY_MAXIMIZER_COOLDOWN_SECONDS;
+
+                session.SendData(PacketComposer.Compose("TX", "D|0|RPM|" + (object)session.CharacterId));
+                Fight.SendTechStatus(session);
+            }
+            catch (Exception ex)
+            {
+                LogTimerFailure("StopRocketProbabilityMaximizer", ex);
+            }
         }
 
         private static void InterruptDiminisherOnTarget(Session targetSession, MapInstance instance)
@@ -2334,6 +2422,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 case 2:
                     Fight.ActivateChainImpulse(Session, instanceByMapId);
+                    return;
+                case 3:
+                    Fight.ActivateRocketProbabilityMaximizer(Session, instanceByMapId);
                     return;
                 case 4:
                     if (Session.CharacterInfo.CoolDownTechSh > 0)
@@ -2873,6 +2964,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
             int rocketSmokePattern = ResolveRocketSmokePattern(Session, rocketId);
+            int rocketPrecisionFlag = IsPrecisionTargeterRocketGuided(Session, rocketId) ? 1 : 0;
 
             bool isManualDcr250 = !isAutoRocketCall && rocketId == 10;
             if (!isManualDcr250 && UnixTimestamp.GetCurrent() - Session.CharacterInfo.LastRocket < 2.0)
@@ -2932,7 +3024,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 SendNpcScopedMessage(instanceByMapId, referenceObject, PacketComposer.Compose(
                     "v",
-                    Session.CharacterId.ToString() + "|" + (object)referenceObject.Id + "|H|" + (object)rocketId + "|" + (object)rocketSmokePattern + "|0"
+                    Session.CharacterId.ToString() + "|" + (object)referenceObject.Id + "|H|" + (object)rocketId + "|" + (object)rocketSmokePattern + "|" + (object)rocketPrecisionFlag
                 ), Session);
 
                 Session.CharacterInfo.LastRocketShotType = rocketId;
@@ -3003,7 +3095,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 SendPlayerScopedCombatMessage(instanceByMapId, Session, sessionByCharacterId, PacketComposer.Compose(
                     "v",
-                    Session.CharacterId.ToString() + "|" + (object)sessionByCharacterId.CharacterId + "|H|" + (object)rocketId + "|" + (object)rocketSmokePattern + "|0"
+                    Session.CharacterId.ToString() + "|" + (object)sessionByCharacterId.CharacterId + "|H|" + (object)rocketId + "|" + (object)rocketSmokePattern + "|" + (object)rocketPrecisionFlag
                 ));
 
                 Session.CharacterInfo.LastRocketShotType = rocketId;
@@ -3120,7 +3212,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                             session.CharacterInfo.UpdateLaserRocketReff();
                     }
 
-                    if (IsNormalDirectDamageRocket(rocketId) && !Fight.RollPlayerRocketHit(session, null, rocketId))
+                    if (IsNormalDirectDamageRocket(rocketId) && !IsPrecisionTargeterRocketGuided(session, rocketId) && !Fight.RollPlayerRocketHit(session, null, rocketId))
                     {
                         SendMissToNpcTarget(instanceByMapId, session, npc);
                         return;
@@ -3175,7 +3267,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         session.CharacterInfo.UpdateLaserRocketReff();
                 }
 
-                if (IsNormalDirectDamageRocket(rocketId) && !Fight.RollPlayerRocketHit(session, targetSession, rocketId))
+                if (IsNormalDirectDamageRocket(rocketId) && !IsPrecisionTargeterRocketGuided(session, rocketId) && !Fight.RollPlayerRocketHit(session, targetSession, rocketId))
                 {
                     SendMissToPlayerTarget(instanceByMapId, session, targetSession);
                     return;
