@@ -709,6 +709,10 @@ class PilotBioService
             return 'At max level, shield damage impacts become visible around your ship.';
         }
 
+        if ($node['node_code'] === 'rocket_fusion') {
+            return 'At max level, normal rockets leave a purple trail.';
+        }
+
         return '';
     }
 
