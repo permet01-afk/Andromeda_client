@@ -2178,7 +2178,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 ownerSession = (ownerId > 0) ? SessionManager.GetSessionByCharacterId(ownerId) : null;
             }
 
-            bool useSharedDamageRewards = UsesCubikonRewardModel();
+            bool isGalaxyGateReward = GalaxyGateWaveService.IsGateMap(this.MapId);
+            bool useSharedDamageRewards = !isGalaxyGateReward && UsesCubikonRewardModel();
             HashSet<int> eligible = new HashSet<int>();
 
             if (useSharedDamageRewards)
@@ -2197,19 +2198,22 @@ namespace OrbitReborn_Emulator.Game.Npcs
             {
                 eligible.Add(ownerId);
 
-                try
+                if (!isGalaxyGateReward)
                 {
-                    if (ownerSession.CharacterInfo.Members != null)
+                    try
                     {
-                        foreach (int memberId in ownerSession.CharacterInfo.Members.Keys)
+                        if (ownerSession.CharacterInfo.Members != null)
                         {
-                            Session ms = SessionManager.GetSessionByCharacterId(memberId);
-                            if (IsSessionValidOnMap(ms))
-                                eligible.Add(memberId);
+                            foreach (int memberId in ownerSession.CharacterInfo.Members.Keys)
+                            {
+                                Session ms = SessionManager.GetSessionByCharacterId(memberId);
+                                if (IsSessionValidOnMap(ms))
+                                    eligible.Add(memberId);
+                            }
                         }
                     }
+                    catch { }
                 }
-                catch { }
             }
 
             long totalEligibleDamage = 0;
