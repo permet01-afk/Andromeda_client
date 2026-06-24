@@ -97,6 +97,7 @@ foreach ($pilotBio['catalog'] as $pilotNode) {
 $pilotBioClientPayload = [
     'stateReady' => $stateReady,
     'researchPoints' => $researchPoints,
+    'maxResearchPoints' => $maxResearchPoints,
     'spentPoints' => $spentPoints,
     'nodes' => $pilotBioClientNodes,
 ];
@@ -213,24 +214,41 @@ $pilotBioClientPayload = [
     .pilot-bio-toolbar h2 {
         margin: 0;
         color: var(--pilot-accent);
+        flex: 0 0 auto;
         font-size: 1.08rem;
         text-transform: uppercase;
+        white-space: nowrap;
     }
 
     .pilot-bio-exchange {
         display: flex;
         align-items: center;
         gap: 0.75rem;
+        justify-content: flex-end;
         color: #91a8bd;
         font-size: 0.9rem;
+    }
+
+    .pilot-bio-next-point {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.45rem;
+        border: 1px solid rgba(94, 214, 255, 0.18);
+        background: rgba(3, 8, 16, 0.34);
+        border-radius: 5px;
+        color: #cfefff;
+        padding: 0.45rem 0.65rem;
+        white-space: nowrap;
     }
 
     .pilot-bio-actions {
         display: flex;
         align-items: center;
+        flex: 1 1 auto;
         gap: 0.75rem;
         flex-wrap: wrap;
         justify-content: flex-end;
+        min-width: 0;
     }
 
     .pilot-bio-button {
@@ -567,6 +585,11 @@ $pilotBioClientPayload = [
             flex-direction: column;
         }
 
+        .pilot-bio-next-point {
+            justify-content: center;
+            white-space: normal;
+        }
+
         .pilot-bio-resources {
             min-width: 0;
             grid-template-columns: 1fr;
@@ -596,7 +619,7 @@ $pilotBioClientPayload = [
         <div class="pilot-bio-resources">
             <div class="pilot-bio-resource">
                 <span>Research Points</span>
-                <strong data-pilot-bio-research><?php echo number_format($researchPoints); ?></strong>
+                <strong data-pilot-bio-research><?php echo number_format($researchPoints); ?> / <?php echo number_format($maxResearchPoints); ?></strong>
             </div>
             <div class="pilot-bio-resource">
                 <span>Spent Points</span>
@@ -632,7 +655,7 @@ $pilotBioClientPayload = [
                 <form method="post" class="pilot-bio-exchange">
                     <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
                     <input type="hidden" name="pilot_bio_action" value="exchange_point">
-                    <span>
+                    <span class="pilot-bio-next-point">
                         <?php if ($nextPointCost === null) { ?>
                             Maximum Research Points reached
                         <?php } else { ?>
@@ -785,6 +808,7 @@ $pilotBioClientPayload = [
     const resetConfirm = document.querySelector("[data-pilot-bio-reset-confirm]");
 
     const baseResearchPoints = Math.max(0, parseInt(pilotData.researchPoints, 10) || 0);
+    const maxResearchPoints = Math.max(baseResearchPoints, parseInt(pilotData.maxResearchPoints, 10) || 0);
     const baseSpentPoints = Math.max(0, parseInt(pilotData.spentPoints, 10) || 0);
     let researchPoints = baseResearchPoints;
     let spentPoints = baseSpentPoints;
@@ -842,7 +866,7 @@ $pilotBioClientPayload = [
         }
     };
     const renderAll = () => {
-        if (researchEl) researchEl.textContent = formatNumber(researchPoints);
+        if (researchEl) researchEl.textContent = `${formatNumber(researchPoints)} / ${formatNumber(maxResearchPoints)}`;
         if (spentEl) spentEl.textContent = formatNumber(spentPoints);
         nodeEntries.forEach(renderNode);
         const hasPending = pendingNodes.length > 0;
