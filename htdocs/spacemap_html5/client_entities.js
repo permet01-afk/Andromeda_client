@@ -242,13 +242,8 @@ function pushDamageBubble(entityId, delta, isHealHint = false, colorId = null, s
     const isHeal = isHealHint || signed > 0;
     const cid = colorId !== null && colorId !== undefined ? colorId : isHeal ? 2 : 0;
     const plus = showPlus !== null && showPlus !== undefined ? showPlus : false;
-    const snapshot = captureEntityEffectSnapshot(entityId);
     damageBubbles.push({
         entityId: entityId,
-        visualLifeId: snapshot && snapshot.visualLifeId != null ? snapshot.visualLifeId : null,
-        snapshotX: snapshot && Number.isFinite(snapshot.x) ? snapshot.x : null,
-        snapshotY: snapshot && Number.isFinite(snapshot.y) ? snapshot.y : null,
-        snapshotShipId: snapshot ? snapshot.shipId ?? snapshot.type ?? null : null,
         value: Math.abs(signed),
         isHeal: isHeal,
         colorId: cid,
@@ -260,19 +255,14 @@ function pushDamageBubble(entityId, delta, isHealHint = false, colorId = null, s
     trimDamageBubbles();
 }
 
-function pushMissBubble(entityId, colorId = 0, snapshot = null) {
+function pushMissBubble(entityId, colorId = 0) {
     if (entityId == null) return;
     const now = performance.now();
     const stackIndex = getDamageBubbleStackIndex(entityId, now);
     const stackOffsetY = Math.min(DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX, stackIndex * DAMAGE_BUBBLE_STACK_STEP_PX);
-    const snap = snapshot || captureEntityEffectSnapshot(entityId);
     const cid = colorId !== null && colorId !== undefined && !isNaN(parseInt(colorId, 10)) ? parseInt(colorId, 10) : 0;
     damageBubbles.push({
         entityId: entityId,
-        visualLifeId: snap && snap.visualLifeId != null ? snap.visualLifeId : null,
-        snapshotX: snap && Number.isFinite(snap.x) ? snap.x : null,
-        snapshotY: snap && Number.isFinite(snap.y) ? snap.y : null,
-        snapshotShipId: snap ? snap.shipId ?? snap.type ?? null : null,
         value: 0,
         text: "MISS",
         isHeal: false,

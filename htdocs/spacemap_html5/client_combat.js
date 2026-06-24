@@ -1718,26 +1718,16 @@ function updateRocketLauncherMissDisplays(now = performance.now()) {
             continue;
         }
         if (typeof pushMissBubble === "function") {
-            pushMissBubble(entry.targetId, 0, {
-                visualLifeId: entry.targetVisualLifeId != null ? entry.targetVisualLifeId : null,
-                x: Number.isFinite(entry.snapshotX) ? entry.snapshotX : null,
-                y: Number.isFinite(entry.snapshotY) ? entry.snapshotY : null,
-                shipId: entry.snapshotShipId ?? null
-            });
+            pushMissBubble(entry.targetId, 0);
         }
     }
     rocketLauncherMissDisplays.length = keepCount;
 }
 
-function queueRocketLauncherMissDisplay(targetId, delayMs, now = performance.now(), targetSnapshot = null) {
+function queueRocketLauncherMissDisplay(targetId, delayMs, now = performance.now()) {
     if (!Array.isArray(rocketLauncherMissDisplays) || targetId == null) return;
-    const snapshot = targetSnapshot || (typeof captureEntityEffectSnapshot === "function" ? captureEntityEffectSnapshot(targetId) : null);
     rocketLauncherMissDisplays.push({
         targetId: targetId,
-        targetVisualLifeId: snapshot && snapshot.visualLifeId != null ? snapshot.visualLifeId : null,
-        snapshotX: snapshot && Number.isFinite(snapshot.x) ? snapshot.x : null,
-        snapshotY: snapshot && Number.isFinite(snapshot.y) ? snapshot.y : null,
-        snapshotShipId: snapshot ? snapshot.shipId ?? snapshot.type ?? null : null,
         triggerAt: now + Math.max(0, Number(delayMs) || 0)
     });
     if (rocketLauncherMissDisplays.length > 32) {
@@ -2222,7 +2212,7 @@ function spawnRocketLauncherAirstrike(attackerId, targetId, rocketId, count, mis
         rocketAttacks.splice(0, rocketAttacks.length - 160);
     }
     if (missFlag) {
-        queueRocketLauncherMissDisplay(targetId, maxDuration, createdAt, targetSnap);
+        queueRocketLauncherMissDisplay(targetId, maxDuration, createdAt);
     }
 }
 
@@ -2566,13 +2556,6 @@ function resolveDamageBubblePosition(b, out = null) {
         shipId: null,
         isHero: false
     };
-    if (Number.isFinite(b.snapshotX) && Number.isFinite(b.snapshotY)) {
-        position.x = b.snapshotX;
-        position.y = b.snapshotY;
-        position.shipId = b.snapshotShipId ?? (b.entityId === heroId ? heroShipId : null);
-        position.isHero = b.entityId === heroId;
-        return position;
-    }
     if (b.entityId === heroId) {
         position.x = shipX;
         position.y = shipY;
@@ -2582,20 +2565,9 @@ function resolveDamageBubblePosition(b, out = null) {
     }
     const ent = entities[b.entityId];
     if (ent) {
-        const liveVisualLifeId = typeof ensureEntityVisualLife === "function" ? ensureEntityVisualLife(ent) : ent.visualLifeId;
-        if (b.visualLifeId == null || liveVisualLifeId === b.visualLifeId) {
-            position.x = ent.x;
-            position.y = ent.y;
-            position.shipId = ent.shipId ?? ent.type ?? null;
-            position.isHero = false;
-            return position;
-        }
-    }
-    const removedSnapshot = typeof getRemovedEntitySnapshot === "function" ? getRemovedEntitySnapshot(b.entityId) : null;
-    if (removedSnapshot && Number.isFinite(removedSnapshot.x) && Number.isFinite(removedSnapshot.y)) {
-        position.x = removedSnapshot.x;
-        position.y = removedSnapshot.y;
-        position.shipId = removedSnapshot.shipId ?? removedSnapshot.type ?? null;
+        position.x = ent.x;
+        position.y = ent.y;
+        position.shipId = ent.shipId ?? ent.type ?? null;
         position.isHero = false;
         return position;
     }
