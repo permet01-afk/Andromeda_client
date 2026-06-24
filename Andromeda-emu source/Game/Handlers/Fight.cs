@@ -4616,7 +4616,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (!Session.CharacterInfo.CanRegenShield || Session.CharacterInfo.ShipShield >= Session.CharacterInfo.ShipMaxShield)
                 return;
 
-            int num = Session.CharacterInfo.ShRegen;
+            int num = (int)Math.Ceiling(Session.CharacterInfo.ShipMaxShield * 0.04);
+            if (num <= 0)
+                return;
 
             if (Session.CharacterInfo.ShipShield + num <= Session.CharacterInfo.ShipMaxShield)
             {
