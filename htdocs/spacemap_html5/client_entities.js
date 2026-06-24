@@ -236,6 +236,36 @@ function pushDamageBubble(entityId, delta, isHealHint = false, colorId = null, s
     trimDamageBubbles();
 }
 
+function pushMissBubble(entityId, colorId = 0, snapshot = null) {
+    if (entityId == null) return;
+    const now = performance.now();
+    let stackOffsetY = 0;
+    for (let i = damageBubbles.length - 1; i >= 0; i--) {
+        const bubble = damageBubbles[i];
+        if (!bubble || now - bubble.createdAt > DAMAGE_BUBBLE_STACK_WINDOW_MS) break;
+        if (bubble.entityId === entityId) {
+            stackOffsetY = Math.min(DAMAGE_BUBBLE_STACK_MAX_OFFSET_PX, stackOffsetY + DAMAGE_BUBBLE_STACK_STEP_PX);
+        }
+    }
+    const snap = snapshot || captureEntityEffectSnapshot(entityId);
+    const cid = colorId !== null && colorId !== undefined && !isNaN(parseInt(colorId, 10)) ? parseInt(colorId, 10) : 0;
+    damageBubbles.push({
+        entityId: entityId,
+        visualLifeId: snap && snap.visualLifeId != null ? snap.visualLifeId : null,
+        snapshotX: snap && Number.isFinite(snap.x) ? snap.x : null,
+        snapshotY: snap && Number.isFinite(snap.y) ? snap.y : null,
+        snapshotShipId: snap ? snap.shipId ?? snap.type ?? null : null,
+        value: 0,
+        text: "MISS",
+        isHeal: false,
+        colorId: cid,
+        showPlus: false,
+        stackOffsetY: stackOffsetY,
+        createdAt: now
+    });
+    trimDamageBubbles();
+}
+
 function trimDamageBubbles(maxActive = DAMAGE_BUBBLE_MAX_ACTIVE) {
     if (!Array.isArray(damageBubbles)) return;
     const max = Math.max(0, Number(maxActive) || DAMAGE_BUBBLE_MAX_ACTIVE);

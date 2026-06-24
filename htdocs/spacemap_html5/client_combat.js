@@ -1717,19 +1717,14 @@ function updateRocketLauncherMissDisplays(now = performance.now()) {
             rocketLauncherMissDisplays[keepCount++] = entry;
             continue;
         }
-        damageBubbles.push({
-            entityId: entry.targetId,
-            visualLifeId: entry.targetVisualLifeId != null ? entry.targetVisualLifeId : null,
-            snapshotX: Number.isFinite(entry.snapshotX) ? entry.snapshotX : null,
-            snapshotY: Number.isFinite(entry.snapshotY) ? entry.snapshotY : null,
-            snapshotShipId: entry.snapshotShipId ?? null,
-            value: 0,
-            isHeal: false,
-            colorId: 0,
-            showPlus: false,
-            createdAt: now
-        });
-        if (typeof trimDamageBubbles === "function") trimDamageBubbles();
+        if (typeof pushMissBubble === "function") {
+            pushMissBubble(entry.targetId, 0, {
+                visualLifeId: entry.targetVisualLifeId != null ? entry.targetVisualLifeId : null,
+                x: Number.isFinite(entry.snapshotX) ? entry.snapshotX : null,
+                y: Number.isFinite(entry.snapshotY) ? entry.snapshotY : null,
+                shipId: entry.snapshotShipId ?? null
+            });
+        }
     }
     rocketLauncherMissDisplays.length = keepCount;
 }
@@ -2611,7 +2606,8 @@ function drawDamageBubbles() {
         const hitpointColors = typeof HITPOINT_COLOR_PATTERNS !== "undefined" && HITPOINT_COLOR_PATTERNS ? HITPOINT_COLOR_PATTERNS : {};
         const color = hitpointColors[cid] || fallback[cid] || fallback[0];
         const plus = b.showPlus !== undefined && b.showPlus !== null ? b.showPlus : b.isHeal;
-        const text = (plus ? "+" : "") + String(b.value);
+        const label = b.text !== undefined && b.text !== null ? String(b.text) : "";
+        const text = label ? label : (plus ? "+" : "") + String(b.value);
         ctx.save();
         ctx.globalAlpha = alpha;
         const stackOffsetY = Number.isFinite(b.stackOffsetY) ? b.stackOffsetY : 0;

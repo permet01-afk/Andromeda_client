@@ -1276,6 +1276,8 @@ const PACKET_HANDLERS = {
     J: handlePacket_J,
     LK: handlePacket_LK,
     a: handlePacket_laserAttack,
+    M: handlePacket_shootMissedA,
+    Z: handlePacket_shootMissedT,
     SAB_SHOT: handlePacket_sabShot,
     v: handlePacket_rocketAttack,
     Y: handlePacket_attackInfo,
@@ -4013,6 +4015,46 @@ function handlePacket_A(parts, i) {
 
 function handlePacket_displayMessage(parts, i) {
     handleFlashDisplayMessagePayload(parts.slice(i));
+}
+
+function resolveMissPacketColor(parts, i) {
+    for (let idx = parts.length - 1; idx >= i; idx--) {
+        const value = parseInt(parts[idx], 10);
+        if (!isNaN(value) && value >= 0 && value <= 3) {
+            return value;
+        }
+    }
+    return 0;
+}
+
+function handlePacket_shootMissedA(parts, i) {
+    let cursor = i;
+    let missType = "";
+    if (cursor < parts.length && isNaN(parseInt(parts[cursor], 10))) {
+        missType = String(parts[cursor] || "").toUpperCase();
+        cursor += 1;
+    }
+    if (missType === "R") return;
+    let targetId = parseInt(parts[cursor], 10);
+    if (isNaN(targetId) && cursor + 1 < parts.length) {
+        targetId = parseInt(parts[cursor + 1], 10);
+        cursor += 1;
+    }
+    if (isNaN(targetId)) return;
+    const colorId = resolveMissPacketColor(parts, cursor + 1);
+    if (typeof pushMissBubble === "function") {
+        pushMissBubble(targetId, colorId);
+    }
+}
+
+function handlePacket_shootMissedT(parts, i) {
+    const missType = i < parts.length && isNaN(parseInt(parts[i], 10)) ? String(parts[i] || "").toUpperCase() : "";
+    if (missType === "R") return;
+    if (typeof heroId === "undefined" || heroId === null) return;
+    const colorId = resolveMissPacketColor(parts, i);
+    if (typeof pushMissBubble === "function") {
+        pushMissBubble(heroId, colorId);
+    }
 }
 
 function handlePacket_B(parts, i) {
