@@ -135,7 +135,7 @@ $ammoConfig = [
     'smb01'   => ['col' => 'ammo_smb01',   'price' => 400,  'currency' => 'uridium'],
     'ish01'   => ['col' => 'ammo_ish01',   'price' => 400,  'currency' => 'uridium'],
     'emp01'   => ['col' => 'ammo_emp01',   'price' => 500,  'currency' => 'uridium'],
-    'logfile' => ['col' => 'logfiles',     'price' => 150,  'currency' => 'uridium'],
+    'logfile' => ['col' => 'logfiles',     'price' => 75,   'currency' => 'uridium'],
     'bootykey'=> ['col' => 'booty_keys',   'price' => 7000, 'currency' => 'uridium'],
 ];
 
@@ -495,7 +495,7 @@ if ($currentDroneCountEffective < 8) {
                     <span class="item-desc">Data for Pilot Bio.</span>
                 </div>
                 <div class="item-action">
-                    <span class="price-tag price-uri">150 Uri / unit</span>
+                    <span class="price-tag price-uri">75 Uri / unit</span>
                     <form method="post" class="action-form">
                         <input type="hidden" name="buy_ammo_type" value="logfile">
                         <input type="number" name="amount" value="1" class="qty-input">
