@@ -319,6 +319,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
             return rocketId >= 1 && rocketId <= 4;
         }
 
+        private static int ResolveRocketSmokePattern(Session session, int rocketId)
+        {
+            if (session != null && session.CharacterInfo != null && session.CharacterInfo.RocketFusionMax && IsNormalDirectDamageRocket(rocketId))
+                return 1;
+            return session != null && session.CharacterInfo != null ? session.CharacterInfo.RocketPattern : 0;
+        }
+
         private static int GetPilotBioEvasionBonus(Session target)
         {
             return target != null && target.CharacterInfo != null ? target.CharacterInfo.PilotBioEvasionBonus : 0;
@@ -2865,6 +2872,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 return;
             }
+            int rocketSmokePattern = ResolveRocketSmokePattern(Session, rocketId);
 
             bool isManualDcr250 = !isAutoRocketCall && rocketId == 10;
             if (!isManualDcr250 && UnixTimestamp.GetCurrent() - Session.CharacterInfo.LastRocket < 2.0)
@@ -2924,7 +2932,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 SendNpcScopedMessage(instanceByMapId, referenceObject, PacketComposer.Compose(
                     "v",
-                    Session.CharacterId.ToString() + "|" + (object)referenceObject.Id + "|H|" + (object)rocketId + "|" + (object)Session.CharacterInfo.RocketPattern + "|0"
+                    Session.CharacterId.ToString() + "|" + (object)referenceObject.Id + "|H|" + (object)rocketId + "|" + (object)rocketSmokePattern + "|0"
                 ), Session);
 
                 Session.CharacterInfo.LastRocketShotType = rocketId;
@@ -2995,7 +3003,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 SendPlayerScopedCombatMessage(instanceByMapId, Session, sessionByCharacterId, PacketComposer.Compose(
                     "v",
-                    Session.CharacterId.ToString() + "|" + (object)sessionByCharacterId.CharacterId + "|H|" + (object)rocketId + "|" + (object)Session.CharacterInfo.RocketPattern + "|0"
+                    Session.CharacterId.ToString() + "|" + (object)sessionByCharacterId.CharacterId + "|H|" + (object)rocketId + "|" + (object)rocketSmokePattern + "|0"
                 ));
 
                 Session.CharacterInfo.LastRocketShotType = rocketId;

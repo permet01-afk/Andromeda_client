@@ -50,6 +50,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         public double PilotBioAlienHonorMultiplier = 1.0;
         public double PilotBioAlienCreditMultiplier = 1.0;
         public double PilotBioNormalRocketDamageMultiplier = 1.0;
+        public bool RocketFusionMax = false;
         public int PilotBioLaserAccuracyBonus = 0;
         public int PilotBioRocketAccuracyBonus = 0;
         public int PilotBioEvasionBonus = 0;
@@ -3647,6 +3648,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.PilotBioAlienHonorMultiplier = 1.0;
             this.PilotBioAlienCreditMultiplier = 1.0;
             this.PilotBioNormalRocketDamageMultiplier = 1.0;
+            this.RocketFusionMax = false;
             this.PilotBioLaserAccuracyBonus = 0;
             this.PilotBioRocketAccuracyBonus = 0;
             this.PilotBioEvasionBonus = 0;
@@ -3956,7 +3958,10 @@ namespace OrbitReborn_Emulator.Game.Characters
             else
                 this.PilotBioAlienHonorMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "cruelty_i", 2, new int[] { 4, 8 });
             this.PilotBioAlienCreditMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "greed", 5, new int[] { 4, 8, 12, 18, 25 });
-            this.PilotBioNormalRocketDamageMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "rocket_fusion", 5, new int[] { 2, 4, 6, 8, 15 });
+            int rocketFusion = this.GetPilotBioLevel(levels, "rocket_fusion", 5);
+            if (rocketFusion > 0)
+                this.PilotBioNormalRocketDamageMultiplier = this.GetPilotBioPercentMultiplier(levels, effectValues, "rocket_fusion", 5, new int[] { 2, 4, 6, 8, 15 });
+            this.RocketFusionMax = rocketFusion >= 5;
 
             int electroOptics = this.GetPilotBioLevel(levels, "electro_optics", 5);
             if (electroOptics > 0)

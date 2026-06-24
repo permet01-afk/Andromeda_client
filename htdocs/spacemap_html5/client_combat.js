@@ -2158,13 +2158,19 @@ function spawnRocketLauncherAirstrike(attackerId, targetId, rocketId, count, mis
 }
 
 
-function getRocketSmokeDefinition(rocketId, airstrike = false) {
+function getRocketSmokeDefinition(rocketId, patternId = null, airstrike = false) {
     if (!ROCKET_SMOKE_DEFS) return null;
     let key = null;
     if (airstrike) {
         key = 0;
-    } else if (typeof resolveRocketSmokeKey === "function") {
-        key = resolveRocketSmokeKey(rocketId);
+    } else {
+        const hasPatternId = patternId !== null && patternId !== undefined && patternId !== "";
+        const packetKey = hasPatternId ? Number(patternId) : NaN;
+        if (Number.isFinite(packetKey) && ROCKET_SMOKE_DEFS[packetKey]) {
+            key = packetKey;
+        } else if (typeof resolveRocketSmokeKey === "function") {
+            key = resolveRocketSmokeKey(rocketId);
+        }
     }
     const def = key != null ? ROCKET_SMOKE_DEFS[key] : null;
     if (!def) return null;
@@ -2176,17 +2182,19 @@ function getRocketSmokeDefinition(rocketId, airstrike = false) {
 
 function resolveRocketSmokeDefinitionForBeam(beam) {
     const airstrike = !!beam.airstrike;
+    const patternId = beam.patternId !== null && beam.patternId !== undefined && Number.isFinite(Number(beam.patternId)) ? Number(beam.patternId) : null;
     const cached = beam._rocketSmokeDefInfo;
-    if (cached && cached.rocketId === beam.rocketId && cached.airstrike === airstrike) {
+    if (cached && cached.rocketId === beam.rocketId && cached.patternId === patternId && cached.airstrike === airstrike) {
         return cached.def ? cached : null;
     }
-    const defInfo = getRocketSmokeDefinition(beam.rocketId, airstrike);
+    const defInfo = getRocketSmokeDefinition(beam.rocketId, patternId, airstrike);
     if (!defInfo) {
         beam._rocketSmokeDefInfo = null;
         return null;
     }
     const nextInfo = cached || {};
     nextInfo.rocketId = beam.rocketId;
+    nextInfo.patternId = patternId;
     nextInfo.airstrike = airstrike;
     nextInfo.key = defInfo.key;
     nextInfo.def = defInfo.def;
