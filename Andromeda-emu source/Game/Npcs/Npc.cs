@@ -2570,6 +2570,12 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 this.mLastDamageTick = nowTick;
 
                 int ammoType = Invasion.GetNpcLaserPattern(this);
+                ServerMessage npcAttackMessage = PacketComposer.Compose("a", this.Id.ToString() + "|" + sessionByCharacterId.CharacterId + "|" + ammoType + "|" + sessionByCharacterId.CharacterInfo.ShieldMechanics + "|" + this.FatLasers);
+                if (GalaxyGateWaveService.IsGateMap(this.MapId))
+                    sessionByCharacterId.SendData(npcAttackMessage);
+                else
+                    Fight.SendNpcScopedMessage(instanceByMapId, this, npcAttackMessage, sessionByCharacterId);
+
                 int hitChance = Fight.CalculateLaserHitChancePercent(0, sessionByCharacterId.CharacterInfo.PilotBioEvasionBonus);
                 bool hit;
                 lock (DmgRandLock)
@@ -2581,12 +2587,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     Fight.SendNpcLaserMiss(instanceByMapId, this, sessionByCharacterId);
                     return;
                 }
-
-                ServerMessage npcAttackMessage = PacketComposer.Compose("a", this.Id.ToString() + "|" + sessionByCharacterId.CharacterId + "|" + ammoType + "|" + sessionByCharacterId.CharacterInfo.ShieldMechanics + "|" + this.FatLasers);
-                if (GalaxyGateWaveService.IsGateMap(this.MapId))
-                    sessionByCharacterId.SendData(npcAttackMessage);
-                else
-                    Fight.SendNpcScopedMessage(instanceByMapId, this, npcAttackMessage, sessionByCharacterId);
 
                 int dmg = 0;
 

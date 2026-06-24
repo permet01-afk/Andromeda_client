@@ -3534,17 +3534,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.AttackingRepBug = true;
                 bool missed = damage && !Fight.RollPlayerLaserHit(Session, null);
 
-                if (missed)
-                {
-                    SendMissToNpcTarget(Instance, Session, Npc);
-                }
-                else if (num < 0.0 || num >= 300.0)
+                if (num < 0.0 || num >= 300.0)
                 {
                     SendNpcScopedMessage(Instance, Npc, PacketComposer.Compose(
                         "a",
                         Session.CharacterId.ToString() + "|" + (object)Npc.Id + "|" + (object)Fight.GetAmmoType(Ammo) + "|" + (object)Npc.ShieldMechanics + "|" + (object)Session.CharacterInfo.FatLasers
                     ), Session);
                 }
+
+                if (missed)
+                    SendMissToNpcTarget(Instance, Session, Npc);
 
                 if (damage && !missed)
                 {
@@ -3764,17 +3763,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 double num = now - Session.CharacterInfo.LastRSB75;
                 bool missed = damage && !Fight.RollPlayerLaserHit(Session, Ennemy);
 
-                if (missed)
-                {
-                    SendMissToPlayerTarget(Instance, Session, Ennemy);
-                }
-                else if (num < 0.0 || num >= 300.0)
+                if (num < 0.0 || num >= 300.0)
                 {
                     SendPlayerScopedCombatMessage(Instance, Session, Ennemy, PacketComposer.Compose(
                         "a",
                         Session.CharacterId.ToString() + "|" + (object)Ennemy.CharacterId + "|" + (object)Fight.GetAmmoType(Ammo) + "|" + (object)Ennemy.CharacterInfo.ShieldMechanics + "|" + (object)Session.CharacterInfo.FatLasers
                     ));
                 }
+
+                if (missed)
+                    SendMissToPlayerTarget(Instance, Session, Ennemy);
 
                 Session.CharacterInfo.Attacking = true;
 
