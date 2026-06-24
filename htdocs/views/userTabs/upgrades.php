@@ -24,6 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pilot_bio_action'])) 
         $action = (string)$_POST['pilot_bio_action'];
         if ($action === 'exchange_point') {
             $result = $pilotBioService->exchangeResearchPoint();
+        } elseif ($action === 'save_bio_changes') {
+            $rawNodeCodes = (string)($_POST['node_codes'] ?? '[]');
+            $nodeCodes = json_decode($rawNodeCodes, true);
+            if (!is_array($nodeCodes)) {
+                $nodeCodes = [];
+            }
+            $result = $pilotBioService->saveNodeUpgrades($nodeCodes);
         } elseif ($action === 'upgrade_node') {
             $result = $pilotBioService->upgradeNode((string)($_POST['node_code'] ?? ''));
         } elseif ($action === 'reset_bio') {
@@ -75,6 +82,24 @@ $spentPoints = $stateReady ? (int)$state['spent_points'] : 0;
 $logfiles = (int)$pilotBio['resources']['logfiles'];
 $nextPointCost = $pilotBio['next_point_cost'];
 $maxResearchPoints = (int)$pilotBio['max_research_points'];
+$pilotBioClientNodes = [];
+foreach ($pilotBio['catalog'] as $pilotNode) {
+    $pilotBioClientNodes[(string)$pilotNode['node_code']] = [
+        'code' => (string)$pilotNode['node_code'],
+        'displayName' => (string)$pilotNode['display_name'],
+        'status' => (string)$pilotNode['status'],
+        'level' => (int)$pilotNode['level'],
+        'maxLevel' => (int)$pilotNode['max_level'],
+        'prerequisites' => $pilotNode['prerequisites'],
+        'effectTexts' => $pilotNode['effect_texts'],
+    ];
+}
+$pilotBioClientPayload = [
+    'stateReady' => $stateReady,
+    'researchPoints' => $researchPoints,
+    'spentPoints' => $spentPoints,
+    'nodes' => $pilotBioClientNodes,
+];
 ?>
 
 <style>
@@ -244,6 +269,23 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
         box-shadow: 0 0 16px rgba(248, 113, 113, 0.24);
     }
 
+    .pilot-bio-button.is-discard {
+        border-color: rgba(148, 163, 184, 0.48);
+        background: rgba(148, 163, 184, 0.08);
+    }
+
+    .pilot-bio-unsaved {
+        color: #facc15;
+        font-size: 0.82rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0;
+    }
+
+    .pilot-bio-unsaved[hidden] {
+        display: none;
+    }
+
     .pilot-bio-tree {
         overflow: visible;
         padding: 0.25rem 0;
@@ -333,6 +375,14 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
 
     .pilot-bio-node.is-maxed .pilot-bio-node-icon {
         filter: drop-shadow(0 0 14px rgba(74, 222, 128, 0.48));
+    }
+
+    .pilot-bio-node.is-pending .pilot-bio-node-icon {
+        filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.46));
+    }
+
+    .pilot-bio-node.is-pending .pilot-bio-node-status {
+        color: #facc15;
     }
 
     .pilot-bio-points {
@@ -439,6 +489,51 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
         margin-top: 0.35rem;
     }
 
+    .pilot-bio-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1.25rem;
+        background: rgba(0, 0, 0, 0.66);
+    }
+
+    .pilot-bio-modal.is-open {
+        display: flex;
+    }
+
+    .pilot-bio-modal-panel {
+        width: min(440px, 100%);
+        border: 1px solid rgba(94, 214, 255, 0.4);
+        background:
+            radial-gradient(circle at top left, rgba(94, 214, 255, 0.15), transparent 40%),
+            rgba(5, 12, 22, 0.98);
+        border-radius: 8px;
+        box-shadow: 0 22px 50px rgba(0, 0, 0, 0.54), inset 0 0 20px rgba(94, 214, 255, 0.05);
+        padding: 1.25rem;
+    }
+
+    .pilot-bio-modal-panel h3 {
+        margin: 0 0 0.65rem;
+        color: #ffffff;
+        font-size: 1.1rem;
+    }
+
+    .pilot-bio-modal-panel p {
+        margin: 0;
+        color: #9eb4c9;
+        line-height: 1.45;
+    }
+
+    .pilot-bio-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        margin-top: 1.2rem;
+    }
+
     #pilot_skill_1 { background-position: -1406px 0; }
     #pilot_skill_2 { background-position: -444px 0; }
     #pilot_skill_3 { background-position: -962px 0; }
@@ -501,11 +596,11 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
         <div class="pilot-bio-resources">
             <div class="pilot-bio-resource">
                 <span>Research Points</span>
-                <strong><?php echo number_format($researchPoints); ?></strong>
+                <strong data-pilot-bio-research><?php echo number_format($researchPoints); ?></strong>
             </div>
             <div class="pilot-bio-resource">
                 <span>Spent Points</span>
-                <strong><?php echo number_format($spentPoints); ?></strong>
+                <strong data-pilot-bio-spent><?php echo number_format($spentPoints); ?></strong>
             </div>
             <div class="pilot-bio-resource">
                 <span>Logfiles</span>
@@ -547,11 +642,19 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
                     <button class="pilot-bio-button" type="submit"<?php echo (!$schemaReady || !$stateReady || $nextPointCost === null || $logfiles < (int)$nextPointCost) ? ' disabled' : ''; ?>>Exchange Logfiles</button>
                 </form>
                 <?php if ($stateReady) { ?>
-                    <form method="post" onsubmit="return confirm('This will reset all Pilot Bio skills and return spent Research Points. Continue?');">
+                    <span class="pilot-bio-unsaved" data-pilot-bio-unsaved hidden>Unsaved changes</span>
+                    <form method="post" data-pilot-bio-save-form>
+                        <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
+                        <input type="hidden" name="pilot_bio_action" value="save_bio_changes">
+                        <input type="hidden" name="node_codes" value="[]" data-pilot-bio-pending-input>
+                        <button class="pilot-bio-button" type="submit" data-pilot-bio-save disabled>Save</button>
+                    </form>
+                    <button class="pilot-bio-button is-discard" type="button" data-pilot-bio-discard disabled>Discard Changes</button>
+                    <form method="post" data-pilot-bio-reset-form hidden>
                         <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
                         <input type="hidden" name="pilot_bio_action" value="reset_bio">
-                        <button class="pilot-bio-button is-reset" type="submit">Reset Pilot Bio</button>
                     </form>
+                    <button class="pilot-bio-button is-reset" type="button" data-pilot-bio-reset-open>Reset Pilot Bio</button>
                 <?php } ?>
             </div>
         </div>
@@ -586,25 +689,20 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
                                     $statusLabel = 'Unavailable';
                                 }
                             ?>
-                                <div class="<?php echo implode(' ', $classes); ?>">
-                                    <form method="post">
-                                        <input type="hidden" name="pilot_bio_csrf_token" value="<?php echo $escapePilot($pilotBioCsrfToken); ?>">
-                                        <input type="hidden" name="pilot_bio_action" value="upgrade_node">
-                                        <input type="hidden" name="node_code" value="<?php echo $escapePilot($node['node_code']); ?>">
-                                        <button class="pilot-bio-node-button" type="submit"<?php echo empty($node['can_upgrade']) ? ' disabled' : ''; ?> aria-label="<?php echo $escapePilot($node['display_name']); ?>">
-                                            <span class="pilot-bio-node-icon" id="pilot_skill_<?php echo (int)$node['slot']; ?>"></span>
-                                            <span class="pilot-bio-points"><?php echo (int)$node['level']; ?>/<?php echo (int)$node['max_level']; ?></span>
-                                        </button>
-                                    </form>
+                                <div class="<?php echo implode(' ', $classes); ?>" data-pilot-bio-node="<?php echo $escapePilot($node['node_code']); ?>">
+                                    <button class="pilot-bio-node-button" type="button" data-pilot-bio-node-button<?php echo empty($node['can_upgrade']) ? ' disabled' : ''; ?> aria-label="<?php echo $escapePilot($node['display_name']); ?>">
+                                        <span class="pilot-bio-node-icon" id="pilot_skill_<?php echo (int)$node['slot']; ?>"></span>
+                                        <span class="pilot-bio-points" data-pilot-bio-points><?php echo (int)$node['level']; ?>/<?php echo (int)$node['max_level']; ?></span>
+                                    </button>
                                     <div class="pilot-bio-node-name"><?php echo $escapePilot($node['display_name']); ?></div>
-                                    <div class="pilot-bio-node-status"><?php echo $escapePilot($statusLabel); ?></div>
+                                    <div class="pilot-bio-node-status" data-pilot-bio-status><?php echo $escapePilot($statusLabel); ?></div>
                                     <div class="pilot-bio-node-tooltip">
                                         <strong><?php echo $escapePilot($node['display_name']); ?></strong>
-                                        <em>Level <?php echo (int)$node['level']; ?>/<?php echo (int)$node['max_level']; ?> - <?php echo $escapePilot($statusLabel); ?></em>
+                                        <em data-pilot-bio-tooltip-level>Level <?php echo (int)$node['level']; ?>/<?php echo (int)$node['max_level']; ?> - <?php echo $escapePilot($statusLabel); ?></em>
                                         <span><?php echo $escapePilot($node['description']); ?></span>
-                                        <span>Current: <?php echo $escapePilot($node['effect_text']); ?></span>
+                                        <span data-pilot-bio-current>Current: <?php echo $escapePilot($node['effect_text']); ?></span>
                                         <?php if (!$node['is_maxed']) { ?>
-                                            <span>Next level: <?php echo $escapePilot($node['next_effect_text']); ?></span>
+                                            <span data-pilot-bio-next>Next level: <?php echo $escapePilot($node['next_effect_text']); ?></span>
                                         <?php } ?>
                                         <span>Cost: <?php echo ($node['status'] === 'active') ? '1 Research Point per level' : 'Not available'; ?></span>
                                         <span>Prerequisite: <?php echo $escapePilot($node['prerequisite_text']); ?></span>
@@ -625,3 +723,200 @@ $maxResearchPoints = (int)$pilotBio['max_research_points'];
     </section>
 
 </div>
+
+<div class="pilot-bio-modal" data-pilot-bio-reset-modal aria-hidden="true">
+    <div class="pilot-bio-modal-panel" role="dialog" aria-modal="true" aria-labelledby="pilotBioResetTitle">
+        <h3 id="pilotBioResetTitle">Reset Pilot Bio?</h3>
+        <p>This will reset all Pilot Bio skills and return spent Research Points. This action cannot be undone.</p>
+        <div class="pilot-bio-modal-actions">
+            <button class="pilot-bio-button is-discard" type="button" data-pilot-bio-reset-cancel>Cancel</button>
+            <button class="pilot-bio-button is-reset" type="button" data-pilot-bio-reset-confirm>Reset Pilot Bio</button>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="pilotBioClientData"><?php echo json_encode($pilotBioClientPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?></script>
+<script>
+(function () {
+    const dataEl = document.getElementById("pilotBioClientData");
+    if (!dataEl) return;
+
+    let pilotData = null;
+    try {
+        pilotData = JSON.parse(dataEl.textContent || "{}");
+    } catch (_) {
+        return;
+    }
+
+    const nodes = pilotData && pilotData.nodes ? pilotData.nodes : {};
+    const nodeElements = {};
+    document.querySelectorAll("[data-pilot-bio-node]").forEach(el => {
+        nodeElements[String(el.getAttribute("data-pilot-bio-node") || "")] = el;
+    });
+    const nodeEntries = Object.keys(nodes).map(code => {
+        const node = nodes[code] || {};
+        node.code = code;
+        node.baseLevel = Math.max(0, parseInt(node.level, 10) || 0);
+        node.level = node.baseLevel;
+        node.maxLevel = Math.max(0, parseInt(node.maxLevel, 10) || 0);
+        node.prerequisites = Array.isArray(node.prerequisites) ? node.prerequisites : [];
+        node.effectTexts = node.effectTexts || {};
+        node.el = nodeElements[code] || null;
+        node.button = node.el ? node.el.querySelector("[data-pilot-bio-node-button]") : null;
+        node.pointsEl = node.el ? node.el.querySelector("[data-pilot-bio-points]") : null;
+        node.statusEl = node.el ? node.el.querySelector("[data-pilot-bio-status]") : null;
+        node.tooltipLevelEl = node.el ? node.el.querySelector("[data-pilot-bio-tooltip-level]") : null;
+        node.currentEl = node.el ? node.el.querySelector("[data-pilot-bio-current]") : null;
+        node.nextEl = node.el ? node.el.querySelector("[data-pilot-bio-next]") : null;
+        return node;
+    });
+
+    const researchEl = document.querySelector("[data-pilot-bio-research]");
+    const spentEl = document.querySelector("[data-pilot-bio-spent]");
+    const unsavedEl = document.querySelector("[data-pilot-bio-unsaved]");
+    const saveForm = document.querySelector("[data-pilot-bio-save-form]");
+    const saveButton = document.querySelector("[data-pilot-bio-save]");
+    const discardButton = document.querySelector("[data-pilot-bio-discard]");
+    const pendingInput = document.querySelector("[data-pilot-bio-pending-input]");
+    const resetOpen = document.querySelector("[data-pilot-bio-reset-open]");
+    const resetForm = document.querySelector("[data-pilot-bio-reset-form]");
+    const resetModal = document.querySelector("[data-pilot-bio-reset-modal]");
+    const resetCancel = document.querySelector("[data-pilot-bio-reset-cancel]");
+    const resetConfirm = document.querySelector("[data-pilot-bio-reset-confirm]");
+
+    const baseResearchPoints = Math.max(0, parseInt(pilotData.researchPoints, 10) || 0);
+    const baseSpentPoints = Math.max(0, parseInt(pilotData.spentPoints, 10) || 0);
+    let researchPoints = baseResearchPoints;
+    let spentPoints = baseSpentPoints;
+    let pendingNodes = [];
+
+    const formatNumber = value => Math.max(0, parseInt(value, 10) || 0).toLocaleString();
+    const isActiveNode = node => node && node.status === "active";
+    const effectText = (node, level) => {
+        const key = String(Math.max(0, parseInt(level, 10) || 0));
+        return node.effectTexts && node.effectTexts[key] ? node.effectTexts[key] : "Active bonus.";
+    };
+    const prerequisitesMet = node => {
+        if (!node || !Array.isArray(node.prerequisites)) return true;
+        return node.prerequisites.every(req => {
+            const requiredNode = nodes[String(req.node || "")];
+            const requiredLevel = Math.max(0, parseInt(req.level, 10) || 0);
+            return requiredNode && (parseInt(requiredNode.level, 10) || 0) >= requiredLevel;
+        });
+    };
+    const canUpgrade = node => {
+        return !!pilotData.stateReady
+            && isActiveNode(node)
+            && node.level < node.maxLevel
+            && researchPoints > 0
+            && prerequisitesMet(node);
+    };
+    const statusFor = node => {
+        if (!isActiveNode(node) || !pilotData.stateReady) return "Unavailable";
+        if (node.level > node.baseLevel) return "Pending";
+        if (node.level >= node.maxLevel) return "Maxed";
+        if (!prerequisitesMet(node)) return "Locked";
+        if (researchPoints <= 0) return "No points";
+        return "Available";
+    };
+    const renderNode = node => {
+        if (!node || !node.el) return;
+        const status = statusFor(node);
+        const upgradable = canUpgrade(node);
+        const maxed = node.level >= node.maxLevel;
+        const pending = node.level > node.baseLevel;
+        node.el.classList.toggle("is-later", !isActiveNode(node));
+        node.el.classList.toggle("is-locked", isActiveNode(node) && pilotData.stateReady && !maxed && !prerequisitesMet(node));
+        node.el.classList.toggle("can-upgrade", upgradable);
+        node.el.classList.toggle("is-maxed", maxed);
+        node.el.classList.toggle("is-pending", pending);
+        if (node.button) node.button.disabled = !upgradable;
+        if (node.pointsEl) node.pointsEl.textContent = `${node.level}/${node.maxLevel}`;
+        if (node.statusEl) node.statusEl.textContent = status;
+        if (node.tooltipLevelEl) node.tooltipLevelEl.textContent = `Level ${node.level}/${node.maxLevel} - ${status}`;
+        if (node.currentEl) node.currentEl.textContent = `Current: ${effectText(node, node.level)}`;
+        if (node.nextEl) {
+            node.nextEl.textContent = maxed
+                ? "Next level: Maximum level reached."
+                : `Next level: ${effectText(node, node.level + 1)}`;
+        }
+    };
+    const renderAll = () => {
+        if (researchEl) researchEl.textContent = formatNumber(researchPoints);
+        if (spentEl) spentEl.textContent = formatNumber(spentPoints);
+        nodeEntries.forEach(renderNode);
+        const hasPending = pendingNodes.length > 0;
+        if (pendingInput) pendingInput.value = JSON.stringify(pendingNodes);
+        if (unsavedEl) unsavedEl.hidden = !hasPending;
+        if (saveButton) saveButton.disabled = !hasPending;
+        if (discardButton) discardButton.disabled = !hasPending;
+    };
+    const discardChanges = () => {
+        researchPoints = baseResearchPoints;
+        spentPoints = baseSpentPoints;
+        pendingNodes = [];
+        nodeEntries.forEach(node => {
+            node.level = node.baseLevel;
+        });
+        renderAll();
+    };
+    const openResetModal = () => {
+        if (!resetModal) return;
+        resetModal.classList.add("is-open");
+        resetModal.setAttribute("aria-hidden", "false");
+    };
+    const closeResetModal = () => {
+        if (!resetModal) return;
+        resetModal.classList.remove("is-open");
+        resetModal.setAttribute("aria-hidden", "true");
+    };
+
+    nodeEntries.forEach(node => {
+        if (!node.button) return;
+        node.button.addEventListener("click", () => {
+            if (!canUpgrade(node)) return;
+            node.level += 1;
+            researchPoints -= 1;
+            spentPoints += 1;
+            pendingNodes.push(node.code);
+            renderAll();
+        });
+    });
+
+    if (discardButton) {
+        discardButton.addEventListener("click", discardChanges);
+    }
+
+    if (saveForm) {
+        saveForm.addEventListener("submit", event => {
+            if (pendingNodes.length === 0) {
+                event.preventDefault();
+                return;
+            }
+            if (pendingInput) pendingInput.value = JSON.stringify(pendingNodes);
+        });
+    }
+
+    if (resetOpen) {
+        resetOpen.addEventListener("click", openResetModal);
+    }
+    if (resetCancel) {
+        resetCancel.addEventListener("click", closeResetModal);
+    }
+    if (resetConfirm) {
+        resetConfirm.addEventListener("click", () => {
+            if (resetForm) resetForm.submit();
+        });
+    }
+    if (resetModal) {
+        resetModal.addEventListener("click", event => {
+            if (event.target === resetModal) closeResetModal();
+        });
+    }
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape") closeResetModal();
+    });
+
+    renderAll();
+})();
+</script>

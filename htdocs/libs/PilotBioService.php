@@ -295,6 +295,11 @@ class PilotBioService
             $node['next_effect_text'] = $node['is_maxed']
                 ? 'Maximum level reached.'
                 : $this->effectText($node, $node['level'] + 1);
+            $effectTexts = [];
+            for ($effectLevel = 0; $effectLevel <= (int)$node['max_level']; $effectLevel++) {
+                $effectTexts[$effectLevel] = $this->effectText($node, $effectLevel);
+            }
+            $node['effect_texts'] = $effectTexts;
             $node['prerequisite_text'] = $this->prerequisiteText($node, $byCode);
             $node['v1_note'] = $this->v1NoteText($node);
         }
@@ -437,6 +442,118 @@ class PilotBioService
                 $this->db->rollBack();
             }
             return ['success' => false, 'message' => 'Pilot Bio upgrade failed.'];
+        }
+    }
+
+    public function saveNodeUpgrades(array $nodeCodes): array
+    {
+        if (!$this->isSchemaReady()) {
+            return ['success' => false, 'message' => 'Pilot Bio is temporarily unavailable. Please try again later.'];
+        }
+
+        $requestedNodes = [];
+        foreach ($nodeCodes as $nodeCode) {
+            if (!is_scalar($nodeCode)) {
+                continue;
+            }
+            $normalizedCode = trim((string)$nodeCode);
+            if ($normalizedCode !== '') {
+                $requestedNodes[] = $normalizedCode;
+            }
+        }
+
+        if (empty($requestedNodes)) {
+            return ['success' => false, 'message' => 'No Pilot Bio changes to save.'];
+        }
+
+        if (count($requestedNodes) > 100) {
+            return ['success' => false, 'message' => 'Too many Pilot Bio changes.'];
+        }
+
+        $catalog = [];
+        foreach (self::catalog() as $node) {
+            $catalog[$node['node_code']] = $node;
+        }
+
+        try {
+            $this->db->beginTransaction();
+
+            $state = $this->lockState();
+            if ($state === null) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'Pilot Bio is not available for this pilot yet.'];
+            }
+
+            $levels = $this->getLevels(true);
+            $researchPoints = (int)$state['research_points'];
+            $spentPoints = 0;
+            $changedLevels = [];
+
+            foreach ($requestedNodes as $nodeCode) {
+                if (!isset($catalog[$nodeCode])) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'Invalid Pilot Bio node.'];
+                }
+
+                $node = $catalog[$nodeCode];
+                if ($node['status'] !== 'active') {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'This Pilot Bio node is not available yet.'];
+                }
+
+                $currentLevel = max(0, (int)($levels[$nodeCode] ?? 0));
+                if ($currentLevel >= (int)$node['max_level']) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => $node['display_name'] . ' is already maxed.'];
+                }
+
+                if (!$this->arePrerequisitesMet($node, $levels)) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'Pilot Bio prerequisites are not met.'];
+                }
+
+                if ($researchPoints <= 0) {
+                    $this->db->rollBack();
+                    return ['success' => false, 'message' => 'No Research Points available.'];
+                }
+
+                $levels[$nodeCode] = $currentLevel + 1;
+                $changedLevels[$nodeCode] = $levels[$nodeCode];
+                $researchPoints--;
+                $spentPoints++;
+            }
+
+            if ($spentPoints <= 0) {
+                $this->db->rollBack();
+                return ['success' => false, 'message' => 'No Pilot Bio changes to save.'];
+            }
+
+            $upsert = $this->db->prepare(
+                'INSERT INTO player_pilot_bio_levels (user_id, node_code, level) VALUES (:player_id, :node_code, :level)
+                 ON DUPLICATE KEY UPDATE level = VALUES(level)'
+            );
+
+            foreach ($changedLevels as $nodeCode => $level) {
+                $upsert->execute([
+                    ':player_id' => $this->playerId,
+                    ':node_code' => $nodeCode,
+                    ':level' => $level,
+                ]);
+            }
+
+            $updateState = $this->db->prepare('UPDATE player_pilot_bio_state SET research_points = research_points - :spent_points, spent_points = spent_points + :spent_points WHERE user_id = :player_id LIMIT 1');
+            $updateState->execute([
+                ':spent_points' => $spentPoints,
+                ':player_id' => $this->playerId,
+            ]);
+
+            $this->db->commit();
+            return ['success' => true, 'message' => 'Pilot Bio changes saved.'];
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return ['success' => false, 'message' => 'Pilot Bio save failed.'];
         }
     }
 
