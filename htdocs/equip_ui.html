@@ -165,6 +165,47 @@
   .modeTab:hover { color: #e2e8f0; }
   .modeTab.active { background: linear-gradient(180deg, #1e293b, #0f172a); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
 
+  .equipmentOverview {
+    display: grid;
+    grid-template-columns: minmax(190px, 260px) minmax(240px, 1fr);
+    gap: 10px;
+    padding: 10px 10px 0;
+    flex-shrink: 0;
+  }
+
+  .loadoutStats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .statTile {
+    min-height: 56px;
+    padding: 8px;
+    border: 1px solid rgba(56, 189, 248, 0.14);
+    border-radius: 5px;
+    background: linear-gradient(180deg, rgba(15,23,42,.74), rgba(2,6,23,.62));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  }
+
+  .statTile span {
+    display: block;
+    color: #8192a8;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  .statTile strong {
+    display: block;
+    margin-top: 5px;
+    color: #eaffff;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
   #shipSection {
     display: flex; flex-direction: column; flex: 1; 
     overflow-y: auto;
@@ -179,7 +220,6 @@
       linear-gradient(180deg, rgba(15,23,42,.72), rgba(2,6,23,.88));
     border: 1px solid rgba(56, 189, 248, 0.16);
     border-radius: 6px;
-    margin-bottom: 10px;
     display: flex; justify-content: center; align-items: center;
     box-shadow: inset 0 0 24px rgba(0,0,0,.82), 0 8px 18px rgba(0,0,0,.18);
   }
@@ -359,6 +399,28 @@
     font-weight: 600;
     line-height: 1.35;
   }
+
+  .barActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  #resetCurrentConfig {
+    background: linear-gradient(180deg, rgba(30,41,59,.98), rgba(15,23,42,.98));
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    color: #cbd5e1;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 8px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  #resetCurrentConfig:hover { border-color: #fbbf24; color: #fff; }
   
   #saveAll {
     background: linear-gradient(180deg, #10b981, #047857);
@@ -391,6 +453,13 @@
   
   body.embed .wrap { max-width: none; margin: 0; padding: 10px; height: 100vh; }
   body.embed .card { border-color: rgba(56, 189, 248, 0.16); border-radius: 7px; box-shadow: 0 10px 26px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.03); }
+
+  @media (max-width: 900px) {
+    .cols { grid-template-columns: 1fr; }
+    .equipmentOverview { grid-template-columns: 1fr; }
+    .bar { align-items: flex-start; flex-direction: column; }
+    .barActions { width: 100%; justify-content: flex-start; }
+  }
 
   /* =========================================
      CONFIRMATION MODAL (Remplacement de l'alerte)
@@ -482,11 +551,19 @@
         <div class="modeTab" data-mode="drones">DRONES</div>
       </div>
 
-      <div id="shipSection">
+      <div class="equipmentOverview">
+        <div class="loadoutStats" aria-label="Loadout summary">
+          <div class="statTile"><span>Damage</span><strong id="statDamage">--</strong></div>
+          <div class="statTile"><span>HP</span><strong id="statHp">--</strong></div>
+          <div class="statTile"><span>Shield</span><strong id="statShield">--</strong></div>
+          <div class="statTile"><span>Speed</span><strong id="statSpeed">--</strong></div>
+        </div>
         <div id="shipPreview">
           <img id="shipPreviewImg" src="/img/ship/1.png" alt="Ship preview">
         </div>
+      </div>
 
+      <div id="shipSection">
         <div id="cfgA" class="cfgView"></div>
         <div id="cfgB" class="cfgView" style="display:none"></div>
       </div>
@@ -497,7 +574,10 @@
 
       <div class="bar">
         <div class="configHelp">Select equipment, drag it to slots, then save your loadout.</div>
-        <button class="btn" id="saveAll">Save Configuration</button>
+        <div class="barActions">
+          <button class="btn" id="resetCurrentConfig" type="button">Reset Configuration</button>
+          <button class="btn" id="saveAll" type="button">Save Configuration</button>
+        </div>
       </div>
     </div>
 
@@ -809,7 +889,7 @@ document.addEventListener('click', (e) => {
 });
 
 // --- NOUVELLE LOGIQUE DE CONFIRMATION ---
-function openConfirmModal(msg) {
+function openConfirmModal(msg, options = {}) {
   return new Promise((resolve) => {
     const modal = document.getElementById('confirmModal');
     const msgEl = document.getElementById('confirmMessage');
@@ -817,6 +897,8 @@ function openConfirmModal(msg) {
     const btnNo = document.getElementById('btnConfirmNo');
 
     msgEl.innerHTML = msg; // Permet de mettre du gras ou couleur
+    btnYes.textContent = options.yesLabel || 'Sell Item';
+    btnNo.textContent = options.noLabel || 'Cancel';
     modal.classList.add('open');
 
     // Fonction de nettoyage pour éviter d'empiler les événements
@@ -1043,6 +1125,53 @@ function info(it){
 
 function activeTab(){ return document.querySelector('.tab.active')?.dataset.tab || 'A'; }
 function activeMode(){ return document.querySelector('.modeTab.active')?.dataset.mode || 'ship'; }
+
+function parseSlotItem(cell){
+  if(!cell || !cell.classList.contains('filled') || !cell.dataset.item) return null;
+  try { return JSON.parse(cell.dataset.item); } catch { return null; }
+}
+
+function inventoryMetaById(id){
+  const itemId = Number(id || 0) || 0;
+  return DATA.items[itemId] || INVENTORY_TOTAL.find(it => Number(it.id) === itemId) || null;
+}
+
+function getDisplayedLoadoutItems(tab = activeTab()){
+  const items = [];
+  const mount = tab === 'A' ? byId('cfgA') : byId('cfgB');
+  if(mount){
+    mount.querySelectorAll('.slot.filled').forEach(cell => {
+      const item = parseSlotItem(cell);
+      if(item) items.push(item);
+    });
+  }
+
+  (DRONES_STATE[tab] || []).forEach(drone => {
+    (drone.slots || []).forEach(itemId => {
+      const meta = inventoryMetaById(itemId);
+      if(meta) items.push(meta);
+    });
+  });
+
+  return items;
+}
+
+function updateLoadoutStats(){
+  const items = getDisplayedLoadoutItems();
+  const lasers = items.filter(it => it.category === 'laser').length;
+  const shields = items.filter(it => it.category === 'generator' && Number(it.type) === 4).length;
+  const speeds = items.filter(it => it.category === 'generator' && Number(it.type) === 3).length;
+
+  const setText = (id, value) => {
+    const node = byId(id);
+    if(node) node.textContent = value;
+  };
+
+  setText('statDamage', lasers ? `${lasers} lasers` : '--');
+  setText('statHp', '--');
+  setText('statShield', shields ? `${shields} shield gens` : '--');
+  setText('statSpeed', speeds ? `${speeds} speed gens` : '--');
+}
 
 /* -----------------------------
    SELECTIONS
@@ -1286,6 +1415,7 @@ function refreshInventoryView(){
   });
 
   renderInventory();
+  updateLoadoutStats();
 }
 
 /* -----------------------------
@@ -2182,6 +2312,35 @@ function enableDropZones(){
 
 function currentMount(){ const t=activeTab(); return t==='A'?byId('cfgA'):byId('cfgB'); }
 
+async function resetCurrentConfiguration(){
+  const tab = activeTab();
+  const mode = activeMode();
+  const configLabel = tab === 'A' ? 'Config 1' : 'Config 2';
+  const modeLabel = mode === 'ship' ? 'ship loadout' : 'drone loadout';
+
+  const confirmed = await openConfirmModal(
+    `Reset the current ${modeLabel} for ${configLabel}?<br><span style='color:#94a3b8;font-size:11px'>This only clears the UI. Save Configuration to apply it.</span>`,
+    { yesLabel: 'Reset', noLabel: 'Cancel' }
+  );
+  if(!confirmed) return;
+
+  clearSelection();
+
+  if(mode === 'ship'){
+    const mount = currentMount();
+    mount.querySelectorAll('.slot.filled').forEach(cell => clearSlot(cell, { skipRefresh:true }));
+  } else {
+    (DRONES_STATE[tab] || []).forEach(drone => {
+      const slotCount = Math.max(1, Math.min(2, Number(drone.slot_count || (Number(drone.drone_item_id || 3) === 5 ? 1 : 2) || 2)));
+      drone.slots = Array.from({length: slotCount}, () => 0);
+    });
+    renderDrones(tab);
+  }
+
+  refreshInventoryView();
+  toast(`${configLabel} ${modeLabel} reset. Save to apply.`, true);
+}
+
 function equipAllShip(mount, row, filterFn=()=>true){
   clearSelection();
   const grid = mount.querySelector(`#grid-${mount.dataset.cfg}-${row}`);
@@ -2233,6 +2392,7 @@ document.addEventListener('click',(ev)=>{
 });
 
 byId('saveAll').addEventListener('click', saveAll);
+byId('resetCurrentConfig')?.addEventListener('click', resetCurrentConfiguration);
 byId('btnDesign')?.addEventListener('click', openDesignModal);
 byId('designModalClose')?.addEventListener('click', closeDesignModal);
 byId('designModal')?.addEventListener('click', (e)=>{
