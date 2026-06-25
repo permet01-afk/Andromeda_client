@@ -1,6 +1,11 @@
 -- Andromeda Skylab V1 manual SQL
 -- Apply manually on the game database after deploying the PHP files.
 -- This file is intentionally separate from andromeda.sql.
+-- If a previous phpMyAdmin attempt already created the Skylab tables but failed on the seed,
+-- this corrected file can be run again safely. CREATE TABLE IF NOT EXISTS keeps existing tables,
+-- and the seed uses ON DUPLICATE KEY UPDATE.
+-- For a completely clean local retry, restore your backup or remove only these Skylab tables:
+-- player_skylab_state, player_skylab_modules, skylab_module_levels, player_skylab_transports.
 
 CREATE TABLE IF NOT EXISTS `player_skylab_state` (
   `player_id` int(11) NOT NULL,
@@ -161,6 +166,7 @@ CROSS JOIN (
   UNION ALL SELECT 'prometid' UNION ALL SELECT 'duranium' UNION ALL SELECT 'xeno'
   UNION ALL SELECT 'promerium' UNION ALL SELECT 'seprom'
 ) AS m
+WHERE 1 = 1
 ON DUPLICATE KEY UPDATE
   `production_per_hour` = VALUES(`production_per_hour`),
   `energy_production` = VALUES(`energy_production`),
