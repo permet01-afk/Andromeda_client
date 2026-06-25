@@ -52,7 +52,7 @@
   img { pointer-events: none; -webkit-user-drag: none; }
 
   .wrap {
-    max-width: 1460px;
+    max-width: 1200px;
     height: 100vh; 
     margin: 0 auto;
     padding: 0 10px 10px 10px;
@@ -64,8 +64,8 @@
 
   .cols {
     display: grid;
-    grid-template-columns: minmax(860px, 1fr) 360px;
-    gap: 12px;
+    grid-template-columns: 1fr 340px;
+    gap: 15px;
     flex: 1;
     min-height: 0;
     margin-top: 10px;
@@ -165,148 +165,21 @@
   .modeTab:hover { color: #e2e8f0; }
   .modeTab.active { background: linear-gradient(180deg, #1e293b, #0f172a); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.04); }
 
-  .hangarHero {
-    display: grid;
-    grid-template-columns: 245px minmax(330px, 1fr) 210px;
-    gap: 12px;
-    padding: 12px;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.13);
-    background:
-      linear-gradient(90deg, rgba(2,6,23,.84), rgba(15,23,42,.68)),
-      radial-gradient(circle at 50% 18%, rgba(94,234,212,.09), transparent 46%);
-    flex-shrink: 0;
-  }
-
-  .loadoutPanel,
-  .hangarActions,
-  .heroShip {
-    border: 1px solid rgba(56, 189, 248, 0.15);
-    border-radius: 5px;
-    background: linear-gradient(180deg, rgba(15,23,42,.72), rgba(2,6,23,.58));
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
-  }
-
-  .panelTitle {
-    padding: 7px 9px;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.12);
-    color: #dffcff;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-
-  .summaryGrid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-    padding: 9px;
-  }
-
-  .summaryCell {
-    min-height: 52px;
-    padding: 7px;
-    border: 1px solid rgba(148, 163, 184, 0.12);
-    border-radius: 4px;
-    background: rgba(2, 6, 23, 0.42);
-  }
-
-  .summaryCell span {
-    display: block;
-    color: #8192a8;
-    font-size: 9px;
-    font-weight: 800;
-    text-transform: uppercase;
-  }
-
-  .summaryCell strong {
-    display: block;
-    margin-top: 6px;
-    color: #f8fafc;
-    font-size: 15px;
-    line-height: 1;
-  }
-
-  .heroShip {
-    min-height: 178px;
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: center;
-  }
-
-  .shipNameplate {
-    margin-top: 7px;
-    color: #8fa4bb;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .06em;
-    text-align: center;
-    text-transform: uppercase;
-  }
-
-  .hangarActions {
-    padding: 9px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    justify-content: center;
-  }
-
-  .hangarActions .doDesignTab {
-    min-height: 34px;
-  }
-
-  .hangarActionText {
-    color: #8fa4bb;
-    font-size: 10px;
-    line-height: 1.35;
-  }
-
-  .equipmentToolbar {
-    display: grid;
-    grid-template-columns: minmax(260px, 1fr) minmax(220px, .85fr);
-    gap: 10px;
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.12);
-    background: rgba(2, 6, 23, 0.48);
-    flex-shrink: 0;
-  }
-
-  .equipmentToolbar .tabs,
-  .equipmentToolbar .modeTabs {
-    margin: 0;
-    min-height: 32px;
-  }
-
-  .equipmentStage {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-
   #shipSection {
     display: flex; flex-direction: column; flex: 1; 
     overflow-y: auto;
-    height: 100%;
-    padding: 12px;
-  }
-
-  #dronesSection {
-    height: 100%;
-    overflow-y: auto;
-    padding: 12px;
+    padding: 0 10px 10px;
   }
 
   #shipPreview {
-    min-height: 138px;
-    height: 100%;
+    height: 130px; 
+    flex-shrink: 0;
     background:
       radial-gradient(circle at 50% 42%, rgba(94,234,212,.16) 0%, rgba(30,41,59,.46) 35%, rgba(5,9,17,.94) 82%),
       linear-gradient(180deg, rgba(15,23,42,.72), rgba(2,6,23,.88));
     border: 1px solid rgba(56, 189, 248, 0.16);
     border-radius: 6px;
+    margin-bottom: 10px;
     display: flex; justify-content: center; align-items: center;
     box-shadow: inset 0 0 24px rgba(0,0,0,.82), 0 8px 18px rgba(0,0,0,.18);
   }
@@ -322,27 +195,6 @@
   /* =========================================
      INVENTAIRE (Droite)
      ========================================= */
-  .inventoryHeader {
-    padding: 10px 12px;
-    border-bottom: 1px solid rgba(56, 189, 248, 0.14);
-    background: linear-gradient(90deg, rgba(2,6,23,.86), rgba(15,23,42,.66));
-  }
-
-  .inventoryHeader strong {
-    display: block;
-    color: #f8fafc;
-    font-size: 12px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-
-  .inventoryHeader span {
-    display: block;
-    margin-top: 2px;
-    color: #8192a8;
-    font-size: 10px;
-  }
-
   .invTabs { display: flex; border-bottom: 1px solid rgba(56, 189, 248, 0.14); background: rgba(2,6,23,0.58); flex-shrink: 0; }
   .invTab {
     flex: 1; text-align: center; padding: 8px 0;
@@ -433,22 +285,6 @@
     border-radius: 2px;
   }
 
-  .stockBadge {
-    position: absolute;
-    right: 1px;
-    bottom: 1px;
-    min-width: 18px;
-    padding: 1px 3px;
-    border-radius: 2px;
-    border: 1px solid rgba(251, 191, 36, 0.3);
-    background: rgba(0,0,0,0.82);
-    color: #fde68a;
-    font-size: 8px;
-    font-weight: 900;
-    text-align: center;
-    pointer-events: none;
-  }
-
   #droneList { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
   .droneBlock { background: linear-gradient(180deg, rgba(15,23,42,.58), rgba(2,6,23,.48)); padding: 5px; border: 1px solid rgba(56, 189, 248, 0.14); border-radius: 5px; }
   .drone-row { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
@@ -509,7 +345,7 @@
      ========================================= */
   .bar {
     margin-top: auto; 
-    padding: 9px 12px;
+    padding: 10px;
     border-top: 1px solid rgba(56, 189, 248, 0.14);
     background: linear-gradient(90deg, rgba(2,6,23,0.88), rgba(15,23,42,0.96));
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
@@ -523,27 +359,6 @@
     font-weight: 600;
     line-height: 1.35;
   }
-
-  .barActions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-  }
-
-  #resetCurrentConfig {
-    background: linear-gradient(180deg, rgba(30,41,59,.98), rgba(15,23,42,.98));
-    border: 1px solid rgba(148, 163, 184, 0.24);
-    color: #cbd5e1;
-    font-weight: bold;
-    font-size: 11px;
-    padding: 8px 14px;
-    border-radius: 4px;
-    cursor: pointer;
-    text-transform: uppercase;
-  }
-  #resetCurrentConfig:hover { border-color: #fbbf24; color: #fff; }
   
   #saveAll {
     background: linear-gradient(180deg, #10b981, #047857);
@@ -576,14 +391,6 @@
   
   body.embed .wrap { max-width: none; margin: 0; padding: 10px; height: 100vh; }
   body.embed .card { border-color: rgba(56, 189, 248, 0.16); border-radius: 7px; box-shadow: 0 10px 26px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.03); }
-
-  @media (max-width: 1100px) {
-    .cols { grid-template-columns: 1fr; }
-    .hangarHero { grid-template-columns: 1fr; }
-    .equipmentToolbar { grid-template-columns: 1fr; }
-    .bar { align-items: flex-start; flex-direction: column; }
-    .barActions { justify-content: flex-start; }
-  }
 
   /* =========================================
      CONFIRMATION MODAL (Remplacement de l'alerte)
@@ -662,66 +469,39 @@
 
     <div class="card" id="rightPanel">
       
-      <div class="hangarHero">
-        <div class="loadoutPanel">
-          <div class="panelTitle">Loadout Summary</div>
-          <div class="summaryGrid">
-            <div class="summaryCell"><span>Lasers</span><strong id="summaryLasers">0</strong></div>
-            <div class="summaryCell"><span>Shield Gens</span><strong id="summaryShields">0</strong></div>
-            <div class="summaryCell"><span>Speed Gens</span><strong id="summarySpeed">0</strong></div>
-            <div class="summaryCell"><span>Extras</span><strong id="summaryExtras">0</strong></div>
-          </div>
-        </div>
-
-        <div class="heroShip">
-          <div id="shipPreview">
-          <img id="shipPreviewImg" src="/img/ship/1.png" alt="Ship preview">
-          </div>
-          <div class="shipNameplate">Current Ship</div>
-        </div>
-
-        <div class="hangarActions">
-          <button class="doDesignTab" id="btnDesign" type="button">Select Design</button>
-          <div class="hangarActionText">Use Config 1 and Config 2 to prepare separate ship and drone loadouts.</div>
-        </div>
-      </div>
-
-      <div class="equipmentToolbar">
+      <div class="doTopBar">
         <div class="tabs doTabs">
           <div class="tab active" data-tab="A">Config 1</div>
           <div class="tab" data-tab="B">Config 2</div>
         </div>
-        <div class="modeTabs">
-          <div class="modeTab active" data-mode="ship">SHIP</div>
-          <div class="modeTab" data-mode="drones">DRONES</div>
-        </div>
+        <button class="doDesignTab" id="btnDesign" type="button">Designs</button>
       </div>
 
-      <div class="equipmentStage">
-        <div id="shipSection">
-          <div id="cfgA" class="cfgView"></div>
-          <div id="cfgB" class="cfgView" style="display:none"></div>
+      <div class="modeTabs">
+        <div class="modeTab active" data-mode="ship">SHIP</div>
+        <div class="modeTab" data-mode="drones">DRONES</div>
+      </div>
+
+      <div id="shipSection">
+        <div id="shipPreview">
+          <img id="shipPreviewImg" src="/img/ship/1.png" alt="Ship preview">
         </div>
 
-        <div id="dronesSection" style="display:none">
-          <div id="dronesWrap"></div>
-        </div>
+        <div id="cfgA" class="cfgView"></div>
+        <div id="cfgB" class="cfgView" style="display:none"></div>
+      </div>
+
+      <div id="dronesSection" style="display:none">
+        <div id="dronesWrap"></div>
       </div>
 
       <div class="bar">
         <div class="configHelp">Select equipment, drag it to slots, then save your loadout.</div>
-        <div class="barActions">
-          <button class="btn" id="resetCurrentConfig" type="button">Reset Configuration</button>
-          <button class="btn" id="saveAll" type="button">Save Configuration</button>
-        </div>
+        <button class="btn" id="saveAll">Save Configuration</button>
       </div>
     </div>
 
     <div class="card" id="invPanel">
-      <div class="inventoryHeader">
-        <strong>Inventory</strong>
-        <span>Drag items into the active loadout.</span>
-      </div>
       <div class="invTabs">
         <div class="invTab active" data-cat="all">All</div>
         <div class="invTab" data-cat="lasers">Lasers</div>
@@ -1029,7 +809,7 @@ document.addEventListener('click', (e) => {
 });
 
 // --- NOUVELLE LOGIQUE DE CONFIRMATION ---
-function openConfirmModal(msg, options = {}) {
+function openConfirmModal(msg) {
   return new Promise((resolve) => {
     const modal = document.getElementById('confirmModal');
     const msgEl = document.getElementById('confirmMessage');
@@ -1037,8 +817,6 @@ function openConfirmModal(msg, options = {}) {
     const btnNo = document.getElementById('btnConfirmNo');
 
     msgEl.innerHTML = msg; // Permet de mettre du gras ou couleur
-    btnYes.textContent = options.yesLabel || 'Sell Item';
-    btnNo.textContent = options.noLabel || 'Cancel';
     modal.classList.add('open');
 
     // Fonction de nettoyage pour éviter d'empiler les événements
@@ -1266,56 +1044,6 @@ function info(it){
 function activeTab(){ return document.querySelector('.tab.active')?.dataset.tab || 'A'; }
 function activeMode(){ return document.querySelector('.modeTab.active')?.dataset.mode || 'ship'; }
 
-function parseSlotItem(cell){
-  if(!cell || !cell.classList.contains('filled') || !cell.dataset.item) return null;
-  try { return JSON.parse(cell.dataset.item); } catch { return null; }
-}
-
-function itemMetaById(id){
-  const itemId = Number(id || 0) || 0;
-  return DATA.items[itemId] || INVENTORY_TOTAL.find(it => Number(it.id) === itemId) || null;
-}
-
-function getLoadoutItemsForTab(tab = activeTab()){
-  const items = [];
-  const mount = tab === 'A' ? byId('cfgA') : byId('cfgB');
-  if(mount){
-    mount.querySelectorAll('.slot.filled').forEach(cell => {
-      const item = parseSlotItem(cell);
-      if(item) items.push(item);
-    });
-  }
-
-  (DRONES_STATE[tab] || []).forEach(drone => {
-    (drone.slots || []).forEach(itemId => {
-      const meta = itemMetaById(itemId);
-      if(meta) items.push(meta);
-    });
-  });
-
-  return items;
-}
-
-function updateLoadoutSummary(){
-  const items = getLoadoutItemsForTab();
-  const counts = {
-    lasers: items.filter(it => it.category === 'laser').length,
-    shields: items.filter(it => it.category === 'generator' && Number(it.type) === 4).length,
-    speed: items.filter(it => it.category === 'generator' && Number(it.type) === 3).length,
-    extras: items.filter(it => it.category === 'extra').length
-  };
-
-  const setText = (id, value) => {
-    const node = byId(id);
-    if(node) node.textContent = String(value);
-  };
-
-  setText('summaryLasers', counts.lasers);
-  setText('summaryShields', counts.shields);
-  setText('summarySpeed', counts.speed);
-  setText('summaryExtras', counts.extras);
-}
-
 /* -----------------------------
    SELECTIONS
 ------------------------------ */
@@ -1440,9 +1168,6 @@ function renderInventory(){
         el('img',{src:it.icon,alt:it.name||'item'}),
         el('span',{class:'badge'}, label)
       );
-      if(k === 0 && Number(it.qty || 0) > 1){
-        token.append(el('span',{class:'stockBadge'}, `x${it.qty}`));
-      }
 
       // --- EVENTS TOOLTIP & CLICK ---
       token.addEventListener('mouseenter', (e) => {
@@ -1561,7 +1286,6 @@ function refreshInventoryView(){
   });
 
   renderInventory();
-  updateLoadoutSummary();
 }
 
 /* -----------------------------
@@ -2458,35 +2182,6 @@ function enableDropZones(){
 
 function currentMount(){ const t=activeTab(); return t==='A'?byId('cfgA'):byId('cfgB'); }
 
-async function resetCurrentConfiguration(){
-  const tab = activeTab();
-  const mode = activeMode();
-  const configLabel = tab === 'A' ? 'Config 1' : 'Config 2';
-  const modeLabel = mode === 'ship' ? 'ship loadout' : 'drone loadout';
-
-  const confirmed = await openConfirmModal(
-    `Reset the current ${modeLabel} for ${configLabel}?<br><span style='color:#94a3b8;font-size:11px'>This only clears the UI. Save Configuration to apply it.</span>`,
-    { yesLabel: 'Reset', noLabel: 'Cancel' }
-  );
-  if(!confirmed) return;
-
-  clearSelection();
-
-  if(mode === 'ship'){
-    const mount = currentMount();
-    mount.querySelectorAll('.slot.filled').forEach(cell => clearSlot(cell, { skipRefresh:true }));
-  } else {
-    (DRONES_STATE[tab] || []).forEach(drone => {
-      const slotCount = Math.max(1, Math.min(2, Number(drone.slot_count || (Number(drone.drone_item_id || 3) === 5 ? 1 : 2) || 2)));
-      drone.slots = Array.from({length: slotCount}, () => 0);
-    });
-    renderDrones(tab);
-  }
-
-  refreshInventoryView();
-  toast(`${configLabel} ${modeLabel} reset. Save to apply.`, true);
-}
-
 function equipAllShip(mount, row, filterFn=()=>true){
   clearSelection();
   const grid = mount.querySelector(`#grid-${mount.dataset.cfg}-${row}`);
@@ -2538,7 +2233,6 @@ document.addEventListener('click',(ev)=>{
 });
 
 byId('saveAll').addEventListener('click', saveAll);
-byId('resetCurrentConfig')?.addEventListener('click', resetCurrentConfiguration);
 byId('btnDesign')?.addEventListener('click', openDesignModal);
 byId('designModalClose')?.addEventListener('click', closeDesignModal);
 byId('designModal')?.addEventListener('click', (e)=>{
@@ -2563,7 +2257,7 @@ byId('inv-remove-shield').addEventListener('click',()=>removeAllShip(currentMoun
       t.classList.add('active');
       const mode = t.dataset.mode;
       if(mode === 'ship'){
-        shipSection.style.display = 'flex';
+        shipSection.style.display = 'block';
         dronesSection.style.display = 'none';
       } else {
         shipSection.style.display = 'none';
