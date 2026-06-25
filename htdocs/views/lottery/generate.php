@@ -142,6 +142,7 @@ function gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves) {
             'name' => $info['name'],
             'current' => 0,
             'total' => $info['total'],
+            'parts' => [],
             'filled' => false,
             'ready' => false,
             'on_map' => false,
@@ -162,6 +163,7 @@ function gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves) {
         $completed = ((int)($row['completed'] ?? 0) === 1);
 
         $gatesStatus[$gateId]['current'] = $current;
+        $gatesStatus[$gateId]['parts'] = $parts;
         $gatesStatus[$gateId]['filled'] = ($current >= $gatesConfig[$gateId]['total']);
         $gatesStatus[$gateId]['ready'] = ($current >= $gatesConfig[$gateId]['total']) && !$onMap;
         $gatesStatus[$gateId]['on_map'] = $onMap;

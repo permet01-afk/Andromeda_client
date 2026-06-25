@@ -37,20 +37,40 @@
         position: relative; overflow: hidden;
     }
 
-    /* Spinner Rings */
-    .gate-spinner { position: relative; width: 240px; height: 240px; display: flex; justify-content: center; align-items: center; }
-    .ring { position: absolute; border-radius: 50%; border: 2px solid transparent; opacity: 0.7; transition: all 0.5s; }
-    
-    .left-zone[data-gate="1"] .ring { border-top-color: #00f0ff; border-bottom-color: #22d3ee; box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
-    .left-zone[data-gate="2"] .ring { border-top-color: #4ade80; border-bottom-color: #22c55e; box-shadow: 0 0 15px rgba(74, 222, 128, 0.3); }
-    .left-zone[data-gate="3"] .ring { border-top-color: #f87171; border-bottom-color: #ef4444; box-shadow: 0 0 15px rgba(248, 113, 113, 0.3); }
-    .left-zone[data-gate="4"] .ring { border-top-color: #a78bfa; border-bottom-color: #8b5cf6; box-shadow: 0 0 15px rgba(167, 139, 250, 0.3); }
-
-    .ring-1 { width: 100%; height: 100%; animation: spin 12s linear infinite; border-width: 3px; }
-    .ring-2 { width: 70%; height: 70%; animation: spin 7s linear infinite reverse; border-width: 2px; opacity: 0.5; }
-    .ring-3 { width: 40%; height: 40%; animation: spin 4s linear infinite; border-width: 1px; border-style: dashed; opacity: 0.3; }
-    .core { width: 10px; height: 10px; border-radius: 50%; background: #fff; box-shadow: 0 0 20px #fff; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .gate-art-stage {
+        position: relative; width: clamp(170px, 36vw, 235px); aspect-ratio: 235 / 290;
+        filter: drop-shadow(0 0 24px rgba(34, 211, 238, 0.35)); transform: scale(1.04);
+    }
+    .gate-art-stage::before {
+        content: ""; position: absolute; inset: 16% -18%; border-radius: 50%;
+        background: radial-gradient(circle, rgba(34,211,238,0.18), rgba(34,211,238,0.04) 45%, transparent 70%);
+        opacity: .8; pointer-events: none;
+    }
+    .left-zone[data-gate="2"] .gate-art-stage { filter: drop-shadow(0 0 24px rgba(74, 222, 128, 0.32)); }
+    .left-zone[data-gate="3"] .gate-art-stage { filter: drop-shadow(0 0 24px rgba(248, 113, 113, 0.32)); }
+    .left-zone[data-gate="4"] .gate-art-stage { filter: drop-shadow(0 0 24px rgba(167, 139, 250, 0.34)); }
+    .gate-art-bg,
+    .gate-art-part,
+    .gate-art-spin {
+        position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+        pointer-events: none; user-select: none;
+    }
+    .gate-art-bg { opacity: .34; filter: brightness(1.35) saturate(.9); }
+    .gate-part-layer { position: absolute; inset: 0; }
+    .gate-art-part { opacity: .98; }
+    .gate-art-spin {
+        opacity: 0; transform: scale(1.02); transition: opacity .25s ease;
+        filter: brightness(1.08) saturate(1.2);
+    }
+    .gate-art-stage.on-map .gate-art-spin { opacity: 1; }
+    .gate-art-stage.on-map .gate-art-bg,
+    .gate-art-stage.on-map .gate-art-part { opacity: .18; }
+    .gate-art-empty {
+        position: absolute; left: 50%; bottom: -28px; transform: translateX(-50%);
+        color: #64748b; font-size: .75rem; font-weight: 800; letter-spacing: .5px;
+        text-transform: uppercase; white-space: nowrap;
+    }
+    .gate-art-stage:not(.empty) .gate-art-empty { display: none; }
 
     /* Overlay Info */
     .gate-info-overlay {
@@ -184,11 +204,11 @@
                     <div id="multBadge" class="multiplier-badge">x2</div>
                     <div class="gate-bg-name" id="uiBgName">ALPHA</div>
 
-                    <div class="gate-spinner">
-                        <div class="ring ring-1"></div>
-                        <div class="ring ring-2"></div>
-                        <div class="ring ring-3"></div>
-                        <div class="core"></div>
+                    <div class="gate-art-stage empty" id="gateArtStage" aria-hidden="true">
+                        <img id="gateArtBg" class="gate-art-bg" alt="" draggable="false">
+                        <div id="gatePartLayer" class="gate-part-layer"></div>
+                        <img id="gateSpinVisual" class="gate-art-spin" alt="" draggable="false">
+                        <div class="gate-art-empty">No parts collected</div>
                     </div>
 
                     <div class="gate-info-overlay">
@@ -273,6 +293,10 @@ const logBox = document.getElementById('logBox');
 const multBadge = document.getElementById('multBadge');
 const amtBtns = document.querySelectorAll('.amt-btn');
 const tabs = document.querySelectorAll('.gate-tab');
+const gateArtStage = document.getElementById('gateArtStage');
+const gateArtBg = document.getElementById('gateArtBg');
+const gatePartLayer = document.getElementById('gatePartLayer');
+const gateSpinVisual = document.getElementById('gateSpinVisual');
 
 // Modal Elements
 const modal = document.getElementById('confirmModal');
@@ -281,6 +305,8 @@ const modalConfirmBtn = document.getElementById('btnModalConfirm');
 
 const ENDPOINT = '/views/lottery/generate.php';
 const COST_PER_SPIN = 40;
+const GATE_VISUAL_BASE = '/img/galaxygates/';
+const GATE_VISUAL_TOTALS = { 1: 34, 2: 48, 3: 82, 4: 128 };
 
 // --- UTILS ---
 function escapeHtml(value) {
@@ -352,6 +378,47 @@ function refreshPilotBar(pilot) {
     if (rankpointsEl) rankpointsEl.textContent = pilot.rankpoints;
 }
 
+function getGateVisualParts(data, gateId) {
+    const total = GATE_VISUAL_TOTALS[gateId] || parseInt(data.total || 0, 10);
+    if (Array.isArray(data.parts)) {
+        return data.parts
+            .map(part => parseInt(part, 10))
+            .filter(part => Number.isFinite(part) && part > 0 && part <= total)
+            .filter((part, index, parts) => parts.indexOf(part) === index)
+            .sort((a, b) => a - b);
+    }
+
+    const current = Math.max(0, Math.min(total, parseInt(data.current || 0, 10)));
+    return Array.from({ length: current }, (_, index) => index + 1);
+}
+
+function updateGateVisual(data) {
+    if (!gateArtStage || !gateArtBg || !gatePartLayer || !gateSpinVisual) return;
+
+    const gateId = parseInt(data.id || currentGateId, 10);
+    const parts = getGateVisualParts(data, gateId);
+    const onMap = !!data.on_map;
+
+    gateArtBg.src = `${GATE_VISUAL_BASE}gate_${gateId}_bg.png`;
+    gateSpinVisual.src = `${GATE_VISUAL_BASE}spins/${gateId}.webp`;
+    gatePartLayer.innerHTML = '';
+
+    const fragment = document.createDocumentFragment();
+    parts.forEach(partId => {
+        const img = document.createElement('img');
+        img.className = 'gate-art-part';
+        img.alt = '';
+        img.draggable = false;
+        img.loading = 'lazy';
+        img.src = `${GATE_VISUAL_BASE}gate_${gateId}_${partId}.png`;
+        fragment.appendChild(img);
+    });
+    gatePartLayer.appendChild(fragment);
+
+    gateArtStage.classList.toggle('empty', parts.length === 0 && !onMap);
+    gateArtStage.classList.toggle('on-map', onMap);
+}
+
 // --- MODAL FUNCTIONS ---
 function openModal(gateName) {
     modalMsg.innerText = `Are you sure you want to deploy the ${gateName} gate to your home map?`;
@@ -413,6 +480,7 @@ function updateUI() {
     }
     
     leftZone.setAttribute('data-gate', currentGateId);
+    updateGateVisual(data);
 }
 
 // --- SELECTION LOGIC ---
