@@ -44,7 +44,7 @@
     .gate-art-stage::before {
         content: ""; position: absolute; inset: 16% -18%; border-radius: 50%;
         background: radial-gradient(circle, rgba(34,211,238,0.18), rgba(34,211,238,0.04) 45%, transparent 70%);
-        opacity: .8; pointer-events: none;
+        opacity: .8; pointer-events: none; z-index: 0;
     }
     .left-zone[data-gate="2"] .gate-art-stage { filter: drop-shadow(0 0 24px rgba(74, 222, 128, 0.32)); }
     .left-zone[data-gate="3"] .gate-art-stage { filter: drop-shadow(0 0 24px rgba(248, 113, 113, 0.32)); }
@@ -55,20 +55,18 @@
         position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
         pointer-events: none; user-select: none;
     }
-    .gate-art-bg { opacity: .34; filter: brightness(1.35) saturate(.9); }
-    .gate-part-layer { position: absolute; inset: 0; }
+    .gate-art-bg { opacity: .34; filter: brightness(1.35) saturate(.9); z-index: 1; }
+    .gate-part-layer { position: absolute; inset: 0; z-index: 2; }
     .gate-art-part { opacity: .98; }
     .gate-art-spin {
         opacity: 0; transform: scale(1.02); transition: opacity .25s ease;
-        filter: brightness(1.08) saturate(1.2);
+        filter: brightness(1.08) saturate(1.2); z-index: 3;
     }
-    .gate-art-stage.on-map .gate-art-spin { opacity: 1; }
-    .gate-art-stage.on-map .gate-art-bg,
-    .gate-art-stage.on-map .gate-art-part { opacity: .18; }
+    .gate-art-stage.on-map .gate-art-spin { opacity: .94; }
     .gate-art-empty {
         position: absolute; left: 50%; bottom: -28px; transform: translateX(-50%);
         color: #64748b; font-size: .75rem; font-weight: 800; letter-spacing: .5px;
-        text-transform: uppercase; white-space: nowrap;
+        text-transform: uppercase; white-space: nowrap; z-index: 4;
     }
     .gate-art-stage:not(.empty) .gate-art-empty { display: none; }
 
@@ -77,12 +75,6 @@
         position: absolute; bottom: 0; left: 0; right: 0; padding: 20px;
         background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); text-align: center;
     }
-    .gate-bg-name { 
-        font-size: 3rem; font-weight: 900; color: rgba(255,255,255,0.03); 
-        letter-spacing: 10px; position: absolute; top: 50%; left: 50%; 
-        transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap;
-    }
-    
     .progress-container { position: relative; z-index: 2; width: 70%; margin: 0 auto; }
     .progress-text { display: flex; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; }
     .progress-bar-bg { width: 100%; height: 6px; background: #0f172a; border-radius: 3px; overflow: hidden; border: 1px solid #334155; }
@@ -202,7 +194,6 @@
 
                 <div class="visual-container">
                     <div id="multBadge" class="multiplier-badge">x2</div>
-                    <div class="gate-bg-name" id="uiBgName">ALPHA</div>
 
                     <div class="gate-art-stage empty" id="gateArtStage" aria-hidden="true">
                         <img id="gateArtBg" class="gate-art-bg" alt="" draggable="false">
@@ -282,7 +273,6 @@ let spinAmount = 1;
 // --- DOM ELEMENTS ---
 const leftZone = document.getElementById('leftZone');
 const uiName = document.getElementById('uiGateName');
-const uiBgName = document.getElementById('uiBgName');
 const uiCount = document.getElementById('uiGateCount');
 const uiBar = document.getElementById('uiGateBar');
 const uiMsg = document.getElementById('uiGateMsg');
@@ -380,6 +370,10 @@ function refreshPilotBar(pilot) {
 
 function getGateVisualParts(data, gateId) {
     const total = GATE_VISUAL_TOTALS[gateId] || parseInt(data.total || 0, 10);
+    if (data.on_map) {
+        return Array.from({ length: total }, (_, index) => index + 1);
+    }
+
     if (Array.isArray(data.parts)) {
         return data.parts
             .map(part => parseInt(part, 10))
@@ -397,7 +391,7 @@ function updateGateVisual(data) {
 
     const gateId = parseInt(data.id || currentGateId, 10);
     const parts = getGateVisualParts(data, gateId);
-    const onMap = !!data.on_map;
+    const showSpin = !!data.on_map && !data.completed;
 
     gateArtBg.src = `${GATE_VISUAL_BASE}gate_${gateId}_bg.png`;
     gateSpinVisual.src = `${GATE_VISUAL_BASE}spins/${gateId}.webp`;
@@ -415,8 +409,8 @@ function updateGateVisual(data) {
     });
     gatePartLayer.appendChild(fragment);
 
-    gateArtStage.classList.toggle('empty', parts.length === 0 && !onMap);
-    gateArtStage.classList.toggle('on-map', onMap);
+    gateArtStage.classList.toggle('empty', parts.length === 0 && !showSpin);
+    gateArtStage.classList.toggle('on-map', showSpin);
 }
 
 // --- MODAL FUNCTIONS ---
@@ -447,7 +441,6 @@ function updateUI() {
     const totalWaves = parseInt(data.total_waves || 10, 10);
     
     uiName.innerText = data.name + " Gate";
-    uiBgName.innerText = data.name;
 
     // Reset visual states
     btnPrepare.style.display = "none";
