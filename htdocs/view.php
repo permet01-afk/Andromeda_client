@@ -63,6 +63,7 @@ $allowed = [
     'settings',
     'shop',
     'auction',
+    'skylab',
     
     'user',
     'lottery',
@@ -197,6 +198,10 @@ $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
 
             <li class="nav-item cta">
                 <a class="nav-link" href="spacemap_html5/spacemap.php" target="_blank" rel="noopener" data-mobile-play="1">Play</a>
+            </li>
+
+            <li class="nav-item<?php echo $navActiveClass(['skylab']); ?>">
+                <a class="nav-link" href="view.php?page=skylab">Skylab</a>
             </li>
 
             <li class="nav-item<?php echo $navActiveClass(['rules']); ?>">
