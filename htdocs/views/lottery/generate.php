@@ -130,8 +130,49 @@ function gg_format_qty($value) {
     return number_format((int)$value, 0, '.', ',');
 }
 
+function gg_has_column($db, $table, $column) {
+    static $cache = [];
+    $key = $table . '.' . $column;
+    if (array_key_exists($key, $cache)) return $cache[$key];
+
+    $stmt = $db->prepare("
+        SELECT COUNT(*)
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = :table
+          AND COLUMN_NAME = :column
+    ");
+    $stmt->execute([':table' => $table, ':column' => $column]);
+    $cache[$key] = ((int)$stmt->fetchColumn() > 0);
+    return $cache[$key];
+}
+
+function gg_extra_life_price($purchaseCount) {
+    $purchaseCount = max(0, min(30, (int)$purchaseCount));
+    return 10000 * (2 ** $purchaseCount);
+}
+
+function gg_reset_inactive_life_purchases($db, $userId) {
+    if (!gg_has_column($db, 'player_galaxy_gates', 'life_purchases')) return;
+
+    $stmt = $db->prepare("
+        UPDATE player_galaxy_gates
+        SET life_purchases = 0
+        WHERE user_id = :uid
+          AND on_map = 0
+          AND life_purchases <> 0
+    ");
+    $stmt->execute([':uid' => $userId]);
+}
+
 function gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves) {
-    $stmt = $db->prepare("SELECT gate_id, parts, on_map, completed, lives, current_wave FROM player_galaxy_gates WHERE user_id = :uid");
+    $lifePurchaseAvailable = gg_has_column($db, 'player_galaxy_gates', 'life_purchases');
+    if ($lifePurchaseAvailable) gg_reset_inactive_life_purchases($db, $userId);
+
+    $columns = "gate_id, parts, on_map, completed, lives, current_wave";
+    if ($lifePurchaseAvailable) $columns .= ", life_purchases";
+
+    $stmt = $db->prepare("SELECT " . $columns . " FROM player_galaxy_gates WHERE user_id = :uid");
     $stmt->execute([':uid' => $userId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -149,7 +190,11 @@ function gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves) {
             'completed' => false,
             'lives' => 0,
             'current_wave' => 0,
-            'total_waves' => $totalWaves
+            'total_waves' => $totalWaves,
+            'life_purchase_available' => $lifePurchaseAvailable,
+            'life_purchases' => 0,
+            'extra_life_price' => gg_extra_life_price(0),
+            'can_buy_life' => false
         ];
     }
 
@@ -161,6 +206,7 @@ function gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves) {
         $current = count($parts);
         $onMap = ((int)($row['on_map'] ?? 0) === 1);
         $completed = ((int)($row['completed'] ?? 0) === 1);
+        $lifePurchases = $lifePurchaseAvailable ? (int)($row['life_purchases'] ?? 0) : 0;
 
         $gatesStatus[$gateId]['current'] = $current;
         $gatesStatus[$gateId]['parts'] = $parts;
@@ -170,6 +216,9 @@ function gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves) {
         $gatesStatus[$gateId]['completed'] = $completed;
         $gatesStatus[$gateId]['lives'] = (int)($row['lives'] ?? 0);
         $gatesStatus[$gateId]['current_wave'] = (int)($row['current_wave'] ?? 0);
+        $gatesStatus[$gateId]['life_purchases'] = $lifePurchases;
+        $gatesStatus[$gateId]['extra_life_price'] = gg_extra_life_price($lifePurchases);
+        $gatesStatus[$gateId]['can_buy_life'] = $lifePurchaseAvailable && $onMap && !$completed && ((int)($row['lives'] ?? 0) > 0);
     }
 
     return $gatesStatus;
@@ -254,7 +303,11 @@ try {
             exit();
         }
 
-        $stmt = $db->prepare("UPDATE player_galaxy_gates SET parts = '[]', on_map = 1, completed = 0, lives = 3, current_wave = 1 WHERE user_id = :uid AND gate_id = :gid");
+        if (gg_has_column($db, 'player_galaxy_gates', 'life_purchases')) {
+            $stmt = $db->prepare("UPDATE player_galaxy_gates SET parts = '[]', on_map = 1, completed = 0, lives = 3, life_purchases = 0, current_wave = 1 WHERE user_id = :uid AND gate_id = :gid");
+        } else {
+            $stmt = $db->prepare("UPDATE player_galaxy_gates SET parts = '[]', on_map = 1, completed = 0, lives = 3, current_wave = 1 WHERE user_id = :uid AND gate_id = :gid");
+        }
         $stmt->execute([':uid' => $userId, ':gid' => $gateId]);
 
         $db->commit();
@@ -265,6 +318,85 @@ try {
             "status" => "success",
             "message" => $gatesConfig[$gateId]['name'] . " gate prepared!",
             "gate" => $gatesStatus[$gateId]
+        ]);
+        exit();
+    }
+
+    if ($action === 'buy_life') {
+        $gateId = (int)($_POST['gate_id'] ?? 0);
+        if (!isset($gatesConfig[$gateId])) {
+            echo json_encode(["status" => "error", "message" => "Invalid Gate"]);
+            exit();
+        }
+
+        if (!gg_has_column($db, 'player_galaxy_gates', 'life_purchases')) {
+            echo json_encode(["status" => "error", "message" => "Extra life purchases are not available yet."]);
+            exit();
+        }
+
+        $db->beginTransaction();
+
+        $userStmt = $db->prepare("SELECT uridium FROM users WHERE id = :id LIMIT 1 FOR UPDATE");
+        $userStmt->execute([':id' => $userId]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) {
+            throw new RuntimeException('Pilot not found.');
+        }
+
+        $gateStmt = $db->prepare("SELECT on_map, completed, lives, life_purchases FROM player_galaxy_gates WHERE user_id = :uid AND gate_id = :gid LIMIT 1 FOR UPDATE");
+        $gateStmt->execute([':uid' => $userId, ':gid' => $gateId]);
+        $gateRow = $gateStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$gateRow || (int)$gateRow['on_map'] !== 1 || (int)$gateRow['completed'] === 1 || (int)$gateRow['lives'] <= 0) {
+            $db->rollBack();
+            echo json_encode(["status" => "error", "message" => "This Galaxy Gate is not active."]);
+            exit();
+        }
+
+        $lifePurchases = (int)($gateRow['life_purchases'] ?? 0);
+        $price = gg_extra_life_price($lifePurchases);
+
+        if ((int)$user['uridium'] < $price) {
+            $db->rollBack();
+            echo json_encode(["status" => "error", "message" => "Not enough Uridium."]);
+            exit();
+        }
+
+        $payStmt = $db->prepare("UPDATE users SET uridium = uridium - :price WHERE id = :id AND uridium >= :price");
+        $payStmt->execute([':price' => $price, ':id' => $userId]);
+        if ($payStmt->rowCount() !== 1) {
+            $db->rollBack();
+            echo json_encode(["status" => "error", "message" => "Not enough Uridium."]);
+            exit();
+        }
+
+        $lifeStmt = $db->prepare("
+            UPDATE player_galaxy_gates
+            SET lives = lives + 1,
+                life_purchases = life_purchases + 1
+            WHERE user_id = :uid
+              AND gate_id = :gid
+              AND on_map = 1
+              AND completed = 0
+              AND lives > 0
+        ");
+        $lifeStmt->execute([':uid' => $userId, ':gid' => $gateId]);
+        if ($lifeStmt->rowCount() !== 1) {
+            $db->rollBack();
+            echo json_encode(["status" => "error", "message" => "This Galaxy Gate is not active."]);
+            exit();
+        }
+
+        $db->commit();
+
+        $gatesStatus = gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves);
+        $pilotBarStats = gg_build_pilot_bar($db, $userId);
+
+        echo json_encode([
+            "status" => "success",
+            "message" => $gatesConfig[$gateId]['name'] . " extra life purchased for " . number_format($price) . " Uridium.",
+            "gate" => $gatesStatus[$gateId],
+            "pilot" => $pilotBarStats
         ]);
         exit();
     }
@@ -364,12 +496,12 @@ try {
         'mcb25' => ['kind' => 'ammo', 'description' => 'Laser ammo', 'icon' => 'img/items/mcb25.png'],
         'mcb50' => ['kind' => 'ammo', 'description' => 'Laser ammo', 'icon' => 'img/items/mcb50.png'],
         'sab50' => ['kind' => 'ammo', 'description' => 'Shield transfer ammo', 'icon' => 'img/items/sab50.png'],
-        'ucb100' => ['kind' => 'ammo', 'description' => 'Elite laser ammo', 'icon' => null],
+        'ucb100' => ['kind' => 'ammo', 'description' => 'Elite laser ammo', 'icon' => 'img/items/ucb100.png'],
         'plt2026' => ['kind' => 'rocket', 'description' => 'Rocket', 'icon' => 'img/items/plt2026.png'],
         'dcr250' => ['kind' => 'rocket', 'description' => 'Special rocket', 'icon' => 'img/items/dcr250.png'],
         'plt2021' => ['kind' => 'rocket', 'description' => 'Rocket', 'icon' => 'img/items/plt2021.png'],
         'hstrm01' => ['kind' => 'rocket', 'description' => 'Hellstorm rocket', 'icon' => 'img/items/hstrm01.png'],
-        'xenomit' => ['kind' => 'resource', 'description' => 'Resource', 'icon' => null],
+        'xenomit' => ['kind' => 'resource', 'description' => 'Resource', 'icon' => 'img/items/xenomit.png'],
         'promerium' => ['kind' => 'resource', 'description' => 'Resource', 'icon' => 'img/items/promerium.png'],
         'logfiles' => ['kind' => 'logfiles', 'description' => 'Pilot Bio resource', 'icon' => 'img/items/logfile.png']
     ];

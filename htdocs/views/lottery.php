@@ -128,6 +128,17 @@
         display: none; background: linear-gradient(135deg, #4ade80, #16a34a); color: #022c22;
         box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3); animation: pulseBtn 2s infinite;
     }
+    .gate-life-actions { display: none; justify-content: center; margin-top: 12px; }
+    .btn-buy-life {
+        border: 1px solid rgba(34, 211, 238, 0.45); border-radius: 4px;
+        background: rgba(15, 23, 42, 0.88); color: #67e8f9; cursor: pointer;
+        font-size: 0.75rem; font-weight: 900; letter-spacing: 0.06em;
+        padding: 8px 14px; text-transform: uppercase; transition: all 0.2s;
+    }
+    .btn-buy-life:hover:not(:disabled) {
+        background: rgba(34, 211, 238, 0.16); color: #f8fafc; box-shadow: 0 0 14px rgba(34, 211, 238, 0.22);
+    }
+    .btn-buy-life:disabled { opacity: 0.5; cursor: not-allowed; }
     @keyframes pulseBtn { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); } 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); } }
 
     .result-panel {
@@ -242,6 +253,9 @@
                                 <div class="progress-bar-fill" id="uiGateBar"></div>
                             </div>
                             <div class="status-msg" id="uiGateMsg">PORTAL PREPARED!</div>
+                            <div class="gate-life-actions" id="gateLifeActions">
+                                <button type="button" class="btn-buy-life" id="btnBuyLife">Buy Extra Life - 10,000 U.</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -309,6 +323,8 @@ const uiMsg = document.getElementById('uiGateMsg');
 const uiTotalCost = document.getElementById('uiTotalCost');
 const btnSpin = document.getElementById('btnSpin');
 const btnPrepare = document.getElementById('btnPrepare');
+const btnBuyLife = document.getElementById('btnBuyLife');
+const gateLifeActions = document.getElementById('gateLifeActions');
 const resultPanel = document.getElementById('resultPanel');
 const multBadge = document.getElementById('multBadge');
 const amtBtns = document.querySelectorAll('.amt-btn');
@@ -351,6 +367,10 @@ function getResultGroupTime() {
 
 function getMaterializationTitle(amount) {
     return 'x' + parseInt(amount || 1, 10) + ' Materialization';
+}
+
+function formatNumber(value) {
+    return parseInt(value || 0, 10).toLocaleString();
 }
 
 function buildResultCardHtml(card) {
@@ -533,6 +553,8 @@ function updateUI() {
     // Reset visual states
     btnPrepare.style.display = "none";
     btnPrepare.disabled = true;
+    gateLifeActions.style.display = "none";
+    btnBuyLife.disabled = true;
     uiMsg.style.display = "none";
 
     if (data.on_map) {
@@ -541,6 +563,11 @@ function updateUI() {
         uiMsg.innerText = `PORTAL ON MAP — Lives: ${lives} — Wave: ${wave} / ${totalWaves}`;
         uiMsg.style.display = "block";
         btnSpin.disabled = false;
+        if (data.can_buy_life) {
+            btnBuyLife.innerText = "Buy Extra Life - " + formatNumber(data.extra_life_price || 10000) + " U.";
+            btnBuyLife.disabled = false;
+            gateLifeActions.style.display = "flex";
+        }
     } else {
         uiCount.innerText = `${current} / ${total}`;
         uiBar.style.width = pct + "%";
@@ -692,7 +719,47 @@ async function executePrepareGate() {
 }
 
 // --- LE BOUTON ÉTAIT MANQUANT ICI ---
+async function buyExtraLife() {
+    if (!gatesData[currentGateId] || btnBuyLife.disabled) return;
+
+    btnBuyLife.disabled = true;
+    const previousText = btnBuyLife.innerText;
+    btnBuyLife.innerText = 'Buying...';
+
+    try {
+        const formData = new FormData();
+        formData.append('action', 'buy_life');
+        formData.append('gate_id', currentGateId);
+
+        const resp = await fetch(ENDPOINT, { method: 'POST', body: formData });
+        const data = await resp.json();
+
+        if (data.status === 'success') {
+            if (data.gate) {
+                gatesData[currentGateId] = data.gate;
+            }
+            refreshPilotBar(data.pilot);
+            renderResultMessage(data.message, 'item', 'Extra Life');
+            updateUI();
+        } else {
+            renderResultMessage(data.message || 'Extra life purchase failed.', 'error', 'Extra Life');
+            updateUI();
+        }
+    } catch(e) {
+        renderResultMessage('Server connection error', 'error', 'Extra Life');
+        updateUI();
+    } finally {
+        if (gatesData[currentGateId] && gatesData[currentGateId].can_buy_life) {
+            btnBuyLife.disabled = false;
+            btnBuyLife.innerText = "Buy Extra Life - " + formatNumber(gatesData[currentGateId].extra_life_price || 10000) + " U.";
+        } else {
+            btnBuyLife.innerText = previousText;
+        }
+    }
+}
+
 btnSpin.addEventListener('click', spinGate);
+btnBuyLife.addEventListener('click', buyExtraLife);
 // ------------------------------------
 
 // Init
