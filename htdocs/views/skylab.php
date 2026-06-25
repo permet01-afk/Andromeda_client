@@ -1,16 +1,16 @@
 <?php
-// Skylab V1 is a read-only visual mockup; production, transport, upgrades and DB writes are intentionally not implemented yet.
 $skylabAssets = 'img/skylab/';
+$skylabModuleAssets = $skylabAssets . 'modules_large/';
 
 $skylabOres = [
-    ['name' => 'Prometium', 'amount' => 12480, 'capacity' => 105600, 'class' => 'prometium'],
-    ['name' => 'Endurium', 'amount' => 11820, 'capacity' => 105600, 'class' => 'endurium'],
-    ['name' => 'Terbium', 'amount' => 9720, 'capacity' => 105600, 'class' => 'terbium'],
-    ['name' => 'Prometid', 'amount' => 820, 'capacity' => 5280, 'class' => 'prometid'],
-    ['name' => 'Duranium', 'amount' => 760, 'capacity' => 5280, 'class' => 'duranium'],
-    ['name' => 'Xenomit', 'amount' => 180, 'capacity' => 528, 'class' => 'xenomit'],
-    ['name' => 'Promerium', 'amount' => 92, 'capacity' => 528, 'class' => 'promerium'],
-    ['name' => 'Seprom', 'amount' => 12, 'capacity' => 48, 'class' => 'seprom'],
+    ['name' => 'Prometium', 'amount' => 12480, 'capacity' => 64000],
+    ['name' => 'Endurium', 'amount' => 11820, 'capacity' => 64000],
+    ['name' => 'Terbium', 'amount' => 9720, 'capacity' => 64000],
+    ['name' => 'Prometid', 'amount' => 820, 'capacity' => 12000],
+    ['name' => 'Duranium', 'amount' => 760, 'capacity' => 12000],
+    ['name' => 'Xenomit', 'amount' => 180, 'capacity' => 4000],
+    ['name' => 'Promerium', 'amount' => 92, 'capacity' => 4000],
+    ['name' => 'Seprom', 'amount' => 12, 'capacity' => 1000],
 ];
 
 $skylabLayers = [
@@ -33,37 +33,38 @@ $skylabLayers = [
 ];
 
 $skylabModules = [
-    'basic' => ['name' => 'Basic module', 'type' => 'Core', 'level' => 8, 'power' => 90, 'production' => 'Unlocks higher module levels.', 'consumption' => '90 energy', 'left' => 400, 'top' => 315, 'state' => 'Active'],
-    'solar' => ['name' => 'Solar module', 'type' => 'Energy', 'level' => 8, 'power' => 0, 'production' => 'Energy capacity: 950', 'consumption' => 'No energy consumption', 'left' => 262, 'top' => 12, 'state' => 'Active'],
-    'storage' => ['name' => 'Storage module', 'type' => 'Storage', 'level' => 7, 'power' => 70, 'production' => 'Increases Skylab storage capacity.', 'consumption' => '70 energy', 'left' => 96, 'top' => 314, 'state' => 'Active'],
-    'transport' => ['name' => 'Transport module', 'type' => 'Logistics', 'level' => 5, 'power' => 45, 'production' => 'Moves ores between Skylab and ship cargo.', 'consumption' => '45 energy', 'left' => 3, 'top' => 274, 'state' => 'Mock only'],
-    'prometium' => ['name' => 'Prometium collector', 'type' => 'Collector', 'level' => 8, 'power' => 85, 'production' => '+3,200 Prometium/hour', 'consumption' => '85 energy', 'left' => 65, 'top' => 13, 'state' => 'Active'],
-    'endurium' => ['name' => 'Endurium collector', 'type' => 'Collector', 'level' => 8, 'power' => 85, 'production' => '+3,200 Endurium/hour', 'consumption' => '85 energy', 'left' => 7, 'top' => 61, 'state' => 'Active'],
-    'terbium' => ['name' => 'Terbium collector', 'type' => 'Collector', 'level' => 8, 'power' => 85, 'production' => '+3,200 Terbium/hour', 'consumption' => '85 energy', 'left' => 7, 'top' => 124, 'state' => 'Active'],
-    'prometid' => ['name' => 'Prometid refinery', 'type' => 'Refinery', 'level' => 6, 'power' => 115, 'production' => '+160 Prometid/hour', 'consumption' => 'Consumes Prometium and Endurium', 'left' => 505, 'top' => 15, 'state' => 'Active'],
-    'duranium' => ['name' => 'Duranium refinery', 'type' => 'Refinery', 'level' => 6, 'power' => 115, 'production' => '+160 Duranium/hour', 'consumption' => 'Consumes Endurium and Terbium', 'left' => 576, 'top' => 57, 'state' => 'Active'],
-    'promerium' => ['name' => 'Promerium refinery', 'type' => 'Refinery', 'level' => 4, 'power' => 145, 'production' => '+18 Promerium/hour', 'consumption' => 'Consumes Prometid, Duranium and Xenomit', 'left' => 580, 'top' => 128, 'state' => 'Active'],
-    'xeno' => ['name' => 'Xeno module', 'type' => 'Support', 'level' => 3, 'power' => 110, 'production' => 'Supports Promerium production.', 'consumption' => '110 energy', 'left' => 586, 'top' => 198, 'state' => 'Active'],
-    'seprom' => ['name' => 'Seprom refinery', 'type' => 'Refinery', 'level' => 2, 'power' => 175, 'production' => '+2 Seprom/hour', 'consumption' => 'Consumes Promerium', 'left' => 580, 'top' => 315, 'state' => 'Active'],
+    'solar' => ['name' => 'Solar module', 'type' => 'Energy', 'level' => 8, 'power' => 0, 'production' => 'Energy capacity: 950', 'consumption' => 'No energy consumption', 'efficiency' => '100%', 'left' => 262, 'top' => 12, 'state' => 'Active'],
+    'prometium' => ['name' => 'Prometium collector', 'type' => 'Collector', 'level' => 8, 'power' => 85, 'production' => '+3,200 Prometium/hour', 'consumption' => '85 energy', 'efficiency' => '100%', 'left' => 65, 'top' => 13, 'state' => 'Active'],
+    'endurium' => ['name' => 'Endurium collector', 'type' => 'Collector', 'level' => 8, 'power' => 85, 'production' => '+3,200 Endurium/hour', 'consumption' => '85 energy', 'efficiency' => '100%', 'left' => 7, 'top' => 61, 'state' => 'Active'],
+    'terbium' => ['name' => 'Terbium collector', 'type' => 'Collector', 'level' => 8, 'power' => 85, 'production' => '+3,200 Terbium/hour', 'consumption' => '85 energy', 'efficiency' => '100%', 'left' => 7, 'top' => 124, 'state' => 'Active'],
+    'prometid' => ['name' => 'Prometid refinery', 'type' => 'Refinery', 'level' => 6, 'power' => 115, 'production' => '+160 Prometid/hour', 'consumption' => 'Consumes Prometium and Endurium', 'efficiency' => '100%', 'left' => 505, 'top' => 15, 'state' => 'Active'],
+    'duranium' => ['name' => 'Duranium refinery', 'type' => 'Refinery', 'level' => 6, 'power' => 115, 'production' => '+160 Duranium/hour', 'consumption' => 'Consumes Endurium and Terbium', 'efficiency' => '100%', 'left' => 576, 'top' => 57, 'state' => 'Active'],
+    'promerium' => ['name' => 'Promerium refinery', 'type' => 'Refinery', 'level' => 4, 'power' => 145, 'production' => '+18 Promerium/hour', 'consumption' => 'Consumes Prometid, Duranium and Xenomit', 'efficiency' => '100%', 'left' => 580, 'top' => 128, 'state' => 'Active'],
+    'xeno' => ['name' => 'Xeno module', 'type' => 'Support', 'level' => 3, 'power' => 110, 'production' => 'Supports Promerium production.', 'consumption' => '110 energy', 'efficiency' => '100%', 'left' => 586, 'top' => 198, 'state' => 'Active'],
+    'transport' => ['name' => 'Transport module', 'type' => 'Logistics', 'level' => 5, 'power' => 45, 'production' => 'Moves ores between Skylab and ship cargo.', 'consumption' => '45 energy', 'efficiency' => '100%', 'left' => 3, 'top' => 274, 'state' => 'Read-only'],
+    'storage' => ['name' => 'Storage module', 'type' => 'Storage', 'level' => 7, 'power' => 70, 'production' => 'Increases Skylab storage capacity.', 'consumption' => '70 energy', 'efficiency' => '100%', 'left' => 96, 'top' => 314, 'state' => 'Active'],
+    'basic' => ['name' => 'Basic module', 'type' => 'Core', 'level' => 8, 'power' => 90, 'production' => 'Unlocks higher module levels.', 'consumption' => '90 energy', 'efficiency' => '100%', 'left' => 400, 'top' => 315, 'state' => 'Active'],
+    'seprom' => ['name' => 'Seprom refinery', 'type' => 'Refinery', 'level' => 2, 'power' => 175, 'production' => '+2 Seprom/hour', 'consumption' => 'Consumes Promerium', 'efficiency' => '100%', 'left' => 580, 'top' => 315, 'state' => 'Active'],
 ];
 
-$selectedModule = $skylabModules['prometium'];
+$selectedModuleId = 'prometium';
+$selectedModule = $skylabModules[$selectedModuleId];
 ?>
 
 <style>
     .skylab-page {
         display: flex;
         justify-content: center;
-        padding: 2rem 1rem;
+        padding: 1.5rem 1rem;
         width: 100%;
     }
 
     .skylab-shell {
-        width: min(100%, 1180px);
-        background: rgba(8, 13, 24, 0.96);
-        border: 1px solid rgba(71, 85, 105, 0.8);
-        border-radius: 8px;
-        box-shadow: 0 26px 70px rgba(0, 0, 0, 0.46);
+        width: min(100%, 920px);
+        background: #070d13;
+        border: 1px solid rgba(74, 92, 106, 0.92);
+        border-radius: 4px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
         overflow: hidden;
     }
 
@@ -72,48 +73,50 @@ $selectedModule = $skylabModules['prometium'];
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid rgba(51, 65, 85, 0.9);
-        background: linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(2, 6, 23, 0.82));
+        min-height: 48px;
+        padding: 0.6rem 0.95rem;
+        border-bottom: 1px solid #243642;
+        background: linear-gradient(180deg, #141e25 0%, #0a1016 100%);
     }
 
     .skylab-title {
         margin: 0;
-        color: #f8fafc;
-        font-size: 1.15rem;
+        color: #f5f8fb;
+        font-size: 1rem;
+        font-weight: 900;
         letter-spacing: 0.08em;
         text-transform: uppercase;
+        white-space: nowrap;
     }
 
     .skylab-subtitle {
-        margin: 0.25rem 0 0;
-        color: #94a3b8;
-        font-size: 0.82rem;
+        margin: 0.15rem 0 0;
+        color: #8ea3ae;
+        font-size: 0.72rem;
     }
 
     .skylab-badge {
-        border: 1px solid rgba(34, 211, 238, 0.44);
-        border-radius: 999px;
-        color: #67e8f9;
-        background: rgba(8, 47, 73, 0.34);
-        font-size: 0.72rem;
+        color: #d7edf6;
+        border: 1px solid rgba(122, 153, 169, 0.7);
+        background: rgba(12, 20, 27, 0.92);
+        font-size: 0.7rem;
         font-weight: 800;
-        letter-spacing: 0.08em;
-        padding: 0.45rem 0.75rem;
+        padding: 0.35rem 0.65rem;
         text-transform: uppercase;
         white-space: nowrap;
     }
 
     .skylab-body {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) 310px;
-        gap: 1rem;
+        display: flex;
+        justify-content: center;
         padding: 1rem;
+        background: radial-gradient(circle at center, rgba(22, 42, 54, 0.45), rgba(4, 8, 12, 0.98) 72%);
     }
 
     .skylab-map-wrap {
+        max-width: 100%;
         overflow-x: auto;
-        padding-bottom: 0.25rem;
+        padding: 0.25rem;
     }
 
     .skylab-map {
@@ -121,9 +124,65 @@ $selectedModule = $skylabModules['prometium'];
         width: 772px;
         height: 407px;
         background: url("<?php echo $skylabAssets; ?>background.jpg") center / 100% 100% no-repeat;
-        border: 1px solid #1e293b;
-        box-shadow: inset 0 0 40px rgba(2, 6, 23, 0.78), 0 0 24px rgba(14, 165, 233, 0.12);
+        border: 1px solid #293d49;
+        box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.72), 0 0 22px rgba(0, 0, 0, 0.55);
         isolation: isolate;
+    }
+
+    .skylab-resource-bar {
+        position: absolute;
+        top: 11px;
+        left: 8px;
+        z-index: 12;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 3px;
+        width: 756px;
+        pointer-events: none;
+    }
+
+    .skylab-resource {
+        min-height: 34px;
+        padding: 3px 5px;
+        border: 1px solid rgba(83, 110, 124, 0.82);
+        background: linear-gradient(180deg, rgba(9, 16, 22, 0.96), rgba(2, 7, 11, 0.96));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -10px 16px rgba(255, 255, 255, 0.03);
+    }
+
+    .skylab-resource-name {
+        display: block;
+        color: #eff8ff;
+        font-size: 0.58rem;
+        font-weight: 900;
+        line-height: 1.1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .skylab-resource-value {
+        display: block;
+        margin-top: 2px;
+        color: #a7d7ed;
+        font-size: 0.58rem;
+        font-weight: 700;
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .skylab-resource-track {
+        display: block;
+        height: 3px;
+        margin-top: 3px;
+        background: #050b10;
+        border: 1px solid rgba(35, 55, 65, 0.86);
+        overflow: hidden;
+    }
+
+    .skylab-resource-fill {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, #0b7194, #69d6f3);
     }
 
     .skylab-layer {
@@ -133,212 +192,243 @@ $selectedModule = $skylabModules['prometium'];
     }
 
     .skylab-layer.uplink {
-        opacity: 0.74;
+        opacity: 0.8;
         mix-blend-mode: screen;
     }
 
-    .skylab-ore-row {
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        gap: 4px;
+    .skylab-modules-layer {
+        position: absolute;
+        left: 16px;
+        top: 50px;
+        z-index: 14;
         width: 772px;
-        margin-bottom: 0.5rem;
-    }
-
-    .skylab-ore {
-        min-height: 42px;
-        border: 1px solid rgba(148, 163, 184, 0.24);
-        background: rgba(2, 6, 23, 0.78);
-        box-shadow: inset 0 0 16px rgba(14, 165, 233, 0.06);
-        padding: 4px 5px;
-    }
-
-    .skylab-ore-name {
-        color: #cbd5e1;
-        display: block;
-        font-size: 0.66rem;
-        font-weight: 800;
-        line-height: 1;
-    }
-
-    .skylab-ore-value {
-        color: #f8fafc;
-        display: block;
-        font-size: 0.74rem;
-        font-weight: 900;
-        margin-top: 3px;
-    }
-
-    .skylab-ore-bar {
-        height: 3px;
-        background: #020617;
-        border-radius: 999px;
-        overflow: hidden;
-        margin-top: 4px;
-    }
-
-    .skylab-ore-fill {
-        display: block;
-        height: 100%;
-        background: linear-gradient(90deg, #0ea5e9, #67e8f9);
+        height: 364px;
     }
 
     .skylab-module {
         position: absolute;
-        z-index: 7;
-        width: 128px;
-        min-height: 47px;
-        border: 1px solid rgba(148, 163, 184, 0.22);
-        border-radius: 4px;
-        background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.86));
-        color: #e2e8f0;
+        width: 132px;
+        height: 43px;
+        border: 0;
+        color: #f4fbff;
         cursor: pointer;
-        padding: 5px 6px;
+        padding: 5px 8px;
         text-align: left;
-        box-shadow: 0 7px 16px rgba(0, 0, 0, 0.28);
+        background:
+            url("<?php echo $skylabAssets; ?>box_small_left_top_active.png") left top no-repeat,
+            url("<?php echo $skylabAssets; ?>box_small_right_top_active.png") right top no-repeat,
+            url("<?php echo $skylabAssets; ?>box_small_left_bottom_active.png") left bottom no-repeat,
+            url("<?php echo $skylabAssets; ?>box_small_right_bottom_active.png") right bottom no-repeat,
+            rgba(2, 8, 13, 0.78);
+        font-family: Arial, Helvetica, sans-serif;
+        overflow: hidden;
     }
 
     .skylab-module:hover,
     .skylab-module.is-selected {
-        border-color: rgba(34, 211, 238, 0.75);
-        box-shadow: 0 0 18px rgba(34, 211, 238, 0.24), 0 7px 16px rgba(0, 0, 0, 0.28);
+        filter: brightness(1.18);
+    }
+
+    .skylab-module.is-selected {
+        box-shadow: 0 0 0 1px rgba(108, 203, 238, 0.85), 0 0 12px rgba(80, 181, 230, 0.28);
     }
 
     .skylab-module-name {
         display: block;
-        font-size: 0.68rem;
+        color: #fff;
+        font-size: 0.66rem;
         font-weight: 900;
         line-height: 1.08;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-shadow: 0 1px 1px #000;
+        white-space: nowrap;
     }
 
     .skylab-module-meta {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 0.35rem;
+        gap: 0.65rem;
         margin-top: 5px;
-        color: #94a3b8;
-        font-size: 0.68rem;
-        font-weight: 800;
+        color: #d7edf6;
+        font-size: 0.65rem;
+        font-weight: 900;
+        line-height: 14px;
     }
 
-    .skylab-module-level {
+    .skylab-module-icon-text {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        min-width: 22px;
-        height: 18px;
-        color: #f8fafc;
-        background: rgba(14, 165, 233, 0.18);
-        border: 1px solid rgba(14, 165, 233, 0.35);
-        border-radius: 3px;
+        gap: 4px;
+        min-width: 36px;
     }
 
-    .skylab-side {
+    .skylab-module-icon-text img {
+        width: 14px;
+        height: 14px;
+        object-fit: contain;
+    }
+
+    .skylab-popup {
+        position: absolute;
+        z-index: 30;
+        right: 14px;
+        top: 68px;
+        width: 359px;
+        color: #e6f5fa;
+        font-family: Arial, Helvetica, sans-serif;
+        filter: drop-shadow(0 14px 20px rgba(0, 0, 0, 0.56));
+    }
+
+    .skylab-popup.is-hidden {
+        display: none;
+    }
+
+    .skylab-popup-header {
+        position: relative;
+        height: 25px;
+        background: url("<?php echo $skylabModuleAssets; ?>popup_header.png") left top no-repeat;
+    }
+
+    .skylab-popup-title {
+        display: block;
+        padding: 5px 44px 0 16px;
+        color: #fff;
+        font-size: 0.78rem;
+        font-weight: 900;
+        line-height: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-shadow: 0 1px 1px #000;
+        white-space: nowrap;
+    }
+
+    .skylab-popup-close {
+        position: absolute;
+        top: 4px;
+        right: 8px;
+        width: 17px;
+        height: 17px;
+        border: 0;
+        background: url("<?php echo $skylabModuleAssets; ?>close_button_sprite.png") left top / auto 100% no-repeat;
+        cursor: pointer;
+        font-size: 0;
+    }
+
+    .skylab-popup-middle {
+        min-height: 260px;
+        background: url("<?php echo $skylabModuleAssets; ?>popup_middle.png") left top repeat-y;
+        padding: 6px 16px 0;
+    }
+
+    .skylab-popup-tabs {
         display: flex;
-        flex-direction: column;
-        gap: 1rem;
+        align-items: flex-end;
+        gap: 0;
+        height: 18px;
+        margin-bottom: 4px;
     }
 
-    .skylab-panel,
-    .skylab-actions {
-        border: 1px solid rgba(51, 65, 85, 0.86);
-        border-radius: 8px;
-        background: rgba(2, 6, 23, 0.72);
-        padding: 1rem;
+    .skylab-popup-tab {
+        width: 76px;
+        height: 16px;
+        border: 0;
+        background: url("<?php echo $skylabModuleAssets; ?>subtab_sprite_76x16px.png") left top no-repeat;
+        color: #dcecf2;
+        font-size: 0.61rem;
+        font-weight: 900;
+        line-height: 16px;
+        text-align: center;
     }
 
-    .skylab-panel h3,
-    .skylab-actions h3 {
-        color: #f8fafc;
-        font-size: 0.95rem;
-        letter-spacing: 0.08em;
-        margin: 0 0 0.8rem;
-        text-transform: uppercase;
+    .skylab-popup-tab.is-active {
+        color: #fff6c7;
     }
 
-    .skylab-panel-type {
-        color: #67e8f9;
+    .skylab-popup-content {
+        min-height: 196px;
+        padding: 20px 24px;
+        background: url("<?php echo $skylabModuleAssets; ?>content_bg_326x243px.png") left top / 100% 100% no-repeat;
+    }
+
+    .skylab-popup-row {
+        display: grid;
+        grid-template-columns: 122px 1fr;
+        align-items: center;
+        min-height: 25px;
+        color: #eaf8fc;
         font-size: 0.72rem;
         font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
     }
 
-    .skylab-info-grid {
+    .skylab-popup-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #f8d76f;
+    }
+
+    .skylab-popup-value img {
+        width: 14px;
+        height: 14px;
+        object-fit: contain;
+    }
+
+    .skylab-popup-progress {
+        position: relative;
+        width: 218px;
+        height: 14px;
+        margin: 12px 0 11px;
+    }
+
+    .skylab-popup-progress img {
+        position: absolute;
+        inset: 0;
+    }
+
+    .skylab-popup-message {
+        color: #9fb5bf;
+        font-size: 0.66rem;
+        line-height: 1.35;
+    }
+
+    .skylab-popup-actions {
         display: grid;
-        gap: 0.55rem;
-        margin-top: 0.85rem;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        margin-top: 9px;
     }
 
-    .skylab-info-row {
-        display: grid;
-        grid-template-columns: 96px 1fr;
-        gap: 0.75rem;
-        border-bottom: 1px solid rgba(51, 65, 85, 0.56);
-        padding-bottom: 0.45rem;
-    }
-
-    .skylab-info-label {
-        color: #64748b;
-        font-size: 0.72rem;
-        font-weight: 900;
-        text-transform: uppercase;
-    }
-
-    .skylab-info-value {
-        color: #e2e8f0;
-        font-size: 0.82rem;
-        font-weight: 700;
-    }
-
-    .skylab-action-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 0.55rem;
-    }
-
-    .skylab-mock-button {
-        border: 1px solid rgba(51, 65, 85, 0.95);
-        border-radius: 4px;
-        background: rgba(15, 23, 42, 0.94);
-        color: #94a3b8;
+    .skylab-popup-action {
+        min-height: 24px;
+        border: 1px solid #52626b;
+        background: url("<?php echo $skylabAssets; ?>bg_button.png") center / 100% 100% repeat-x;
+        color: #c6d7df;
         cursor: not-allowed;
-        font-size: 0.76rem;
+        font-size: 0.62rem;
         font-weight: 900;
-        letter-spacing: 0.06em;
-        padding: 0.75rem;
         text-transform: uppercase;
-        width: 100%;
     }
 
-    .skylab-transport-icons {
+    .skylab-popup-transport {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 0.75rem;
-        margin-top: 0.8rem;
-        opacity: 0.65;
+        gap: 12px;
+        margin-top: 10px;
+        opacity: 0.8;
     }
 
-    .skylab-note {
-        color: #94a3b8;
-        font-size: 0.78rem;
-        line-height: 1.45;
-        margin: 0;
+    .skylab-popup-footer {
+        height: 47px;
+        background: url("<?php echo $skylabModuleAssets; ?>popup_footer.png") left top no-repeat;
     }
 
-    @media (max-width: 980px) {
-        .skylab-body {
-            grid-template-columns: 1fr;
+    @media (max-width: 860px) {
+        .skylab-shell {
+            width: 100%;
         }
 
-        .skylab-side {
-            grid-row: 2;
-        }
-    }
-
-    @media (max-width: 640px) {
         .skylab-head {
             align-items: flex-start;
             flex-direction: column;
@@ -351,26 +441,25 @@ $selectedModule = $skylabModules['prometium'];
         <header class="skylab-head">
             <div>
                 <h1 class="skylab-title">Skylab</h1>
-                <p class="skylab-subtitle">A visual preview of the Andromeda Skylab. Production, upgrades and transport are disabled in this version.</p>
+                <p class="skylab-subtitle">DarkOrbit-style visual preview. Production, upgrades and transport are disabled.</p>
             </div>
             <span class="skylab-badge">Read-only preview</span>
         </header>
 
         <div class="skylab-body">
             <div class="skylab-map-wrap">
-                <div class="skylab-ore-row">
-                    <?php foreach ($skylabOres as $ore) {
-                        $ratio = $ore['capacity'] > 0 ? min(100, max(0, ($ore['amount'] / $ore['capacity']) * 100)) : 0;
-                    ?>
-                        <div class="skylab-ore <?php echo htmlspecialchars($ore['class'], ENT_QUOTES, 'UTF-8'); ?>">
-                            <span class="skylab-ore-name"><?php echo htmlspecialchars($ore['name'], ENT_QUOTES, 'UTF-8'); ?></span>
-                            <span class="skylab-ore-value"><?php echo number_format($ore['amount']); ?></span>
-                            <span class="skylab-ore-bar"><span class="skylab-ore-fill" style="width: <?php echo number_format($ratio, 2, '.', ''); ?>%;"></span></span>
-                        </div>
-                    <?php } ?>
-                </div>
-
                 <div class="skylab-map" aria-label="Skylab visual layout">
+                    <div class="skylab-resource-bar">
+                        <?php foreach ($skylabOres as $ore) {
+                            $ratio = $ore['capacity'] > 0 ? min(100, max(0, ($ore['amount'] / $ore['capacity']) * 100)) : 0;
+                        ?>
+                            <div class="skylab-resource">
+                                <span class="skylab-resource-name"><?php echo htmlspecialchars($ore['name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="skylab-resource-value"><?php echo number_format($ore['amount']); ?> / <?php echo number_format($ore['capacity']); ?></span>
+                                <span class="skylab-resource-track"><span class="skylab-resource-fill" style="width: <?php echo number_format($ratio, 2, '.', ''); ?>%;"></span></span>
+                            </div>
+                        <?php } ?>
+                    </div>
 
                     <?php foreach ($skylabLayers as $layer) { ?>
                         <img class="skylab-layer <?php echo htmlspecialchars($layer['class'], ENT_QUOTES, 'UTF-8'); ?>"
@@ -379,80 +468,133 @@ $selectedModule = $skylabModules['prometium'];
                              style="left: <?php echo (int)$layer['left']; ?>px; top: <?php echo (int)$layer['top']; ?>px;" />
                     <?php } ?>
 
-                    <?php foreach ($skylabModules as $key => $module) { ?>
-                        <button class="skylab-module<?php echo $key === 'prometium' ? ' is-selected' : ''; ?>"
-                                type="button"
-                                data-skylab-module="<?php echo htmlspecialchars($key, ENT_QUOTES, 'UTF-8'); ?>"
-                                style="left: <?php echo (int)$module['left']; ?>px; top: <?php echo (int)$module['top']; ?>px;">
-                            <span class="skylab-module-name"><?php echo htmlspecialchars($module['name'], ENT_QUOTES, 'UTF-8'); ?></span>
-                            <span class="skylab-module-meta">
-                                <span class="skylab-module-level">L<?php echo (int)$module['level']; ?></span>
-                                <span><?php echo (int)$module['power']; ?> EP</span>
-                            </span>
-                        </button>
-                    <?php } ?>
+                    <div class="skylab-modules-layer">
+                        <?php foreach ($skylabModules as $key => $module) { ?>
+                            <button class="skylab-module<?php echo $key === $selectedModuleId ? ' is-selected' : ''; ?>"
+                                    type="button"
+                                    data-skylab-module="<?php echo htmlspecialchars($key, ENT_QUOTES, 'UTF-8'); ?>"
+                                    style="left: <?php echo (int)$module['left']; ?>px; top: <?php echo (int)$module['top']; ?>px;">
+                                <span class="skylab-module-name"><?php echo htmlspecialchars($module['name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="skylab-module-meta">
+                                    <span class="skylab-module-icon-text">
+                                        <img src="<?php echo $skylabAssets; ?>icon_level.png" alt="" />
+                                        <span><?php echo (int)$module['level']; ?></span>
+                                    </span>
+                                    <span class="skylab-module-icon-text">
+                                        <img src="<?php echo $skylabAssets; ?>power.png" alt="" />
+                                        <span><?php echo (int)$module['power']; ?></span>
+                                    </span>
+                                </span>
+                            </button>
+                        <?php } ?>
+                    </div>
+
+                    <div class="skylab-popup" id="skylab-module-popup">
+                        <div class="skylab-popup-header">
+                            <span class="skylab-popup-title" id="skylab-popup-name"><?php echo htmlspecialchars($selectedModule['name'], ENT_QUOTES, 'UTF-8'); ?></span>
+                            <button class="skylab-popup-close" type="button" id="skylab-popup-close">Close</button>
+                        </div>
+                        <div class="skylab-popup-middle">
+                            <div class="skylab-popup-tabs" aria-hidden="true">
+                                <span class="skylab-popup-tab is-active">Overview</span>
+                                <span class="skylab-popup-tab">Upgrade</span>
+                            </div>
+                            <div class="skylab-popup-content">
+                                <div class="skylab-popup-row">
+                                    <span>Level</span>
+                                    <span class="skylab-popup-value">
+                                        <img src="<?php echo $skylabAssets; ?>icon_level.png" alt="" />
+                                        <span id="skylab-popup-level"><?php echo (int)$selectedModule['level']; ?></span>
+                                    </span>
+                                </div>
+                                <div class="skylab-popup-row">
+                                    <span>Power consumption</span>
+                                    <span class="skylab-popup-value">
+                                        <img src="<?php echo $skylabAssets; ?>power.png" alt="" />
+                                        <span id="skylab-popup-power"><?php echo (int)$selectedModule['power']; ?></span>
+                                    </span>
+                                </div>
+                                <div class="skylab-popup-row">
+                                    <span>Production</span>
+                                    <span class="skylab-popup-value" id="skylab-popup-production"><?php echo htmlspecialchars($selectedModule['production'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                </div>
+                                <div class="skylab-popup-row">
+                                    <span>Efficiency</span>
+                                    <span class="skylab-popup-value">
+                                        <img src="<?php echo $skylabAssets; ?>efficiency.png" alt="" />
+                                        <span id="skylab-popup-efficiency"><?php echo htmlspecialchars($selectedModule['efficiency'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                    </span>
+                                </div>
+                                <div class="skylab-popup-progress" aria-hidden="true">
+                                    <img src="<?php echo $skylabAssets; ?>construction_grid.png" alt="" />
+                                    <img src="<?php echo $skylabModuleAssets; ?>progressbar_01.png" alt="" />
+                                </div>
+                                <div class="skylab-popup-row">
+                                    <span>State</span>
+                                    <span class="skylab-popup-value" id="skylab-popup-state"><?php echo htmlspecialchars($selectedModule['state'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                </div>
+                                <p class="skylab-popup-message" id="skylab-popup-consumption"><?php echo htmlspecialchars($selectedModule['consumption'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                <div class="skylab-popup-actions">
+                                    <button class="skylab-popup-action" type="button" disabled>Upgrade</button>
+                                    <button class="skylab-popup-action" type="button" disabled>Activate</button>
+                                    <button class="skylab-popup-action" type="button" disabled>Transport</button>
+                                </div>
+                                <div class="skylab-popup-transport" aria-hidden="true">
+                                    <img src="<?php echo $skylabAssets; ?>to_ship_0.png" alt="" width="29" height="36" />
+                                    <img src="<?php echo $skylabAssets; ?>but_right_0.png" alt="" width="23" height="17" />
+                                    <img src="<?php echo $skylabAssets; ?>to_skylab_0.png" alt="" width="41" height="36" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="skylab-popup-footer"></div>
+                    </div>
                 </div>
             </div>
-
-            <aside class="skylab-side">
-                <div class="skylab-panel">
-                    <span class="skylab-panel-type" id="skylab-module-type"><?php echo htmlspecialchars($selectedModule['type'], ENT_QUOTES, 'UTF-8'); ?></span>
-                    <h3 id="skylab-module-name"><?php echo htmlspecialchars($selectedModule['name'], ENT_QUOTES, 'UTF-8'); ?></h3>
-                    <div class="skylab-info-grid">
-                        <div class="skylab-info-row">
-                            <span class="skylab-info-label">Level</span>
-                            <span class="skylab-info-value" id="skylab-module-level"><?php echo (int)$selectedModule['level']; ?></span>
-                        </div>
-                        <div class="skylab-info-row">
-                            <span class="skylab-info-label">State</span>
-                            <span class="skylab-info-value" id="skylab-module-state"><?php echo htmlspecialchars($selectedModule['state'], ENT_QUOTES, 'UTF-8'); ?></span>
-                        </div>
-                        <div class="skylab-info-row">
-                            <span class="skylab-info-label">Output</span>
-                            <span class="skylab-info-value" id="skylab-module-production"><?php echo htmlspecialchars($selectedModule['production'], ENT_QUOTES, 'UTF-8'); ?></span>
-                        </div>
-                        <div class="skylab-info-row">
-                            <span class="skylab-info-label">Consumption</span>
-                            <span class="skylab-info-value" id="skylab-module-consumption"><?php echo htmlspecialchars($selectedModule['consumption'], ENT_QUOTES, 'UTF-8'); ?></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="skylab-actions">
-                    <h3>Module actions</h3>
-                    <div class="skylab-action-grid">
-                        <button class="skylab-mock-button" type="button" disabled>Upgrade unavailable</button>
-                        <button class="skylab-mock-button" type="button" disabled>Activate / Deactivate unavailable</button>
-                        <button class="skylab-mock-button" type="button" disabled>Transport unavailable</button>
-                    </div>
-                    <div class="skylab-transport-icons" aria-hidden="true">
-                        <img src="<?php echo $skylabAssets; ?>to_ship_0.png" alt="" width="29" height="36" />
-                        <img src="<?php echo $skylabAssets; ?>but_right_0.png" alt="" width="23" height="17" />
-                        <img src="<?php echo $skylabAssets; ?>to_skylab_0.png" alt="" width="41" height="36" />
-                    </div>
-                    <p class="skylab-note">This page is a visual mockup only. No resources are produced, moved or saved.</p>
-                </div>
-            </aside>
         </div>
     </div>
 </section>
 
 <script>
     window.andromedaSkylabMockModules = <?php echo json_encode($skylabModules, JSON_UNESCAPED_SLASHES); ?>;
-    document.querySelectorAll("[data-skylab-module]").forEach(function(button) {
-        button.addEventListener("click", function() {
+    (function() {
+        const popup = document.getElementById("skylab-module-popup");
+        const fields = {
+            name: document.getElementById("skylab-popup-name"),
+            level: document.getElementById("skylab-popup-level"),
+            power: document.getElementById("skylab-popup-power"),
+            production: document.getElementById("skylab-popup-production"),
+            efficiency: document.getElementById("skylab-popup-efficiency"),
+            state: document.getElementById("skylab-popup-state"),
+            consumption: document.getElementById("skylab-popup-consumption")
+        };
+
+        function selectModule(button) {
             const moduleId = button.getAttribute("data-skylab-module");
             const module = window.andromedaSkylabMockModules[moduleId];
             if (!module) return;
+
             document.querySelectorAll("[data-skylab-module]").forEach(function(item) {
                 item.classList.toggle("is-selected", item === button);
             });
-            document.getElementById("skylab-module-type").textContent = module.type;
-            document.getElementById("skylab-module-name").textContent = module.name;
-            document.getElementById("skylab-module-level").textContent = module.level;
-            document.getElementById("skylab-module-state").textContent = module.state;
-            document.getElementById("skylab-module-production").textContent = module.production;
-            document.getElementById("skylab-module-consumption").textContent = module.consumption;
+
+            fields.name.textContent = module.name;
+            fields.level.textContent = module.level;
+            fields.power.textContent = module.power;
+            fields.production.textContent = module.production;
+            fields.efficiency.textContent = module.efficiency;
+            fields.state.textContent = module.state;
+            fields.consumption.textContent = module.consumption;
+            popup.classList.remove("is-hidden");
+        }
+
+        document.querySelectorAll("[data-skylab-module]").forEach(function(button) {
+            button.addEventListener("click", function() {
+                selectModule(button);
+            });
         });
-    });
+
+        document.getElementById("skylab-popup-close").addEventListener("click", function() {
+            popup.classList.add("is-hidden");
+        });
+    }());
 </script>
