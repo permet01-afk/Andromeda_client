@@ -35,8 +35,8 @@ try {
     require_once __DIR__ . '/../../libs/Database.php';
     require_once __DIR__ . '/../../libs/SkylabService.php';
 
-    $config = require __DIR__ . '/../../config/database.php';
-    $db = new Database($config['host'], $config['dbname'], $config['username'], $config['password']);
+    require_once __DIR__ . '/../../config/database.php';
+    $db = new Database(DB_TYPE, DB_HOST, DB_NAME, DB_USER, DB_PASS);
     $service = new SkylabService($db, (int)$_SESSION['player_id']);
     $action = (string)($_POST['action'] ?? $_GET['action'] ?? 'load');
 
@@ -82,6 +82,9 @@ try {
 } catch (Throwable $e) {
     error_log('[Skylab API] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
 
-    $message = $e instanceof RuntimeException ? $e->getMessage() : 'Skylab request failed.';
-    skylab_api_json(['success' => false, 'message' => $message], 400);
+    if ($e instanceof RuntimeException) {
+        skylab_api_json(['success' => false, 'message' => $e->getMessage()]);
+    }
+
+    skylab_api_json(['success' => false, 'message' => 'Skylab database error.'], 500);
 }

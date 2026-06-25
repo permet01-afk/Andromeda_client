@@ -760,6 +760,10 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                                         <span>Duration</span>
                                         <span class="skylab-popup-value" id="skylab-upgrade-duration">-</span>
                                     </div>
+                                    <div class="skylab-popup-row">
+                                        <span>Prerequisite</span>
+                                        <span class="skylab-popup-value" id="skylab-upgrade-prerequisite">-</span>
+                                    </div>
                                     <p class="skylab-popup-message" id="skylab-upgrade-message">Select a module to view upgrade details.</p>
                                     <div class="skylab-popup-actions">
                                         <button class="skylab-popup-action" type="button" id="skylab-start-upgrade-action" disabled>Start Upgrade</button>
@@ -819,6 +823,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             nextLevel: document.getElementById("skylab-upgrade-next-level"),
             cost: document.getElementById("skylab-upgrade-cost"),
             duration: document.getElementById("skylab-upgrade-duration"),
+            prerequisite: document.getElementById("skylab-upgrade-prerequisite"),
             message: document.getElementById("skylab-upgrade-message")
         };
         const transportPanel = document.getElementById("skylab-transport-panel");
@@ -890,9 +895,22 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             upgradeFields.nextLevel.textContent = module.nextLevel || "-";
             upgradeFields.cost.textContent = cost ? formatUpgradeCost(cost) : "-";
             upgradeFields.duration.textContent = cost ? formatDuration(cost.seconds || 0) : "-";
+            upgradeFields.prerequisite.textContent = formatUpgradePrerequisite(module);
             upgradeFields.message.textContent = module.canUpgrade
                 ? "Ready to start the next upgrade."
                 : (module.upgradeReason || "Upgrade is not available.");
+        }
+
+        function formatUpgradePrerequisite(module) {
+            if (!module.nextLevel) {
+                return "No further upgrade available.";
+            }
+
+            if (selectedModuleId === "basic") {
+                return "None.";
+            }
+
+            return "Basic module level " + module.nextLevel + " or higher.";
         }
 
         function updateTransportPanel(module) {

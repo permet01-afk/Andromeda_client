@@ -571,6 +571,7 @@ class SkylabService
         $capacities = $this->calculateCapacities($modules, $levels);
         $energy = $this->calculateEnergy($modules, $levels);
         $runnable = $this->getRunnableModules($modules, $levels);
+        $userCredits = $this->loadUserCredits();
         $moduleState = [];
 
         foreach (self::MODULES as $moduleKey => $meta) {
@@ -594,7 +595,11 @@ class SkylabService
             $stateLabel = $this->moduleStateLabel($moduleKey, $module, $runnable);
             $hasNextLevel = isset($levels[$moduleKey][$nextLevel]);
             $blockedByBasic = $moduleKey !== 'basic' && $nextLevel > max(1, $basicLevel);
-            $canUpgrade = $hasNextLevel && !$upgrading && !$blockedByBasic;
+            $upgradeCost = $hasNextLevel ? ($levels[$moduleKey][$nextLevel] ?? []) : [];
+            $costBlockReason = $hasNextLevel && !$upgrading && !$blockedByBasic
+                ? $this->upgradeCostBlockReason($state, $upgradeCost, $userCredits)
+                : null;
+            $canUpgrade = $hasNextLevel && !$upgrading && !$blockedByBasic && $costBlockReason === null;
             $upgradeReason = null;
             $isActive = (int)($module['active'] ?? 0) === 1;
             $efficiencyValue = $level > 0 && $isActive && isset($runnable[$moduleKey]) ? 100 : 0;
@@ -605,6 +610,8 @@ class SkylabService
                 $upgradeReason = 'Maximum level reached.';
             } elseif ($blockedByBasic) {
                 $upgradeReason = 'Upgrade the Basic module first.';
+            } elseif ($costBlockReason !== null) {
+                $upgradeReason = $costBlockReason;
             } elseif (!$canUpgrade) {
                 $upgradeReason = 'Upgrade is not available.';
             }
@@ -656,7 +663,7 @@ class SkylabService
                 'upgradeEndsAt' => $module['upgrade_ends_at'] ?? null,
                 'upgradeRemainingSeconds' => $this->remainingSeconds($module['upgrade_ends_at'] ?? null),
                 'nextLevel' => $hasNextLevel ? $nextLevel : null,
-                'nextLevelCost' => $canUpgrade ? $this->formatUpgradeCost($levels[$moduleKey][$nextLevel] ?? []) : null,
+                'nextLevelCost' => $hasNextLevel ? $this->formatUpgradeCost($upgradeCost) : null,
                 'upgradeReason' => $upgradeReason,
             ];
         }
@@ -902,6 +909,33 @@ class SkylabService
         if ($credits < $creditsCost) {
             throw new RuntimeException('Not enough credits.');
         }
+    }
+
+    private function loadUserCredits(): int
+    {
+        $stmt = $this->db->prepare('SELECT credits FROM users WHERE id = :player_id LIMIT 1');
+        $stmt->execute([':player_id' => $this->playerId]);
+        $credits = $stmt->fetchColumn();
+
+        return $credits === false ? 0 : max(0, (int)$credits);
+    }
+
+    private function upgradeCostBlockReason(array $state, array $cost, int $userCredits): ?string
+    {
+        $creditsCost = (int)($cost['upgrade_credits'] ?? 0);
+        if ($creditsCost > 0 && $userCredits < $creditsCost) {
+            return 'Not enough credits.';
+        }
+
+        foreach (self::RESOURCE_KEYS as $resourceKey) {
+            $field = 'cost_' . $resourceKey;
+            $needed = (int)($cost[$field] ?? 0);
+            if ($needed > 0 && (int)$state[$resourceKey] < $needed) {
+                return 'Not enough ' . self::RESOURCE_NAMES[$resourceKey] . '.';
+            }
+        }
+
+        return null;
     }
 
     private function ensureResourceCosts(array $state, array $cost): void
