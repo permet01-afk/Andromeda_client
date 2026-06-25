@@ -131,14 +131,24 @@
     @keyframes pulseBtn { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); } 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); } }
 
     .result-panel {
-        flex: none; min-height: 238px; max-height: 296px; background: rgba(2, 6, 23, 0.78);
+        flex: none; height: 296px; min-height: 296px; max-height: 296px; background: rgba(2, 6, 23, 0.78);
         border: 1px solid #1e293b; border-radius: 6px; padding: 10px;
         overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
     }
     .result-empty {
-        height: 100%; min-height: 210px; display: flex; align-items: center; justify-content: center;
+        flex: 1; min-height: 210px; display: flex; align-items: center; justify-content: center;
         color: #64748b; font-size: 0.78rem; text-align: center; text-transform: uppercase; letter-spacing: 0.08em;
     }
+    .result-group {
+        display: flex; flex-direction: column; gap: 7px; padding-bottom: 9px;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.62);
+    }
+    .result-group:last-child { border-bottom: none; padding-bottom: 0; }
+    .result-group-header {
+        display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        color: #94a3b8; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .result-group-time { color: #475569; font-size: 0.68rem; white-space: nowrap; }
     .result-card {
         display: grid; grid-template-columns: 42px 1fr auto; gap: 10px; align-items: center;
         min-height: 54px; padding: 8px; border: 1px solid rgba(51, 65, 85, 0.75);
@@ -253,7 +263,7 @@
                 </div>
 
                 <div class="result-panel" id="resultPanel">
-                    <div class="result-empty">Materializer ready.</div>
+                    <div class="result-empty">No materializations yet.</div>
                 </div>
 
                 <button id="btnSpin" class="btn-action btn-spin">MATERIALIZE</button>
@@ -335,46 +345,72 @@ function getFallbackIconLabel(label) {
     return String(textWord).slice(0, 3).toUpperCase();
 }
 
-function renderResultCards(cards) {
+function getResultGroupTime() {
+    return new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function getMaterializationTitle(amount) {
+    return 'x' + parseInt(amount || 1, 10) + ' Materialization';
+}
+
+function buildResultCardHtml(card) {
+    const type = card.type || card.kind || 'item';
+    const label = card.label || 'Reward';
+    const desc = card.description || 'Materializer reward';
+    const qty = card.quantity || '';
+    const icon = card.icon || '';
+    const fallback = getFallbackIconLabel(label);
+    const iconHtml = icon
+        ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(label)}" onerror="this.replaceWith(document.createTextNode('${escapeHtml(fallback)}'))">`
+        : escapeHtml(fallback);
+
+    return `<div class="result-card ${escapeHtml(type)}">
+        <div class="result-icon">${iconHtml}</div>
+        <div>
+            <div class="result-name">${escapeHtml(label)}</div>
+            <div class="result-desc">${escapeHtml(desc)}</div>
+        </div>
+        <div class="result-qty">${escapeHtml(qty)}</div>
+    </div>`;
+}
+
+function prependResultGroup(cards, title = 'Materialization') {
     const safeCards = Array.isArray(cards) ? cards : [];
     if (!safeCards.length) {
-        renderResultMessage('No materialized reward this spin.', 'mult');
+        renderResultMessage('No materialized reward this spin.', 'mult', title);
         return;
     }
 
-    resultPanel.innerHTML = safeCards.map(card => {
-        const type = card.type || card.kind || 'item';
-        const label = card.label || 'Reward';
-        const desc = card.description || 'Materializer reward';
-        const qty = card.quantity || '';
-        const icon = card.icon || '';
-        const fallback = getFallbackIconLabel(label);
-        const iconHtml = icon
-            ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(label)}" onerror="this.replaceWith(document.createTextNode('${escapeHtml(fallback)}'))">`
-            : escapeHtml(fallback);
+    const emptyState = resultPanel.querySelector('.result-empty');
+    if (emptyState) emptyState.remove();
 
-        return `<div class="result-card ${escapeHtml(type)}">
-            <div class="result-icon">${iconHtml}</div>
-            <div>
-                <div class="result-name">${escapeHtml(label)}</div>
-                <div class="result-desc">${escapeHtml(desc)}</div>
-            </div>
-            <div class="result-qty">${escapeHtml(qty)}</div>
-        </div>`;
-    }).join('');
+    const groupHtml = `<div class="result-group">
+        <div class="result-group-header">
+            <span>${escapeHtml(title)}</span>
+            <span class="result-group-time">${escapeHtml(getResultGroupTime())}</span>
+        </div>
+        ${safeCards.map(buildResultCardHtml).join('')}
+    </div>`;
+
+    resultPanel.insertAdjacentHTML('afterbegin', groupHtml);
+    resultPanel.scrollTop = 0;
 }
 
-function renderResultMessage(message, type = 'normal') {
+function renderResultCards(cards, title = 'Materialization') {
+    prependResultGroup(cards, title);
+}
+
+function renderResultMessage(message, type = 'normal', title = 'Status') {
     const label = type === 'error' ? 'Error' : type === 'part' ? 'Gate Part' : type === 'mult' ? 'Multiplier' : 'Status';
-    renderResultCards([{
+    prependResultGroup([{
         label,
         description: message || 'Materializer updated.',
         quantity: '',
         type
-    }]);
+    }], title);
 }
 
-function renderResultEntries(entries) {
+function renderResultEntries(entries, title = 'Status') {
     const safeEntries = Array.isArray(entries) ? entries : [];
     const cards = safeEntries
         .filter(entry => entry && entry.message)
@@ -386,9 +422,9 @@ function renderResultEntries(entries) {
         }));
 
     if (cards.length) {
-        renderResultCards(cards);
+        prependResultGroup(cards, title);
     } else {
-        renderResultMessage('Materializer updated.');
+        renderResultMessage('Materializer updated.', 'normal', title);
     }
 }
 
@@ -578,18 +614,19 @@ async function spinGate() {
 
         if(data.status === 'success') {
             refreshPilotBar(data.pilot);
+            const resultTitle = getMaterializationTitle(spinAmount);
 
             if(Array.isArray(data.result_cards) && data.result_cards.length) {
-                renderResultCards(data.result_cards);
+                renderResultCards(data.result_cards, resultTitle);
             } else if(Array.isArray(data.log_group)) {
-                renderResultEntries(data.log_group);
+                renderResultEntries(data.log_group, resultTitle);
             } else if(Array.isArray(data.logs)) {
-                renderResultEntries(data.logs);
+                renderResultEntries(data.logs, resultTitle);
             } else {
                 let css = 'normal';
                 if(data.type === 'part') css = 'part';
                 if(data.type === 'item') css = 'item';
-                renderResultMessage(data.log, css);
+                renderResultMessage(data.log, css, resultTitle);
             }
 
             if(data.gate_updates) {
@@ -605,10 +642,10 @@ async function spinGate() {
 
             updateMultiplierBadge(data.multiplier_next);
         } else {
-            renderResultMessage(data.message || "Transaction failed", 'error');
+            renderResultMessage(data.message || "Transaction failed", 'error', 'Materialization Failed');
         }
     } catch(e) {
-        renderResultMessage("Server connection error", 'error');
+        renderResultMessage("Server connection error", 'error', 'Materialization Failed');
     } finally {
         btnSpin.innerText = previousText;
         btnSpin.disabled = false;
@@ -632,7 +669,7 @@ async function executePrepareGate() {
         const data = await resp.json();
         
         if(data.status === 'success') {
-            renderResultMessage(data.message, 'item');
+            renderResultMessage(data.message, 'item', 'Gate Deployment');
             if(data.gate) {
                 gatesData[currentGateId] = data.gate;
             } else {
@@ -645,11 +682,11 @@ async function executePrepareGate() {
             btnPrepare.disabled = false;
             updateUI();
         } else {
-            renderResultMessage(data.message, 'error');
+            renderResultMessage(data.message, 'error', 'Gate Deployment');
             btnPrepare.disabled = false;
         }
     } catch(e) {
-        renderResultMessage("Error preparing gate", 'error');
+        renderResultMessage("Error preparing gate", 'error', 'Gate Deployment');
         btnPrepare.disabled = false;
     }
 }
