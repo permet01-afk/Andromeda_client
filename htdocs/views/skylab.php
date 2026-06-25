@@ -60,7 +60,7 @@ $selectedModule = $skylabModules[$selectedModuleId];
     }
 
     .skylab-shell {
-        width: min(100%, 920px);
+        width: min(100%, 824px);
         background: #070d13;
         border: 1px solid rgba(74, 92, 106, 0.92);
         border-radius: 4px;
@@ -109,7 +109,7 @@ $selectedModule = $skylabModules[$selectedModuleId];
     .skylab-body {
         display: flex;
         justify-content: center;
-        padding: 1rem;
+        padding: 0.75rem;
         background: radial-gradient(circle at center, rgba(22, 42, 54, 0.45), rgba(4, 8, 12, 0.98) 72%);
     }
 
@@ -124,6 +124,7 @@ $selectedModule = $skylabModules[$selectedModuleId];
 
     .skylab-map {
         position: relative;
+        box-sizing: border-box;
         flex: 0 0 auto;
         width: 772px;
         height: 407px;
@@ -278,7 +279,7 @@ $selectedModule = $skylabModules[$selectedModuleId];
         position: absolute;
         z-index: 30;
         right: 14px;
-        top: 68px;
+        top: 52px;
         width: 359px;
         color: #e6f5fa;
         font-family: Arial, Helvetica, sans-serif;
@@ -291,14 +292,14 @@ $selectedModule = $skylabModules[$selectedModuleId];
 
     .skylab-popup-header {
         position: relative;
-        height: 25px;
+        height: 39px;
         background: url("<?php echo $skylabModuleAssets; ?>popup_header.png") left top no-repeat;
     }
 
     .skylab-popup-title {
         display: block;
-        padding: 5px 44px 0 16px;
-        color: #fff;
+        padding: 10px 44px 0 16px;
+        color: #ffcc00;
         font-size: 0.78rem;
         font-weight: 900;
         line-height: 1;
@@ -310,14 +311,22 @@ $selectedModule = $skylabModules[$selectedModuleId];
 
     .skylab-popup-close {
         position: absolute;
-        top: 4px;
-        right: 8px;
-        width: 17px;
-        height: 17px;
+        top: 5px;
+        right: 5px;
+        width: 24px;
+        height: 24px;
         border: 0;
-        background: url("<?php echo $skylabModuleAssets; ?>close_button_sprite.png") left top / auto 100% no-repeat;
+        background: url("<?php echo $skylabModuleAssets; ?>close_button_sprite.png") no-repeat center -24px;
         cursor: pointer;
         font-size: 0;
+    }
+
+    .skylab-popup-close:hover {
+        background-position: center 0;
+    }
+
+    .skylab-popup-close:active {
+        background-position: center -48px;
     }
 
     .skylab-popup-middle {
@@ -579,7 +588,7 @@ $selectedModule = $skylabModules[$selectedModuleId];
             if (!mapWrap || !map) return;
             const scale = Math.min(1, mapWrap.clientWidth / 772);
             map.style.transform = "scale(" + scale + ")";
-            mapWrap.style.height = Math.ceil(407 * scale) + "px";
+            mapWrap.style.height = Math.ceil(414 * scale) + "px";
         }
 
         function selectModule(button) {
