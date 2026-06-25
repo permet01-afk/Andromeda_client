@@ -56,13 +56,14 @@
         pointer-events: none; user-select: none;
     }
     .gate-art-bg { opacity: .34; filter: brightness(1.35) saturate(.9); z-index: 1; }
+    .gate-art-stage.complete .gate-art-bg { opacity: 0; }
     .gate-part-layer { position: absolute; inset: 0; z-index: 2; }
     .gate-art-part { opacity: .98; }
     .gate-art-spin {
         opacity: 0; transform: scale(1.02); transition: opacity .25s ease;
         filter: brightness(1.08) saturate(1.2); z-index: 3;
     }
-    .gate-art-stage.on-map .gate-art-spin { opacity: .94; }
+    .gate-art-stage.on-map .gate-art-spin { opacity: .6; }
     .gate-art-empty {
         position: absolute; left: 50%; bottom: -28px; transform: translateX(-50%);
         color: #64748b; font-size: .75rem; font-weight: 800; letter-spacing: .5px;
@@ -391,6 +392,7 @@ function updateGateVisual(data) {
 
     const gateId = parseInt(data.id || currentGateId, 10);
     const parts = getGateVisualParts(data, gateId);
+    const total = GATE_VISUAL_TOTALS[gateId] || parseInt(data.total || 0, 10);
     const showSpin = !!data.on_map && !data.completed;
 
     gateArtBg.src = `${GATE_VISUAL_BASE}gate_${gateId}_bg.png`;
@@ -410,6 +412,7 @@ function updateGateVisual(data) {
     gatePartLayer.appendChild(fragment);
 
     gateArtStage.classList.toggle('empty', parts.length === 0 && !showSpin);
+    gateArtStage.classList.toggle('complete', total > 0 && parts.length >= total);
     gateArtStage.classList.toggle('on-map', showSpin);
 }
 
