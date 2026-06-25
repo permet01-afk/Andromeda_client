@@ -28,6 +28,10 @@ if (empty($_SESSION['daily_login_csrf_token'])) {
     $_SESSION['daily_login_csrf_token'] = bin2hex(random_bytes(32));
 }
 $dailyLoginCsrfToken = $_SESSION['daily_login_csrf_token'];
+if (empty($_SESSION['skylab_csrf_token'])) {
+    $_SESSION['skylab_csrf_token'] = bin2hex(random_bytes(32));
+}
+$skylabCsrfToken = $_SESSION['skylab_csrf_token'];
 session_write_close();
 
 ob_start();

@@ -1,0 +1,181 @@
+-- Andromeda Skylab V1 manual SQL
+-- Apply manually on the game database after deploying the PHP files.
+-- This file is intentionally separate from andromeda.sql.
+
+CREATE TABLE IF NOT EXISTS `player_skylab_state` (
+  `player_id` int(11) NOT NULL,
+  `prometium` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `endurium` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `terbium` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `xenomit` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `prometid` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `duranium` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `promerium` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `seprom` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `last_update_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`player_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `player_skylab_modules` (
+  `player_id` int(11) NOT NULL,
+  `module_key` varchar(40) NOT NULL,
+  `level` tinyint(3) unsigned NOT NULL DEFAULT 0,
+  `active` tinyint(1) NOT NULL DEFAULT 0,
+  `upgrade_started_at` datetime DEFAULT NULL,
+  `upgrade_ends_at` datetime DEFAULT NULL,
+  `target_level` tinyint(3) unsigned DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`player_id`, `module_key`),
+  KEY `idx_player_skylab_modules_upgrade` (`upgrade_ends_at`),
+  KEY `idx_player_skylab_modules_active` (`player_id`, `active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `skylab_module_levels` (
+  `module_key` varchar(40) NOT NULL,
+  `level` tinyint(3) unsigned NOT NULL,
+  `production_per_hour` int(10) unsigned NOT NULL DEFAULT 0,
+  `energy_production` int(10) unsigned NOT NULL DEFAULT 0,
+  `energy_consumption` int(10) unsigned NOT NULL DEFAULT 0,
+  `storage_basic` int(10) unsigned NOT NULL DEFAULT 0,
+  `storage_refined` int(10) unsigned NOT NULL DEFAULT 0,
+  `storage_advanced` int(10) unsigned NOT NULL DEFAULT 0,
+  `storage_seprom` int(10) unsigned NOT NULL DEFAULT 0,
+  `upgrade_credits` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `cost_prometium` int(10) unsigned NOT NULL DEFAULT 0,
+  `cost_endurium` int(10) unsigned NOT NULL DEFAULT 0,
+  `cost_terbium` int(10) unsigned NOT NULL DEFAULT 0,
+  `cost_xenomit` int(10) unsigned NOT NULL DEFAULT 0,
+  `cost_prometid` int(10) unsigned NOT NULL DEFAULT 0,
+  `cost_duranium` int(10) unsigned NOT NULL DEFAULT 0,
+  `cost_promerium` int(10) unsigned NOT NULL DEFAULT 0,
+  `cost_seprom` int(10) unsigned NOT NULL DEFAULT 0,
+  `upgrade_seconds` int(10) unsigned NOT NULL DEFAULT 0,
+  PRIMARY KEY (`module_key`, `level`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `player_skylab_transports` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `player_id` int(11) NOT NULL,
+  `direction` varchar(16) NOT NULL DEFAULT 'to_ship',
+  `resource_key` varchar(32) NOT NULL,
+  `amount` bigint(20) unsigned NOT NULL,
+  `started_at` datetime NOT NULL,
+  `arrives_at` datetime NOT NULL,
+  `collected_at` datetime DEFAULT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'pending',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_player_skylab_transports_player_status` (`player_id`, `status`, `arrives_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `skylab_module_levels` (
+  `module_key`,
+  `level`,
+  `production_per_hour`,
+  `energy_production`,
+  `energy_consumption`,
+  `storage_basic`,
+  `storage_refined`,
+  `storage_advanced`,
+  `storage_seprom`,
+  `upgrade_credits`,
+  `cost_prometium`,
+  `cost_endurium`,
+  `cost_terbium`,
+  `cost_xenomit`,
+  `cost_prometid`,
+  `cost_duranium`,
+  `cost_promerium`,
+  `cost_seprom`,
+  `upgrade_seconds`
+)
+SELECT
+  m.module_key,
+  l.level,
+  CASE
+    WHEN m.module_key IN ('prometium', 'endurium', 'terbium') THEN CAST(ROUND(120 * POW(1.21, l.level - 1)) AS UNSIGNED)
+    WHEN m.module_key IN ('prometid', 'duranium') THEN CAST(ROUND(18 * POW(1.20, l.level - 1)) AS UNSIGNED)
+    WHEN m.module_key = 'xeno' THEN CAST(ROUND(10 * POW(1.16, l.level - 1)) AS UNSIGNED)
+    WHEN m.module_key = 'promerium' THEN CAST(ROUND(4 * POW(1.18, l.level - 1)) AS UNSIGNED)
+    WHEN m.module_key = 'seprom' THEN CAST(ROUND(1 * POW(1.16, l.level - 1)) AS UNSIGNED)
+    ELSE 0
+  END AS production_per_hour,
+  CASE
+    WHEN m.module_key = 'solar' THEN CAST(ROUND(220 * POW(1.18, l.level - 1)) AS UNSIGNED)
+    ELSE 0
+  END AS energy_production,
+  CASE
+    WHEN m.module_key IN ('prometium', 'endurium', 'terbium') THEN 18 + (l.level * 4)
+    WHEN m.module_key IN ('prometid', 'duranium', 'xeno') THEN 28 + (l.level * 6)
+    WHEN m.module_key IN ('promerium', 'seprom') THEN 42 + (l.level * 8)
+    WHEN m.module_key = 'transport' THEN 20 + (l.level * 2)
+    ELSE 0
+  END AS energy_consumption,
+  CASE
+    WHEN m.module_key = 'storage' THEN CAST(ROUND(1000 * POW(1.22, l.level - 1)) AS UNSIGNED)
+    ELSE 0
+  END AS storage_basic,
+  CASE
+    WHEN m.module_key = 'storage' THEN CAST(ROUND(250 * POW(1.22, l.level - 1)) AS UNSIGNED)
+    ELSE 0
+  END AS storage_refined,
+  CASE
+    WHEN m.module_key = 'storage' THEN CAST(ROUND(80 * POW(1.20, l.level - 1)) AS UNSIGNED)
+    ELSE 0
+  END AS storage_advanced,
+  CASE
+    WHEN m.module_key = 'storage' THEN CAST(ROUND(30 * POW(1.18, l.level - 1)) AS UNSIGNED)
+    ELSE 0
+  END AS storage_seprom,
+  CASE
+    WHEN l.level = 1 AND m.module_key IN ('basic', 'storage', 'solar', 'transport', 'prometium', 'endurium', 'terbium') THEN 0
+    WHEN m.module_key IN ('seprom', 'promerium') THEN CAST(ROUND(350000 * POW(1.32, l.level - 1)) AS UNSIGNED)
+    WHEN m.module_key IN ('prometid', 'duranium', 'xeno') THEN CAST(ROUND(160000 * POW(1.30, l.level - 1)) AS UNSIGNED)
+    ELSE CAST(ROUND(70000 * POW(1.28, l.level - 1)) AS UNSIGNED)
+  END AS upgrade_credits,
+  CASE WHEN l.level = 1 THEN 0 ELSE 30 * l.level END AS cost_prometium,
+  CASE WHEN l.level = 1 THEN 0 ELSE 30 * l.level END AS cost_endurium,
+  CASE WHEN l.level = 1 THEN 0 ELSE 30 * l.level END AS cost_terbium,
+  CASE WHEN m.module_key IN ('promerium', 'seprom') THEN 2 * l.level ELSE 0 END AS cost_xenomit,
+  CASE WHEN m.module_key IN ('promerium', 'seprom') THEN 15 * l.level ELSE 0 END AS cost_prometid,
+  CASE WHEN m.module_key IN ('promerium', 'seprom') THEN 15 * l.level ELSE 0 END AS cost_duranium,
+  CASE WHEN m.module_key = 'seprom' THEN 8 * l.level ELSE 0 END AS cost_promerium,
+  0 AS cost_seprom,
+  CASE
+    WHEN l.level = 1 AND m.module_key IN ('basic', 'storage', 'solar', 'transport', 'prometium', 'endurium', 'terbium') THEN 0
+    ELSE 300 + (l.level * 420)
+  END AS upgrade_seconds
+FROM (
+  SELECT 1 AS level UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
+  UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10
+  UNION ALL SELECT 11 UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14 UNION ALL SELECT 15
+  UNION ALL SELECT 16 UNION ALL SELECT 17 UNION ALL SELECT 18 UNION ALL SELECT 19 UNION ALL SELECT 20
+) AS l
+CROSS JOIN (
+  SELECT 'basic' AS module_key UNION ALL SELECT 'storage' UNION ALL SELECT 'solar' UNION ALL SELECT 'transport'
+  UNION ALL SELECT 'prometium' UNION ALL SELECT 'endurium' UNION ALL SELECT 'terbium'
+  UNION ALL SELECT 'prometid' UNION ALL SELECT 'duranium' UNION ALL SELECT 'xeno'
+  UNION ALL SELECT 'promerium' UNION ALL SELECT 'seprom'
+) AS m
+ON DUPLICATE KEY UPDATE
+  `production_per_hour` = VALUES(`production_per_hour`),
+  `energy_production` = VALUES(`energy_production`),
+  `energy_consumption` = VALUES(`energy_consumption`),
+  `storage_basic` = VALUES(`storage_basic`),
+  `storage_refined` = VALUES(`storage_refined`),
+  `storage_advanced` = VALUES(`storage_advanced`),
+  `storage_seprom` = VALUES(`storage_seprom`),
+  `upgrade_credits` = VALUES(`upgrade_credits`),
+  `cost_prometium` = VALUES(`cost_prometium`),
+  `cost_endurium` = VALUES(`cost_endurium`),
+  `cost_terbium` = VALUES(`cost_terbium`),
+  `cost_xenomit` = VALUES(`cost_xenomit`),
+  `cost_prometid` = VALUES(`cost_prometid`),
+  `cost_duranium` = VALUES(`cost_duranium`),
+  `cost_promerium` = VALUES(`cost_promerium`),
+  `cost_seprom` = VALUES(`cost_seprom`),
+  `upgrade_seconds` = VALUES(`upgrade_seconds`);
