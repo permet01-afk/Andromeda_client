@@ -588,24 +588,65 @@ class SkylabService
                 }
             }
 
+            $nextLevel = $level + 1;
+            $basicLevel = (int)($modules['basic']['level'] ?? 0);
             $upgrading = $this->isModuleUpgrading($module);
             $stateLabel = $this->moduleStateLabel($moduleKey, $module, $runnable);
-            $nextLevel = $level + 1;
-            $canUpgrade = isset($levels[$moduleKey][$nextLevel]) && !$upgrading;
-            $basicLevel = (int)($modules['basic']['level'] ?? 0);
-            if ($moduleKey !== 'basic' && $nextLevel > max(1, $basicLevel)) {
-                $canUpgrade = false;
+            $hasNextLevel = isset($levels[$moduleKey][$nextLevel]);
+            $blockedByBasic = $moduleKey !== 'basic' && $nextLevel > max(1, $basicLevel);
+            $canUpgrade = $hasNextLevel && !$upgrading && !$blockedByBasic;
+            $upgradeReason = null;
+            $isActive = (int)($module['active'] ?? 0) === 1;
+            $efficiencyValue = $level > 0 && $isActive && isset($runnable[$moduleKey]) ? 100 : 0;
+
+            if ($upgrading) {
+                $upgradeReason = 'Upgrade already in progress.';
+            } elseif (!$hasNextLevel) {
+                $upgradeReason = 'Maximum level reached.';
+            } elseif ($blockedByBasic) {
+                $upgradeReason = 'Upgrade the Basic module first.';
+            } elseif (!$canUpgrade) {
+                $upgradeReason = 'Upgrade is not available.';
+            }
+
+            if ($level <= 0) {
+                $efficiencyValue = 0;
+            }
+
+            if ($moduleKey === 'solar' && $level > 0 && $isActive) {
+                $efficiencyValue = 100;
+            }
+
+            if ($moduleKey === 'basic' && $level > 0 && $isActive) {
+                $efficiencyValue = 100;
+            }
+
+            if ($moduleKey === 'storage' && $level > 0 && $isActive) {
+                $efficiencyValue = 100;
+            }
+
+            if ($moduleKey === 'transport' && $level > 0 && $isActive) {
+                $efficiencyValue = 100;
+            }
+
+            if (!$isActive) {
+                $efficiencyValue = 0;
+            }
+
+            if (!isset($runnable[$moduleKey]) && !in_array($moduleKey, ['solar', 'basic', 'storage', 'transport'], true)) {
+                $efficiencyValue = 0;
             }
 
             $moduleState[$moduleKey] = [
                 'name' => $meta['name'],
                 'type' => $meta['type'],
                 'level' => $level,
-                'active' => (int)($module['active'] ?? 0) === 1,
+                'active' => $isActive,
                 'power' => $energyConsumption,
                 'production' => $this->productionLabel($moduleKey, $meta['resource'], $production),
                 'consumption' => $this->consumptionLabel($moduleKey, $energyConsumption),
-                'efficiency' => isset($runnable[$moduleKey]) || $level <= 0 ? (($level > 0 && (int)($module['active'] ?? 0) === 0) ? '0%' : '100%') : '0%',
+                'efficiency' => $efficiencyValue . '%',
+                'efficiencyValue' => $efficiencyValue,
                 'state' => $stateLabel,
                 'resourceKey' => $meta['resource'],
                 'canUpgrade' => $canUpgrade,
@@ -614,7 +655,9 @@ class SkylabService
                 'upgrading' => $upgrading,
                 'upgradeEndsAt' => $module['upgrade_ends_at'] ?? null,
                 'upgradeRemainingSeconds' => $this->remainingSeconds($module['upgrade_ends_at'] ?? null),
+                'nextLevel' => $hasNextLevel ? $nextLevel : null,
                 'nextLevelCost' => $canUpgrade ? $this->formatUpgradeCost($levels[$moduleKey][$nextLevel] ?? []) : null,
+                'upgradeReason' => $upgradeReason,
             ];
         }
 
