@@ -360,6 +360,20 @@ try {
         'promerium' => 'Promerium',
         'logfiles' => 'Logfiles'
     ];
+    $resultMeta = [
+        'mcb25' => ['kind' => 'ammo', 'description' => 'Laser ammo', 'icon' => 'img/items/mcb25.png'],
+        'mcb50' => ['kind' => 'ammo', 'description' => 'Laser ammo', 'icon' => 'img/items/mcb50.png'],
+        'sab50' => ['kind' => 'ammo', 'description' => 'Shield transfer ammo', 'icon' => 'img/items/sab50.png'],
+        'ucb100' => ['kind' => 'ammo', 'description' => 'Elite laser ammo', 'icon' => null],
+        'plt2026' => ['kind' => 'rocket', 'description' => 'Rocket', 'icon' => 'img/items/plt2026.png'],
+        'dcr250' => ['kind' => 'rocket', 'description' => 'Special rocket', 'icon' => 'img/items/dcr250.png'],
+        'plt2021' => ['kind' => 'rocket', 'description' => 'Rocket', 'icon' => 'img/items/plt2021.png'],
+        'hstrm01' => ['kind' => 'rocket', 'description' => 'Hellstorm rocket', 'icon' => 'img/items/hstrm01.png'],
+        'xenomit' => ['kind' => 'resource', 'description' => 'Resource', 'icon' => null],
+        'promerium' => ['kind' => 'resource', 'description' => 'Resource', 'icon' => 'img/items/promerium.png'],
+        'logfiles' => ['kind' => 'logfiles', 'description' => 'Pilot Bio resource', 'icon' => 'img/items/logfile.png']
+    ];
+    $gateIconIds = ['Alpha' => 1, 'Beta' => 2, 'Gamma' => 3, 'Delta' => 4];
 
     for ($i = 0; $i < $spinAmount; $i++) {
         $category = gg_pick_weighted($probabilities);
@@ -508,6 +522,33 @@ try {
 
     $db->commit();
 
+    $resultCards = [];
+    foreach ($partsByGate as $gateName => $qty) {
+        $gateIconId = $gateIconIds[$gateName] ?? 1;
+        $resultCards[] = [
+            'key' => 'gate_part_' . strtolower($gateName),
+            'label' => $gateName . ' Gate Part',
+            'description' => 'Gate Part',
+            'quantity' => '+' . gg_format_qty($qty),
+            'raw_quantity' => $qty,
+            'kind' => 'part',
+            'icon' => 'img/galaxygates/gate_' . $gateIconId . '_1.png'
+        ];
+    }
+
+    foreach ($lootSummary as $key => $qty) {
+        $meta = $resultMeta[$key] ?? ['kind' => 'item', 'description' => 'Materializer reward', 'icon' => null];
+        $resultCards[] = [
+            'key' => $key,
+            'label' => $names[$key] ?? $key,
+            'description' => $meta['description'],
+            'quantity' => '+' . gg_format_qty($qty),
+            'raw_quantity' => $qty,
+            'kind' => $meta['kind'],
+            'icon' => $meta['icon']
+        ];
+    }
+
     foreach ($lootSummary as $key => $qty) {
         $label = $names[$key] ?? $key;
         $rewardDetails[] = $label . ' +' . gg_format_qty($qty);
@@ -564,6 +605,7 @@ try {
         'log' => $logs[0]['message'],
         'logs' => $logs,
         'log_group' => $logs,
+        'result_cards' => $resultCards,
         'multiplier_next' => $currentMultLvl + 1,
         'gate_updates' => array_values($gatesStatus),
         'type' => $hasGatePartEvent ? 'part' : 'item',

@@ -130,28 +130,47 @@
     }
     @keyframes pulseBtn { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); } 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); } }
 
-    .log-window {
-        flex: none; height: 220px; background: #020617; border: 1px solid #1e293b; border-radius: 4px;
-        font-family: 'Courier New', monospace; font-size: 0.8rem; padding: 10px;
-        overflow-y: auto;
+    .result-panel {
+        flex: none; min-height: 238px; max-height: 296px; background: rgba(2, 6, 23, 0.78);
+        border: 1px solid #1e293b; border-radius: 6px; padding: 10px;
+        overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
     }
-    .log-entry { margin-bottom: 8px; border-bottom: 1px solid #1e293b; padding-bottom: 6px; color: #64748b; }
-    .log-entry span { color: #334155; font-size: 0.7rem; margin-right: 5px; }
-    .log-entry.part { color: #facc15; }
-    .log-entry.item { color: #fff; }
-    .log-entry.error { color: #ef4444; }
-    .log-entry.mult { color: #f59e0b; }
-    .log-entry.group { color: #94a3b8; }
-    .log-line { margin: 2px 0; line-height: 1.35; }
-    .log-line .tag { display: inline-block; min-width: 82px; color: #64748b; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.5px; }
-    .log-line.part { color: #facc15; }
-    .log-line.item { color: #e2e8f0; }
-    .log-line.mult { color: #f59e0b; }
-    .log-line.error { color: #ef4444; }
+    .result-empty {
+        height: 100%; min-height: 210px; display: flex; align-items: center; justify-content: center;
+        color: #64748b; font-size: 0.78rem; text-align: center; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .result-card {
+        display: grid; grid-template-columns: 42px 1fr auto; gap: 10px; align-items: center;
+        min-height: 54px; padding: 8px; border: 1px solid rgba(51, 65, 85, 0.75);
+        border-radius: 6px; background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.72));
+    }
+    .result-card.part { border-color: rgba(250, 204, 21, 0.45); box-shadow: inset 0 0 16px rgba(250, 204, 21, 0.07); }
+    .result-card.error { border-color: rgba(239, 68, 68, 0.45); }
+    .result-card.mult { border-color: rgba(245, 158, 11, 0.42); }
+    .result-icon {
+        width: 42px; height: 42px; border-radius: 6px; background: #020617; border: 1px solid #334155;
+        display: flex; align-items: center; justify-content: center; color: #22d3ee;
+        font-size: 0.68rem; font-weight: 900; overflow: hidden; text-align: center; line-height: 1;
+    }
+    .result-icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .result-name { color: #f8fafc; font-size: 0.86rem; font-weight: 800; line-height: 1.15; }
+    .result-desc { color: #64748b; font-size: 0.72rem; margin-top: 3px; }
+    .result-qty { color: #4ade80; font-size: 1rem; font-weight: 900; white-space: nowrap; }
+    .result-card.part .result-qty { color: #facc15; }
+    .result-card.error .result-qty { color: #ef4444; }
+    .result-card.mult .result-qty { color: #f59e0b; }
 
-    .loot-table { font-size: 0.75rem; color: #64748b; margin-top: auto; }
-    .loot-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #334155; padding: 3px 0; }
-    .loot-note { color: #94a3b8; font-size: 0.72rem; line-height: 1.35; margin-top: 8px; }
+    .drop-overview {
+        border: 1px solid #1e293b; border-radius: 6px; background: rgba(15, 23, 42, 0.56);
+        padding: 10px; margin-top: auto;
+    }
+    .drop-title { color: #cbd5e1; font-size: 0.74rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 8px; }
+    .drop-row { display: grid; grid-template-columns: 82px 1fr 38px; gap: 8px; align-items: center; font-size: 0.75rem; color: #94a3b8; padding: 4px 0; }
+    .drop-bar { height: 6px; border-radius: 999px; background: #0f172a; overflow: hidden; }
+    .drop-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #22d3ee, #4ade80); }
+    .drop-row.part .drop-fill { background: linear-gradient(90deg, #f59e0b, #facc15); }
+    .drop-row.resource .drop-fill { background: linear-gradient(90deg, #38bdf8, #818cf8); }
+    .drop-row.logfiles .drop-fill { background: linear-gradient(90deg, #a78bfa, #f472b6); }
 
     /* ================= MODAL OVERLAY ================= */
     .modal-overlay {
@@ -233,20 +252,20 @@
                     <button class="amt-btn" onclick="setAmount(100)">100</button>
                 </div>
 
-                <div class="log-window" id="logBox">
-                    <div class="log-entry"><span>SYS</span> Materializer ready.</div>
+                <div class="result-panel" id="resultPanel">
+                    <div class="result-empty">Materializer ready.</div>
                 </div>
 
                 <button id="btnSpin" class="btn-action btn-spin">MATERIALIZE</button>
                 
                 <button id="btnPrepare" class="btn-action btn-prepare">PREPARE JUMP</button>
 
-                <div class="loot-table">
-                    <div class="loot-row"><span>Ammo (MCB, SAB, rockets)</span><span>62%</span></div>
-                    <div class="loot-row"><span style="color:#facc15">Gate Part</span><span>20%</span></div>
-                    <div class="loot-row"><span>Resources</span><span>10%</span></div>
-                    <div class="loot-row"><span>Logfiles</span><span>8%</span></div>
-                    <div class="loot-note">MCB-25 is reduced. PLT-2021 and Hellstorm can drop. Selected Alpha/Beta/Gamma has a light part priority; Delta is separate.</div>
+                <div class="drop-overview">
+                    <div class="drop-title">Drop Overview</div>
+                    <div class="drop-row ammo"><span>Ammo</span><div class="drop-bar"><div class="drop-fill" style="width:62%"></div></div><strong>62%</strong></div>
+                    <div class="drop-row part"><span>Gate Part</span><div class="drop-bar"><div class="drop-fill" style="width:20%"></div></div><strong>20%</strong></div>
+                    <div class="drop-row resource"><span>Resources</span><div class="drop-bar"><div class="drop-fill" style="width:10%"></div></div><strong>10%</strong></div>
+                    <div class="drop-row logfiles"><span>Logfiles</span><div class="drop-bar"><div class="drop-fill" style="width:8%"></div></div><strong>8%</strong></div>
                 </div>
             </div>
         </div>
@@ -280,7 +299,7 @@ const uiMsg = document.getElementById('uiGateMsg');
 const uiTotalCost = document.getElementById('uiTotalCost');
 const btnSpin = document.getElementById('btnSpin');
 const btnPrepare = document.getElementById('btnPrepare');
-const logBox = document.getElementById('logBox');
+const resultPanel = document.getElementById('resultPanel');
 const multBadge = document.getElementById('multBadge');
 const amtBtns = document.querySelectorAll('.amt-btn');
 const tabs = document.querySelectorAll('.gate-tab');
@@ -310,37 +329,67 @@ function escapeHtml(value) {
     }[chr]));
 }
 
-function trimLogs(maxEntries = 40) {
-    while (logBox.children.length > maxEntries) {
-        logBox.removeChild(logBox.lastElementChild);
+function getFallbackIconLabel(label) {
+    const words = String(label || 'GG').split(/[\s-]+/).filter(Boolean);
+    const textWord = words.find(word => /[A-Za-z]/.test(word)) || words[0] || 'GG';
+    return String(textWord).slice(0, 3).toUpperCase();
+}
+
+function renderResultCards(cards) {
+    const safeCards = Array.isArray(cards) ? cards : [];
+    if (!safeCards.length) {
+        renderResultMessage('No materialized reward this spin.', 'mult');
+        return;
     }
+
+    resultPanel.innerHTML = safeCards.map(card => {
+        const type = card.type || card.kind || 'item';
+        const label = card.label || 'Reward';
+        const desc = card.description || 'Materializer reward';
+        const qty = card.quantity || '';
+        const icon = card.icon || '';
+        const fallback = getFallbackIconLabel(label);
+        const iconHtml = icon
+            ? `<img src="${escapeHtml(icon)}" alt="${escapeHtml(label)}" onerror="this.replaceWith(document.createTextNode('${escapeHtml(fallback)}'))">`
+            : escapeHtml(fallback);
+
+        return `<div class="result-card ${escapeHtml(type)}">
+            <div class="result-icon">${iconHtml}</div>
+            <div>
+                <div class="result-name">${escapeHtml(label)}</div>
+                <div class="result-desc">${escapeHtml(desc)}</div>
+            </div>
+            <div class="result-qty">${escapeHtml(qty)}</div>
+        </div>`;
+    }).join('');
 }
 
-function addLog(msg, type = 'normal') {
-    const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' });
-    const div = document.createElement('div');
-    div.className = 'log-entry ' + type;
-    div.innerHTML = `<span>${time}</span> ${escapeHtml(msg)}`;
-    logBox.prepend(div);
-    trimLogs();
+function renderResultMessage(message, type = 'normal') {
+    const label = type === 'error' ? 'Error' : type === 'part' ? 'Gate Part' : type === 'mult' ? 'Multiplier' : 'Status';
+    renderResultCards([{
+        label,
+        description: message || 'Materializer updated.',
+        quantity: '',
+        type
+    }]);
 }
 
-function addLogGroup(entries) {
-    const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' });
-    const div = document.createElement('div');
-    div.className = 'log-entry group';
-
+function renderResultEntries(entries) {
     const safeEntries = Array.isArray(entries) ? entries : [];
-    const lines = safeEntries.map(entry => {
-        const type = entry.type || 'normal';
-        const label = entry.label || 'INFO';
-        const message = entry.message || '';
-        return `<div class="log-line ${escapeHtml(type)}"><span class="tag">${escapeHtml(label)}</span>${escapeHtml(message)}</div>`;
-    });
+    const cards = safeEntries
+        .filter(entry => entry && entry.message)
+        .map(entry => ({
+            label: entry.label || 'Status',
+            description: entry.message,
+            quantity: '',
+            type: entry.type || 'normal'
+        }));
 
-    div.innerHTML = `<span>${time}</span>${lines.join('')}`;
-    logBox.prepend(div);
-    trimLogs();
+    if (cards.length) {
+        renderResultCards(cards);
+    } else {
+        renderResultMessage('Materializer updated.');
+    }
 }
 
 function updateMultiplierBadge(multiplierNext) {
@@ -530,17 +579,17 @@ async function spinGate() {
         if(data.status === 'success') {
             refreshPilotBar(data.pilot);
 
-            if(Array.isArray(data.log_group)) {
-                addLogGroup(data.log_group);
+            if(Array.isArray(data.result_cards) && data.result_cards.length) {
+                renderResultCards(data.result_cards);
+            } else if(Array.isArray(data.log_group)) {
+                renderResultEntries(data.log_group);
             } else if(Array.isArray(data.logs)) {
-                data.logs.slice().reverse().forEach(entry => {
-                    addLog(entry.message || '', entry.type || data.type || 'normal');
-                });
+                renderResultEntries(data.logs);
             } else {
                 let css = 'normal';
                 if(data.type === 'part') css = 'part';
                 if(data.type === 'item') css = 'item';
-                addLog(data.log, css);
+                renderResultMessage(data.log, css);
             }
 
             if(data.gate_updates) {
@@ -556,10 +605,10 @@ async function spinGate() {
 
             updateMultiplierBadge(data.multiplier_next);
         } else {
-            addLog(data.message || "Transaction failed", 'error');
+            renderResultMessage(data.message || "Transaction failed", 'error');
         }
     } catch(e) {
-        addLog("Server connection error", 'error');
+        renderResultMessage("Server connection error", 'error');
     } finally {
         btnSpin.innerText = previousText;
         btnSpin.disabled = false;
@@ -583,7 +632,7 @@ async function executePrepareGate() {
         const data = await resp.json();
         
         if(data.status === 'success') {
-            addLog(data.message, 'item');
+            renderResultMessage(data.message, 'item');
             if(data.gate) {
                 gatesData[currentGateId] = data.gate;
             } else {
@@ -596,11 +645,11 @@ async function executePrepareGate() {
             btnPrepare.disabled = false;
             updateUI();
         } else {
-            addLog(data.message, 'error');
+            renderResultMessage(data.message, 'error');
             btnPrepare.disabled = false;
         }
     } catch(e) {
-        addLog("Error preparing gate", 'error');
+        renderResultMessage("Error preparing gate", 'error');
         btnPrepare.disabled = false;
     }
 }
