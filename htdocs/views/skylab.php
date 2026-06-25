@@ -114,18 +114,23 @@ $selectedModule = $skylabModules[$selectedModuleId];
     }
 
     .skylab-map-wrap {
+        display: flex;
+        justify-content: center;
         max-width: 100%;
-        overflow-x: auto;
-        padding: 0.25rem;
+        overflow: hidden;
+        padding: 0;
+        width: 100%;
     }
 
     .skylab-map {
         position: relative;
+        flex: 0 0 auto;
         width: 772px;
         height: 407px;
         background: url("<?php echo $skylabAssets; ?>background.jpg") center / 100% 100% no-repeat;
         border: 1px solid #293d49;
         box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.72), 0 0 22px rgba(0, 0, 0, 0.55);
+        transform-origin: top center;
         isolation: isolate;
     }
 
@@ -470,7 +475,7 @@ $selectedModule = $skylabModules[$selectedModuleId];
 
                     <div class="skylab-modules-layer">
                         <?php foreach ($skylabModules as $key => $module) { ?>
-                            <button class="skylab-module<?php echo $key === $selectedModuleId ? ' is-selected' : ''; ?>"
+                            <button class="skylab-module"
                                     type="button"
                                     data-skylab-module="<?php echo htmlspecialchars($key, ENT_QUOTES, 'UTF-8'); ?>"
                                     style="left: <?php echo (int)$module['left']; ?>px; top: <?php echo (int)$module['top']; ?>px;">
@@ -489,7 +494,7 @@ $selectedModule = $skylabModules[$selectedModuleId];
                         <?php } ?>
                     </div>
 
-                    <div class="skylab-popup" id="skylab-module-popup">
+                    <div class="skylab-popup is-hidden" id="skylab-module-popup">
                         <div class="skylab-popup-header">
                             <span class="skylab-popup-title" id="skylab-popup-name"><?php echo htmlspecialchars($selectedModule['name'], ENT_QUOTES, 'UTF-8'); ?></span>
                             <button class="skylab-popup-close" type="button" id="skylab-popup-close">Close</button>
@@ -557,6 +562,8 @@ $selectedModule = $skylabModules[$selectedModuleId];
 <script>
     window.andromedaSkylabMockModules = <?php echo json_encode($skylabModules, JSON_UNESCAPED_SLASHES); ?>;
     (function() {
+        const mapWrap = document.querySelector(".skylab-map-wrap");
+        const map = document.querySelector(".skylab-map");
         const popup = document.getElementById("skylab-module-popup");
         const fields = {
             name: document.getElementById("skylab-popup-name"),
@@ -567,6 +574,13 @@ $selectedModule = $skylabModules[$selectedModuleId];
             state: document.getElementById("skylab-popup-state"),
             consumption: document.getElementById("skylab-popup-consumption")
         };
+
+        function resizeSkylabMap() {
+            if (!mapWrap || !map) return;
+            const scale = Math.min(1, mapWrap.clientWidth / 772);
+            map.style.transform = "scale(" + scale + ")";
+            mapWrap.style.height = Math.ceil(407 * scale) + "px";
+        }
 
         function selectModule(button) {
             const moduleId = button.getAttribute("data-skylab-module");
@@ -595,6 +609,12 @@ $selectedModule = $skylabModules[$selectedModuleId];
 
         document.getElementById("skylab-popup-close").addEventListener("click", function() {
             popup.classList.add("is-hidden");
+            document.querySelectorAll("[data-skylab-module]").forEach(function(item) {
+                item.classList.remove("is-selected");
+            });
         });
+
+        window.addEventListener("resize", resizeSkylabMap);
+        resizeSkylabMap();
     }());
 </script>
