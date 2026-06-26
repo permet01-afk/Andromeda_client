@@ -325,6 +325,10 @@ class SkylabService
                 throw new RuntimeException('Transport has not arrived yet.');
             }
 
+            if ($this->isPlayerOnlineLocked()) {
+                throw new RuntimeException('Please log out from the spacemap before collecting Skylab transports.');
+            }
+
             $resourceKey = $this->normalizeResourceKey((string)$transport['resource_key']);
             $amount = (int)$transport['amount'];
             $cargo = $this->loadShipCargoLocked();
@@ -1076,6 +1080,14 @@ class SkylabService
         }
 
         return $cargo;
+    }
+
+    private function isPlayerOnlineLocked(): bool
+    {
+        $stmt = $this->db->prepare('SELECT online FROM users WHERE id = :player_id LIMIT 1 FOR UPDATE');
+        $stmt->execute([':player_id' => $this->playerId]);
+
+        return (int)($stmt->fetchColumn() ?: 0) === 1;
     }
 
     private function getApproximateShipCargoCapacityLocked(): int
