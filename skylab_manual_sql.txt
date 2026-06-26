@@ -17,11 +17,28 @@ CREATE TABLE IF NOT EXISTS `player_skylab_state` (
   `duranium` bigint(20) unsigned NOT NULL DEFAULT 0,
   `promerium` bigint(20) unsigned NOT NULL DEFAULT 0,
   `seprom` bigint(20) unsigned NOT NULL DEFAULT 0,
+  `production_carry` text DEFAULT NULL,
   `last_update_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`player_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @skylab_carry_column_exists := (
+  SELECT COUNT(*)
+  FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'player_skylab_state'
+    AND COLUMN_NAME = 'production_carry'
+);
+SET @skylab_carry_column_sql := IF(
+  @skylab_carry_column_exists = 0,
+  'ALTER TABLE `player_skylab_state` ADD COLUMN `production_carry` text DEFAULT NULL AFTER `seprom`',
+  'SELECT 1'
+);
+PREPARE skylab_carry_column_stmt FROM @skylab_carry_column_sql;
+EXECUTE skylab_carry_column_stmt;
+DEALLOCATE PREPARE skylab_carry_column_stmt;
 
 CREATE TABLE IF NOT EXISTS `player_skylab_modules` (
   `player_id` int(11) NOT NULL,
