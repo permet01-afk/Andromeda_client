@@ -8088,7 +8088,9 @@ function executeItemActionDirectly(item, options = {}) {
             return true;
         }
         if (selectedTargetId !== null || source === "quickbar" || source === "menu-trigger") {
-            if (selectedTargetId !== null) {
+            if (typeof requestLaserOnCurrentOrPendingTarget === "function") {
+                requestLaserOnCurrentOrPendingTarget();
+            } else if (selectedTargetId !== null) {
                 sendLaserAttack(selectedTargetId);
                 isChasingTarget = false;
             }
@@ -10975,6 +10977,11 @@ function flashHeroHasActiveLaserAttack() {
 }
 
 function flashToggleOrStartLaserOnSelectedTarget() {
+    if (typeof requestLaserOnCurrentOrPendingTarget === "function") {
+        return requestLaserOnCurrentOrPendingTarget({
+            toggle: true
+        });
+    }
     if (selectedTargetId == null) return false;
     if (typeof toggleLaserOnSelectedTarget === "function") {
         toggleLaserOnSelectedTarget();
@@ -10996,7 +11003,11 @@ executeItemActionDirectly = function(item, options = {}) {
         if (flashShouldSendAmmoSelection(nextAmmoId)) {
             sendSelectAmmo(nextAmmoId);
         }
-        if (selectedTargetId == null) {
+        const hasPendingSelectionTarget = typeof pendingTargetSelectionId !== "undefined"
+            && pendingTargetSelectionId != null
+            && typeof isTargetSelectionPending === "function"
+            && isTargetSelectionPending(pendingTargetSelectionId);
+        if (selectedTargetId == null && !hasPendingSelectionTarget) {
             return true;
         }
         if (isRsbAmmo) {
@@ -11004,8 +11015,12 @@ executeItemActionDirectly = function(item, options = {}) {
         }
         const switchingAwayFromRsb = previousAmmoId === Number(RSB_AMMO_ID) && nextAmmoId !== Number(RSB_AMMO_ID);
         if (switchingAwayFromRsb) {
-            sendLaserAttack(selectedTargetId);
-            isChasingTarget = false;
+            if (typeof requestLaserOnCurrentOrPendingTarget === "function") {
+                requestLaserOnCurrentOrPendingTarget();
+            } else if (selectedTargetId != null) {
+                sendLaserAttack(selectedTargetId);
+                isChasingTarget = false;
+            }
             return true;
         }
         if (source === "menu-trigger") {

@@ -361,6 +361,27 @@ function isTargetSelectionPending(targetId = null) {
     return targetId == null || Number(pendingTargetSelectionId) === Number(targetId);
 }
 
+function queueLaserAttackIntentForPendingTargetSelection() {
+    if (pendingTargetSelectionId != null && isTargetSelectionPending(pendingTargetSelectionId)) {
+        return queuePendingTargetLaserAttackIntent(pendingTargetSelectionId);
+    }
+    return false;
+}
+
+function requestLaserOnCurrentOrPendingTarget(options = {}) {
+    if (selectedTargetId == null) {
+        return queueLaserAttackIntentForPendingTargetSelection();
+    }
+    if (options.toggle === true && typeof toggleLaserOnSelectedTarget === "function") {
+        toggleLaserOnSelectedTarget();
+        return true;
+    }
+    attackIntentTargetId = selectedTargetId;
+    isChasingTarget = false;
+    sendLaserAttack(selectedTargetId);
+    return true;
+}
+
 function requestTargetSelectionLikeFlash(targetId) {
     const id = normalizeTargetSelectionId(targetId);
     if (id == null) return false;
@@ -1286,11 +1307,20 @@ function handleFlashDoubleClickAttackFromMouseDown(screenX, screenY) {
     const isFlashDoubleClick = previousMs > 0 && nowMs - previousMs < FLASH_DOUBLE_CLICK_ATTACK_MS;
     lastFlashDoubleClickMouseDownMs = nowMs;
     if (!isFlashDoubleClick) return false;
-    if (selectedTargetId == null) return false;
-    const selectedShip = entities[selectedTargetId];
-    if (!selectedShip || (selectedShip.kind !== "player" && selectedShip.kind !== "npc")) return false;
     const hitShip = findEntityAtScreenPos(screenX, screenY, isShipOrNpcEntity, 60, true);
     if (!hitShip) return false;
+    if (selectedTargetId == null) {
+        if (pendingTargetSelectionId != null
+            && Number(pendingTargetSelectionId) === Number(hitShip.id)
+            && typeof requestLaserOnCurrentOrPendingTarget === "function") {
+            return requestLaserOnCurrentOrPendingTarget({
+                toggle: true
+            });
+        }
+        return false;
+    }
+    const selectedShip = entities[selectedTargetId];
+    if (!selectedShip || (selectedShip.kind !== "player" && selectedShip.kind !== "npc")) return false;
     toggleLaserOnSelectedTarget();
     return true;
 }
@@ -1716,9 +1746,7 @@ window.addEventListener("mouseup", e => {
 
 function toggleLaserOnSelectedTarget() {
     if (selectedTargetId == null) {
-        if (pendingTargetSelectionId != null && isTargetSelectionPending(pendingTargetSelectionId)) {
-            queuePendingTargetLaserAttackIntent(pendingTargetSelectionId);
-        }
+        queueLaserAttackIntentForPendingTargetSelection();
         return;
     }
     if (selectedTargetId === heroId) {

@@ -3307,7 +3307,9 @@ function triggerSlot(slot) {
         if (currentAmmoId !== catalogItem.id) {
             sendSelectAmmo(catalogItem.id);
         }
-        if (selectedTargetId !== null) {
+        if (typeof requestLaserOnCurrentOrPendingTarget === "function") {
+            requestLaserOnCurrentOrPendingTarget();
+        } else if (selectedTargetId !== null) {
             sendLaserAttack(selectedTargetId);
             isChasingTarget = false;
         }
