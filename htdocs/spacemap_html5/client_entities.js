@@ -308,6 +308,7 @@ let selectedTargetId = null;
 let pendingTargetSelectionId = null;
 let pendingTargetSelectionStartedAt = 0;
 const TARGET_SELECTION_PENDING_TIMEOUT_MS = 15000;
+let pendingTargetLaserAttackIntentId = null;
 
 function getTargetSelectionNowMs() {
     return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
@@ -318,10 +319,35 @@ function normalizeTargetSelectionId(targetId) {
     return Number.isFinite(id) ? id : null;
 }
 
+function clearPendingTargetLaserAttackIntent(targetId = null) {
+    if (targetId == null || pendingTargetLaserAttackIntentId == null || Number(pendingTargetLaserAttackIntentId) === Number(targetId)) {
+        pendingTargetLaserAttackIntentId = null;
+    }
+}
+
+function queuePendingTargetLaserAttackIntent(targetId) {
+    const id = normalizeTargetSelectionId(targetId);
+    if (id == null) return false;
+    pendingTargetLaserAttackIntentId = id;
+    return true;
+}
+
+function consumePendingTargetLaserAttackIntent(targetId) {
+    const id = normalizeTargetSelectionId(targetId);
+    if (id == null || pendingTargetLaserAttackIntentId == null) return false;
+    if (Number(pendingTargetLaserAttackIntentId) !== Number(id)) {
+        pendingTargetLaserAttackIntentId = null;
+        return false;
+    }
+    pendingTargetLaserAttackIntentId = null;
+    return true;
+}
+
 function clearPendingTargetSelection(targetId = null) {
     if (targetId == null || pendingTargetSelectionId == null || Number(pendingTargetSelectionId) === Number(targetId)) {
         pendingTargetSelectionId = null;
         pendingTargetSelectionStartedAt = 0;
+        clearPendingTargetLaserAttackIntent(targetId);
     }
 }
 
@@ -338,6 +364,9 @@ function isTargetSelectionPending(targetId = null) {
 function requestTargetSelectionLikeFlash(targetId) {
     const id = normalizeTargetSelectionId(targetId);
     if (id == null) return false;
+    if (pendingTargetLaserAttackIntentId != null && Number(pendingTargetLaserAttackIntentId) !== Number(id)) {
+        queuePendingTargetLaserAttackIntent(id);
+    }
     const alreadySelected = selectedTargetId != null && Number(selectedTargetId) === Number(id);
     pendingTargetSelectionId = id;
     pendingTargetSelectionStartedAt = getTargetSelectionNowMs();
@@ -351,13 +380,21 @@ function confirmTargetSelectionFromServer(targetId) {
     const id = normalizeTargetSelectionId(targetId);
     if (id == null) return false;
     if (pendingTargetSelectionId != null) {
-        if (!isTargetSelectionPending(id)) return false;
+        if (!isTargetSelectionPending(id)) {
+            clearPendingTargetLaserAttackIntent(id);
+            return false;
+        }
         if (pendingTargetSelectionId != null && Number(pendingTargetSelectionId) !== Number(id)) {
+            clearPendingTargetLaserAttackIntent();
             return false;
         }
     }
+    const shouldSendPendingLaserAttack = consumePendingTargetLaserAttackIntent(id);
     selectedTargetId = id;
     clearPendingTargetSelection(id);
+    if (shouldSendPendingLaserAttack && typeof sendLaserAttack === "function") {
+        sendLaserAttack(id);
+    }
     return true;
 }
 
@@ -1436,6 +1473,7 @@ canvas.addEventListener("mousedown", e => {
         confirmedAttackTargetId = null;
         pendingAttackAckTargetId = null;
         pendingAttackAckStartMs = 0;
+        clearPendingTargetLaserAttackIntent();
         resetPendingRangeResume();
         isChasingTarget = false;
         return;
@@ -1677,7 +1715,12 @@ window.addEventListener("mouseup", e => {
 });
 
 function toggleLaserOnSelectedTarget() {
-    if (selectedTargetId == null) return;
+    if (selectedTargetId == null) {
+        if (pendingTargetSelectionId != null && isTargetSelectionPending(pendingTargetSelectionId)) {
+            queuePendingTargetLaserAttackIntent(pendingTargetSelectionId);
+        }
+        return;
+    }
     if (selectedTargetId === heroId) {
         addInfoMessage("You cannot attack yourself.");
         try {
