@@ -177,6 +177,10 @@ class SkylabService
                 throw new RuntimeException('This module is already upgrading.');
             }
 
+            if ($this->hasAnyModuleUpgradeInProgress($modules)) {
+                throw new RuntimeException('Another Skylab upgrade is already in progress.');
+            }
+
             $currentLevel = (int)$module['level'];
             $targetLevel = $currentLevel + 1;
 
@@ -251,10 +255,6 @@ class SkylabService
 
             if ($amount > self::MAX_TRANSPORT_AMOUNT) {
                 throw new RuntimeException('The transport amount is too high.');
-            }
-
-            if ($resourceKey === 'seprom') {
-                throw new RuntimeException('Seprom transport is disabled in this version.');
             }
 
             $modules = $this->loadModulesLocked();
@@ -585,7 +585,7 @@ class SkylabService
 
             if (isset($runnable['seprom'])) {
                 $changed = $this->produceWithIngredients($state, $carry, 'seprom', (int)$this->rateFor($levels, $modules, 'seprom'), $elapsed, $capacities['seprom'], [
-                    'promerium' => 10,
+                    'promerium' => 2,
                 ]) || $changed;
             }
 
@@ -606,6 +606,7 @@ class SkylabService
         $energy = $this->calculateEnergy($modules, $levels);
         $runnable = $this->getRunnableModules($modules, $levels);
         $userCredits = $this->loadUserCredits();
+        $hasAnyUpgradeInProgress = $this->hasAnyModuleUpgradeInProgress($modules);
         $moduleState = [];
 
         foreach (self::MODULES as $moduleKey => $meta) {
@@ -629,11 +630,12 @@ class SkylabService
             $stateLabel = $this->moduleStateLabel($moduleKey, $module, $runnable);
             $hasNextLevel = isset($levels[$moduleKey][$nextLevel]);
             $blockedByBasic = $moduleKey !== 'basic' && $nextLevel > max(1, $basicLevel);
+            $blockedByGlobalUpgrade = $hasAnyUpgradeInProgress && !$upgrading;
             $upgradeCost = $hasNextLevel ? ($levels[$moduleKey][$nextLevel] ?? []) : [];
-            $costBlockReason = $hasNextLevel && !$upgrading && !$blockedByBasic
+            $costBlockReason = $hasNextLevel && !$upgrading && !$blockedByBasic && !$blockedByGlobalUpgrade
                 ? $this->upgradeCostBlockReason($state, $upgradeCost, $userCredits)
                 : null;
-            $canUpgrade = $hasNextLevel && !$upgrading && !$blockedByBasic && $costBlockReason === null;
+            $canUpgrade = $hasNextLevel && !$upgrading && !$blockedByBasic && !$blockedByGlobalUpgrade && $costBlockReason === null;
             $upgradeReason = null;
             $isActive = (int)($module['active'] ?? 0) === 1;
             $efficiencyValue = $level > 0 && $isActive && isset($runnable[$moduleKey]) ? 100 : 0;
@@ -642,6 +644,8 @@ class SkylabService
                 $upgradeReason = 'Upgrade already in progress.';
             } elseif (!$hasNextLevel) {
                 $upgradeReason = 'Maximum level reached.';
+            } elseif ($blockedByGlobalUpgrade) {
+                $upgradeReason = 'Another Skylab upgrade is already in progress.';
             } elseif ($blockedByBasic) {
                 $upgradeReason = 'Upgrade the Basic module first.';
             } elseif ($costBlockReason !== null) {
@@ -692,7 +696,7 @@ class SkylabService
                 'resourceKey' => $meta['resource'],
                 'canUpgrade' => $canUpgrade,
                 'canToggle' => $level > 0 && !$upgrading && !$meta['essential'],
-                'canTransport' => $level > 0 && $meta['resource'] !== null && $meta['resource'] !== 'seprom',
+                'canTransport' => $level > 0 && $meta['resource'] !== null,
                 'upgrading' => $upgrading,
                 'targetLevel' => $upgrading ? (int)($module['target_level'] ?? 0) : null,
                 'upgradeStartedAt' => $module['upgrade_started_at'] ?? null,
@@ -806,6 +810,17 @@ class SkylabService
         }
 
         return $modules;
+    }
+
+    private function hasAnyModuleUpgradeInProgress(array $modules): bool
+    {
+        foreach ($modules as $module) {
+            if ($this->isModuleUpgrading($module)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function loadLevelCatalog(): array

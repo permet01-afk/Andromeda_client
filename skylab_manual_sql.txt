@@ -119,11 +119,11 @@ SELECT
   m.module_key,
   l.level,
   CASE
-    WHEN m.module_key IN ('prometium', 'endurium', 'terbium') THEN CAST(ROUND(120 * POW(1.21, l.level - 1)) AS UNSIGNED)
-    WHEN m.module_key IN ('prometid', 'duranium') THEN CAST(ROUND(18 * POW(1.20, l.level - 1)) AS UNSIGNED)
+    WHEN m.module_key IN ('prometium', 'endurium', 'terbium') THEN CAST(ROUND(120 * POW(20000.0 / 120.0, (l.level - 1) / 19.0)) AS UNSIGNED)
+    WHEN m.module_key IN ('prometid', 'duranium') THEN CAST(ROUND(18 * POW(1000.0 / 18.0, (l.level - 1) / 19.0)) AS UNSIGNED)
     WHEN m.module_key = 'xeno' THEN CAST(ROUND(10 * POW(1.16, l.level - 1)) AS UNSIGNED)
     WHEN m.module_key = 'promerium' THEN CAST(ROUND(4 * POW(1.18, l.level - 1)) AS UNSIGNED)
-    WHEN m.module_key = 'seprom' THEN CAST(ROUND(1 * POW(1.16, l.level - 1)) AS UNSIGNED)
+    WHEN m.module_key = 'seprom' THEN CAST(ROUND(POW(34.0, (l.level - 1) / 19.0)) AS UNSIGNED)
     ELSE 0
   END AS production_per_hour,
   CASE
@@ -146,11 +146,11 @@ SELECT
     ELSE 0
   END AS storage_refined,
   CASE
-    WHEN m.module_key = 'storage' THEN CAST(ROUND(80 * POW(1.20, l.level - 1)) AS UNSIGNED)
+    WHEN m.module_key = 'storage' THEN CAST(ROUND(80 * POW(20000.0 / 80.0, (l.level - 1) / 19.0)) AS UNSIGNED)
     ELSE 0
   END AS storage_advanced,
   CASE
-    WHEN m.module_key = 'storage' THEN CAST(ROUND(30 * POW(1.18, l.level - 1)) AS UNSIGNED)
+    WHEN m.module_key = 'storage' THEN CAST(ROUND(30 * POW(10000.0 / 30.0, (l.level - 1) / 19.0)) AS UNSIGNED)
     ELSE 0
   END AS storage_seprom,
   CASE
