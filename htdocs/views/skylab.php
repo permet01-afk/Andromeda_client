@@ -134,12 +134,12 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
     .skylab-page {
         display: flex;
         justify-content: center;
-        padding: 1.5rem 1rem;
+        padding: 1rem 0.75rem;
         width: 100%;
     }
 
     .skylab-shell {
-        width: min(100%, 824px);
+        width: min(100%, 1064px);
         background: #070d13;
         border: 1px solid rgba(74, 92, 106, 0.92);
         border-radius: 4px;
@@ -244,7 +244,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
     .skylab-body {
         display: flex;
         justify-content: center;
-        padding: 0.75rem;
+        padding: 0.65rem;
         background: radial-gradient(circle at center, rgba(22, 42, 54, 0.45), rgba(4, 8, 12, 0.98) 72%);
     }
 
@@ -931,7 +931,8 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
 
         function resizeSkylabMap() {
             if (!mapWrap || !map) return;
-            const scale = Math.min(1, mapWrap.clientWidth / 772);
+            const maxScale = 1.25;
+            const scale = Math.min(maxScale, mapWrap.clientWidth / 772);
             map.style.transform = "scale(" + scale + ")";
             mapWrap.style.height = Math.ceil(414 * scale) + "px";
         }
