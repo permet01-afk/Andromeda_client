@@ -57,6 +57,9 @@ foreach ($skylabModules as $key => $module) {
     $skylabModules[$key]['canTransport'] = false;
     $skylabModules[$key]['resourceKey'] = null;
     $skylabModules[$key]['upgrading'] = false;
+    $skylabModules[$key]['targetLevel'] = null;
+    $skylabModules[$key]['upgradeStartedAt'] = null;
+    $skylabModules[$key]['upgradeEndsAt'] = null;
     $skylabModules[$key]['upgradeRemainingSeconds'] = 0;
     $skylabModules[$key]['nextLevelCost'] = null;
 }
@@ -111,8 +114,14 @@ if (!empty($skylabState['modules']) && is_array($skylabState['modules'])) {
             'canTransport' => !empty($module['canTransport']),
             'resourceKey' => $module['resourceKey'] ?? null,
             'upgrading' => !empty($module['upgrading']),
+            'targetLevel' => $module['targetLevel'] ?? null,
+            'upgradeStartedAt' => $module['upgradeStartedAt'] ?? null,
+            'upgradeEndsAt' => $module['upgradeEndsAt'] ?? null,
             'upgradeRemainingSeconds' => (int)($module['upgradeRemainingSeconds'] ?? 0),
             'nextLevelCost' => $module['nextLevelCost'] ?? null,
+            'nextLevel' => $module['nextLevel'] ?? null,
+            'upgradeReason' => $module['upgradeReason'] ?? null,
+            'efficiencyValue' => (int)($module['efficiencyValue'] ?? 0),
         ]);
     }
 }
@@ -320,6 +329,10 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
 
     .skylab-module.is-selected {
         box-shadow: 0 0 0 1px rgba(108, 203, 238, 0.85), 0 0 12px rgba(80, 181, 230, 0.28);
+    }
+
+    .skylab-module.is-upgrading {
+        box-shadow: 0 0 0 1px rgba(255, 198, 78, 0.82), 0 0 14px rgba(255, 177, 52, 0.34);
     }
 
     .skylab-module-name {
@@ -664,7 +677,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
 
                     <div class="skylab-modules-layer">
                         <?php foreach ($skylabModules as $key => $module) { ?>
-                            <button class="skylab-module"
+                            <button class="skylab-module<?php echo !empty($module['upgrading']) ? ' is-upgrading' : ''; ?>"
                                     type="button"
                                     data-skylab-module="<?php echo htmlspecialchars($key, ENT_QUOTES, 'UTF-8'); ?>"
                                     style="left: <?php echo (int)$module['left']; ?>px; top: <?php echo (int)$module['top']; ?>px;">
@@ -761,6 +774,10 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                                         <span class="skylab-popup-value" id="skylab-upgrade-duration">-</span>
                                     </div>
                                     <div class="skylab-popup-row">
+                                        <span>Time remaining</span>
+                                        <span class="skylab-popup-value" id="skylab-upgrade-remaining">-</span>
+                                    </div>
+                                    <div class="skylab-popup-row">
                                         <span>Prerequisite</span>
                                         <span class="skylab-popup-value" id="skylab-upgrade-prerequisite">-</span>
                                     </div>
@@ -823,6 +840,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             nextLevel: document.getElementById("skylab-upgrade-next-level"),
             cost: document.getElementById("skylab-upgrade-cost"),
             duration: document.getElementById("skylab-upgrade-duration"),
+            remaining: document.getElementById("skylab-upgrade-remaining"),
             prerequisite: document.getElementById("skylab-upgrade-prerequisite"),
             message: document.getElementById("skylab-upgrade-message")
         };
@@ -834,6 +852,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         let modules = window.andromedaSkylabModules || {};
         let skylabState = window.andromedaSkylabState || {};
         const config = window.andromedaSkylabConfig || {};
+        let refreshingState = false;
 
         function resizeSkylabMap() {
             if (!mapWrap || !map) return;
@@ -895,10 +914,17 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             upgradeFields.nextLevel.textContent = module.nextLevel || "-";
             upgradeFields.cost.textContent = cost ? formatUpgradeCost(cost) : "-";
             upgradeFields.duration.textContent = cost ? formatDuration(cost.seconds || 0) : "-";
+            upgradeFields.remaining.textContent = module.upgrading
+                ? formatDuration(module.upgradeRemainingSeconds || 0)
+                : "-";
             upgradeFields.prerequisite.textContent = formatUpgradePrerequisite(module);
-            upgradeFields.message.textContent = module.canUpgrade
-                ? "Ready to start the next upgrade."
-                : (module.upgradeReason || "Upgrade is not available.");
+            if (module.upgrading) {
+                upgradeFields.message.textContent = "Upgrade to level " + (module.targetLevel || module.nextLevel || "-") + " is in progress.";
+            } else {
+                upgradeFields.message.textContent = module.canUpgrade
+                    ? "Ready to start the next upgrade."
+                    : (module.upgradeReason || "Upgrade is not available.");
+            }
         }
 
         function formatUpgradePrerequisite(module) {
@@ -994,8 +1020,10 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         function updateModuleButtons() {
             Object.keys(modules).forEach(function(moduleId) {
                 const module = modules[moduleId];
+                const button = document.querySelector('[data-skylab-module="' + moduleId + '"]');
                 const level = document.querySelector('[data-skylab-module-level="' + moduleId + '"]');
                 const power = document.querySelector('[data-skylab-module-power="' + moduleId + '"]');
+                if (button) button.classList.toggle("is-upgrading", !!module.upgrading);
                 if (level) level.textContent = module.level || 0;
                 if (power) power.textContent = module.power || 0;
             });
@@ -1060,6 +1088,75 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             showMessage(nextState.message || "Skylab updated.", false);
         }
 
+        async function parseSkylabResponse(response) {
+            const raw = await response.text();
+
+            try {
+                return JSON.parse(raw);
+            } catch (error) {
+                throw new Error("Invalid Skylab API response.");
+            }
+        }
+
+        async function loadSkylabState() {
+            if (!config.available || refreshingState) return;
+            refreshingState = true;
+
+            try {
+                const response = await fetch(config.apiUrl + "?action=load", {
+                    method: "GET",
+                    credentials: "same-origin"
+                });
+                const data = await parseSkylabResponse(response);
+                if (!data.success) {
+                    throw new Error(data.message || "Skylab action failed.");
+                }
+
+                applyState(data.state);
+            } catch (error) {
+                showMessage(error.message, true);
+            } finally {
+                refreshingState = false;
+            }
+        }
+
+        function tickSkylabTimers() {
+            let needsRefresh = false;
+
+            Object.keys(modules).forEach(function(moduleId) {
+                const module = modules[moduleId];
+                if (!module || !module.upgrading) return;
+
+                const remaining = Math.max(0, Number(module.upgradeRemainingSeconds || 0));
+                if (remaining > 0) {
+                    module.upgradeRemainingSeconds = remaining - 1;
+                }
+
+                if (Number(module.upgradeRemainingSeconds || 0) <= 0) {
+                    needsRefresh = true;
+                }
+            });
+
+            const transports = Array.isArray(skylabState.transports) ? skylabState.transports : [];
+            transports.forEach(function(transport) {
+                if (!transport || transport.ready) return;
+                const remaining = Math.max(0, Number(transport.remainingSeconds || 0));
+                transport.remainingSeconds = Math.max(0, remaining - 1);
+                if (transport.remainingSeconds <= 0) {
+                    transport.ready = true;
+                }
+            });
+
+            renderTransports();
+            if (selectedModuleId && modules[selectedModuleId]) {
+                updatePopup(modules[selectedModuleId]);
+            }
+
+            if (needsRefresh) {
+                loadSkylabState();
+            }
+        }
+
         async function postSkylab(action, payload) {
             if (!config.available) {
                 showMessage(skylabState.message || "Skylab database is not installed yet. Preview mode is active.", true);
@@ -1079,14 +1176,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                 body: body,
                 credentials: "same-origin"
             });
-            const raw = await response.text();
-            let data = null;
-
-            try {
-                data = JSON.parse(raw);
-            } catch (error) {
-                throw new Error("Invalid Skylab API response.");
-            }
+            const data = await parseSkylabResponse(response);
 
             if (!data.success) {
                 throw new Error(data.message || "Skylab action failed.");
@@ -1180,5 +1270,8 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         window.addEventListener("resize", resizeSkylabMap);
         renderTransports();
         resizeSkylabMap();
+        if (config.available) {
+            window.setInterval(tickSkylabTimers, 1000);
+        }
     }());
 </script>

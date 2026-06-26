@@ -660,6 +660,8 @@ class SkylabService
                 'canToggle' => $level > 0 && !$upgrading && !$meta['essential'],
                 'canTransport' => $level > 0 && $meta['resource'] !== null && $meta['resource'] !== 'seprom',
                 'upgrading' => $upgrading,
+                'targetLevel' => $upgrading ? (int)($module['target_level'] ?? 0) : null,
+                'upgradeStartedAt' => $module['upgrade_started_at'] ?? null,
                 'upgradeEndsAt' => $module['upgrade_ends_at'] ?? null,
                 'upgradeRemainingSeconds' => $this->remainingSeconds($module['upgrade_ends_at'] ?? null),
                 'nextLevel' => $hasNextLevel ? $nextLevel : null,
