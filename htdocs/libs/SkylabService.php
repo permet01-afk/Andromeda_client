@@ -27,6 +27,17 @@ class SkylabService
         'seprom',
     ];
 
+    private const SHIP_CARGO_CAPACITY_RESOURCES = [
+        'prometium',
+        'endurium',
+        'terbium',
+        'palladium',
+        'prometid',
+        'duranium',
+        'promerium',
+        'seprom',
+    ];
+
     private const RESOURCE_NAMES = [
         'prometium' => 'Prometium',
         'endurium' => 'Endurium',
@@ -267,12 +278,7 @@ class SkylabService
                 throw new RuntimeException('Not enough ' . self::RESOURCE_NAMES[$resourceKey] . ' in Skylab storage.');
             }
 
-            $cargo = $this->loadShipCargoLocked();
-            $capacity = $this->getApproximateShipCargoCapacityLocked();
-            $currentCargo = array_sum($cargo);
-            if ($capacity > 0 && $currentCargo + $amount > $capacity) {
-                throw new RuntimeException('Not enough ship cargo space.');
-            }
+            $this->ensureShipCargoSpaceLocked($amount);
 
             $state[$resourceKey] -= $amount;
             $this->saveResourceState($state);
@@ -331,13 +337,7 @@ class SkylabService
 
             $resourceKey = $this->normalizeResourceKey((string)$transport['resource_key']);
             $amount = (int)$transport['amount'];
-            $cargo = $this->loadShipCargoLocked();
-            $capacity = $this->getApproximateShipCargoCapacityLocked();
-            $currentCargo = array_sum($cargo);
-
-            if ($capacity > 0 && $currentCargo + $amount > $capacity) {
-                throw new RuntimeException('Not enough ship cargo space.');
-            }
+            $this->ensureShipCargoSpaceLocked($amount);
 
             $column = $this->shipCargoColumn($resourceKey);
             $stmt = $this->db->prepare(
@@ -1090,11 +1090,36 @@ class SkylabService
         $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
         $cargo = [];
 
-        foreach (self::SHIP_CARGO_RESOURCES as $resourceKey) {
+        foreach (array_unique(array_merge(self::SHIP_CARGO_RESOURCES, self::SHIP_CARGO_CAPACITY_RESOURCES)) as $resourceKey) {
             $cargo[$resourceKey] = (int)($row[$resourceKey] ?? 0);
         }
 
         return $cargo;
+    }
+
+    private function calculateShipCargoUsed(array $cargo): int
+    {
+        $used = 0;
+
+        foreach (self::SHIP_CARGO_CAPACITY_RESOURCES as $resourceKey) {
+            $used += max(0, (int)($cargo[$resourceKey] ?? 0));
+        }
+
+        return $used;
+    }
+
+    private function ensureShipCargoSpaceLocked(int $amount): void
+    {
+        $cargo = $this->loadShipCargoLocked();
+        $capacity = $this->getApproximateShipCargoCapacityLocked();
+        $currentCargo = $this->calculateShipCargoUsed($cargo);
+        $freeCargo = $capacity > 0 ? max(0, $capacity - $currentCargo) : $amount;
+
+        if ($capacity > 0 && $amount > $freeCargo) {
+            throw new RuntimeException(
+                'Not enough ship cargo space. Free: ' . number_format($freeCargo) . ', required: ' . number_format($amount) . '.'
+            );
+        }
     }
 
     private function isPlayerOnlineLocked(): bool
@@ -1109,7 +1134,7 @@ class SkylabService
     {
         try {
             $stmt = $this->db->prepare(
-                'SELECT u.max_cargo, sd.base_cargo_2010
+                'SELECT u.max_cargo, u.active_config, u.shipid, sd.base_cargo_2010
                  FROM users u
                  LEFT JOIN ship_design sd ON sd.ship_design_id = u.shipid
                  WHERE u.id = :player_id
@@ -1118,9 +1143,94 @@ class SkylabService
             $stmt->execute([':player_id' => $this->playerId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-            return max(0, (int)($row['max_cargo'] ?? 0), (int)($row['base_cargo_2010'] ?? 0), 1000);
+            $baseCargo = (int)($row['base_cargo_2010'] ?? 0);
+            if ($baseCargo <= 0) {
+                $baseCargo = max((int)($row['max_cargo'] ?? 0), 1000);
+            }
+
+            $shipId = (int)($row['shipid'] ?? 0);
+            $activeConfig = (int)($row['active_config'] ?? 1);
+            if ($this->hasCargoCompressorEquippedLocked($shipId, $activeConfig)) {
+                $baseCargo *= 2;
+            }
+
+            $pilotBioMultiplier = $this->getPilotBioCargoCapacityMultiplierLocked();
+            if ($pilotBioMultiplier > 1.0) {
+                $baseCargo = (int)round($baseCargo * $pilotBioMultiplier);
+            }
+
+            return max(0, $baseCargo);
         } catch (Throwable $ignored) {
             return 1000;
+        }
+    }
+
+    private function hasCargoCompressorEquippedLocked(int $shipId, int $activeConfig): bool
+    {
+        if ($shipId <= 0) {
+            return false;
+        }
+
+        try {
+            $configName = $activeConfig === 2 ? 'B' : 'A';
+            $stmt = $this->db->prepare(
+                "SELECT 1
+                 FROM ship_config sc
+                 INNER JOIN ship_slot ss ON ss.ship_config_id = sc.id
+                 WHERE sc.player_id = :player_id
+                   AND sc.ship_design_id = :ship_id
+                   AND UPPER(sc.name) = :config_name
+                   AND ss.row_name = 'extras'
+                   AND ss.item_id = 21
+                 LIMIT 1"
+            );
+            $stmt->execute([
+                ':player_id' => $this->playerId,
+                ':ship_id' => $shipId,
+                ':config_name' => $configName,
+            ]);
+
+            return (bool)$stmt->fetchColumn();
+        } catch (Throwable $ignored) {
+            return false;
+        }
+    }
+
+    private function getPilotBioCargoCapacityMultiplierLocked(): float
+    {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT l.level, n.effect_values_json
+                 FROM player_pilot_bio_state s
+                 LEFT JOIN player_pilot_bio_levels l
+                   ON l.user_id = s.user_id AND l.node_code = 'logistics'
+                 LEFT JOIN pilot_bio_nodes n
+                   ON n.node_code = 'logistics'
+                 WHERE s.user_id = :player_id
+                 LIMIT 1"
+            );
+            $stmt->execute([':player_id' => $this->playerId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                return 1.0;
+            }
+
+            $level = max(0, (int)($row['level'] ?? 0));
+            if ($level <= 0) {
+                return 1.0;
+            }
+
+            $values = json_decode((string)($row['effect_values_json'] ?? ''), true);
+            if (!is_array($values) || empty($values)) {
+                return 1.0;
+            }
+
+            $index = min($level, count($values)) - 1;
+            $bonusPercent = max(0, (int)($values[$index] ?? 0));
+
+            return 1.0 + ($bonusPercent / 100.0);
+        } catch (Throwable $ignored) {
+            return 1.0;
         }
     }
 
