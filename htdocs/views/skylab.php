@@ -188,14 +188,26 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
     .skylab-status-line {
         padding: 0.55rem 0.95rem;
         border-bottom: 1px solid #172733;
-        background: rgba(8, 16, 23, 0.92);
+        background: linear-gradient(180deg, rgba(11, 21, 29, 0.96), rgba(5, 11, 16, 0.96));
         color: #9fc7d8;
         font-size: 0.72rem;
         font-weight: 800;
+        min-height: 18px;
+        text-shadow: 0 1px 1px #000;
     }
 
     .skylab-status-line.is-preview {
         color: #f2d477;
+    }
+
+    .skylab-status-line.is-success {
+        border-bottom-color: rgba(84, 151, 105, 0.42);
+        color: #b8e6bf;
+    }
+
+    .skylab-status-line.is-error {
+        border-bottom-color: rgba(181, 91, 61, 0.54);
+        color: #ffc0a8;
     }
 
     .skylab-body {
@@ -428,7 +440,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
     .skylab-popup-middle {
         min-height: 260px;
         background: url("<?php echo $skylabModuleAssets; ?>popup_middle.png") left top repeat-y;
-        padding: 6px 16px 0;
+        padding: 7px 16px 0;
     }
 
     .skylab-popup-tabs {
@@ -436,7 +448,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         align-items: flex-end;
         gap: 0;
         height: 18px;
-        margin-bottom: 4px;
+        margin-bottom: 5px;
     }
 
     .skylab-popup-tab {
@@ -454,6 +466,8 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
 
     .skylab-popup-tab.is-active {
         color: #fff6c7;
+        filter: brightness(1.16);
+        text-shadow: 0 0 5px rgba(255, 203, 66, 0.42), 0 1px 1px #000;
     }
 
     .skylab-popup-panel.is-hidden,
@@ -463,7 +477,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
 
     .skylab-popup-content {
         min-height: 196px;
-        padding: 20px 24px;
+        padding: 18px 24px 20px;
         background: url("<?php echo $skylabModuleAssets; ?>content_bg_326x243px.png") left top / 100% 100% no-repeat;
     }
 
@@ -471,7 +485,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         display: grid;
         grid-template-columns: 122px 1fr;
         align-items: center;
-        min-height: 25px;
+        min-height: 27px;
         color: #eaf8fc;
         font-size: 0.72rem;
         font-weight: 900;
@@ -494,9 +508,10 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         position: relative;
         width: 218px;
         height: 14px;
-        margin: 12px 0 11px;
-        border: 1px solid rgba(81, 104, 116, 0.8);
-        background: rgba(4, 10, 14, 0.88);
+        margin: 10px 0 12px;
+        border: 1px solid rgba(89, 95, 88, 0.86);
+        background: linear-gradient(180deg, rgba(5, 9, 11, 0.96), rgba(13, 17, 16, 0.96));
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.88), 0 1px 0 rgba(255, 222, 142, 0.08);
         overflow: hidden;
     }
 
@@ -512,14 +527,29 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         inset: 0 auto 0 0;
         z-index: 1;
         width: 0;
-        background: linear-gradient(90deg, rgba(36, 135, 182, 0.85), rgba(117, 224, 246, 0.96));
-        box-shadow: 0 0 10px rgba(103, 210, 244, 0.35);
+        background: linear-gradient(180deg, rgba(234, 178, 54, 0.9), rgba(108, 91, 35, 0.92));
+        box-shadow: inset 0 1px 0 rgba(255, 238, 156, 0.22), 0 0 6px rgba(226, 171, 43, 0.22);
     }
 
     .skylab-popup-message {
-        color: #9fb5bf;
+        margin: 8px 0 0;
+        border: 1px solid rgba(91, 112, 119, 0.35);
+        background: rgba(5, 10, 14, 0.54);
+        color: #b8c9cf;
         font-size: 0.66rem;
         line-height: 1.35;
+        padding: 6px 8px;
+        text-shadow: 0 1px 1px #000;
+    }
+
+    .skylab-popup-message.is-warning {
+        border-color: rgba(196, 142, 47, 0.48);
+        color: #f2d477;
+    }
+
+    .skylab-popup-message.is-error {
+        border-color: rgba(188, 78, 55, 0.5);
+        color: #ffc0a8;
     }
 
     .skylab-popup-actions {
@@ -540,6 +570,13 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         text-transform: uppercase;
     }
 
+    .skylab-popup-action:disabled {
+        border-color: rgba(80, 90, 96, 0.58);
+        color: #74868e;
+        filter: grayscale(0.75) brightness(0.72);
+        opacity: 0.82;
+    }
+
     .skylab-popup-action:not(:disabled) {
         color: #f2fbff;
         cursor: pointer;
@@ -547,6 +584,23 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
 
     .skylab-popup-action:not(:disabled):hover {
         filter: brightness(1.18);
+    }
+
+    .skylab-state-value.is-active {
+        color: #b8e6bf;
+    }
+
+    .skylab-state-value.is-inactive {
+        color: #b8c9cf;
+    }
+
+    .skylab-state-value.is-upgrading {
+        color: #ffd979;
+        text-shadow: 0 0 5px rgba(255, 185, 50, 0.32), 0 1px 1px #000;
+    }
+
+    .skylab-upgrade-remaining-row .skylab-popup-value {
+        color: #ffd979;
     }
 
     .skylab-popup-transport {
@@ -773,7 +827,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                                         <span>Duration</span>
                                         <span class="skylab-popup-value" id="skylab-upgrade-duration">-</span>
                                     </div>
-                                    <div class="skylab-popup-row">
+                                    <div class="skylab-popup-row skylab-upgrade-remaining-row">
                                         <span>Time remaining</span>
                                         <span class="skylab-popup-value" id="skylab-upgrade-remaining">-</span>
                                     </div>
@@ -876,7 +930,9 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         function showMessage(message, isError) {
             if (!statusLine || !message) return;
             statusLine.textContent = message;
-            statusLine.classList.toggle("is-preview", !!isError || !config.available);
+            statusLine.classList.toggle("is-preview", !config.available);
+            statusLine.classList.toggle("is-error", !!isError && config.available);
+            statusLine.classList.toggle("is-success", !isError && config.available);
         }
 
         function getSelectedModule() {
@@ -901,6 +957,14 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             fields.production.textContent = module.production;
             fields.efficiency.textContent = module.efficiency;
             fields.state.textContent = module.state;
+            fields.state.className = "skylab-popup-value skylab-state-value";
+            if (module.upgrading) {
+                fields.state.classList.add("is-upgrading");
+            } else if (module.active) {
+                fields.state.classList.add("is-active");
+            } else {
+                fields.state.classList.add("is-inactive");
+            }
             fields.consumption.textContent = module.consumption;
             fields.efficiencyFill.style.width = Math.max(0, Math.min(100, Number(module.efficiencyValue || 0))) + "%";
             updateActionButtons(module);
@@ -918,12 +982,17 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                 ? formatDuration(module.upgradeRemainingSeconds || 0)
                 : "-";
             upgradeFields.prerequisite.textContent = formatUpgradePrerequisite(module);
+            upgradeFields.message.classList.remove("is-warning", "is-error");
             if (module.upgrading) {
                 upgradeFields.message.textContent = "Upgrade to level " + (module.targetLevel || module.nextLevel || "-") + " is in progress.";
+                upgradeFields.message.classList.add("is-warning");
             } else {
                 upgradeFields.message.textContent = module.canUpgrade
                     ? "Ready to start the next upgrade."
                     : (module.upgradeReason || "Upgrade is not available.");
+                if (!module.canUpgrade && module.nextLevel) {
+                    upgradeFields.message.classList.add(module.upgradeReason === "Another Skylab upgrade is already in progress." ? "is-warning" : "is-error");
+                }
             }
         }
 
@@ -999,6 +1068,10 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             setTab("overview");
             transportPanel.classList.add("is-hidden");
             popup.classList.remove("is-hidden");
+
+            if (module.upgradeReason === "Another Skylab upgrade is already in progress.") {
+                showMessage(module.upgradeReason, true);
+            }
         }
 
         function updateResources(resources) {
