@@ -504,33 +504,6 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         object-fit: contain;
     }
 
-    .skylab-popup-progress {
-        position: relative;
-        width: 218px;
-        height: 14px;
-        margin: 10px 0 12px;
-        border: 1px solid rgba(89, 95, 88, 0.86);
-        background: linear-gradient(180deg, rgba(5, 9, 11, 0.96), rgba(13, 17, 16, 0.96));
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.88), 0 1px 0 rgba(255, 222, 142, 0.08);
-        overflow: hidden;
-    }
-
-    .skylab-popup-progress img {
-        position: absolute;
-        inset: 0;
-        z-index: 2;
-        pointer-events: none;
-    }
-
-    .skylab-efficiency-fill {
-        position: absolute;
-        inset: 0 auto 0 0;
-        z-index: 1;
-        width: 0;
-        background: linear-gradient(180deg, rgba(234, 178, 54, 0.9), rgba(108, 91, 35, 0.92));
-        box-shadow: inset 0 1px 0 rgba(255, 238, 156, 0.22), 0 0 6px rgba(226, 171, 43, 0.22);
-    }
-
     .skylab-popup-message {
         margin: 8px 0 0;
         border: 1px solid rgba(91, 112, 119, 0.35);
@@ -787,10 +760,6 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                                             <span id="skylab-popup-efficiency"><?php echo htmlspecialchars($selectedModule['efficiency'], ENT_QUOTES, 'UTF-8'); ?></span>
                                         </span>
                                     </div>
-                                    <div class="skylab-popup-progress" aria-hidden="true">
-                                        <span class="skylab-efficiency-fill" id="skylab-efficiency-fill"></span>
-                                        <img src="<?php echo $skylabAssets; ?>construction_grid.png" alt="" />
-                                    </div>
                                     <div class="skylab-popup-row">
                                         <span>State</span>
                                         <span class="skylab-popup-value" id="skylab-popup-state"><?php echo htmlspecialchars($selectedModule['state'], ENT_QUOTES, 'UTF-8'); ?></span>
@@ -885,7 +854,6 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             power: document.getElementById("skylab-popup-power"),
             production: document.getElementById("skylab-popup-production"),
             efficiency: document.getElementById("skylab-popup-efficiency"),
-            efficiencyFill: document.getElementById("skylab-efficiency-fill"),
             state: document.getElementById("skylab-popup-state"),
             consumption: document.getElementById("skylab-popup-consumption")
         };
@@ -966,7 +934,6 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                 fields.state.classList.add("is-inactive");
             }
             fields.consumption.textContent = module.consumption;
-            fields.efficiencyFill.style.width = Math.max(0, Math.min(100, Number(module.efficiencyValue || 0))) + "%";
             updateActionButtons(module);
             updateUpgradePanel(module);
             updateTransportPanel(module);
