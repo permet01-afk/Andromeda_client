@@ -1,0 +1,339 @@
+## OrbitReborn## Server output log file## samedi, 27 juin 2026 12:23:38[12h23s38m42]Initializing Andromeda's Emulator...[12h23s38m43]Configuration value 'debug.sso' missing; using default value.[12h23s38m43]Initializing MySQL manager...[12h23s39m39]Setting up server listener on port 8080...[12h23s39m39]Resetting database counters and statistics...[12h23s39m44]Intializing game components and workers...[12h23s39m52][MapMgr] Map instance 1 has been loaded for Map 1.[12h23s39m53][MapMgr] Map instance 2 has been loaded for Map 5.[12h23s39m53][MapMgr] Map instance 3 has been loaded for Map 9.[12h23s39m53][MapMgr] Map instance 4 has been loaded for Map 2.[12h23s39m53][MapMgr] Map instance 5 has been loaded for Map 6.[12h23s39m54][MapMgr] Map instance 6 has been loaded for Map 10.[12h23s39m54][MapMgr] Map instance 7 has been loaded for Map 3.[12h23s39m54][MapMgr] Map instance 8 has been loaded for Map 7.[12h23s39m54][MapMgr] Map instance 9 has been loaded for Map 11.[12h23s39m54][MapMgr] Map instance 10 has been loaded for Map 4.[12h23s39m55][MapMgr] Map instance 11 has been loaded for Map 8.[12h23s39m55][MapMgr] Map instance 12 has been loaded for Map 12.[12h23s39m55][MapMgr] Map instance 13 has been loaded for Map 17.[12h23s39m55][MapMgr] Map instance 14 has been loaded for Map 21.[12h23s39m55][MapMgr] Map instance 15 has been loaded for Map 25.[12h23s39m56][MapMgr] Map instance 16 has been loaded for Map 18.[12h23s39m56][MapMgr] Map instance 17 has been loaded for Map 22.[12h23s39m56][MapMgr] Map instance 18 has been loaded for Map 26.[12h23s39m56][MapMgr] Map instance 19 has been loaded for Map 19.[12h23s39m57][MapMgr] Map instance 20 has been loaded for Map 23.[12h23s39m57][MapMgr] Map instance 21 has been loaded for Map 27.[12h23s39m57][MapMgr] Map instance 22 has been loaded for Map 20.[12h23s39m57][MapMgr] Map instance 23 has been loaded for Map 24.[12h23s39m57][MapMgr] Map instance 24 has been loaded for Map 28.[12h23s39m58][MapMgr] Map instance 25 has been loaded for Map 29.[12h23s39m60][Titles] Most Wanted could not be assigned to an NPC because no eligible NPC was found.[12h23s39m62]Orbit Reborn has initialized successfully (1,21 seconds). Ready for connections.[12h23s39m62]Press the ENTER key for command input. Shut down server with 'STOP' command.[12h23s59m50][MapMgr] Unloaded map instance 1.[12h23s59m50][MapMgr] Unloaded map instance 2.[12h23s59m50][MapMgr] Unloaded map instance 3.[12h23s59m50][MapMgr] Unloaded map instance 4.[12h23s59m50][MapMgr] Unloaded map instance 5.[12h23s59m50][MapMgr] Unloaded map instance 6.[12h23s59m50][MapMgr] Unloaded map instance 7.[12h23s59m50][MapMgr] Unloaded map instance 8.[12h23s59m50][MapMgr] Unloaded map instance 9.[12h23s59m50][MapMgr] Unloaded map instance 10.[12h23s59m50][MapMgr] Unloaded map instance 11.[12h23s59m50][MapMgr] Unloaded map instance 12.[12h23s59m51][MapMgr] Unloaded map instance 13.[12h23s59m51][MapMgr] Unloaded map instance 14.[12h23s59m51][MapMgr] Unloaded map instance 15.[12h23s59m51][MapMgr] Unloaded map instance 16.[12h23s59m51][MapMgr] Unloaded map instance 17.[12h23s59m51][MapMgr] Unloaded map instance 18.[12h23s59m51][MapMgr] Unloaded map instance 19.[12h23s59m51][MapMgr] Unloaded map instance 20.[12h23s59m51][MapMgr] Unloaded map instance 21.[12h23s59m51][MapMgr] Unloaded map instance 22.[12h23s59m51][MapMgr] Unloaded map instance 23.[12h23s59m51][MapMgr] Unloaded map instance 24.[12h23s59m51][MapMgr] Unloaded map instance 25.[12h24s19m52][MapMgr] Disposed of map instance 1 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 2 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 3 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 4 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 5 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 6 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 7 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 8 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 9 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 10 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 11 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 12 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 13 and associated resources.[12h24s19m52][MapMgr] Disposed of map instance 14 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 15 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 16 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 17 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 18 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 19 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 20 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 21 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 22 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 23 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 24 and associated resources.[12h24s19m53][MapMgr] Disposed of map instance 25 and associated resources.[12h24s35m65]Accepted incoming connection from 127.0.0.1.[12h24s35m65][SESSION] Creating new session id=1 from 127.0.0.1[12h24s35m70][AUTH] TryAuthenticate sessionId=1 remote=127.0.0.1[12h24s35m70]sso : '2f37735aa1eb8b185884103be59254c9'[12h24s35m70]User Tinky (ID 3) has logged in from 127.0.0.1.[12h24s35m73][AUTH] OK sessionId=1 charId=3[12h24s35m73]LOGIN OK for ticket 2f37735aa1eb8b185884103be59254c9 from 127.0.0.1[12h24s35m73][LOGIN_FLOW] Begin post-login data refresh for 3[12h24s35m81][LOGIN_FLOW] DB refresh completed for 3[12h24s35m81][LOGIN_FLOW] Sending settings/init packets for 3[12h24s35m81][LOGIN_FLOW] Preparing map 9 for 3[12h24s35m81][MapMgr] Map instance 26 has been loaded for Map 9.[12h24s35m87][LOGIN_FLOW] Post-login sequence completed for 3[12h24s36m14]Accepted incoming connection from 127.0.0.1.[12h24s36m14][SESSION] Creating new session id=2 from 127.0.0.1[12h24s44m83][MapMgr] Map instance 27 has been loaded for Map 52.[12h24s59m59][MapMgr] Unloaded map instance 26.[12h25s19m61][MapMgr] Disposed of map instance 26 and associated resources.[12h25s26m97][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s27m99][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s29m16][QuestObjectiveProgress] Failed to update npc_kill/Mordon for player 3: Unable to connect to any of the specified MySQL hosts.[12h25s30m18][QuestObjectiveProgress] Failed to update weekly weekly_npc_kill for player 3: Unable to connect to any of the specified MySQL hosts.[12h25s31m97][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s32m99][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s36m28][QuestObjectiveProgress] Failed to update npc_kill/Mordon for player 3: Unable to connect to any of the specified MySQL hosts.[12h25s36m98][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s37m30][QuestObjectiveProgress] Failed to update weekly weekly_npc_kill for player 3: Unable to connect to any of the specified MySQL hosts.[12h25s38m00][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s41m96][QuestObjectiveProgress] Failed to update npc_kill/Mordon for player 3: Unable to connect to any of the specified MySQL hosts.[12h25s41m99][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s42m98][QuestObjectiveProgress] Failed to update weekly weekly_npc_kill for player 3: Unable to connect to any of the specified MySQL hosts.[12h25s43m01][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s47m01][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s48m03][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s51m34][QuestObjectiveProgress] Failed to update npc_kill/Mordon for player 3: Unable to connect to any of the specified MySQL hosts.[12h25s52m02][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s52m36][QuestObjectiveProgress] Failed to update weekly weekly_npc_kill for player 3: Unable to connect to any of the specified MySQL hosts.[12h25s53m04][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s57m04][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h25s58m05][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s02m05][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s03m06][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s07m05][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s08m07][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s12m06][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s13m08][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s17m07][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s18m09][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s22m07][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s23m09][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s27m08][Handshake] Primary ammo flush failed for charId=3: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.FlushPendingPrimaryAmmoToDb() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 5713
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287[12h26s28m10][HandshakeTimer] AmmoSyncTick failed: MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool.GetPooledConnection()
+   à MySql.Data.MySqlClient.MySqlPool.TryToGetDriver()
+   à MySql.Data.MySqlClient.MySqlPool.GetConnection()
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à System.Data.Common.DbDataAdapter.FillInternal(DataSet dataset, DataTable[] datatables, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet, Int32 startRecord, Int32 maxRecords, String srcTable, IDbCommand command, CommandBehavior behavior)
+   à System.Data.Common.DbDataAdapter.Fill(DataSet dataSet)
+   à OrbitReborn_Emulator.Storage.SqlDatabaseClient.ExecuteQuerySet(String CommandText) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseClient.cs:ligne 111
+   à OrbitReborn_Emulator.Game.Characters.CharacterInfo.RefreshAmmoFromDbIfHigher() dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Characters\CharacterInfo.cs:ligne 6169
+   à OrbitReborn_Emulator.Game.Handlers.Handshake.AmmoSyncTick(Object state) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Game\Handlers\Handshake.cs:ligne 287
