@@ -47,9 +47,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private const int ROCKET_BASE_ACCURACY_PERCENT = 75;
         private const int HIT_CHANCE_MIN_PERCENT = 50;
         private const int HIT_CHANCE_MAX_PERCENT = 100;
+        private const int FACTICE_LASER_MIN_REMAINING_WAIT_MS = 250;
+        private const int FACTICE_LASER_VISUAL_THROTTLE_MS = 250;
         private static readonly Dictionary<int, RocketLauncherRuntimeState> RocketLauncherStates = new Dictionary<int, RocketLauncherRuntimeState>();
         private static readonly object RocketLauncherStatesSync = new object();
         private static readonly CDictionnary<int, byte> KillInProgress = new CDictionnary<int, byte>();
+        private static readonly Dictionary<int, double> FacticeLaserVisualTimes = new Dictionary<int, double>();
+        private static readonly object FacticeLaserVisualTimesSync = new object();
 
         private static void LogTimerFailure(string callbackName, Exception ex)
         {
@@ -3422,8 +3426,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 wait = 0;
             else
             {
-                Fight.FacticeLaserAttack(Session);
-                wait = Session.CharacterInfo.AttackSpeed - wait;
+                double remainingWait = Session.CharacterInfo.AttackSpeed - wait;
+                if (Fight.CanSendFacticeLaserAttack(Session, remainingWait))
+                    Fight.FacticeLaserAttack(Session);
+                wait = remainingWait;
             }
 
             Session.CharacterInfo.LaserAttackTimer = new System.Threading.Timer(
@@ -3441,6 +3447,32 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Fight.TryStartAutoRocketLauncher(Session);
 
             Session.CharacterInfo.LaserAttackCanTimer = new System.Threading.Timer(new TimerCallback(Fight.CanAttack), (object)Session, 0, 0);
+        }
+
+        private static bool CanSendFacticeLaserAttack(Session session, double remainingWait)
+        {
+            if (session == null || session.CharacterInfo == null)
+                return false;
+
+            if (remainingWait <= FACTICE_LASER_MIN_REMAINING_WAIT_MS)
+                return false;
+
+            double now = DateTime.Now.TimeOfDay.TotalMilliseconds;
+
+            lock (FacticeLaserVisualTimesSync)
+            {
+                double last;
+                if (FacticeLaserVisualTimes.TryGetValue(session.CharacterId, out last))
+                {
+                    double elapsed = now - last;
+                    if (elapsed >= 0.0 && elapsed < FACTICE_LASER_VISUAL_THROTTLE_MS)
+                        return false;
+                }
+
+                FacticeLaserVisualTimes[session.CharacterId] = now;
+            }
+
+            return true;
         }
 
         private static void RemoveCloack(Session session, MapInstance instanceByMapId)
@@ -3658,7 +3690,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 Session.CharacterInfo.PreviousAttacked = Npc.Id;
 
-                if (Ammo != 6)
+                if (damage && Ammo != 6)
                     Session.CharacterInfo.PreviousDamageTime = now;
 
                 if (Session.CharacterInfo.Invisible == 1)
@@ -3889,7 +3921,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 Session.CharacterInfo.PreviousAttacked = 0;
 
-                if (Ammo != 6)
+                if (damage && Ammo != 6)
                     Session.CharacterInfo.PreviousDamageTime = now;
 
                 if (Session.CharacterInfo.Invisible == 1)

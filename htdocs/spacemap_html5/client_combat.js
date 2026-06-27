@@ -541,6 +541,10 @@ function sendSelectShip(targetId) {
     sendRaw(packet);
 }
 
+let lastLaserAttackSendTargetId = null;
+let lastLaserAttackSendAtMs = 0;
+const LASER_ATTACK_SEND_DEDUPE_MS = 120;
+
 function sendLaserAttack(targetId) {
     if (targetId == null) return;
     if (typeof heroId !== "undefined" && heroId && targetId == heroId) {
@@ -553,6 +557,13 @@ function sendLaserAttack(targetId) {
     }
     clearPendingCollectState();
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const nowMs = typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+    if (lastLaserAttackSendTargetId != null
+        && Number(lastLaserAttackSendTargetId) === Number(targetId)
+        && nowMs - lastLaserAttackSendAtMs >= 0
+        && nowMs - lastLaserAttackSendAtMs < LASER_ATTACK_SEND_DEDUPE_MS) {
+        return;
+    }
     try {
         const selectedAmmo = typeof currentAmmoId !== "undefined" && currentAmmoId != null ? currentAmmoId : typeof primaryAmmoId !== "undefined" && primaryAmmoId != null ? primaryAmmoId : 1;
         const stock = typeof ammoStock === "object" && ammoStock != null ? Number(ammoStock[selectedAmmo]) : NaN;
@@ -573,6 +584,8 @@ function sendLaserAttack(targetId) {
     pendingAttackAckTargetId = targetId;
     pendingAttackAckStartMs = performance.now();
     lastAutoLaserResumeMs = performance.now();
+    lastLaserAttackSendTargetId = targetId;
+    lastLaserAttackSendAtMs = nowMs;
     sendRaw(packet);
 }
 
