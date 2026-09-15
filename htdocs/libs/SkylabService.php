@@ -3,6 +3,8 @@
 class SkylabService
 {
     private const MAX_CATCHUP_SECONDS = 2592000;
+    private const PRODUCTION_STEP_SECONDS = 60;
+    private const PRODUCTION_CARRY_UNITS = 3600;
     private const MAX_TRANSPORT_AMOUNT = 1000000;
 
     private const RESOURCE_KEYS = [
@@ -129,7 +131,7 @@ class SkylabService
 
         return $this->transaction(function () use ($moduleKey): array {
             $this->ensurePlayerRows();
-            $this->applyCatchUpLocked();
+            $this->applyCatchUpLocked(true);
 
             $modules = $this->loadModulesLocked();
             $module = $modules[$moduleKey] ?? null;
@@ -173,7 +175,7 @@ class SkylabService
 
         return $this->transaction(function () use ($moduleKey): array {
             $this->ensurePlayerRows();
-            $this->applyCatchUpLocked();
+            $this->applyCatchUpLocked(true);
 
             $modules = $this->loadModulesLocked();
             $state = $this->loadResourceStateLocked();
@@ -258,7 +260,7 @@ class SkylabService
 
         return $this->transaction(function () use ($resourceKey, $amount): array {
             $this->ensurePlayerRows();
-            $this->applyCatchUpLocked();
+            $this->applyCatchUpLocked(true);
 
             if ($amount <= 0) {
                 throw new RuntimeException('Enter a valid amount.');
@@ -495,13 +497,48 @@ class SkylabService
         }
     }
 
-    private function applyCatchUpLocked(): void
+    private function applyCatchUpLocked(bool $flushPartial = false): void
     {
         $state = $this->loadResourceStateLocked();
         $modules = $this->loadModulesLocked();
         $levels = $this->loadLevelCatalog();
-        $now = time();
-        $changed = false;
+        $previousUpdate = $state['last_update_at'];
+        $completed = $this->advanceProduction($state, $modules, $levels, time(), $flushPartial);
+
+        foreach ($completed as $moduleKey) {
+            $module = $modules[$moduleKey];
+            $stmt = $this->db->prepare(
+                'UPDATE player_skylab_modules
+                 SET level = :level,
+                     active = :active,
+                     target_level = NULL,
+                     upgrade_started_at = NULL,
+                     upgrade_ends_at = NULL,
+                     updated_at = NOW()
+                 WHERE player_id = :player_id AND module_key = :module_key'
+            );
+            $stmt->execute([
+                ':level' => (int)$module['level'],
+                ':active' => (int)$module['active'],
+                ':player_id' => $this->playerId,
+                ':module_key' => $moduleKey,
+            ]);
+        }
+
+        if ($state['last_update_at'] !== $previousUpdate || $completed) {
+            $this->saveResourceState($state);
+        }
+    }
+
+    private function advanceProduction(array &$state, array &$modules, array $levels, int $now, bool $flushPartial = false): array
+    {
+        $lastUpdate = strtotime((string)$state['last_update_at']);
+        if ($lastUpdate === false || $lastUpdate > $now) {
+            $lastUpdate = $now;
+        }
+
+        $cursor = max($lastUpdate, $now - self::MAX_CATCHUP_SECONDS);
+        $upgrades = [];
 
         foreach ($modules as $moduleKey => $module) {
             if (!$this->isModuleUpgrading($module)) {
@@ -510,43 +547,45 @@ class SkylabService
 
             $endsAt = strtotime((string)$module['upgrade_ends_at']);
             if ($endsAt !== false && $endsAt <= $now) {
-                $targetLevel = max((int)$module['level'], (int)$module['target_level']);
-                $active = ((int)$module['level'] <= 0 && !(self::MODULES[$moduleKey]['essential'] ?? false)) ? 0 : (int)$module['active'];
-                $stmt = $this->db->prepare(
-                    'UPDATE player_skylab_modules
-                     SET level = :level,
-                         active = :active,
-                         target_level = NULL,
-                         upgrade_started_at = NULL,
-                         upgrade_ends_at = NULL,
-                         updated_at = NOW()
-                     WHERE player_id = :player_id AND module_key = :module_key'
-                );
-                $stmt->execute([
-                    ':level' => $targetLevel,
-                    ':active' => $active,
-                    ':player_id' => $this->playerId,
-                    ':module_key' => $moduleKey,
-                ]);
-                $modules[$moduleKey]['level'] = $targetLevel;
-                $modules[$moduleKey]['active'] = $active;
-                $modules[$moduleKey]['target_level'] = null;
-                $modules[$moduleKey]['upgrade_started_at'] = null;
-                $modules[$moduleKey]['upgrade_ends_at'] = null;
-                $changed = true;
+                $upgrades[$moduleKey] = $endsAt;
             }
         }
+        asort($upgrades, SORT_NUMERIC);
 
-        $lastUpdate = strtotime((string)$state['last_update_at']);
-        if ($lastUpdate === false || $lastUpdate > $now) {
-            $lastUpdate = $now;
+        foreach ($upgrades as $moduleKey => $endsAt) {
+            $this->advanceProductionInterval($state, $modules, $levels, $cursor, max($cursor, $endsAt));
+            $module = $modules[$moduleKey];
+            $modules[$moduleKey]['level'] = max((int)$module['level'], (int)$module['target_level']);
+            $modules[$moduleKey]['active'] = ((int)$module['level'] <= 0 && !(self::MODULES[$moduleKey]['essential'] ?? false)) ? 0 : (int)$module['active'];
+            $modules[$moduleKey]['target_level'] = null;
+            $modules[$moduleKey]['upgrade_started_at'] = null;
+            $modules[$moduleKey]['upgrade_ends_at'] = null;
         }
 
-        $elapsed = min(self::MAX_CATCHUP_SECONDS, max(0, $now - $lastUpdate));
-        if ($elapsed > 0) {
-            $capacities = $this->calculateCapacities($modules, $levels);
-            $runnable = $this->getRunnableModules($modules, $levels);
-            $carry = $state['production_carry'];
+        // Reads stop at fixed minute boundaries; mutations settle the remaining seconds first.
+        $until = $flushPartial ? $now : $now - ($now % self::PRODUCTION_STEP_SECONDS);
+        $this->advanceProductionInterval($state, $modules, $levels, $cursor, $until);
+        $state['last_update_at'] = date('Y-m-d H:i:s', $cursor);
+
+        return array_keys($upgrades);
+    }
+
+    private function advanceProductionInterval(array &$state, array $modules, array $levels, int &$cursor, int $until): void
+    {
+        if ($until <= $cursor) {
+            return;
+        }
+
+        $capacities = $this->calculateCapacities($modules, $levels);
+        $runnable = $this->getRunnableModules($modules, $levels);
+        $carry = $state['production_carry'];
+        $rates = [];
+        foreach ($runnable as $moduleKey => $enabled) {
+            $rates[$moduleKey] = $this->rateFor($levels, $modules, $moduleKey);
+        }
+
+        while ($cursor < $until) {
+            $elapsed = min($until - $cursor, self::PRODUCTION_STEP_SECONDS - ($cursor % self::PRODUCTION_STEP_SECONDS));
 
             foreach (['prometium', 'endurium', 'terbium', 'xeno'] as $moduleKey) {
                 if (!isset($runnable[$moduleKey], $modules[$moduleKey])) {
@@ -554,47 +593,42 @@ class SkylabService
                 }
 
                 $resourceKey = self::MODULES[$moduleKey]['resource'];
-                $level = (int)$modules[$moduleKey]['level'];
-                $rate = (int)($levels[$moduleKey][$level]['production_per_hour'] ?? 0);
+                $rate = $rates[$moduleKey];
                 if ($resourceKey !== null && $rate > 0) {
-                    $changed = $this->addProducedResource($state, $carry, $resourceKey, $rate, $elapsed, $capacities[$resourceKey]) || $changed;
+                    $this->addProducedResource($state, $carry, $resourceKey, $rate, $elapsed, $capacities[$resourceKey]);
                 }
             }
 
             if (isset($runnable['prometid'])) {
-                $changed = $this->produceWithIngredients($state, $carry, 'prometid', (int)$this->rateFor($levels, $modules, 'prometid'), $elapsed, $capacities['prometid'], [
+                $this->produceWithIngredients($state, $carry, 'prometid', $rates['prometid'], $elapsed, $capacities['prometid'], [
                     'prometium' => 20,
                     'endurium' => 10,
-                ]) || $changed;
+                ]);
             }
 
             if (isset($runnable['duranium'])) {
-                $changed = $this->produceWithIngredients($state, $carry, 'duranium', (int)$this->rateFor($levels, $modules, 'duranium'), $elapsed, $capacities['duranium'], [
+                $this->produceWithIngredients($state, $carry, 'duranium', $rates['duranium'], $elapsed, $capacities['duranium'], [
                     'endurium' => 10,
                     'terbium' => 20,
-                ]) || $changed;
+                ]);
             }
 
             if (isset($runnable['promerium'])) {
-                $changed = $this->produceWithIngredients($state, $carry, 'promerium', (int)$this->rateFor($levels, $modules, 'promerium'), $elapsed, $capacities['promerium'], [
+                $this->produceWithIngredients($state, $carry, 'promerium', $rates['promerium'], $elapsed, $capacities['promerium'], [
                     'prometid' => 10,
                     'duranium' => 10,
                     'xenomit' => 1,
-                ]) || $changed;
+                ]);
             }
 
             if (isset($runnable['seprom'])) {
-                $changed = $this->produceWithIngredients($state, $carry, 'seprom', (int)$this->rateFor($levels, $modules, 'seprom'), $elapsed, $capacities['seprom'], [
+                $this->produceWithIngredients($state, $carry, 'seprom', $rates['seprom'], $elapsed, $capacities['seprom'], [
                     'promerium' => 2,
-                ]) || $changed;
+                ]);
             }
-
-            $state['production_carry'] = $carry;
-            $state['last_update_at'] = date('Y-m-d H:i:s', $now);
-            $this->saveResourceState($state);
-        } elseif ($changed) {
-            $this->saveResourceState($state);
+            $cursor += $elapsed;
         }
+        $state['production_carry'] = $carry;
     }
 
     private function buildStateLocked(string $message): array
@@ -912,7 +946,7 @@ class SkylabService
     private function addProducedResource(array &$state, array &$carry, string $resourceKey, int $ratePerHour, int $elapsed, int $capacity): bool
     {
         if ((int)$state[$resourceKey] >= $capacity) {
-            return $this->setProductionCarry($carry, $resourceKey, 0.0);
+            return false;
         }
 
         [$amount, $remainder] = $this->calculateWholeProduction($carry, $resourceKey, $ratePerHour, $elapsed);
@@ -923,7 +957,7 @@ class SkylabService
         $before = (int)$state[$resourceKey];
         $added = min($amount, max(0, $capacity - $before));
         $state[$resourceKey] = $before + $added;
-        $carryChanged = $this->setProductionCarry($carry, $resourceKey, $added < $amount ? 0.0 : $remainder);
+        $carryChanged = $this->setProductionCarry($carry, $resourceKey, $remainder);
 
         return $state[$resourceKey] !== $before || $carryChanged;
     }
@@ -931,12 +965,12 @@ class SkylabService
     private function produceWithIngredients(array &$state, array &$carry, string $resourceKey, int $ratePerHour, int $elapsed, int $capacity, array $ingredients): bool
     {
         if ((int)$state[$resourceKey] >= $capacity) {
-            return $this->setProductionCarry($carry, $resourceKey, 0.0);
+            return false;
         }
 
         foreach ($ingredients as $ingredient => $needed) {
             if ((int)$state[$ingredient] < max(1, (int)$needed)) {
-                return $this->setProductionCarry($carry, $resourceKey, 0.0);
+                return false;
             }
         }
 
@@ -953,7 +987,7 @@ class SkylabService
         }
 
         if ($possible <= 0) {
-            return $this->setProductionCarry($carry, $resourceKey, 0.0);
+            return false;
         }
 
         foreach ($ingredients as $ingredient => $needed) {
@@ -961,18 +995,26 @@ class SkylabService
         }
 
         $state[$resourceKey] += $possible;
-        $this->setProductionCarry($carry, $resourceKey, $possible < $whole ? 0.0 : $remainder);
+        $this->setProductionCarry($carry, $resourceKey, $remainder);
 
         return true;
     }
 
     private function calculateWholeProduction(array $carry, string $resourceKey, int $ratePerHour, int $elapsed): array
     {
-        $total = (float)($carry[$resourceKey] ?? 0.0) + (($ratePerHour * $elapsed) / 3600);
-        $whole = (int)floor($total + 0.000000001);
-        $remainder = max(0.0, $total - $whole);
+        // Integer rates and elapsed seconds earn exact 1/3600-unit increments.
+        $total = $this->productionCarryUnits((float)($carry[$resourceKey] ?? 0.0)) + ($ratePerHour * $elapsed);
 
-        return [$whole, min(0.999999999, $remainder)];
+        return [intdiv($total, self::PRODUCTION_CARRY_UNITS), ($total % self::PRODUCTION_CARRY_UNITS) / self::PRODUCTION_CARRY_UNITS];
+    }
+
+    private function productionCarryUnits(float $value): int
+    {
+        if (!is_finite($value)) {
+            return 0;
+        }
+
+        return (int)round(min(1.0, max(0.0, $value)) * self::PRODUCTION_CARRY_UNITS);
     }
 
     private function decodeProductionCarry(string $raw): array
@@ -984,7 +1026,7 @@ class SkylabService
         }
 
         foreach (self::RESOURCE_KEYS as $resourceKey) {
-            $carry[$resourceKey] = min(0.999999999, max(0.0, (float)($decoded[$resourceKey] ?? 0.0)));
+            $carry[$resourceKey] = $this->productionCarryUnits((float)($decoded[$resourceKey] ?? 0.0)) / self::PRODUCTION_CARRY_UNITS;
         }
 
         return $carry;
@@ -994,9 +1036,9 @@ class SkylabService
     {
         $encoded = [];
         foreach (self::RESOURCE_KEYS as $resourceKey) {
-            $value = min(0.999999999, max(0.0, (float)($carry[$resourceKey] ?? 0.0)));
-            if ($value > 0.000000001) {
-                $encoded[$resourceKey] = round($value, 9);
+            $units = $this->productionCarryUnits((float)($carry[$resourceKey] ?? 0.0));
+            if ($units > 0) {
+                $encoded[$resourceKey] = $units / self::PRODUCTION_CARRY_UNITS;
             }
         }
 
@@ -1005,11 +1047,11 @@ class SkylabService
 
     private function setProductionCarry(array &$carry, string $resourceKey, float $value): bool
     {
-        $next = min(0.999999999, max(0.0, $value));
-        $current = min(0.999999999, max(0.0, (float)($carry[$resourceKey] ?? 0.0)));
-        $carry[$resourceKey] = $next;
+        $next = $this->productionCarryUnits($value);
+        $current = $this->productionCarryUnits((float)($carry[$resourceKey] ?? 0.0));
+        $carry[$resourceKey] = $next / self::PRODUCTION_CARRY_UNITS;
 
-        return abs($next - $current) > 0.000000001;
+        return $next !== $current;
     }
 
     private function rateFor(array $levels, array $modules, string $moduleKey): int
