@@ -639,6 +639,7 @@ class SkylabService
         $capacities = $this->calculateCapacities($modules, $levels);
         $energy = $this->calculateEnergy($modules, $levels);
         $runnable = $this->getRunnableModules($modules, $levels);
+        $productionOverview = $this->buildProductionOverview($state, $modules, $levels, $capacities, $runnable);
         $userCredits = $this->loadUserCredits();
         $hasAnyUpgradeInProgress = $this->hasAnyModuleUpgradeInProgress($modules);
         $moduleState = [];
@@ -724,6 +725,7 @@ class SkylabService
                 'power' => $energyConsumption,
                 'production' => $this->productionLabel($moduleKey, $meta['resource'], $production),
                 'consumption' => $this->consumptionLabel($moduleKey, $energyConsumption),
+                'productionOverview' => $productionOverview[$moduleKey] ?? null,
                 'efficiency' => $efficiencyValue . '%',
                 'efficiencyValue' => $efficiencyValue,
                 'state' => $stateLabel,
@@ -751,6 +753,86 @@ class SkylabService
             'transports' => $this->loadTransportState(),
             'cargo_note' => 'Cargo delivered from the website may require a spacemap reload before the in-game cargo panel updates.',
         ];
+    }
+
+    private function buildProductionOverview(array $state, array $modules, array $levels, array $capacities, array $runnable): array
+    {
+        // Display-only recipe quantities mirror advanceProductionInterval; no stock is simulated or changed here.
+        $recipes = [
+            'prometid' => ['prometium' => 20, 'endurium' => 10],
+            'duranium' => ['endurium' => 10, 'terbium' => 20],
+            'promerium' => ['prometid' => 10, 'duranium' => 10, 'xenomit' => 1],
+            'seprom' => ['promerium' => 2],
+        ];
+        $overview = [];
+        $producing = [];
+        $consumption = array_fill_keys(self::RESOURCE_KEYS, 0);
+
+        foreach (self::MODULES as $moduleKey => $meta) {
+            $resourceKey = $meta['resource'];
+            if ($resourceKey === null) {
+                continue;
+            }
+
+            $module = $modules[$moduleKey] ?? ['level' => 0, 'active' => 0];
+            $rate = $this->rateFor($levels, $modules, $moduleKey);
+            $amount = (int)($state[$resourceKey] ?? 0);
+            $capacity = (int)$capacities[$resourceKey];
+            $storageFull = $amount >= $capacity;
+            $missing = [];
+            foreach ($recipes[$moduleKey] ?? [] as $ingredient => $needed) {
+                if ((int)($state[$ingredient] ?? 0) < $needed) {
+                    $missing[] = self::RESOURCE_NAMES[$ingredient];
+                }
+            }
+
+            $status = $this->moduleStateLabel($moduleKey, $module, $runnable);
+            $warning = '';
+            if (isset($runnable[$moduleKey])) {
+                if ($storageFull) {
+                    $warning = 'Storage full';
+                    if ($status === 'Active') {
+                        $status = 'Storage full';
+                    }
+                } elseif ($missing) {
+                    $warning = 'Missing resources: ' . implode(', ', $missing);
+                    if ($status === 'Active') {
+                        $status = 'Missing resources';
+                    }
+                }
+            }
+
+            // Active upgrades keep their current level's rate, just as getRunnableModules does in the engine.
+            $producing[$moduleKey] = isset($runnable[$moduleKey]) && $rate > 0 && !$storageFull && !$missing;
+            if ($producing[$moduleKey]) {
+                foreach ($recipes[$moduleKey] ?? [] as $ingredient => $needed) {
+                    $consumption[$ingredient] += $rate * $needed;
+                }
+            }
+            $overview[$moduleKey] = [
+                'productionPerHour' => $rate,
+                'amount' => $amount,
+                'capacity' => $capacity,
+                'status' => $status,
+                'missingResources' => $missing,
+                'storageFull' => $storageFull,
+                'warning' => $warning,
+            ];
+        }
+
+        foreach ($overview as $moduleKey => &$item) {
+            $resourceKey = self::MODULES[$moduleKey]['resource'];
+            $item['consumptionPerHour'] = $consumption[$resourceKey];
+            $item['netPerHour'] = ($producing[$moduleKey] ? $item['productionPerHour'] : 0) - $consumption[$resourceKey];
+            // A full producer can resume after downstream consumption: do not promise a constant hourly net.
+            if ($item['storageFull'] && isset($runnable[$moduleKey]) && !$item['missingResources']
+                && $item['productionPerHour'] > 0 && $consumption[$resourceKey] > 0) {
+                $item['netPerHour'] = null;
+            }
+        }
+        unset($item);
+
+        return $overview;
     }
 
     private function unavailableState(string $message): array

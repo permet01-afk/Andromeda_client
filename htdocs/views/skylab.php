@@ -106,6 +106,7 @@ if (!empty($skylabState['modules']) && is_array($skylabState['modules'])) {
             'power' => (int)($module['power'] ?? $skylabModules[$key]['power']),
             'production' => (string)($module['production'] ?? $skylabModules[$key]['production']),
             'consumption' => (string)($module['consumption'] ?? $skylabModules[$key]['consumption']),
+            'productionOverview' => $module['productionOverview'] ?? null,
             'efficiency' => (string)($module['efficiency'] ?? $skylabModules[$key]['efficiency']),
             'state' => (string)($module['state'] ?? $skylabModules[$key]['state']),
             'active' => !empty($module['active']),
@@ -502,6 +503,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
     }
 
     .skylab-popup-panel.is-hidden,
+    .skylab-popup-row.is-hidden,
     .skylab-transport-panel.is-hidden {
         display: none;
     }
@@ -533,6 +535,69 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
         width: 14px;
         height: 14px;
         object-fit: contain;
+    }
+
+    #skylab-overview-panel.has-production-overview .skylab-popup-row {
+        grid-template-columns: 116px minmax(0, 1fr);
+        min-height: 20px;
+        font-weight: normal;
+        color: #b8c9cf;
+    }
+
+    .skylab-popup.has-production-overview .skylab-popup-content {
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    #skylab-overview-panel.has-production-overview .skylab-overview-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        margin-bottom: 4px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid rgba(116, 140, 150, 0.24);
+    }
+
+    #skylab-overview-panel.has-production-overview .skylab-overview-summary .skylab-popup-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 3px;
+        font-size: 0.64rem;
+    }
+
+    #skylab-overview-panel.has-production-overview #skylab-popup-consumption {
+        border: 0;
+        background: none;
+        padding: 0;
+        margin-top: 6px;
+    }
+
+    #skylab-overview-panel.has-production-overview .skylab-popup-value {
+        justify-content: flex-end;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: #dcecf2;
+    }
+
+    #skylab-overview-panel.has-production-overview .skylab-net-row {
+        border-top: 1px solid rgba(116, 140, 150, 0.24);
+        font-weight: bold;
+    }
+
+    #skylab-overview-panel.has-production-overview .skylab-state-value {
+        justify-self: end;
+        max-width: 100%;
+        letter-spacing: 0;
+    }
+
+    #skylab-overview-panel.has-production-overview .is-positive {
+        color: #b8e6bf;
+    }
+
+    #skylab-overview-panel.has-production-overview .is-negative,
+    #skylab-overview-panel.has-production-overview .is-warning {
+        color: #f2d477;
     }
 
     .skylab-popup-message {
@@ -786,33 +851,47 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                             </div>
                             <div class="skylab-popup-content">
                                 <div class="skylab-popup-panel" id="skylab-overview-panel">
-                                    <div class="skylab-popup-row">
-                                        <span>Level</span>
-                                        <span class="skylab-popup-value">
-                                            <img src="<?php echo $skylabAssets; ?>icon_level.png" alt="" />
-                                            <span id="skylab-popup-level"><?php echo (int)$selectedModule['level']; ?></span>
-                                        </span>
-                                    </div>
-                                    <div class="skylab-popup-row">
-                                        <span>Power consumption</span>
-                                        <span class="skylab-popup-value">
-                                            <img src="<?php echo $skylabAssets; ?>power.png" alt="" />
-                                            <span id="skylab-popup-power"><?php echo (int)$selectedModule['power']; ?></span>
-                                        </span>
+                                    <div class="skylab-overview-summary">
+                                        <div class="skylab-popup-row">
+                                            <span>Level</span>
+                                            <span class="skylab-popup-value">
+                                                <img src="<?php echo $skylabAssets; ?>icon_level.png" alt="" />
+                                                <span id="skylab-popup-level"><?php echo (int)$selectedModule['level']; ?></span>
+                                            </span>
+                                        </div>
+                                        <div class="skylab-popup-row">
+                                            <span title="Power consumption">Power</span>
+                                            <span class="skylab-popup-value">
+                                                <img src="<?php echo $skylabAssets; ?>power.png" alt="" />
+                                                <span id="skylab-popup-power"><?php echo (int)$selectedModule['power']; ?></span>
+                                            </span>
+                                        </div>
+                                        <div class="skylab-popup-row">
+                                            <span>Efficiency</span>
+                                            <span class="skylab-popup-value">
+                                                <img src="<?php echo $skylabAssets; ?>efficiency.png" alt="" />
+                                                <span id="skylab-popup-efficiency"><?php echo htmlspecialchars($selectedModule['efficiency'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                            </span>
+                                        </div>
                                     </div>
                                     <div class="skylab-popup-row">
                                         <span>Production</span>
                                         <span class="skylab-popup-value" id="skylab-popup-production"><?php echo htmlspecialchars($selectedModule['production'], ENT_QUOTES, 'UTF-8'); ?></span>
                                     </div>
-                                    <div class="skylab-popup-row">
-                                        <span>Efficiency</span>
-                                        <span class="skylab-popup-value">
-                                            <img src="<?php echo $skylabAssets; ?>efficiency.png" alt="" />
-                                            <span id="skylab-popup-efficiency"><?php echo htmlspecialchars($selectedModule['efficiency'], ENT_QUOTES, 'UTF-8'); ?></span>
-                                        </span>
+                                    <div class="skylab-popup-row is-hidden" data-skylab-production-row>
+                                        <span>Consumption</span>
+                                        <span class="skylab-popup-value" id="skylab-popup-resource-consumption" title="Hourly use of this resource by downstream modules able to run with current stocks and power."></span>
+                                    </div>
+                                    <div class="skylab-popup-row skylab-net-row is-hidden" data-skylab-production-row>
+                                        <span>Net</span>
+                                        <span class="skylab-popup-value" id="skylab-popup-net" title="Theoretical hourly change at current conditions, not a guaranteed yield. Production pauses when ingredients or storage space run out."></span>
+                                    </div>
+                                    <div class="skylab-popup-row is-hidden" data-skylab-production-row>
+                                        <span>Storage</span>
+                                        <span class="skylab-popup-value" id="skylab-popup-storage"></span>
                                     </div>
                                     <div class="skylab-popup-row">
-                                        <span>State</span>
+                                        <span>Status</span>
                                         <span class="skylab-popup-value" id="skylab-popup-state"><?php echo htmlspecialchars($selectedModule['state'], ENT_QUOTES, 'UTF-8'); ?></span>
                                     </div>
                                     <p class="skylab-popup-message" id="skylab-popup-consumption"><?php echo htmlspecialchars($selectedModule['consumption'], ENT_QUOTES, 'UTF-8'); ?></p>
@@ -906,6 +985,9 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             production: document.getElementById("skylab-popup-production"),
             efficiency: document.getElementById("skylab-popup-efficiency"),
             state: document.getElementById("skylab-popup-state"),
+            resourceConsumption: document.getElementById("skylab-popup-resource-consumption"),
+            net: document.getElementById("skylab-popup-net"),
+            storage: document.getElementById("skylab-popup-storage"),
             consumption: document.getElementById("skylab-popup-consumption")
         };
         const upgradeFields = {
@@ -935,6 +1017,19 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             const scale = Math.min(maxScale, mapWrap.clientWidth / 772);
             map.style.transform = "scale(" + scale + ")";
             mapWrap.style.height = Math.ceil(414 * scale) + "px";
+            positionPopup();
+        }
+
+        function positionPopup() {
+            if (!popup || !map || !mapWrap) return;
+            let height = 414;
+            if (!popup.classList.contains("is-hidden")) {
+                const top = Math.max(0, Math.min(52, map.clientHeight - popup.offsetHeight));
+                popup.style.top = top + "px";
+                height = Math.max(height, top + popup.offsetHeight + 2);
+            }
+            const scale = map.getBoundingClientRect().width / map.offsetWidth;
+            mapWrap.style.height = Math.ceil(height * scale) + "px";
         }
 
         function formatNumber(value) {
@@ -1019,24 +1114,50 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
 
         function updatePopup(module) {
             if (!module) return;
+            const overview = module.productionOverview || null;
+            popup.classList.toggle("has-production-overview", !!overview);
+            panels.overview.classList.toggle("has-production-overview", !!overview);
+            document.querySelectorAll("[data-skylab-production-row]").forEach(function(row) {
+                row.classList.toggle("is-hidden", !overview);
+            });
             fields.name.textContent = module.name;
             fields.level.textContent = module.level;
             fields.power.textContent = module.power;
             fields.production.textContent = module.production;
             fields.efficiency.textContent = module.efficiency;
-            fields.state.textContent = module.state;
+            fields.state.textContent = overview ? overview.status : module.state;
             fields.state.className = "skylab-popup-value skylab-state-value";
             if (module.upgrading) {
                 fields.state.classList.add("is-upgrading");
+            } else if (overview && overview.warning) {
+                fields.state.classList.add("is-warning");
             } else if (module.active) {
                 fields.state.classList.add("is-active");
             } else {
                 fields.state.classList.add("is-inactive");
             }
             fields.consumption.textContent = module.consumption;
+            fields.consumption.classList.toggle("is-warning", !!(overview && overview.warning));
+            fields.production.title = overview ? "Nominal hourly production at the current module level, before any blockage." : "";
+            fields.production.classList.toggle("is-positive", !!(overview && overview.productionPerHour > 0));
+            if (overview) {
+                fields.production.textContent = formatRate(overview.productionPerHour);
+                fields.resourceConsumption.textContent = formatRate(-overview.consumptionPerHour);
+                fields.resourceConsumption.classList.toggle("is-negative", overview.consumptionPerHour > 0);
+                fields.net.textContent = overview.netPerHour === null ? "Storage limited" : formatRate(overview.netPerHour);
+                fields.net.classList.toggle("is-positive", overview.netPerHour > 0);
+                fields.net.classList.toggle("is-negative", overview.netPerHour < 0);
+                fields.storage.textContent = formatNumber(overview.amount) + " / " + formatNumber(overview.capacity);
+                fields.consumption.textContent = overview.warning || "Hourly estimate at current conditions.";
+            }
             updateActionButtons(module);
             updateUpgradePanel(module);
             updateTransportPanel(module);
+            positionPopup();
+        }
+
+        function formatRate(value) {
+            return (value > 0 ? "+" : "") + formatNumber(value) + "/h";
         }
 
         function updateUpgradePanel(module) {
@@ -1124,6 +1245,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             Object.keys(panels).forEach(function(key) {
                 panels[key].classList.toggle("is-hidden", key !== activeTab);
             });
+            positionPopup();
         }
 
         function selectModule(button) {
@@ -1139,6 +1261,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             setTab("overview");
             transportPanel.classList.add("is-hidden");
             popup.classList.remove("is-hidden");
+            positionPopup();
 
             if (module.upgradeReason === "Another Skylab upgrade is already in progress.") {
                 showMessage(module.upgradeReason, true);
@@ -1147,6 +1270,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
 
         function closePopup() {
             popup.classList.add("is-hidden");
+            positionPopup();
             selectedModuleId = null;
             transportPanel.classList.add("is-hidden");
             document.querySelectorAll("[data-skylab-module]").forEach(function(item) {
@@ -1386,12 +1510,14 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
             if (!module || !module.resourceKey) return;
             setTab("overview");
             transportPanel.classList.remove("is-hidden");
+            positionPopup();
             transportInput.focus();
             transportInput.select();
         });
 
         actions.cancelTransport.addEventListener("click", function() {
             transportPanel.classList.add("is-hidden");
+            positionPopup();
         });
 
         actions.startTransport.addEventListener("click", function() {
@@ -1408,6 +1534,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                 amount: Math.floor(amount)
             }).then(function() {
                 transportPanel.classList.add("is-hidden");
+                positionPopup();
             }).catch(function(error) {
                 showMessage(error.message, true);
             });
