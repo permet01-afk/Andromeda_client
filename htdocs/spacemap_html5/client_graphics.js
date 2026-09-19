@@ -3374,6 +3374,60 @@ function drawShipExpansionOverlay(shipId, frameIndex, screenX, screenY, shipShif
     }
 }
 
+// Flash RageEffect: Quad.easeOut, 0.5 s outward / 0.5 s return,
+// alpha 0..1 and blur 0..60, repeated until fx/end. Cache four blur bands
+// of the actual hull in ONE reusable canvas per active ship, then blend bands.
+function drawRageGlow(effect, img, x, y, scale, now) {
+    if (!effect || !img || !img.complete || !img.width || !img.height) return;
+    const pad = 90;
+    const w = img.width + pad * 2;
+    const h = img.height + pad * 2;
+    if (!effect.halo) effect.halo = document.createElement("canvas");
+    if (effect.source !== img) {
+        const halo = effect.halo;
+        if (halo.width !== w || halo.height !== h * 4) {
+            halo.width = w;
+            halo.height = h * 4;
+        }
+        const cacheCtx = halo.getContext("2d");
+        cacheCtx.clearRect(0, 0, w, h * 4);
+        for (let band = 0; band < 4; band++) {
+            const top = band * h;
+            cacheCtx.save();
+            cacheCtx.beginPath();
+            cacheCtx.rect(0, top, w, h);
+            cacheCtx.clip();
+            cacheCtx.shadowColor = "#ff0000";
+            cacheCtx.shadowBlur = (band + 1) * 15;
+            cacheCtx.drawImage(img, pad, top + pad);
+            cacheCtx.shadowBlur = 0;
+            cacheCtx.globalCompositeOperation = "destination-out";
+            cacheCtx.drawImage(img, pad, top + pad);
+            cacheCtx.restore();
+        }
+        effect.source = img;
+    }
+    const phase = Math.max(0, now - effect.startedAt) % 1000 / 500;
+    const t = phase <= 1 ? phase : 2 - phase;
+    const alpha = 1 - (1 - t) * (1 - t);
+    const level = alpha * 4;
+    const low = Math.floor(level);
+    const fraction = level - low;
+    const dx = x - w * scale / 2;
+    const dy = y - h * scale / 2;
+    const inheritedAlpha = ctx.globalAlpha;
+    ctx.save();
+    if (low > 0) {
+        ctx.globalAlpha = inheritedAlpha * alpha * (1 - fraction);
+        ctx.drawImage(effect.halo, 0, (low - 1) * h, w, h, dx, dy, w * scale, h * scale);
+    }
+    if (low < 4 && fraction > 0) {
+        ctx.globalAlpha = inheritedAlpha * alpha * fraction;
+        ctx.drawImage(effect.halo, 0, low * h, w, h, dx, dy, w * scale, h * scale);
+    }
+    ctx.restore();
+}
+
 function drawShip() {
     const shipScreenX = mapToScreenX(shipX);
     const syBase = mapToScreenY(shipY);
@@ -3422,6 +3476,7 @@ function drawShip() {
             const w = img.width * entityScale;
             const h = img.height * entityScale;
             shipDrawnHeight = h;
+            drawRageGlow(heroRageEffect, img, shipAnchorX, shipAnchorY, entityScale, performance.now());
             ctx.drawImage(img, shipScreenX - w / 2 - shiftX, sy - h / 2 - shiftY, w, h);
         }
         drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, sy, heroVisualShift);
@@ -3975,6 +4030,7 @@ function drawEntities() {
                 const w = img.width * entityScale;
                 const h = img.height * entityScale;
                 spriteHeight = h;
+                drawRageGlow(e.rageEffect, img, entityAnchorX, entityAnchorY, entityScale, now);
                 ctx.drawImage(img, entityScreenX - w / 2 - shiftX, entityScreenY - h / 2 - shiftY, w, h);
                 drewSprite = true;
             }
@@ -8954,8 +9010,35 @@ function createGenericWindow(key, cfg) {
     return div;
 }
 
+let flashHudWindowSnapshot = null;
+let flashHudToggleReadyAt = 0;
+
+function toggleFlashHud() {
+    const now = performance.now();
+    if (now < flashHudToggleReadyAt) return false;
+    if (flashHudWindowSnapshot) {
+        flashHudWindowSnapshot = null;
+    } else {
+        const snapshot = new Map();
+        for (const key of Object.keys(windowStates)) {
+            const meta = getFlashWindowMeta(key);
+            if (!meta || meta.slotType !== "left" || !meta.hudToggle || !document.getElementById("win_" + key)) continue;
+            snapshot.set(key, windowStates[key]);
+        }
+        if (!snapshot.size) return false;
+        flashHudWindowSnapshot = snapshot;
+    }
+    // Flash's cooldown without another timer. H is temporary: do not persist
+    // the minimized state over the user's layout or destroy window contents.
+    flashHudToggleReadyAt = now + 1200;
+    refreshWindowsVisibility();
+    return true;
+}
+
 function toggleWindow(key, forceState) {
-    const newState = forceState !== undefined ? forceState : !windowStates[key];
+    const hudMinimized = flashHudWindowSnapshot && flashHudWindowSnapshot.has(key);
+    if (hudMinimized) flashHudWindowSnapshot.delete(key);
+    const newState = forceState !== undefined ? forceState : hudMinimized ? true : !windowStates[key];
     windowStates[key] = newState;
     refreshWindowsVisibility();
     saveInterfaceLayout();
@@ -9160,7 +9243,7 @@ function refreshWindowsVisibility() {
             if (winEl) winEl.style.display = "none";
             continue;
         }
-        const isOpen = !!windowStates[key];
+        const isOpen = !!windowStates[key] && !(flashHudWindowSnapshot && flashHudWindowSnapshot.has(key));
         const iconEl = document.getElementById("icon_" + key);
         const winEl = document.getElementById("win_" + key);
         if (iconEl) {

@@ -8,6 +8,38 @@ const activeTemporaryStatusEntityIds = new Set;
 
 const activeShieldEffectEntityIds = new Set;
 
+let heroRageEffect = null;
+
+// RageEffect in Flash pulses indefinitely; only end/removal resets it.
+function setRageEffect(ent, active) {
+    const previous = ent ? ent.rageEffect : heroRageEffect;
+    if (active && previous) return false;
+    if (previous && previous.halo) {
+        previous.halo.width = previous.halo.height = 1;
+        previous.halo = previous.source = null;
+    }
+    const effect = active ? { startedAt: performance.now(), halo: null, source: null } : null;
+    if (ent) ent.rageEffect = effect; else heroRageEffect = effect;
+    return !!active;
+}
+
+function clearEntityFlashStatusEffects(entityId) {
+    if (Number(entityId) === Number(heroId)) {
+        setHeroShieldEffect("INVINCIBILITY", false, 0);
+        setRageEffect(null, false);
+    }
+    const ent = entities[entityId];
+    if (ent) {
+        setEntityShieldEffect(ent, "INVINCIBILITY", false, 0);
+        setRageEffect(ent, false);
+    }
+}
+
+function clearFlashStatusEffects() {
+    clearEntityFlashStatusEffects(heroId);
+    for (const id in entities) clearEntityFlashStatusEffects(id);
+}
+
 const portals = {};
 
 const laserBeams = [];
@@ -81,6 +113,7 @@ function refreshEntityShieldEffectRegistration(ent) {
 
 function unregisterEntityRuntimeActiveState(entityId) {
     if (entityId == null) return;
+    clearEntityFlashStatusEffects(entityId);
     activeTemporaryStatusEntityIds.delete(entityId);
     activeShieldEffectEntityIds.delete(entityId);
 }
@@ -455,6 +488,8 @@ function getFlashGameplayKeyToken(event) {
     }
 
     switch (event.code) {
+        case "KeyH":
+        case "KeyL":
         case "KeyJ":
         case "KeyC":
         case "KeyB":
@@ -888,9 +923,11 @@ function setHeroShieldEffect(effect, active, durationMs) {
         heroIshUntil = active ? now + duration : 0;
         heroIshSince = active ? now : 0;
     } else if (effect === "INVINCIBILITY") {
+        if (active && heroInvincible && heroInvUntil > now) return false;
         heroInvincible = !!active;
         heroInvUntil = active ? now + duration : 0;
         heroInvSince = active ? now : 0;
+        return !!active;
     }
 }
 
@@ -903,11 +940,13 @@ function setEntityShieldEffect(ent, effect, active, durationMs) {
         ent.ishUntil = active ? now + duration : 0;
         ent.ishSince = active ? now : 0;
     } else if (effect === "INVINCIBILITY") {
+        if (active && ent.invincible && ent.invUntil > now) return false;
         ent.invincible = !!active;
         ent.invUntil = active ? now + duration : 0;
         ent.invSince = active ? now : 0;
     }
     refreshEntityShieldEffectRegistration(ent);
+    return !!active;
 }
 
 function isPointInRect(px, py, rect) {
@@ -1853,6 +1892,14 @@ window.addEventListener("keydown", e => {
             selectedTargetId = null;
             clearPendingTargetSelection();
         }
+        return;
+    }
+    if (e.code === "KeyH" || e.code === "KeyL") {
+        // Keep browser/IME shortcuts and all touch controls untouched.
+        if (e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return;
+        e.preventDefault();
+        if (e.code === "KeyH") toggleFlashHud();
+        else openLogoutWindow();
         return;
     }
     if (e.key === "j" || e.key === "J") {

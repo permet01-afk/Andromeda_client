@@ -1130,7 +1130,9 @@ const DAMAGE_BUBBLE_DURATION = 1500;
 
 const ISH_DURATION_MS = 3e3;
 
-const INVINCIBILITY_DURATION_MS = 3e3;
+// Server fx/start + fx/end own the visual lifecycle. This watchdog only
+// bounds a missing end packet (the current server normally ends after 10 s).
+const INVINCIBILITY_FALLBACK_MS = 15e3;
 
 const TARGET_FADE_OVERLAY_ALPHA = 0;
 

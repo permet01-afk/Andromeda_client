@@ -1116,6 +1116,7 @@ function connectToServer(isReconnect = false) {
         resetWsLoginAttempt(startupFailure ? "startup-close" : "close");
         ws = null;
         resetReadyFlags();
+        clearFlashStatusEffects();
         dispatchWsEvent("andromeda:ws-close", {
             code: code,
             reason: reason,
@@ -2675,6 +2676,7 @@ function handlePacket_N(parts, i) {
 
 function resetMapState(newMapId) {
     resetReadyFlags();
+    clearFlashStatusEffects();
     if (!isNaN(newMapId)) {
         currentMapId = newMapId;
         cfg.mapID = newMapId;
@@ -2963,14 +2965,23 @@ function handlePacket_n(parts, i) {
     } else if (sub === "fx") {
         const action = (parts[i + 1] || "").toLowerCase();
         const effect = (parts[i + 2] || "").toUpperCase();
+        if (action !== "start" && action !== "end") return;
         const targetId = parseInt(parts[i + 3], 10);
         if (!isNaN(targetId)) {
             const targetIsHero = Number(targetId) === Number(heroId);
             const targetEnt = targetIsHero ? null : getExistingVisualEntity(targetId);
             if (!targetIsHero && !targetEnt) return;
             const activate = action === "start";
-            if (effect === "INVINCIBILITY") {
-                if (targetIsHero) setHeroShieldEffect("INVINCIBILITY", activate, INVINCIBILITY_DURATION_MS); else setEntityShieldEffect(targetEnt, "INVINCIBILITY", activate, INVINCIBILITY_DURATION_MS);
+            if (effect === "INVINCIBILITY" || effect === "RAGE") {
+                const started = effect === "RAGE" ? setRageEffect(targetEnt, activate) : targetIsHero
+                    ? setHeroShieldEffect(effect, activate, INVINCIBILITY_FALLBACK_MS)
+                    : setEntityShieldEffect(targetEnt, effect, activate, INVINCIBILITY_FALLBACK_MS);
+                if (started && window.AudioManager && typeof window.AudioManager.playSoundEffect === "function") {
+                    // Same spatial audio route as Flash; the state transition
+                    // above deduplicates starts without a growing sound-ID cache.
+                    window.AudioManager.playSoundEffect(effect === "RAGE" ? 78 : 80, false, false,
+                        targetIsHero ? shipX : targetEnt.x, targetIsHero ? shipY : targetEnt.y, true);
+                }
             } else if (effect === "ISH") {
                 if (targetIsHero) setHeroShieldEffect("ISH", activate, ISH_DURATION_MS); else setEntityShieldEffect(targetEnt, "ISH", activate, ISH_DURATION_MS);
             } else if (effect === "BATTLE_REP_BOT" || effect === "TECH_BATTLE_REP_BOT_EFFECT" || parseInt(effect, 10) === 12) {
@@ -6614,6 +6625,7 @@ function handlePacket_K(parts, i) {
                 window.AudioManager.playSoundEffect(41, false, false, -1, -1, true);
             }
         } catch (_) {}
+        clearEntityFlashStatusEffects(heroId);
         heroHp = 0;
         heroShield = 0;
         moveTargetX = null;

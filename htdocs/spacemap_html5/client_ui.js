@@ -950,6 +950,18 @@ function ensureGroupWindowStyles() {
     style.textContent = `\n            .gameWindow.flashWindow[data-window-key="group"] .gwContent {\n                padding: 0;\n                overflow: hidden;\n                box-sizing: border-box;\n                display: flex;\n                flex-direction: column;\n                align-items: flex-start;\n                gap: 0;\n            }\n            .gameWindow.flashWindow[data-window-key="group"].groupNoGroup .gwContent { padding: 4px 6px 6px 4px; }\n            .gameWindow.flashWindow[data-window-key="group"].groupInGroup .gwContent { padding: 0 6px 4px 4px; }\n            .gameWindow.flashWindow[data-window-key="group"] .gwContent > .groupInviteControls,\n            .gameWindow.flashWindow[data-window-key="group"] .gwContent > .groupSessionControls,\n            .gameWindow.flashWindow[data-window-key="group"] .gwContent > .groupList,\n            .gameWindow.flashWindow[data-window-key="group"] .gwContent > .groupInvites {\n                flex: 0 0 auto !important;\n                position: relative;\n                z-index: 1;\n            }\n            .gameWindow.flashWindow[data-window-key="group"] .gwContent > .groupInviteControls {\n                width: 186px !important;\n                height: 28px !important;\n                min-height: 28px !important;\n            }\n            .gameWindow.flashWindow[data-window-key="group"] .gwContent > .groupSessionControls {\n                width: 186px !important;\n                height: 27px !important;\n                min-height: 27px !important;\n            }\n            .gameWindow.flashWindow[data-window-key="group"] .gwContent > .groupList,\n            .gameWindow.flashWindow[data-window-key="group"] .gwContent > .groupInvites {\n                width: 186px !important;\n                height: auto !important;\n            }\n            .groupControls { position: relative; width: 186px; margin: 0; padding: 0; }\n            .groupInviteControls { height: 28px; }\n            .groupInviteControls #groupInputName {\n                position: absolute;\n                left: 0;\n                top: 4px;\n                width: 128px;\n                height: 18px;\n                padding: 0;\n                box-sizing: border-box;\n                border: 1px solid #888888;\n                background: transparent;\n                color: #888888;\n                font-family: sans-serif;\n                font-size: 12px;\n                line-height: 18px;\n            }\n            .groupInviteControls .groupIconBtn { position: absolute; top: 0; }\n            .groupInviteControls .groupIconBtn.groupInviteBtn { left: 132px; }\n            .groupInviteControls .groupIconBtn.groupBlockInvitesBtn { left: 161px; }\n            .groupIconBtn {\n                width: 25px;\n                height: 27px;\n                border: 0;\n                padding: 0;\n                background-color: transparent;\n                background-repeat: no-repeat;\n                background-position: 0 0;\n                background-size: 25px 27px;\n                cursor: pointer;\n                appearance: none;\n                -webkit-appearance: none;\n            }\n            .groupIconBtn:disabled { opacity: 1; cursor: default; }\n            .groupSessionControls { display: flex; align-items: flex-start; gap: 5px; width: 186px; height: 27px; margin: 0; padding: 0; }\n            .groupList { display: block; width: 186px; margin: 0; padding: 0; overflow: hidden; }\n            .groupRow { position: relative; width: 186px; height: 48px; margin: 0; padding: 0; overflow: hidden; }\n            .groupName { position: absolute; left: 24px; top: 0; width: 160px; height: 20px; color: #ffffff; font-family: sans-serif; font-size: 14px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: clip; z-index: 1; }\n            .groupMap { position: absolute; left: 0; top: 4px; width: 24px; height: 16px; color: #999999; font-family: sans-serif; font-size: 10px; line-height: 16px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: clip; z-index: 1; }
             .groupRow.groupRemote .groupName { color: #999999; }
             .groupRow.groupRemote .groupShipIcon { opacity: 0.55; }
+            .groupRow.groupRemote .groupMemberShipIcon { opacity: 1; }
+            .groupRow .groupName, .groupMemberShipIcon { cursor: pointer; }
+            .groupMemberShipGlyph {
+                position: absolute; inset: 0; pointer-events: none;
+                background-color: var(--group-ship-color, #ffffff);
+                -webkit-mask: var(--group-ship-mask) center / contain no-repeat;
+                mask: var(--group-ship-mask) center / contain no-repeat;
+            }
+            .groupMemberShipIcon.groupShipCloaked {
+                -webkit-mask-image: repeating-linear-gradient(to bottom, transparent 0 1px, #000 1px 2px);
+                mask-image: repeating-linear-gradient(to bottom, transparent 0 1px, #000 1px 2px);
+            }
             .groupRow.groupRemote .groupTargetIcon { opacity: 0.55; }\n            .groupBarsWrap { position: absolute; left: 4px; top: 22px; width: 82px; height: 18px; z-index: 1; }\n            .groupBarsWrap .groupShipIcon { position: absolute; left: 0; top: 0; }\n            .groupBarsCol { position: absolute; left: 20px; top: 2px; width: 62px; height: 15px; }\n            .groupBar { position: absolute; left: 0; width: 62px; height: 7px; overflow: hidden; background: ${emptyBarCss} no-repeat 0 0 / 62px 7px; }\n            .groupBar.hp { top: 0; }\n            .groupBar.sh { top: 8px; }\n            .groupBar::after { content: ""; position: absolute; left: 0; top: 0; width: var(--fillpx, 0px); height: 7px; background-repeat: no-repeat; background-size: 62px 7px; }\n            .groupBar.hp::after { background-image: ${hpBarCss}; }\n            .groupBar.sh::after { background-image: ${shieldBarCss}; }\n            .groupTargetIcon { position: absolute; left: 92px; top: 22px; width: 18px; height: 18px; background-repeat: no-repeat; background-position: center; background-size: contain; z-index: 1; }\n            .groupTargetShipIcon { position: absolute; left: 0; top: 0; width: 18px; height: 18px; background-repeat: no-repeat; background-position: center; background-size: contain; pointer-events: none; }\n            .groupLeadIcon { position: absolute; left: 114px; top: 24px; width: 23px; height: 15px; background-repeat: no-repeat; background-position: center; background-size: contain; z-index: 1; }\n            .groupRow::before { content: ""; position: absolute; left: 0; top: 0; width: 186px; height: 40px; background: rgba(255, 215, 0, 0.5333333333); opacity: 0; transition: opacity 0.5s linear; pointer-events: none; z-index: 0; }\n            .gameWindow.flashWindow[data-window-key="group"].pingMode .groupRow:hover::before,\n            .gameWindow.flashWindow[data-window-key="group"].followMode .groupRow:hover::before,\n            .gameWindow.flashWindow[data-window-key="group"].promoteMode .groupRow:hover::before,\n            .gameWindow.flashWindow[data-window-key="group"].kickMode .groupRow:hover::before { opacity: 1; }\n            .gameWindow.flashWindow[data-window-key="group"].pingMode .groupRow,\n            .gameWindow.flashWindow[data-window-key="group"].followMode .groupRow,\n            .gameWindow.flashWindow[data-window-key="group"].promoteMode .groupRow,\n            .gameWindow.flashWindow[data-window-key="group"].kickMode .groupRow { cursor: pointer; }\n            .groupInvites { display: block; overflow: hidden; width: 186px; margin: 0; padding: 0; z-index: 1; }\n            .gameWindow.flashWindow[data-window-key="group"].groupNoGroup .groupInvites:not(.hidden) { margin-top: 4px; }\n            .groupInviteRow { position: relative; height: 28px; width: 186px; padding: 0; }\n            .groupInviteName { position: absolute; left: 24px; top: 6px; width: 104px; height: 20px; overflow: hidden; white-space: nowrap; text-overflow: clip; color: #ffffff; font-family: sans-serif; font-size: 14px; line-height: 20px; }\n            .groupInviteBtns { position: absolute; left: 132px; top: 0; display: flex; align-items: flex-start; gap: 4px; }\n            .groupShipIcon { width: 18px; height: 18px; background-repeat: no-repeat; background-position: center; background-size: contain; }\n            .groupInviteRow .groupShipIcon { position: absolute; left: 0; top: 8px; }\n            .hidden { display: none !important; }\n        `;
     document.head.appendChild(style);
 }
@@ -1193,6 +1205,37 @@ function updateGroupWindowNoGroupDimension(inGroup) {
     }
 }
 
+function selectGroupMemberLikeFlash(memberId) {
+    const member = groupMembers[memberId];
+    if (!groupInGroupServerState || !member || member.isOffline || !isGroupMemberOnCurrentMap(member)) return false;
+    if (logoutControlsLocked || isConnectionModalBlocking()) return false;
+    const ent = getExistingVisualEntity(memberId);
+    if (!ent || ent.kind !== "player" || member.hp != null && Number(member.hp) <= 0 || ent.hp != null && Number(ent.hp) <= 0) return false;
+    if (Number(memberId) === Number(selectedTargetId) || isTargetSelectionPending(memberId)) return false;
+    // A member-card click selects only: do not transfer a queued double-click shot.
+    clearPendingTargetLaserAttackIntent();
+    return requestTargetSelectionLikeFlash(memberId);
+}
+
+function updateGroupMemberShipIcon(icon, member, remote) {
+    const mask = getUiCssUrl(getGroupShipIconPath(member.shipType));
+    if (icon._groupMask !== mask) {
+        icon.style.setProperty("--group-ship-mask", mask);
+        icon._groupMask = mask;
+    }
+    // ShipIcon.updateColor: combat wins over foggy; the shutter is independent.
+    const color = member.fighting && !member.isOffline ? "#d72e2e" : remote ? "#999999" : "#ffffff";
+    if (icon._groupColor !== color) {
+        icon.style.setProperty("--group-ship-color", color);
+        icon._groupColor = color;
+    }
+    const cloaked = !!member.cloaked && !member.isOffline;
+    if (icon._groupCloaked !== cloaked) {
+        icon.classList.toggle("groupShipCloaked", cloaked);
+        icon._groupCloaked = cloaked;
+    }
+}
+
 function renderGroupList() {
     if (!groupListEl) return;
     updateGroupBlockInvitesButton();
@@ -1255,8 +1298,14 @@ function renderGroupList() {
             row = document.createElement("div");
             row.className = "groupRow";
             row.dataset.memberId = id;
-            row.addEventListener("click", () => {
-                if (!groupActionMode) return;
+            row.addEventListener("click", event => {
+                if (!groupActionMode) {
+                    // Flash binds the member name and ship, not the target icon/bars.
+                    if (event.target.closest(".groupName, .groupMemberShipIcon")) {
+                        selectGroupMemberLikeFlash(Number(row.dataset.memberId));
+                    }
+                    return;
+                }
                 const myId = parseInt(heroId, 10);
                 const mid = parseInt(row.dataset.memberId, 10);
                 const mem = groupMembers[mid];
@@ -1293,7 +1342,10 @@ function renderGroupList() {
             const barsWrap = document.createElement("div");
             barsWrap.className = "groupBarsWrap";
             const shipIcon = document.createElement("div");
-            shipIcon.className = "groupShipIcon";
+            shipIcon.className = "groupShipIcon groupMemberShipIcon";
+            const shipGlyph = document.createElement("span");
+            shipGlyph.className = "groupMemberShipGlyph";
+            shipIcon.appendChild(shipGlyph);
             const targetIcon = document.createElement("div");
             targetIcon.className = "groupTargetIcon";
             const targetShipIcon = document.createElement("div");
@@ -1341,7 +1393,7 @@ function renderGroupList() {
             mapTag.textContent = "";
             mapTag.classList.add("hidden");
         }
-        if (typeof setUiBackgroundImage === "function") setUiBackgroundImage(shipIcon, getGroupShipIconPath(m.shipType)); else shipIcon.style.backgroundImage = `url("${getGroupShipIconPath(m.shipType)}")`;
+        updateGroupMemberShipIcon(shipIcon, m, isRemoteMap);
         if (typeof setUiBackgroundImage === "function") setUiBackgroundImage(targetIcon, `${base}graphics/ui/ui/images/iconShipNull.png`); else targetIcon.style.backgroundImage = `url("${base}graphics/ui/ui/images/iconShipNull.png")`;
         const targetShipType = resolveGroupTargetShipType(m);
         if (targetShipIcon) {
