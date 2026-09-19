@@ -1,0 +1,728 @@
+{
+  "1": {
+    "source": "graphics/planets/planet1.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -266.55,
+    "offsetY": -266.55,
+    "width": 534,
+    "height": 534,
+    "frames": [
+      [
+        0,
+        0,
+        534,
+        534
+      ]
+    ],
+    "radius": 250,
+    "path": "graphics/planets/planet1/planet_1.png"
+  },
+  "2": {
+    "source": "graphics/planets/planet2.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -89.0,
+    "offsetY": -88.55,
+    "width": 179,
+    "height": 178,
+    "frames": [
+      [
+        0,
+        0,
+        179,
+        178
+      ]
+    ],
+    "radius": 89,
+    "path": "graphics/planets/planet2/planet_1.png"
+  },
+  "3": {
+    "source": "graphics/planets/planet3.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -114.5,
+    "offsetY": -114.5,
+    "width": 229,
+    "height": 229,
+    "frames": [
+      [
+        0,
+        0,
+        229,
+        229
+      ]
+    ],
+    "radius": 60,
+    "path": "graphics/planets/planet3/planet_1.png"
+  },
+  "4": {
+    "source": "graphics/planets/planet4.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -286.0,
+    "offsetY": -286.0,
+    "width": 572,
+    "height": 572,
+    "frames": [
+      [
+        0,
+        0,
+        572,
+        572
+      ]
+    ],
+    "radius": 85,
+    "path": "graphics/planets/planet4/planet_1.png"
+  },
+  "5": {
+    "source": "graphics/planets/planet5.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -286.0,
+    "offsetY": -286.0,
+    "width": 572,
+    "height": 572,
+    "frames": [
+      [
+        0,
+        0,
+        572,
+        572
+      ]
+    ],
+    "radius": 262,
+    "path": "graphics/planets/planet5/planet_1.png"
+  },
+  "6": {
+    "source": "graphics/planets/planet6.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -175.0,
+    "offsetY": -175.0,
+    "width": 350,
+    "height": 350,
+    "frames": [
+      [
+        0,
+        0,
+        350,
+        350
+      ]
+    ],
+    "radius": 155,
+    "path": "graphics/planets/planet6/planet_1.png"
+  },
+  "7": {
+    "source": "graphics/planets/planet7.swf",
+    "symbol": "planet",
+    "characterId": 5,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -1124.55,
+    "offsetY": -1096.9,
+    "width": 2250,
+    "height": 2194,
+    "frames": [
+      [
+        0,
+        0,
+        2250,
+        2194
+      ]
+    ],
+    "radius": 1155,
+    "path": "graphics/planets/planet7/planet_1.png"
+  },
+  "8": {
+    "source": "graphics/planets/planet8.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -113.0,
+    "offsetY": -113.0,
+    "width": 226,
+    "height": 226,
+    "frames": [
+      [
+        0,
+        0,
+        226,
+        226
+      ]
+    ],
+    "radius": 118,
+    "path": "graphics/planets/planet8/planet_1.png"
+  },
+  "9": {
+    "source": "graphics/planets/planet9.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -51.5,
+    "offsetY": -55.5,
+    "width": 103,
+    "height": 111,
+    "frames": [
+      [
+        0,
+        0,
+        103,
+        111
+      ]
+    ],
+    "radius": 45,
+    "path": "graphics/planets/planet9/planet_1.png"
+  },
+  "10": {
+    "source": "graphics/planets/planet10.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -62.5,
+    "offsetY": -62.5,
+    "width": 125,
+    "height": 125,
+    "frames": [
+      [
+        0,
+        0,
+        125,
+        125
+      ]
+    ],
+    "radius": 62,
+    "path": "graphics/planets/planet10/planet_1.png"
+  },
+  "11": {
+    "source": "graphics/planets/planet11.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -251.0,
+    "offsetY": -251.0,
+    "width": 502,
+    "height": 502,
+    "frames": [
+      [
+        0,
+        0,
+        502,
+        502
+      ]
+    ],
+    "radius": 251,
+    "path": "graphics/planets/planet11/planet_1.png"
+  },
+  "12": {
+    "source": "graphics/planets/planet12.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -517.4,
+    "offsetY": -303.95,
+    "width": 1035,
+    "height": 608,
+    "frames": [
+      [
+        0,
+        0,
+        1035,
+        608
+      ]
+    ],
+    "radius": 128,
+    "path": "graphics/planets/planet12/planet_1.png"
+  },
+  "13": {
+    "source": "graphics/planets/planet13.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -424.4,
+    "offsetY": -424.45,
+    "width": 849,
+    "height": 849,
+    "frames": [
+      [
+        0,
+        0,
+        849,
+        849
+      ]
+    ],
+    "radius": 205,
+    "path": "graphics/planets/planet13/planet_1.png"
+  },
+  "14": {
+    "source": "graphics/planets/planet14.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -367.55,
+    "offsetY": -363.05,
+    "width": 736,
+    "height": 727,
+    "frames": [
+      [
+        0,
+        0,
+        736,
+        727
+      ]
+    ],
+    "radius": 346,
+    "path": "graphics/planets/planet14/planet_1.png"
+  },
+  "15": {
+    "source": "graphics/planets/planet15.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -95.5,
+    "offsetY": -95.0,
+    "width": 192,
+    "height": 191,
+    "frames": [
+      [
+        0,
+        0,
+        192,
+        191
+      ]
+    ],
+    "radius": 85,
+    "path": "graphics/planets/planet15/planet_1.png"
+  },
+  "16": {
+    "source": "graphics/planets/planet16.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -86.5,
+    "offsetY": -82.0,
+    "width": 173,
+    "height": 164,
+    "frames": [
+      [
+        0,
+        0,
+        173,
+        164
+      ]
+    ],
+    "radius": 63,
+    "path": "graphics/planets/planet16/planet_1.png"
+  },
+  "17": {
+    "source": "graphics/planets/planet17.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -178.0,
+    "offsetY": -178.0,
+    "width": 356,
+    "height": 356,
+    "frames": [
+      [
+        0,
+        0,
+        356,
+        356
+      ]
+    ],
+    "radius": 161,
+    "path": "graphics/planets/planet17/planet_1.png"
+  },
+  "18": {
+    "source": "graphics/planets/planet18.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -92.5,
+    "offsetY": -92.5,
+    "width": 185,
+    "height": 185,
+    "frames": [
+      [
+        0,
+        0,
+        185,
+        185
+      ]
+    ],
+    "radius": 40,
+    "path": "graphics/planets/planet18/planet_1.png"
+  },
+  "19": {
+    "source": "graphics/planets/planet19.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -166.0,
+    "offsetY": -165.5,
+    "width": 332,
+    "height": 331,
+    "frames": [
+      [
+        0,
+        0,
+        332,
+        331
+      ]
+    ],
+    "radius": 76,
+    "path": "graphics/planets/planet19/planet_1.png"
+  },
+  "20": {
+    "source": "graphics/planets/planet20.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -550.0,
+    "offsetY": -493.5,
+    "width": 1100,
+    "height": 987,
+    "frames": [
+      [
+        0,
+        0,
+        1100,
+        987
+      ]
+    ],
+    "radius": 251,
+    "path": "graphics/planets/planet20/planet_1.png"
+  },
+  "21": {
+    "source": "graphics/planets/planet21.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -66.0,
+    "offsetY": -66.0,
+    "width": 132,
+    "height": 132,
+    "frames": [
+      [
+        0,
+        0,
+        132,
+        132
+      ]
+    ],
+    "radius": 62,
+    "path": "graphics/planets/planet21/planet_1.png"
+  },
+  "22": {
+    "source": "graphics/planets/planet22.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -25.0,
+    "offsetY": -25.0,
+    "width": 50,
+    "height": 50,
+    "frames": [
+      [
+        0,
+        0,
+        50,
+        50
+      ]
+    ],
+    "radius": 25,
+    "path": "graphics/planets/planet22/planet_1.png"
+  },
+  "23": {
+    "source": "graphics/planets/planet23.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -296.05,
+    "offsetY": -296.05,
+    "width": 593,
+    "height": 593,
+    "frames": [
+      [
+        0,
+        0,
+        593,
+        593
+      ]
+    ],
+    "radius": 160,
+    "path": "graphics/planets/planet23/planet_1.png"
+  },
+  "24": {
+    "source": "graphics/planets/planet24.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -165.0,
+    "offsetY": -165.0,
+    "width": 330,
+    "height": 330,
+    "frames": [
+      [
+        0,
+        0,
+        330,
+        330
+      ]
+    ],
+    "radius": 75,
+    "path": "graphics/planets/planet24/planet_1.png"
+  },
+  "25": {
+    "source": "graphics/planets/planet25.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -255.5,
+    "offsetY": -255.5,
+    "width": 511,
+    "height": 511,
+    "frames": [
+      [
+        0,
+        0,
+        511,
+        511
+      ]
+    ],
+    "radius": 201,
+    "path": "graphics/planets/planet25/planet_1.png"
+  },
+  "26": {
+    "source": "graphics/planets/planet26.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -229.95,
+    "offsetY": -100.45,
+    "width": 460,
+    "height": 201,
+    "frames": [
+      [
+        0,
+        0,
+        460,
+        201
+      ]
+    ],
+    "radius": 88,
+    "path": "graphics/planets/planet26/planet_1.png"
+  },
+  "27": {
+    "source": "graphics/planets/planet27.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -66.5,
+    "offsetY": -66.5,
+    "width": 133,
+    "height": 133,
+    "frames": [
+      [
+        0,
+        0,
+        133,
+        133
+      ]
+    ],
+    "radius": 62,
+    "path": "graphics/planets/planet27/planet_1.png"
+  },
+  "28": {
+    "source": "graphics/planets/planet28.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -159.5,
+    "offsetY": -159.5,
+    "width": 319,
+    "height": 319,
+    "frames": [
+      [
+        0,
+        0,
+        319,
+        319
+      ]
+    ],
+    "radius": 152,
+    "path": "graphics/planets/planet28/planet_1.png"
+  },
+  "29": {
+    "source": "graphics/planets/planet29.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -63.5,
+    "offsetY": -64.0,
+    "width": 127,
+    "height": 128,
+    "frames": [
+      [
+        0,
+        0,
+        127,
+        128
+      ]
+    ],
+    "radius": 62,
+    "path": "graphics/planets/planet29/planet_1.png"
+  },
+  "30": {
+    "source": "graphics/planets/planet30.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -355.55,
+    "offsetY": -348.0,
+    "width": 712,
+    "height": 697,
+    "frames": [
+      [
+        0,
+        0,
+        712,
+        697
+      ]
+    ],
+    "radius": 235,
+    "path": "graphics/planets/planet30/planet_1.png"
+  },
+  "31": {
+    "source": "graphics/planets/planet31.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -376.05,
+    "offsetY": -376.0,
+    "width": 753,
+    "height": 753,
+    "frames": [
+      [
+        0,
+        0,
+        753,
+        753
+      ]
+    ],
+    "radius": 244,
+    "path": "graphics/planets/planet31/planet_1.png"
+  },
+  "32": {
+    "source": "graphics/planets/planet32.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 12.0,
+    "fps": 60,
+    "offsetX": -203.5,
+    "offsetY": -203.45,
+    "width": 407,
+    "height": 407,
+    "frames": [
+      [
+        0,
+        0,
+        407,
+        407
+      ]
+    ],
+    "radius": 135,
+    "path": "graphics/planets/planet32/planet_1.png"
+  },
+  "48": {
+    "source": "graphics/planets/pirateOneway.swf",
+    "symbol": "planet",
+    "characterId": 3,
+    "sourceFrames": 1,
+    "sourceFps": 24.0,
+    "fps": 60,
+    "offsetX": -75.0,
+    "offsetY": -107.5,
+    "width": 150,
+    "height": 215,
+    "frames": [
+      [
+        0,
+        0,
+        150,
+        215
+      ]
+    ],
+    "radius": 240,
+    "path": "graphics/planets/pirateOneway/planet_1.png"
+  }
+}

@@ -214,6 +214,168 @@ function getBackgroundLayerRenderMeta(layer, bg) {
     return meta;
 }
 
+function drawMapPlanetsBeforeLayer(layerLimit, index, now, viewport) {
+    const planets = mapDecorationState.planets;
+    while (index < planets.length && planets[index].layer < layerLimit) {
+        const planet = planets[index++], asset = planet.asset, meta = asset.meta;
+        if (!asset.image.complete || !asset.image.naturalWidth) continue;
+        if (planet.readyAt === null) planet.readyAt = now;
+        planet.screenX = LOGICAL_WIDTH / 2 - cameraX / planet.parallax + planet.x;
+        planet.screenY = LOGICAL_HEIGHT / 2 - cameraY / planet.parallax + planet.y;
+        const radius = planet.cullRadius;
+        if (planet.screenX + radius < viewport.left || planet.screenX - radius > viewport.right ||
+            planet.screenY + radius < viewport.top || planet.screenY - radius > viewport.bottom) continue;
+        const t = Math.min(1, Math.max(0, (now - planet.readyAt) / 500));
+        ctx.save();
+        ctx.globalAlpha *= 1 - (1 - t) * (1 - t);
+        ctx.translate(planet.screenX, planet.screenY);
+        if (planet.rotation) ctx.rotate(planet.rotation);
+        ctx.drawImage(asset.image, meta.offsetX, meta.offsetY);
+        ctx.restore();
+    }
+    return index;
+}
+
+// Flash uses a 5px pixel collision circle for stations. Build a compact alpha bitset
+// once per station image on this map, then test it without Canvas readback at 25Hz.
+function mapFlareBehindStation(x, y) {
+    for (const station of stations) {
+        const image = stationImages[station.type];
+        if (!image || !image.complete || !image.naturalWidth) continue;
+        const px = Math.floor(x - mapToScreenX(station.x) + image.width / 2);
+        const py = Math.floor(y - mapToScreenY(station.y) + image.height / 2);
+        if (px < 0 || py < 0 || px >= image.width || py >= image.height) continue;
+        const masks = mapDecorationState.stationMasks || (mapDecorationState.stationMasks = new Map());
+        let mask = masks.get(image);
+        if (mask === undefined) {
+            const surface = mapFlareBehindStation._surface || (mapFlareBehindStation._surface = document.createElement("canvas"));
+            surface.width = image.width; surface.height = image.height;
+            try {
+                const context = surface.getContext("2d", { willReadFrequently: true });
+                context.drawImage(image, 0, 0);
+                const pixels = context.getImageData(0, 0, image.width, image.height).data;
+                mask = new Uint8Array(Math.ceil(image.width * image.height / 8));
+                for (let i = 0; i < image.width * image.height; i++) {
+                    if (pixels[i * 4 + 3]) mask[i >> 3] |= 1 << (i & 7);
+                }
+            } catch (_) {
+                mask = null;
+                mapDecorationDebug("Station alpha unavailable");
+            }
+            masks.set(image, mask);
+            surface.width = surface.height = 1;
+        }
+        if (!mask) continue;
+        for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) {
+            if (dx * dx + dy * dy > 25) continue;
+            const sx = px + dx, sy = py + dy;
+            if (sx < 0 || sy < 0 || sx >= image.width || sy >= image.height) continue;
+            const bit = sy * image.width + sx;
+            if (mask[bit >> 3] & 1 << (bit & 7)) return true;
+        }
+    }
+    return false;
+}
+
+function mapFlareOcclusion(x, y, viewport) {
+    if (x < viewport.left || x > viewport.right || y < viewport.top || y > viewport.bottom) return 1;
+    for (const planet of mapDecorationState.planets) {
+        if (!planet.asset.image.complete || !planet.asset.image.naturalWidth) continue;
+        const dx = LOGICAL_WIDTH / 2 - cameraX / planet.parallax + planet.x - x;
+        const dy = LOGICAL_HEIGHT / 2 - cameraY / planet.parallax + planet.y - y;
+        const radius = planet.asset.meta.radius + 5;
+        if (dx * dx + dy * dy < radius * radius) return 2;
+    }
+    if (heroHp > 0 && Math.abs(mapToScreenX(shipX) - x) < 20 && Math.abs(mapToScreenY(shipY) - y) < 20) return 1;
+    for (const id in entities) {
+        const entity = entities[id];
+        if (entity.kind !== "player" && entity.kind !== "npc") continue;
+        if (Math.abs(mapToScreenX(entity.x) - x) < 20 && Math.abs(mapToScreenY(entity.y) - y) < 20) return 1;
+    }
+    return mapFlareBehindStation(x, y) ? 1 : 0;
+}
+
+function drawMapFlareSprite(asset, x, y, frame, scale, rotation, alpha, viewport) {
+    if (!asset || !asset.image.complete || !asset.image.naturalWidth || !(alpha > 0)) return;
+    const meta = asset.meta, rect = meta.frames[frame % meta.frames.length];
+    const radius = Math.max(meta.width, meta.height) * scale;
+    if (x + radius < viewport.left || x - radius > viewport.right || y + radius < viewport.top || y - radius > viewport.bottom) return;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(x, y);
+    if (rotation) ctx.rotate(rotation);
+    ctx.drawImage(asset.image, rect[0], rect[1], rect[2], rect[3],
+        meta.offsetX * scale, meta.offsetY * scale, rect[2] * scale, rect[3] * scale);
+    ctx.restore();
+}
+
+const MAP_FLARE_AXIS_FACTORS = [-1, -2 / 3, -1 / 3, 1 / 3, 2 / 3, 1];
+
+function drawMapLensFlares(now) {
+    if (!backgroundLayersEnabled || !mapDecorationState.flares.length) return;
+    const viewport = getCurrentLogicalViewportRect(drawMapLensFlares._viewport || (drawMapLensFlares._viewport = {}));
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over"; // No ADD blend in LensFlare or its exported timelines.
+    for (const flare of mapDecorationState.flares) {
+        const x = LOGICAL_WIDTH / 2 - cameraX / flare.parallax + flare.x;
+        const y = LOGICAL_HEIGHT / 2 - cameraY / flare.parallax + flare.y;
+        const fadeT = Math.min(1, Math.max(0, (now - flare.fadeAt) / 500));
+        flare.alpha = flare.fadeFrom + (flare.fadeTo - flare.fadeFrom) * (1 - (1 - fadeT) * (1 - fadeT));
+        if (flare.tickAt === null || now - flare.tickAt >= 40) {
+            const ticks = flare.tickAt === null ? 1 : Math.min(5, Math.floor((now - flare.tickAt) / 40));
+            flare.tickAt = now;
+            if (flare.star && flare.cameraX !== null && cameraX !== flare.cameraX && cameraY !== flare.cameraY) {
+                const mouseX = typeof lastMouseScreenX === "number" ? lastMouseScreenX : 0;
+                flare.rotation += (mouseX > LOGICAL_WIDTH / 2 ? 1 : -1) * ticks * 0.15 * Math.PI / 180;
+            }
+            flare.cameraX = cameraX; flare.cameraY = cameraY;
+            const occlusion = mapFlareOcclusion(x, y, viewport);
+            switch (flare.state) {
+              case 0:
+                if (occlusion) {
+                    flare.state = 2;
+                    if (occlusion === 2) flare.useFlash = true;
+                } else {
+                    flare.dx = LOGICAL_WIDTH - 2 * x;
+                    flare.dy = LOGICAL_HEIGHT - 2 * y;
+                    const distance = Math.floor(Math.hypot(flare.dx, flare.dy) / 3);
+                    if (distance !== flare.lastDistance) {
+                        const scale = (distance + 50) * 0.0033;
+                        if (scale > 0 && scale < 1) flare.scale5 = scale;
+                        flare.lastDistance = distance;
+                    }
+                }
+                break;
+              case 2:
+                flare.fadeFrom = flare.alpha; flare.fadeTo = 0; flare.fadeAt = now; flare.state = 4;
+                break;
+              case 4:
+                if (!occlusion) flare.state = 1;
+                break;
+              case 1:
+                flare.fadeFrom = flare.alpha; flare.fadeTo = 1; flare.fadeAt = now; flare.state = 0;
+                if (flare.star && flare.useFlash) { flare.flashAt = now; flare.useFlash = false; }
+                break;
+            }
+        }
+        const starFrame = flare.starAsset ? Math.floor(Math.max(0, now - flare.startedAt) * flare.starAsset.meta.fps / 1000) : 0;
+        drawMapFlareSprite(flare.starAsset, x, y, starFrame, 1, flare.rotation, flare.alpha, viewport);
+        if (flare.flashAt !== null) {
+            const age = now - flare.flashAt;
+            const t = age < 250 ? age / 250 : Math.min(1, (age - 250) / 3000);
+            const alpha = age < 250 ? 0.75 * (1 - (1 - t) * (1 - t)) : 0.75 * (1 - t) * (1 - t);
+            drawMapFlareSprite(flare.flashAsset, x, y, 0, 1, 0, alpha, viewport);
+            if (age >= 3250) flare.flashAt = null;
+        }
+        for (let i = 0; i < 6; i++) {
+            drawMapFlareSprite(flare.lenses[i], x + flare.dx * MAP_FLARE_AXIS_FACTORS[i],
+                y + flare.dy * MAP_FLARE_AXIS_FACTORS[i], 0, i === 5 ? flare.scale5 : 1, 0, flare.alpha, viewport);
+        }
+    }
+    ctx.restore();
+}
+
+
 function drawMapBackground() {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -221,7 +383,9 @@ function drawMapBackground() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     updateStarfield(cameraX, cameraY);
-    if (backgroundLayersEnabled && currentBackgroundLayers && currentBackgroundLayers.length) {
+    if (backgroundLayersEnabled) {
+        const now = performance.now();
+        let planetIndex = 0;
         const viewport = getCurrentLogicalViewportRect(drawMapBackground._viewport || (drawMapBackground._viewport = {
             left: 0,
             top: 0,
@@ -230,6 +394,7 @@ function drawMapBackground() {
         }));
         for (let i = 0; i < currentBackgroundLayers.length; i++) {
             const layer = currentBackgroundLayers[i];
+            planetIndex = drawMapPlanetsBeforeLayer(layer.layer, planetIndex, now, viewport);
             const bg = layer.image;
             if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) continue;
             const meta = getBackgroundLayerRenderMeta(layer, bg);
@@ -243,6 +408,7 @@ function drawMapBackground() {
             drawImageClippedToLogicalViewport(bg, screenX, screenY, drawWidth, drawHeight, viewport);
             ctx.imageSmoothingEnabled = previousSmoothing;
         }
+        drawMapPlanetsBeforeLayer(Infinity, planetIndex, now, viewport);
     }
     drawStarfield();
 }
@@ -2873,7 +3039,105 @@ function flashDrawEnergyLeechAura(centerX, centerY, spriteHeight, startedAtMs, u
     ctx.restore();
 }
 
-function flashDrawShieldBackupBurst(centerX, centerY, startedAtMs, untilMs = 0) {
+function flashCreateChainBranchState() {
+    return { tickAt: null, points: new Float32Array(90), branches: Array.from({ length: 6 }, (_, i) => ({
+        parent: i < 3 ? -1 : i - 3, until: 0, from: 0, to: 0, seed: 0,
+        points: new Float32Array(i < 3 ? 44 : 22)
+    })) };
+}
+
+function flashDrawChainBranches(state, now, seed) {
+    if (!state) return;
+    const ticks = state.tickAt === null ? 1 : Math.min(6, Math.floor((now - state.tickAt) * 60 / 1000));
+    if (ticks > 0) state.tickAt = now;
+    const probability = 1 - Math.pow(0.9, ticks);
+    const spawnRoot = ticks > 0 && Math.random() < probability;
+    let rootSpawned = false;
+    // Batch the three paths of each generation: two strokes instead of six.
+    for (let generation = 0; generation < 2; generation++) {
+      let drew = false;
+      ctx.beginPath();
+      for (let i = generation * 3; i < generation * 3 + 3; i++) {
+        const branch = state.branches[i];
+        const parent = branch.parent < 0 ? null : state.branches[branch.parent];
+        if (parent && parent.until <= now) { branch.until = 0; continue; }
+        const points = parent ? parent.points : state.points;
+        const count = points.length / 2;
+        if (branch.until <= now) {
+            branch.until = 0;
+            if (parent ? ticks <= 0 || Math.random() >= probability : !spawnRoot || rootSpawned) continue;
+            if (!parent) { rootSpawned = true; state.branches[i + 3].until = 0; }
+            branch.from = Math.floor(Math.random() * count);
+            // Distinct points; attached ends in Flash, so no arbitrary off-target forks.
+            branch.to = (branch.from + 1 + Math.floor(Math.random() * (count - 1))) % count;
+            branch.seed = Math.random() * 100;
+            branch.until = parent ? parent.until : now + 1000 + Math.random() * 1000;
+        }
+        const sx = points[branch.from * 2], sy = points[branch.from * 2 + 1];
+        const dx = points[branch.to * 2] - sx, dy = points[branch.to * 2 + 1] - sy;
+        const length = Math.hypot(dx, dy);
+        if (!(length > 0)) continue;
+        const segments = branch.points.length / 2 - 1;
+        for (let step = 0; step <= segments; step++) {
+            const t = step / segments;
+            const jitter = Math.sin(Math.PI * t) * (Math.sin(seed * 0.023 + branch.seed + step * 1.71) * 0.12 +
+                Math.cos(seed * 0.017 + branch.seed + step * 0.73) * 0.06) * length;
+            const x = sx + dx * t - dy / length * jitter;
+            const y = sy + dy * t + dx / length * jitter;
+            branch.points[step * 2] = x; branch.points[step * 2 + 1] = y;
+            if (step === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        drew = true;
+      }
+      if (drew) {
+        ctx.save();
+        ctx.globalAlpha *= generation === 1 ? 0.75 * 0.5 : 0.75;
+        ctx.lineWidth = 2.7;
+        ctx.strokeStyle = "rgba(222,240,255,0.98)";
+        ctx.shadowBlur = 0; // Reuse the main glow; no additional blur surface per branch.
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+}
+
+const shipStableHullExtentCache = Object.create(null);
+
+function getShipReferenceHullExtent(shipId) {
+    const cached = shipStableHullExtentCache[shipId];
+    if (cached) return cached;
+    const image = getShipSpriteFrame(shipId, 0);
+    if (!image || !image.complete || !image.width || !image.height) return 130;
+    // Reference orientation keeps the burst stable while the ship turns. Do not
+    // cache an unloaded fallback: a later burst must use the actual hull.
+    const bounds = getShipVisualBoundsCached(shipId, 0, 1);
+    const extent = bounds ? Math.max(bounds.width, bounds.height) : Math.max(image.width, image.height);
+    if (extent > 0) shipStableHullExtentCache[shipId] = extent;
+    return extent > 0 ? extent : 130;
+}
+
+function flashApplyLightningHullQuake(entityId, entityKey, now) {
+    const bucket = flashGetShipSkillVisualBucket(entityId, false);
+    const state = bucket && bucket.lightning;
+    if (!state) return;
+    if (!state.active || state.fading || (state.expiresAtMs > 0 && now >= state.expiresAtMs) ||
+        (Number(entityId) === Number(heroId) && heroHp <= 0) || !flashIsShipSkillEntityMoving(entityId, entityKey)) {
+        state.quakeAt = null; state.quakeX = state.quakeY = 0;
+        return;
+    }
+    if (state.quakeAt == null) {
+        state.quakeAt = now; state.quakeX = state.quakeY = 0;
+    } else if (now - state.quakeAt >= 40) {
+        state.quakeAt = now;
+        state.quakeX = Math.trunc(Math.random() * 8 - 4);
+        state.quakeY = Math.trunc(Math.random() * 8 - 4);
+    }
+    const scale = getEntityDrawScale();
+    ctx.translate(state.quakeX * scale, state.quakeY * scale);
+}
+
+
+function flashDrawShieldBackupBurst(centerX, centerY, startedAtMs, untilMs = 0, shipId = heroShipId) {
     const start = Number(startedAtMs) || 0;
     if (!(start > 0)) return;
     const now = performance.now();
@@ -2899,7 +3163,7 @@ function flashDrawShieldBackupBurst(centerX, centerY, startedAtMs, untilMs = 0) 
     const entityScale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
     ctx.save();
     ctx.globalAlpha *= alpha;
-    drawCenteredEffectFrame(frameDef, centerX, centerY, entityScale);
+    drawCenteredEffectFrame(frameDef, centerX, centerY, getShipReferenceHullExtent(shipId) * 0.5 / 65 * entityScale);
     ctx.restore();
 }
 
@@ -2923,7 +3187,7 @@ function flashResolveTechVisualWorldPosition(targetId, out = null) {
     return pos;
 }
 
-function flashDrawChainImpulseBolt(fromX, fromY, toX, toY, alpha, seed, reveal = 1) {
+function flashDrawChainImpulseBolt(fromX, fromY, toX, toY, alpha, seed, reveal = 1, branchState = null, now = 0) {
     const clampedReveal = Math.max(0, Math.min(1, Number(reveal) || 0));
     if (!(alpha > 0) || !(clampedReveal > 0)) return;
     const dx = toX - fromX;
@@ -2936,12 +3200,13 @@ function flashDrawChainImpulseBolt(fromX, fromY, toX, toY, alpha, seed, reveal =
     const drawDy = endY - fromY;
     const length = Math.sqrt(drawDx * drawDx + drawDy * drawDy);
     if (!(length > 0)) return;
-    const segments = Math.max(6, Math.min(18, Math.round(length / 45)));
+    const segments = 44; // 45 points, as in ChainBoltAttackJob.
     const angle = Math.atan2(drawDy, drawDx);
     const nx = -Math.sin(angle);
     const ny = Math.cos(angle);
     ctx.save();
     ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = "source-over"; // Keep the existing composition: Canvas ADD is costly on software renderers.
     ctx.strokeStyle = "rgba(222,240,255,0.98)";
     ctx.lineWidth = 2.7;
     ctx.lineCap = "round";
@@ -2949,19 +3214,24 @@ function flashDrawChainImpulseBolt(fromX, fromY, toX, toY, alpha, seed, reveal =
     ctx.shadowColor = "rgba(125,210,255,0.95)";
     ctx.beginPath();
     ctx.moveTo(fromX, fromY);
+    if (branchState) { branchState.points[0] = fromX; branchState.points[1] = fromY; }
     for (let step = 1; step < segments; step++) {
         const t = step / segments;
         const baseX = fromX + drawDx * t;
         const baseY = fromY + drawDy * t;
         const jitter = Math.sin(seed * 0.017 + step * 1.71) * 9 + Math.cos(seed * 0.023 + step * 1.13) * 6;
-        ctx.lineTo(baseX + nx * jitter, baseY + ny * jitter);
+        const x = baseX + nx * jitter, y = baseY + ny * jitter;
+        ctx.lineTo(x, y);
+        if (branchState) { branchState.points[step * 2] = x; branchState.points[step * 2 + 1] = y; }
     }
     ctx.lineTo(endX, endY);
+    if (branchState) { branchState.points[88] = endX; branchState.points[89] = endY; }
     ctx.stroke();
     ctx.strokeStyle = "rgba(140,220,255,0.92)";
     ctx.lineWidth = 1.2;
     ctx.shadowBlur = 0;
     ctx.stroke();
+    flashDrawChainBranches(branchState, now, seed);
     ctx.restore();
 }
 
@@ -3017,7 +3287,9 @@ function drawChainImpulseTechEffects() {
             const reveal = Math.max(0, Math.min(1, segmentAge / FLASH_CHAIN_IMPULSE_BUILD_MS));
             if (reveal > 0) {
                 const animatedSeed = (effect.seed || 0) + idx * 17 + now * 0.06;
-                flashDrawChainImpulseBolt(fromX, fromY, toX, toY, fadeAlpha, animatedSeed, reveal);
+                if (!effect.branchStates) effect.branchStates = [];
+                const branches = effect.branchStates[idx] || (effect.branchStates[idx] = flashCreateChainBranchState());
+                flashDrawChainImpulseBolt(fromX, fromY, toX, toY, fadeAlpha, animatedSeed, reveal, branches, now);
             }
             lastX = targetX;
             lastY = targetY;
@@ -3476,8 +3748,11 @@ function drawShip() {
             const w = img.width * entityScale;
             const h = img.height * entityScale;
             shipDrawnHeight = h;
+            ctx.save();
+            flashApplyLightningHullQuake(heroId, "hero", performance.now());
             drawRageGlow(heroRageEffect, img, shipAnchorX, shipAnchorY, entityScale, performance.now());
             ctx.drawImage(img, shipScreenX - w / 2 - shiftX, sy - h / 2 - shiftY, w, h);
+            ctx.restore();
         }
         drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, sy, heroVisualShift);
         drawShipSkillVisualEffectsForEntity(heroId, shipAnchorX, shipAnchorY, shipId, frameIndex, heroAngle || 0, shipDrawnHeight, "hero", shipX, shipY);
@@ -3503,7 +3778,7 @@ function drawShip() {
     }
     drawShieldAura(shipScreenX, sy, heroShield, heroMaxShield, heroIshActive, heroInvincible, heroIshSince, heroIshUntil, heroInvSince, heroInvUntil, typeof heroShieldBackupUntil !== "undefined" ? heroShieldBackupUntil : 0);
     if (typeof heroShieldBackupStartedAt !== "undefined" && heroShieldBackupStartedAt > 0) {
-        flashDrawShieldBackupBurst(shipScreenX, sy, heroShieldBackupStartedAt, typeof heroShieldBackupUntil !== "undefined" ? heroShieldBackupUntil : 0);
+        flashDrawShieldBackupBurst(shipScreenX, sy, heroShieldBackupStartedAt, typeof heroShieldBackupUntil !== "undefined" ? heroShieldBackupUntil : 0, heroShipId);
     }
     if (window.heroTechEnergyLeechActive) {
         flashDrawEnergyLeechAura(shipScreenX, sy, shipDrawnHeight, Number(window.heroTechEnergyLeechStartedAt) || performance.now(), Number(window.heroTechEnergyLeechUntil) || 0);
@@ -4030,8 +4305,11 @@ function drawEntities() {
                 const w = img.width * entityScale;
                 const h = img.height * entityScale;
                 spriteHeight = h;
+                ctx.save();
+                flashApplyLightningHullQuake(e.id, entityEngineTrailKey, now);
                 drawRageGlow(e.rageEffect, img, entityAnchorX, entityAnchorY, entityScale, now);
                 ctx.drawImage(img, entityScreenX - w / 2 - shiftX, entityScreenY - h / 2 - shiftY, w, h);
+                ctx.restore();
                 drewSprite = true;
             }
             drawShipExpansionOverlay(e.shipId, frameIndex, entityScreenX, entityScreenY, {
@@ -4058,7 +4336,7 @@ function drawEntities() {
         if (e.kind === "player") {
             drawShieldAura(entityScreenX, entityScreenY, e.shield, e.maxShield, e.ishActive, e.invincible, e.ishSince, e.ishUntil, e.invSince, e.invUntil, e.techShieldBackupUntil || 0);
             if (e.techShieldBackupStartedAt) {
-                flashDrawShieldBackupBurst(entityScreenX, entityScreenY, Number(e.techShieldBackupStartedAt) || 0, Number(e.techShieldBackupUntil) || 0);
+                flashDrawShieldBackupBurst(entityScreenX, entityScreenY, Number(e.techShieldBackupStartedAt) || 0, Number(e.techShieldBackupUntil) || 0, visualShipId);
             }
             if (e.techEnergyLeechActive) {
                 flashDrawEnergyLeechAura(entityScreenX, entityScreenY, spriteHeight, Number(e.techEnergyLeechStartedAt) || performance.now(), Number(e.techEnergyLeechUntil) || 0);

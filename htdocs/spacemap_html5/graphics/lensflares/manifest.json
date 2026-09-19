@@ -1,0 +1,554 @@
+{
+  "flash": {
+    "source": "graphics/lensflares/lensFlash.swf",
+    "symbol": "lensFlash",
+    "characterId": 1,
+    "sourceFrames": 1,
+    "sourceFps": 24.0,
+    "fps": 60,
+    "offsetX": -364.5,
+    "offsetY": -364.5,
+    "width": 729,
+    "height": 729,
+    "frames": [
+      [
+        0,
+        0,
+        729,
+        729
+      ]
+    ],
+    "path": "graphics/lensflares/lensFlash/lensFlash_1.png"
+  },
+  "0": {
+    "lens5": {
+      "source": "graphics/lensflares/lensflare0.swf",
+      "symbol": "lens5",
+      "characterId": 49,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -126.0,
+      "offsetY": -126.0,
+      "width": 252,
+      "height": 251,
+      "frames": [
+        [
+          0,
+          0,
+          252,
+          251
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare0/atlas.png"
+    },
+    "lens4": {
+      "source": "graphics/lensflares/lensflare0.swf",
+      "symbol": "lens4",
+      "characterId": 46,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -68.0,
+      "offsetY": -68.0,
+      "width": 137,
+      "height": 136,
+      "frames": [
+        [
+          254,
+          0,
+          137,
+          136
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare0/atlas.png"
+    },
+    "lens3": {
+      "source": "graphics/lensflares/lensflare0.swf",
+      "symbol": "lens3",
+      "characterId": 43,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -25.0,
+      "offsetY": -24.0,
+      "width": 50,
+      "height": 48,
+      "frames": [
+        [
+          393,
+          0,
+          50,
+          48
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare0/atlas.png"
+    },
+    "lens2": {
+      "source": "graphics/lensflares/lensflare0.swf",
+      "symbol": "lens2",
+      "characterId": 40,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -17.0,
+      "offsetY": -16.0,
+      "width": 34,
+      "height": 35,
+      "frames": [
+        [
+          445,
+          0,
+          34,
+          35
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare0/atlas.png"
+    },
+    "lens1": {
+      "source": "graphics/lensflares/lensflare0.swf",
+      "symbol": "lens1",
+      "characterId": 37,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -38.0,
+      "offsetY": -38.0,
+      "width": 76,
+      "height": 76,
+      "frames": [
+        [
+          481,
+          0,
+          76,
+          76
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare0/atlas.png"
+    },
+    "lens0": {
+      "source": "graphics/lensflares/lensflare0.swf",
+      "symbol": "lens0",
+      "characterId": 34,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -85.0,
+      "offsetY": -89.0,
+      "width": 171,
+      "height": 178,
+      "frames": [
+        [
+          559,
+          0,
+          171,
+          178
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare0/atlas.png"
+    },
+    "star": {
+      "source": "graphics/lensflares/lensflare0.swf",
+      "symbol": "star",
+      "characterId": 31,
+      "sourceFrames": 15,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -198.0,
+      "offsetY": -193.0,
+      "width": 400,
+      "height": 400,
+      "frames": [
+        [
+          732,
+          0,
+          400,
+          400
+        ],
+        [
+          1134,
+          0,
+          400,
+          400
+        ],
+        [
+          0,
+          402,
+          400,
+          400
+        ],
+        [
+          402,
+          402,
+          400,
+          400
+        ],
+        [
+          804,
+          402,
+          400,
+          400
+        ],
+        [
+          0,
+          804,
+          400,
+          400
+        ],
+        [
+          402,
+          804,
+          400,
+          400
+        ],
+        [
+          804,
+          804,
+          400,
+          400
+        ],
+        [
+          0,
+          1206,
+          400,
+          400
+        ],
+        [
+          402,
+          1206,
+          400,
+          400
+        ],
+        [
+          804,
+          1206,
+          400,
+          400
+        ],
+        [
+          0,
+          1608,
+          400,
+          400
+        ],
+        [
+          402,
+          1608,
+          400,
+          400
+        ],
+        [
+          804,
+          1608,
+          400,
+          400
+        ],
+        [
+          0,
+          2010,
+          400,
+          400
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare0/atlas.png"
+    }
+  },
+  "1": {
+    "lens5": {
+      "source": "graphics/lensflares/lensflare1.swf",
+      "symbol": "lens5",
+      "characterId": 21,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -126.0,
+      "offsetY": -126.0,
+      "width": 252,
+      "height": 251,
+      "frames": [
+        [
+          0,
+          0,
+          252,
+          251
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare1/atlas.png"
+    },
+    "lens4": {
+      "source": "graphics/lensflares/lensflare1.swf",
+      "symbol": "lens4",
+      "characterId": 18,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -68.0,
+      "offsetY": -68.0,
+      "width": 137,
+      "height": 137,
+      "frames": [
+        [
+          254,
+          0,
+          137,
+          137
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare1/atlas.png"
+    },
+    "lens3": {
+      "source": "graphics/lensflares/lensflare1.swf",
+      "symbol": "lens3",
+      "characterId": 15,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -25.0,
+      "offsetY": -25.0,
+      "width": 50,
+      "height": 50,
+      "frames": [
+        [
+          393,
+          0,
+          50,
+          50
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare1/atlas.png"
+    },
+    "lens2": {
+      "source": "graphics/lensflares/lensflare1.swf",
+      "symbol": "lens2",
+      "characterId": 12,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -17.0,
+      "offsetY": -17.0,
+      "width": 34,
+      "height": 34,
+      "frames": [
+        [
+          445,
+          0,
+          34,
+          34
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare1/atlas.png"
+    },
+    "lens1": {
+      "source": "graphics/lensflares/lensflare1.swf",
+      "symbol": "lens1",
+      "characterId": 9,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -38.0,
+      "offsetY": -37.0,
+      "width": 76,
+      "height": 74,
+      "frames": [
+        [
+          481,
+          0,
+          76,
+          74
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare1/atlas.png"
+    },
+    "lens0": {
+      "source": "graphics/lensflares/lensflare1.swf",
+      "symbol": "lens0",
+      "characterId": 6,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -85.0,
+      "offsetY": -88.95,
+      "width": 171,
+      "height": 178,
+      "frames": [
+        [
+          559,
+          0,
+          171,
+          178
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare1/atlas.png"
+    },
+    "star": {
+      "source": "graphics/lensflares/lensflare1.swf",
+      "symbol": "star",
+      "characterId": 3,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -160.0,
+      "offsetY": -152.0,
+      "width": 324,
+      "height": 324,
+      "frames": [
+        [
+          0,
+          253,
+          324,
+          324
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare1/atlas.png"
+    }
+  },
+  "2": {
+    "lens5": {
+      "source": "graphics/lensflares/lensflare2.swf",
+      "symbol": "lens5",
+      "characterId": 21,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -126.0,
+      "offsetY": -126.0,
+      "width": 252,
+      "height": 251,
+      "frames": [
+        [
+          0,
+          0,
+          252,
+          251
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare2/atlas.png"
+    },
+    "lens4": {
+      "source": "graphics/lensflares/lensflare2.swf",
+      "symbol": "lens4",
+      "characterId": 18,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -68.0,
+      "offsetY": -68.0,
+      "width": 137,
+      "height": 136,
+      "frames": [
+        [
+          254,
+          0,
+          137,
+          136
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare2/atlas.png"
+    },
+    "lens3": {
+      "source": "graphics/lensflares/lensflare2.swf",
+      "symbol": "lens3",
+      "characterId": 15,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -25.0,
+      "offsetY": -24.0,
+      "width": 50,
+      "height": 50,
+      "frames": [
+        [
+          393,
+          0,
+          50,
+          50
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare2/atlas.png"
+    },
+    "lens2": {
+      "source": "graphics/lensflares/lensflare2.swf",
+      "symbol": "lens2",
+      "characterId": 12,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -17.0,
+      "offsetY": -16.0,
+      "width": 34,
+      "height": 33,
+      "frames": [
+        [
+          445,
+          0,
+          34,
+          33
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare2/atlas.png"
+    },
+    "lens1": {
+      "source": "graphics/lensflares/lensflare2.swf",
+      "symbol": "lens1",
+      "characterId": 9,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -37.0,
+      "offsetY": -39.0,
+      "width": 76,
+      "height": 76,
+      "frames": [
+        [
+          481,
+          0,
+          76,
+          76
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare2/atlas.png"
+    },
+    "lens0": {
+      "source": "graphics/lensflares/lensflare2.swf",
+      "symbol": "lens0",
+      "characterId": 6,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -85.0,
+      "offsetY": -89.0,
+      "width": 171,
+      "height": 178,
+      "frames": [
+        [
+          559,
+          0,
+          171,
+          178
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare2/atlas.png"
+    },
+    "star": {
+      "source": "graphics/lensflares/lensflare2.swf",
+      "symbol": "star",
+      "characterId": 3,
+      "sourceFrames": 1,
+      "sourceFps": 12.0,
+      "fps": 60,
+      "offsetX": -156.0,
+      "offsetY": -158.0,
+      "width": 324,
+      "height": 324,
+      "frames": [
+        [
+          0,
+          253,
+          324,
+          324
+        ]
+      ],
+      "path": "graphics/lensflares/lensflare2/atlas.png"
+    }
+  }
+}
