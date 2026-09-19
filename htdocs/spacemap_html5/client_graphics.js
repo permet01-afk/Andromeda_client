@@ -214,168 +214,6 @@ function getBackgroundLayerRenderMeta(layer, bg) {
     return meta;
 }
 
-function drawMapPlanetsBeforeLayer(layerLimit, index, now, viewport) {
-    const planets = mapDecorationState.planets;
-    while (index < planets.length && planets[index].layer < layerLimit) {
-        const planet = planets[index++], asset = planet.asset, meta = asset.meta;
-        if (!asset.image.complete || !asset.image.naturalWidth) continue;
-        if (planet.readyAt === null) planet.readyAt = now;
-        planet.screenX = LOGICAL_WIDTH / 2 - cameraX / planet.parallax + planet.x;
-        planet.screenY = LOGICAL_HEIGHT / 2 - cameraY / planet.parallax + planet.y;
-        const radius = planet.cullRadius;
-        if (planet.screenX + radius < viewport.left || planet.screenX - radius > viewport.right ||
-            planet.screenY + radius < viewport.top || planet.screenY - radius > viewport.bottom) continue;
-        const t = Math.min(1, Math.max(0, (now - planet.readyAt) / 500));
-        ctx.save();
-        ctx.globalAlpha *= 1 - (1 - t) * (1 - t);
-        ctx.translate(planet.screenX, planet.screenY);
-        if (planet.rotation) ctx.rotate(planet.rotation);
-        ctx.drawImage(asset.image, meta.offsetX, meta.offsetY);
-        ctx.restore();
-    }
-    return index;
-}
-
-// Flash uses a 5px pixel collision circle for stations. Build a compact alpha bitset
-// once per station image on this map, then test it without Canvas readback at 25Hz.
-function mapFlareBehindStation(x, y) {
-    for (const station of stations) {
-        const image = stationImages[station.type];
-        if (!image || !image.complete || !image.naturalWidth) continue;
-        const px = Math.floor(x - mapToScreenX(station.x) + image.width / 2);
-        const py = Math.floor(y - mapToScreenY(station.y) + image.height / 2);
-        if (px < 0 || py < 0 || px >= image.width || py >= image.height) continue;
-        const masks = mapDecorationState.stationMasks || (mapDecorationState.stationMasks = new Map());
-        let mask = masks.get(image);
-        if (mask === undefined) {
-            const surface = mapFlareBehindStation._surface || (mapFlareBehindStation._surface = document.createElement("canvas"));
-            surface.width = image.width; surface.height = image.height;
-            try {
-                const context = surface.getContext("2d", { willReadFrequently: true });
-                context.drawImage(image, 0, 0);
-                const pixels = context.getImageData(0, 0, image.width, image.height).data;
-                mask = new Uint8Array(Math.ceil(image.width * image.height / 8));
-                for (let i = 0; i < image.width * image.height; i++) {
-                    if (pixels[i * 4 + 3]) mask[i >> 3] |= 1 << (i & 7);
-                }
-            } catch (_) {
-                mask = null;
-                mapDecorationDebug("Station alpha unavailable");
-            }
-            masks.set(image, mask);
-            surface.width = surface.height = 1;
-        }
-        if (!mask) continue;
-        for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) {
-            if (dx * dx + dy * dy > 25) continue;
-            const sx = px + dx, sy = py + dy;
-            if (sx < 0 || sy < 0 || sx >= image.width || sy >= image.height) continue;
-            const bit = sy * image.width + sx;
-            if (mask[bit >> 3] & 1 << (bit & 7)) return true;
-        }
-    }
-    return false;
-}
-
-function mapFlareOcclusion(x, y, viewport) {
-    if (x < viewport.left || x > viewport.right || y < viewport.top || y > viewport.bottom) return 1;
-    for (const planet of mapDecorationState.planets) {
-        if (!planet.asset.image.complete || !planet.asset.image.naturalWidth) continue;
-        const dx = LOGICAL_WIDTH / 2 - cameraX / planet.parallax + planet.x - x;
-        const dy = LOGICAL_HEIGHT / 2 - cameraY / planet.parallax + planet.y - y;
-        const radius = planet.asset.meta.radius + 5;
-        if (dx * dx + dy * dy < radius * radius) return 2;
-    }
-    if (heroHp > 0 && Math.abs(mapToScreenX(shipX) - x) < 20 && Math.abs(mapToScreenY(shipY) - y) < 20) return 1;
-    for (const id in entities) {
-        const entity = entities[id];
-        if (entity.kind !== "player" && entity.kind !== "npc") continue;
-        if (Math.abs(mapToScreenX(entity.x) - x) < 20 && Math.abs(mapToScreenY(entity.y) - y) < 20) return 1;
-    }
-    return mapFlareBehindStation(x, y) ? 1 : 0;
-}
-
-function drawMapFlareSprite(asset, x, y, frame, scale, rotation, alpha, viewport) {
-    if (!asset || !asset.image.complete || !asset.image.naturalWidth || !(alpha > 0)) return;
-    const meta = asset.meta, rect = meta.frames[frame % meta.frames.length];
-    const radius = Math.max(meta.width, meta.height) * scale;
-    if (x + radius < viewport.left || x - radius > viewport.right || y + radius < viewport.top || y - radius > viewport.bottom) return;
-    ctx.save();
-    ctx.globalAlpha *= alpha;
-    ctx.translate(x, y);
-    if (rotation) ctx.rotate(rotation);
-    ctx.drawImage(asset.image, rect[0], rect[1], rect[2], rect[3],
-        meta.offsetX * scale, meta.offsetY * scale, rect[2] * scale, rect[3] * scale);
-    ctx.restore();
-}
-
-const MAP_FLARE_AXIS_FACTORS = [-1, -2 / 3, -1 / 3, 1 / 3, 2 / 3, 1];
-
-function drawMapLensFlares(now) {
-    if (!backgroundLayersEnabled || !mapDecorationState.flares.length) return;
-    const viewport = getCurrentLogicalViewportRect(drawMapLensFlares._viewport || (drawMapLensFlares._viewport = {}));
-    ctx.save();
-    ctx.globalCompositeOperation = "source-over"; // No ADD blend in LensFlare or its exported timelines.
-    for (const flare of mapDecorationState.flares) {
-        const x = LOGICAL_WIDTH / 2 - cameraX / flare.parallax + flare.x;
-        const y = LOGICAL_HEIGHT / 2 - cameraY / flare.parallax + flare.y;
-        const fadeT = Math.min(1, Math.max(0, (now - flare.fadeAt) / 500));
-        flare.alpha = flare.fadeFrom + (flare.fadeTo - flare.fadeFrom) * (1 - (1 - fadeT) * (1 - fadeT));
-        if (flare.tickAt === null || now - flare.tickAt >= 40) {
-            const ticks = flare.tickAt === null ? 1 : Math.min(5, Math.floor((now - flare.tickAt) / 40));
-            flare.tickAt = now;
-            if (flare.star && flare.cameraX !== null && cameraX !== flare.cameraX && cameraY !== flare.cameraY) {
-                const mouseX = typeof lastMouseScreenX === "number" ? lastMouseScreenX : 0;
-                flare.rotation += (mouseX > LOGICAL_WIDTH / 2 ? 1 : -1) * ticks * 0.15 * Math.PI / 180;
-            }
-            flare.cameraX = cameraX; flare.cameraY = cameraY;
-            const occlusion = mapFlareOcclusion(x, y, viewport);
-            switch (flare.state) {
-              case 0:
-                if (occlusion) {
-                    flare.state = 2;
-                    if (occlusion === 2) flare.useFlash = true;
-                } else {
-                    flare.dx = LOGICAL_WIDTH - 2 * x;
-                    flare.dy = LOGICAL_HEIGHT - 2 * y;
-                    const distance = Math.floor(Math.hypot(flare.dx, flare.dy) / 3);
-                    if (distance !== flare.lastDistance) {
-                        const scale = (distance + 50) * 0.0033;
-                        if (scale > 0 && scale < 1) flare.scale5 = scale;
-                        flare.lastDistance = distance;
-                    }
-                }
-                break;
-              case 2:
-                flare.fadeFrom = flare.alpha; flare.fadeTo = 0; flare.fadeAt = now; flare.state = 4;
-                break;
-              case 4:
-                if (!occlusion) flare.state = 1;
-                break;
-              case 1:
-                flare.fadeFrom = flare.alpha; flare.fadeTo = 1; flare.fadeAt = now; flare.state = 0;
-                if (flare.star && flare.useFlash) { flare.flashAt = now; flare.useFlash = false; }
-                break;
-            }
-        }
-        const starFrame = flare.starAsset ? Math.floor(Math.max(0, now - flare.startedAt) * flare.starAsset.meta.fps / 1000) : 0;
-        drawMapFlareSprite(flare.starAsset, x, y, starFrame, 1, flare.rotation, flare.alpha, viewport);
-        if (flare.flashAt !== null) {
-            const age = now - flare.flashAt;
-            const t = age < 250 ? age / 250 : Math.min(1, (age - 250) / 3000);
-            const alpha = age < 250 ? 0.75 * (1 - (1 - t) * (1 - t)) : 0.75 * (1 - t) * (1 - t);
-            drawMapFlareSprite(flare.flashAsset, x, y, 0, 1, 0, alpha, viewport);
-            if (age >= 3250) flare.flashAt = null;
-        }
-        for (let i = 0; i < 6; i++) {
-            drawMapFlareSprite(flare.lenses[i], x + flare.dx * MAP_FLARE_AXIS_FACTORS[i],
-                y + flare.dy * MAP_FLARE_AXIS_FACTORS[i], 0, i === 5 ? flare.scale5 : 1, 0, flare.alpha, viewport);
-        }
-    }
-    ctx.restore();
-}
-
-
 function drawMapBackground() {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -383,9 +221,7 @@ function drawMapBackground() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     updateStarfield(cameraX, cameraY);
-    if (backgroundLayersEnabled) {
-        const now = performance.now();
-        let planetIndex = 0;
+    if (backgroundLayersEnabled && currentBackgroundLayers && currentBackgroundLayers.length) {
         const viewport = getCurrentLogicalViewportRect(drawMapBackground._viewport || (drawMapBackground._viewport = {
             left: 0,
             top: 0,
@@ -394,7 +230,6 @@ function drawMapBackground() {
         }));
         for (let i = 0; i < currentBackgroundLayers.length; i++) {
             const layer = currentBackgroundLayers[i];
-            planetIndex = drawMapPlanetsBeforeLayer(layer.layer, planetIndex, now, viewport);
             const bg = layer.image;
             if (!bg || !bg.complete || bg.width === 0 || bg.height === 0) continue;
             const meta = getBackgroundLayerRenderMeta(layer, bg);
@@ -408,7 +243,6 @@ function drawMapBackground() {
             drawImageClippedToLogicalViewport(bg, screenX, screenY, drawWidth, drawHeight, viewport);
             ctx.imageSmoothingEnabled = previousSmoothing;
         }
-        drawMapPlanetsBeforeLayer(Infinity, planetIndex, now, viewport);
     }
     drawStarfield();
 }
@@ -3116,26 +2950,6 @@ function getShipReferenceHullExtent(shipId) {
     return extent > 0 ? extent : 130;
 }
 
-function flashApplyLightningHullQuake(entityId, entityKey, now) {
-    const bucket = flashGetShipSkillVisualBucket(entityId, false);
-    const state = bucket && bucket.lightning;
-    if (!state) return;
-    if (!state.active || state.fading || (state.expiresAtMs > 0 && now >= state.expiresAtMs) ||
-        (Number(entityId) === Number(heroId) && heroHp <= 0) || !flashIsShipSkillEntityMoving(entityId, entityKey)) {
-        state.quakeAt = null; state.quakeX = state.quakeY = 0;
-        return;
-    }
-    if (state.quakeAt == null) {
-        state.quakeAt = now; state.quakeX = state.quakeY = 0;
-    } else if (now - state.quakeAt >= 40) {
-        state.quakeAt = now;
-        state.quakeX = Math.trunc(Math.random() * 8 - 4);
-        state.quakeY = Math.trunc(Math.random() * 8 - 4);
-    }
-    const scale = getEntityDrawScale();
-    ctx.translate(state.quakeX * scale, state.quakeY * scale);
-}
-
 
 function flashDrawShieldBackupBurst(centerX, centerY, startedAtMs, untilMs = 0, shipId = heroShipId) {
     const start = Number(startedAtMs) || 0;
@@ -3748,11 +3562,8 @@ function drawShip() {
             const w = img.width * entityScale;
             const h = img.height * entityScale;
             shipDrawnHeight = h;
-            ctx.save();
-            flashApplyLightningHullQuake(heroId, "hero", performance.now());
             drawRageGlow(heroRageEffect, img, shipAnchorX, shipAnchorY, entityScale, performance.now());
             ctx.drawImage(img, shipScreenX - w / 2 - shiftX, sy - h / 2 - shiftY, w, h);
-            ctx.restore();
         }
         drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, sy, heroVisualShift);
         drawShipSkillVisualEffectsForEntity(heroId, shipAnchorX, shipAnchorY, shipId, frameIndex, heroAngle || 0, shipDrawnHeight, "hero", shipX, shipY);
@@ -4305,11 +4116,8 @@ function drawEntities() {
                 const w = img.width * entityScale;
                 const h = img.height * entityScale;
                 spriteHeight = h;
-                ctx.save();
-                flashApplyLightningHullQuake(e.id, entityEngineTrailKey, now);
                 drawRageGlow(e.rageEffect, img, entityAnchorX, entityAnchorY, entityScale, now);
                 ctx.drawImage(img, entityScreenX - w / 2 - shiftX, entityScreenY - h / 2 - shiftY, w, h);
-                ctx.restore();
                 drewSprite = true;
             }
             drawShipExpansionOverlay(e.shipId, frameIndex, entityScreenX, entityScreenY, {

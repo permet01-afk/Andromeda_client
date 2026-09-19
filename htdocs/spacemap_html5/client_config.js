@@ -1479,146 +1479,6 @@ function getBackgroundShiftForMap(mapId) {
     };
 }
 
-// Native Flash symbol bounds; placements still come from maps.php, never the minimap.
-let mapDecorationsById = Object.create(null);
-let mapDecorationManifestPromise = null;
-let mapDecorationLoadPromise = Promise.resolve();
-let mapDecorationState = { mapId: null, planets: [], flares: [], images: new Set() };
-const mapDecorationImageCache = new Map();
-const MAP_DECORATION_CACHE_BYTES = 48 * 1024 * 1024;
-
-function parseMapDecorations(mapNode, mapId) {
-    const planets = [], flares = [];
-    let layer = 0;
-    for (const node of mapNode.querySelectorAll("planets > planet")) {
-        if (node.hasAttribute("layer")) layer = parseInt(node.getAttribute("layer"), 10) || 0;
-        const parallax = Number(node.getAttribute("pFactor"));
-        if (!(parallax > 0)) continue;
-        planets.push({ typeId: parseInt(node.getAttribute("typeID"), 10),
-            x: (parseInt(node.getAttribute("x"), 10) || 0) * 10 / parallax,
-            y: (parseInt(node.getAttribute("y"), 10) || 0) * 10 / parallax,
-            parallax: parallax, layer: layer,
-            rotation: (parseInt(node.getAttribute("rotation"), 10) || 0) * Math.PI / 180 });
-    }
-    for (const node of mapNode.querySelectorAll("lensflares > lensflare")) {
-        const parallax = Number(node.getAttribute("pFactor")) || 1;
-        if (!(parallax > 0)) continue;
-        flares.push({ typeId: parseInt(node.getAttribute("typeID"), 10) || 0,
-            x: (parseInt(node.getAttribute("x"), 10) || 0) * 10 / parallax,
-            y: (parseInt(node.getAttribute("y"), 10) || 0) * 10 / parallax,
-            parallax: parallax, star: parseBooleanValue(node.getAttribute("star"), false) });
-    }
-    planets.sort((a, b) => a.layer - b.layer);
-    mapDecorationsById[mapId] = { planets: planets, flares: flares };
-}
-
-function mapDecorationDebug(message) {
-    if (window.FLASH_PARITY_DEBUG) console.debug("[Flash map decoration]", message);
-}
-
-function pruneMapDecorationImages() {
-    let bytes = 0;
-    for (const entry of mapDecorationImageCache.values()) {
-        entry.bytes = entry.image.naturalWidth * entry.image.naturalHeight * 4;
-        bytes += entry.bytes;
-    }
-    for (const [path, entry] of mapDecorationImageCache) {
-        if (bytes <= MAP_DECORATION_CACHE_BYTES && mapDecorationImageCache.size <= 12) break;
-        if (mapDecorationState.images.has(path)) continue;
-        bytes -= entry.bytes;
-        mapDecorationImageCache.delete(path);
-    }
-}
-
-function loadMapDecorationImage(path, state) {
-    state.images.add(path);
-    let entry = mapDecorationImageCache.get(path);
-    if (entry) {
-        mapDecorationImageCache.delete(path);
-        mapDecorationImageCache.set(path, entry);
-        return entry;
-    }
-    const image = andromedaCreateImage(path);
-    entry = { image: image, bytes: 0, ready: null };
-    entry.ready = new Promise(resolve => {
-        let timer = null;
-        const finish = () => {
-            image.removeEventListener("load", finish);
-            image.removeEventListener("error", finish);
-            if (timer !== null) clearTimeout(timer);
-            entry.bytes = image.naturalWidth * image.naturalHeight * 4;
-            if (!entry.bytes) mapDecorationDebug("Unavailable: " + path);
-            pruneMapDecorationImages();
-            resolve();
-        };
-        if (image.complete) finish();
-        else {
-            image.addEventListener("load", finish, { once: true });
-            image.addEventListener("error", finish, { once: true });
-            // A failed asset must never hold boot indefinitely.
-            timer = setTimeout(finish, 5000);
-        }
-    });
-    mapDecorationImageCache.set(path, entry);
-    return entry;
-}
-
-function ensureMapDecorationManifests() {
-    if (!mapDecorationManifestPromise) {
-        mapDecorationManifestPromise = Promise.all(["planets", "lensflares"].map(kind =>
-            fetch("graphics/" + kind + "/manifest.json", { cache: "force-cache" })
-                .then(response => { if (!response.ok) throw new Error(kind); return response.json(); })
-                .catch(() => { mapDecorationDebug("Unavailable manifest: " + kind); return {}; })
-        ));
-    }
-    return mapDecorationManifestPromise;
-}
-
-function applyMapDecorations(mapId) {
-    const definition = mapDecorationsById[mapId];
-    if (mapDecorationState.mapId === mapId && mapDecorationState.definition === definition) return mapDecorationLoadPromise;
-    const state = { mapId: mapId, definition: definition, planets: [], flares: [], images: new Set() };
-    mapDecorationState = state; // Old render objects are released immediately, including pending map loads.
-    pruneMapDecorationImages();
-    if (!definition || (!definition.planets.length && !definition.flares.length)) {
-        mapDecorationLoadPromise = Promise.resolve();
-        return mapDecorationLoadPromise;
-    }
-    mapDecorationLoadPromise = ensureMapDecorationManifests().then(([planetManifest, flareManifest]) => {
-        if (mapDecorationState !== state) return;
-        const pending = [];
-        function sprite(meta) {
-            if (!meta) return null;
-            const entry = loadMapDecorationImage(meta.path, state);
-            pending.push(entry.ready);
-            return { meta: meta, image: entry.image };
-        }
-        for (const placement of definition.planets) {
-            const asset = sprite(planetManifest[placement.typeId]);
-            if (!asset) { mapDecorationDebug("Missing planet " + placement.typeId); continue; }
-            const meta = asset.meta;
-            const boundX = Math.max(Math.abs(meta.offsetX), Math.abs(meta.offsetX + meta.width));
-            const boundY = Math.max(Math.abs(meta.offsetY), Math.abs(meta.offsetY + meta.height));
-            state.planets.push({ ...placement, asset: asset, readyAt: null, screenX: 0, screenY: 0,
-                cullRadius: Math.hypot(boundX, boundY) });
-        }
-        for (const placement of definition.flares) {
-            const library = flareManifest[placement.typeId];
-            if (!library) { mapDecorationDebug("Missing flare " + placement.typeId); continue; }
-            state.flares.push({ ...placement, starAsset: placement.star ? sprite(library.star) : null,
-                flashAsset: placement.star ? sprite(flareManifest.flash) : null,
-                lenses: Array.from({ length: 6 }, (_, i) => sprite(library["lens" + i])),
-                startedAt: performance.now(), tickAt: null, cameraX: null, cameraY: null,
-                rotation: 0, scale5: 1, lastDistance: 0, dx: 0, dy: 0, state: 0,
-                alpha: 1, fadeFrom: 1, fadeTo: 1, fadeAt: 0, useFlash: false, flashAt: null });
-        }
-        pruneMapDecorationImages();
-        return Promise.all(pending);
-    }).catch(error => mapDecorationDebug(String(error)));
-    return mapDecorationLoadPromise;
-}
-
-
 function parseMapsXml(text) {
     try {
         const parser = new DOMParser;
@@ -1626,11 +1486,9 @@ function parseMapsXml(text) {
         const mapNodes = xml.getElementsByTagName("map");
         const parsed = {};
         mapStarfieldSettingsById = {};
-        mapDecorationsById = Object.create(null);
         Array.from(mapNodes).forEach(mapNode => {
             const mapId = parseInt(mapNode.getAttribute("id"), 10);
             if (Number.isNaN(mapId)) return;
-            parseMapDecorations(mapNode, mapId);
             const starfieldNode = mapNode.getElementsByTagName("starfield")[0];
             if (starfieldNode) {
                 const enabled = parseBooleanValue(starfieldNode.textContent, DEFAULT_STARFIELD_ENABLED);
@@ -1913,7 +1771,6 @@ function applyMapBackground(mapId, options = {}) {
     const layers = getBackgroundLayersForMap(mapId);
     setBackgroundLayers(mapId, layers, options);
     applyMapStarfield(mapId);
-    applyMapDecorations(mapId);
     if (!options.skipLoadXml) {
         ensureMapsXmlLoaded();
     }
@@ -3732,7 +3589,6 @@ async function bootLoadXmlConfigs(cfg = {}) {
             throw new Error("game.xml is required before boot can continue");
         }
         await ensureMapsXmlLoaded(cfg);
-        await mapDecorationLoadPromise;
         await loadProfileXml(cfg);
         await loadResourcesXml(cfg);
         if (window.AudioManager && typeof window.AudioManager.waitForCriticalBootAudio === "function") {

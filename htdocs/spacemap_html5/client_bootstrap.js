@@ -193,7 +193,6 @@ function render(now) {
         drawRocketAttacks();
         drawLaserBeams();
         drawSabShots();
-        drawMapLensFlares(now);
         ctx.restore();
         drawRadiationOverlay();
         drawPvpOverlay();
