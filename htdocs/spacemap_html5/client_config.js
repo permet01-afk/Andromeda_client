@@ -8040,6 +8040,13 @@ function initDragAndDrop() {
 
 function executeItemActionDirectly(item, options = {}) {
     if (!item) return false;
+    if (item.type === "tech") {
+        const runtime = flashGetActionRuntimeState(item);
+        if (!runtime.enabled) {
+            addInfoMessage(flashGetTechAvailabilityMessage(item, runtime).message);
+            return false;
+        }
+    }
     const source = String(options && options.source ? options.source : "").toLowerCase();
     const actionCode = typeof flashGetCooldownCodeForItem === "function" ? flashGetCooldownCodeForItem(item) : item.cooldownCode || item.code || "";
     if (actionCode && isActionBlacklisted(actionCode)) {
@@ -8227,7 +8234,15 @@ function showActionTooltip(e, item) {
     const code = typeof flashGetCooldownCodeForItem === "function" ? flashGetCooldownCodeForItem(item) : item.cooldownCode || item.code || null;
     if (item.type === "tech") {
         const techCode = String(item.code || code || "").toUpperCase();
-        pushRow(flashActionLocaleText("stock", "Stock"), flashGetActionStockCount(item));
+        const availability = flashGetTechAvailabilityMessage(item);
+        if (availability.amount !== null) pushRow("Amount", availability.amount);
+        if (availability.reason === "unknown") {
+            rows.push(`<div class="ttRow">${escapeHtml(availability.message)}</div>`);
+        } else if (availability.reason === "stock") {
+            rows.push('<div class="ttRow">Produce this Tech in Skylab &gt; Tech Factory.</div>');
+        } else if (availability.reason === "active") {
+            rows.push(`<div class="ttRow">${escapeHtml(availability.message)}</div>`);
+        }
         if (techCode && window.heroTechRuntimeState && window.heroTechRuntimeState[techCode]) {
             const state = typeof flashNormalizeTechRuntimeReadyState === "function" ? flashNormalizeTechRuntimeReadyState(techCode) || window.heroTechRuntimeState[techCode] : window.heroTechRuntimeState[techCode];
             const nowSeconds = Date.now() / 1e3;
@@ -9757,6 +9772,25 @@ function flashGetActionDrawerItemDomKey(item, categoryId) {
     return `${categoryKey}:${item.type || "item"}:${fallbackId}`;
 }
 
+function flashGetTechAvailabilityMessage(item, actionState) {
+    const code = flashResolveCanonicalTechCode(item && (item.code || item.id));
+    const names = { ELA: "Energy Leech", ECI: "Chain Impulse", RPM: "Precision Targeter", SBU: "Backup Shield", BRB: "Battle Repair Bot" };
+    const label = names[code] || (item && item.label) || "This Tech";
+    const state = window.heroTechRuntimeState && window.heroTechRuntimeState[code];
+    if (!state || state.quantityKnown !== true || !Number.isInteger(state.amount) || state.amount < 0 || state.amount > 2147483647) {
+        return { reason: "unknown", message: "Tech status unavailable. Please wait.", amount: null };
+    }
+    const runtime = actionState || flashGetActionRuntimeState(item);
+    if (runtime.active) return { reason: "active", message: `${label} is already active.`, amount: state.amount };
+    const cooldown = runtime.cooldown;
+    const remaining = cooldown ? cooldown.remaining : Number(state.cooldownRemaining) || 0;
+    if (runtime.cooling || remaining > 0) {
+        return { reason: "cooldown", message: `${label} is on cooldown: ${Math.max(1, Math.ceil(remaining))}s remaining.`, amount: state.amount };
+    }
+    if (state.amount === 0) return { reason: "stock", message: `No ${label} available. Produce one in the Tech Factory.`, amount: 0 };
+    return { reason: runtime.enabled ? "ready" : "restriction", message: `${label} cannot be used right now.`, amount: state.amount };
+}
+
 function flashGetDisabledActionMessage(item, actionState) {
     const label = item && item.label ? item.label : "This item";
     if (!item) {
@@ -9764,6 +9798,9 @@ function flashGetDisabledActionMessage(item, actionState) {
     }
     if (item.supported === false) {
         return `${label} is not available in this client yet.`;
+    }
+    if (item.type === "tech") {
+        return flashGetTechAvailabilityMessage(item, actionState).message;
     }
     if (item.type === "buy") {
         const fastbuyCfg = flashGetFastbuyConfig(item);
@@ -9915,6 +9952,7 @@ function flashUpdateActionDrawerItemBox(div, item, index, category, hasActivateB
         }
         if (hasActivateButton) {
             if (!isEnabled && categoryKey !== "laser" && categoryKey !== "rocket" && categoryKey !== "fastbuy") {
+                if (item.type === "tech") addInfoMessage(flashGetDisabledActionMessage(item, actionState));
                 updateActionTriggerPosition();
                 renderActionDrawerItems();
                 return;
@@ -10121,7 +10159,10 @@ function renderActionDrawerItems() {
             e.stopPropagation();
             const categoryKey = normalizeActionDrawerCategory(actionDrawerCategory);
             if (!triggerState.enabled) {
-                addInfoMessage((triggerSourceItem && triggerSourceItem.label ? triggerSourceItem.label : selectedItem.label) + " is not available right now.");
+                const unavailableItem = triggerSourceItem || selectedItem;
+                addInfoMessage(unavailableItem.type === "tech"
+                    ? flashGetDisabledActionMessage(unavailableItem, flashGetActionRuntimeState(unavailableItem))
+                    : (triggerSourceItem && triggerSourceItem.label ? triggerSourceItem.label : selectedItem.label) + " is not available right now.");
                 return;
             }
             if (selectedItem.supported === false) {

@@ -95,27 +95,29 @@ ORDER BY u.id, t.tech_id
 ON DUPLICATE KEY UPDATE player_id = VALUES(player_id);
 COMMIT;
 
--- Verification only (inspect the result sets; this file does not repair or delete).
+-- Verification only: explicitly target andromeda, even if phpMyAdmin changes
+-- the current schema to information_schema after showing metadata results.
+-- Inspect the result sets; this section does not repair, reset, relock or delete.
 SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES
-WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN
+WHERE TABLE_SCHEMA = 'andromeda' AND TABLE_NAME IN
  ('users','player_skylab_state','player_skylab_modules','skylab_module_levels',
   'player_tech_inventory','player_tech_slots','player_tech_builds','player_tech_use_events');
 SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE
-FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
+FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'andromeda'
 AND TABLE_NAME IN ('player_tech_inventory','player_tech_slots','player_tech_builds','player_tech_use_events')
 ORDER BY TABLE_NAME, ORDINAL_POSITION;
 SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS columns_in_order
-FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()
+FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = 'andromeda'
 AND TABLE_NAME IN ('player_tech_inventory','player_tech_slots','player_tech_builds','player_tech_use_events')
 GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE;
-SELECT u.id AS player_with_missing_rows FROM users u
-LEFT JOIN (SELECT player_id, COUNT(*) n FROM player_tech_inventory GROUP BY player_id) i ON i.player_id=u.id
-LEFT JOIN (SELECT player_id, COUNT(*) n FROM player_tech_slots GROUP BY player_id) s ON s.player_id=u.id
+SELECT u.id AS player_with_missing_rows FROM `andromeda`.`users` u
+LEFT JOIN (SELECT player_id, COUNT(*) n FROM `andromeda`.`player_tech_inventory` GROUP BY player_id) i ON i.player_id=u.id
+LEFT JOIN (SELECT player_id, COUNT(*) n FROM `andromeda`.`player_tech_slots` GROUP BY player_id) s ON s.player_id=u.id
 WHERE COALESCE(i.n,0) <> 5 OR COALESCE(s.n,0) <> 3;
-SELECT * FROM player_tech_inventory WHERE tech_id NOT BETWEEN 1 AND 5 OR amount > 2147483647;
-SELECT id, player_id, slot_no FROM player_tech_builds
+SELECT * FROM `andromeda`.`player_tech_inventory` WHERE tech_id NOT BETWEEN 1 AND 5 OR amount > 2147483647;
+SELECT id, player_id, slot_no FROM `andromeda`.`player_tech_builds`
 WHERE ends_at < started_at OR (credited_at IS NULL AND active_slot_no IS NULL)
 OR (credited_at IS NOT NULL AND active_slot_no IS NOT NULL);
-SELECT b.id AS orphan_build FROM player_tech_builds b LEFT JOIN users u ON u.id=b.player_id WHERE u.id IS NULL;
-SELECT use_id, player_id, tech_id, state, reserved_at FROM player_tech_use_events
+SELECT b.id AS orphan_build FROM `andromeda`.`player_tech_builds` b LEFT JOIN `andromeda`.`users` u ON u.id=b.player_id WHERE u.id IS NULL;
+SELECT use_id, player_id, tech_id, state, reserved_at FROM `andromeda`.`player_tech_use_events`
 WHERE state IN ('reserved','needs_review') ORDER BY reserved_at;

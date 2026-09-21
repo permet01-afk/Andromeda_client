@@ -3304,6 +3304,9 @@ function triggerSlot(slot) {
     if (actionCode) {
         const cd = getCooldownInfo(actionCode);
         if (cd) {
+            if (catalogItem.type === "tech" && typeof flashGetTechAvailabilityMessage === "function") {
+                addInfoMessage(flashGetTechAvailabilityMessage(catalogItem).message);
+            }
             return;
         }
     }
