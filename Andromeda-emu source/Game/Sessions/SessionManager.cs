@@ -1,4 +1,5 @@
-﻿using OrbitReborn_Emulator.Communication;
+﻿using OrbitReborn_Emulator.Game.Techs;
+using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Handlers;
 using OrbitReborn_Emulator.Game.GalaxyGates;
@@ -103,7 +104,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
             if (characterId <= 0)
                 return;
 
-            SessionManager.mCharacterSessionIndex[characterId] = session.Id;
+            lock (TechInventoryService.SyncRoot(characterId))
+                SessionManager.mCharacterSessionIndex[characterId] = session.Id;
         }
 
         public static void UnregisterAuthenticatedSession(Session session)

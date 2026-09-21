@@ -1,4 +1,5 @@
-﻿
+﻿using OrbitReborn_Emulator.Game.Techs;
+
 
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Handlers;
@@ -19,6 +20,13 @@ namespace OrbitReborn_Emulator.Game.Maps
         }
 
         public static void ResyncCurrentMap(Session Session)
+        {
+            if (Session == null) return;
+            using (TechInventoryService.BeginTransition(Session))
+                ResyncCurrentMapCore(Session);
+        }
+
+        private static void ResyncCurrentMapCore(Session Session)
         {
             if (Session == null || Session.CharacterInfo == null)
                 return;
@@ -82,6 +90,13 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         public static void PrepareMap(Session Session, int MapId, PortalInfo LinkedPortal, bool BypassAuthentication = false)
         {
+            if (Session == null) return;
+            using (TechInventoryService.BeginTransition(Session))
+                PrepareMapCore(Session, MapId, LinkedPortal, BypassAuthentication);
+        }
+
+        private static void PrepareMapCore(Session Session, int MapId, PortalInfo LinkedPortal, bool BypassAuthentication = false)
+        {
             if (Session == null || Session.CharacterInfo == null)
                 return;
 
@@ -132,6 +147,13 @@ namespace OrbitReborn_Emulator.Game.Maps
 
 
         public static void EnterMap(Session Session, MapInstance Instance, PortalInfo LinkedPortal)
+        {
+            if (Session == null) return;
+            using (TechInventoryService.BeginTransition(Session))
+                EnterMapCore(Session, Instance, LinkedPortal);
+        }
+
+        private static void EnterMapCore(Session Session, MapInstance Instance, PortalInfo LinkedPortal)
         {
             if (!Session.MapAuthed || Session.MapJoined || Session.AbsoluteMapId != Instance.MapId || (Instance == null || Session.MapJoined || !Session.MapAuthed))
                 return;

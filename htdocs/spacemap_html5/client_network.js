@@ -1066,6 +1066,10 @@ function connectToServer(isReconnect = false) {
     armWsConnectWatchdog(ws, url);
     ws.binaryType = "arraybuffer";
     ws.onopen = () => {
+        // No ownership survives a transport/login boundary without a fresh TX|S.
+        window.heroTechRuntimeState = Object.create(null);
+        window.heroTechCooldownMeta = Object.create(null);
+        for (const code of ["ELA", "ECI", "RPM", "SBU", "BRB"]) delete actionCooldowns[code];
         clearWsConnectWatchdog();
         wsConnecting = false;
         if (wsReconnectTimer) {
@@ -7155,98 +7159,50 @@ function handlePacket_SD(parts, i) {
 function handlePacket_TX(parts, i) {
     const action = parts[i];
     if (action === "S") {
-        const rawValues = [];
-        for (let idx = i + 1; idx < parts.length; idx++) {
-            const parsed = parseInt(parts[idx], 10);
-            if (!isNaN(parsed)) {
-                rawValues.push(parsed);
-            }
-        }
-        const looksLikeStatusTriplets = rawValues.length >= 9 && rawValues.length % 3 === 0 && rawValues.every((value, idx) => idx % 3 !== 0 || (value >= 0 && value <= 4));
+        // Exactly five complete triplets. Never turn a missing/invalid quantity into ownership.
+        const values = parts.slice(i + 1);
+        // PacketComposer terminates its final field with one pipe.
+        if (values[values.length - 1] === "") values.pop();
+        const valid = values.length === 15 && values.every((value, index) =>
+            /^\d+$/.test(String(value)) && Number.isSafeInteger(Number(value)) &&
+            Number(value) <= (index % 3 === 0 ? 4 : 2147483647));
         const nowSeconds = Date.now() / 1e3;
-        if (typeof window.heroTechCooldownMeta === "undefined" || !window.heroTechCooldownMeta) {
-            window.heroTechCooldownMeta = Object.create(null);
-        }
-        if (typeof window.heroTechRuntimeState === "undefined" || !window.heroTechRuntimeState) {
-            window.heroTechRuntimeState = Object.create(null);
-        }
-        if (looksLikeStatusTriplets) {
-            let techId = 1;
-            for (let idx = i + 1; idx + 2 < parts.length; idx += 3, techId++) {
-                const rawStatus = parseInt(parts[idx], 10);
-                const amount = parseInt(parts[idx + 1], 10);
-                const secondsLeft = parseInt(parts[idx + 2], 10);
-                const code = typeof TECH_ID_TO_CODE !== "undefined" ? TECH_ID_TO_CODE[techId] : null;
-                if (!code) continue;
-                const normalizedCode = String(code).toUpperCase();
-                const state = window.heroTechRuntimeState[normalizedCode] || (window.heroTechRuntimeState[normalizedCode] = {});
-                let flashStatus = rawStatus === 4 ? 0 : (isNaN(rawStatus) ? 0 : rawStatus);
-                const seconds = isNaN(secondsLeft) ? 0 : Math.max(0, secondsLeft);
-                const normalizedAmount = isNaN(amount) ? 0 : Math.max(0, amount);
-                if (flashStatus === 3 && (normalizedAmount > 0 || (typeof flashTechRuntimeHasImplicitOwnership === "function" && flashTechRuntimeHasImplicitOwnership(normalizedCode))) && seconds <= 0) {
-                    const cooldownMeta = window.heroTechCooldownMeta[normalizedCode] || null;
-                    const cooldownRemaining = cooldownMeta && typeof cooldownMeta.endTime === "number" ? cooldownMeta.endTime - nowSeconds : 0;
-                    if (cooldownRemaining <= 0) {
-                        flashStatus = 1;
-                    }
-                }
-                state.flashStatus = flashStatus;
-                state.amount = normalizedAmount;
-                state.secondsLeft = seconds;
-                state.available = flashStatus === 1 || flashStatus === 2;
-                state.active = flashStatus === 2;
-                if (flashStatus === 2) {
-                    state.activeUntil = seconds > 0 ? nowSeconds + seconds : 0;
-                } else {
-                    state.activeUntil = 0;
-                }
-                if (typeof flashNormalizeTechRuntimeReadyState === "function") {
-                    flashNormalizeTechRuntimeReadyState(normalizedCode);
-                }
+        window.heroTechRuntimeState = window.heroTechRuntimeState || Object.create(null);
+        window.heroTechCooldownMeta = window.heroTechCooldownMeta || Object.create(null);
+        for (let techId = 1; techId <= 5; techId++) {
+            const code = TECH_ID_TO_CODE[techId];
+            const state = window.heroTechRuntimeState[code] || (window.heroTechRuntimeState[code] = {});
+            state.quantityKnown = valid;
+            if (!valid) {
+                state.amount = 0;
+                state.available = false;
+                continue; // Do not erase a paid active effect because a packet was malformed.
             }
-        } else {
-            for (let idx = i + 1; idx < parts.length; idx++) {
-                const val = parseInt(parts[idx], 10);
-                if (!isNaN(val)) {
-                    const techId = idx - i;
-                    const code = typeof TECH_ID_TO_CODE !== "undefined" ? TECH_ID_TO_CODE[techId] : null;
-                    if (code) {
-                        const normalizedCode = String(code).toUpperCase();
-                        const prev = window.heroTechCooldownMeta[normalizedCode] || null;
-                        if (val > 0) {
-                            const total = Math.max(prev && prev.duration ? prev.duration : 0, val);
-                            window.heroTechCooldownMeta[normalizedCode] = {
-                                endTime: nowSeconds + val,
-                                duration: total || val
-                            };
-                            const state = window.heroTechRuntimeState[normalizedCode] || (window.heroTechRuntimeState[normalizedCode] = {});
-                            state.available = true;
-                            if (typeof flashSyncTechRuntimeCooldownState === "function") {
-                                flashSyncTechRuntimeCooldownState(normalizedCode, val, total || val);
-                            } else {
-                                state.cooling = true;
-                                state.cooldownRemaining = val;
-                                state.cooldownTotal = total || val;
-                            }
-                        } else {
-                            delete window.heroTechCooldownMeta[normalizedCode];
-                            if (typeof flashClearTechRuntimeCooldownState === "function") {
-                                flashClearTechRuntimeCooldownState(normalizedCode);
-                            } else if (window.heroTechRuntimeState[normalizedCode]) {
-                                window.heroTechRuntimeState[normalizedCode].cooling = false;
-                                window.heroTechRuntimeState[normalizedCode].cooldownRemaining = 0;
-                            }
-                            if (typeof flashNormalizeTechRuntimeReadyState === "function") {
-                                flashNormalizeTechRuntimeReadyState(normalizedCode);
-                            }
-                        }
-                    }
-                }
+            const offset = (techId - 1) * 3;
+            const status = Number(values[offset]);
+            const seconds = Number(values[offset + 2]);
+            state.flashStatus = status === 4 ? 0 : status;
+            state.amount = Number(values[offset + 1]);
+            state.secondsLeft = seconds;
+            state.available = status === 1 && state.amount > 0;
+            state.active = status === 2 && seconds > 0;
+            state.activeUntil = state.active ? nowSeconds + seconds : 0;
+            if (status === 3 && seconds > 0) {
+                const previous = window.heroTechCooldownMeta[code];
+                const total = Math.max(seconds, previous ? Number(previous.duration) || 0 : 0);
+                window.heroTechCooldownMeta[code] = { endTime: nowSeconds + seconds, duration: total };
+                // TX|S is authoritative even when an older A|CLD is still cached.
+                delete actionCooldowns[code];
+                flashSyncTechRuntimeCooldownState(code, seconds, total);
+            } else if (status !== 2) {
+                delete window.heroTechCooldownMeta[code];
+                delete actionCooldowns[code];
+                state.cooling = false;
+                state.cooldownRemaining = 0;
             }
+            flashNormalizeTechRuntimeReadyState(code);
         }
-        if (typeof renderActionDrawerItems === "function") {
-            renderActionDrawerItems();
-        }
+        if (typeof renderActionDrawerItems === "function") renderActionDrawerItems();
         return;
     }
     if (action === "ECI" || action === "CHAIN_BOLT") {

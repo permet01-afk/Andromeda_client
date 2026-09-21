@@ -10,6 +10,7 @@ using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Game.Titles;
+using OrbitReborn_Emulator.Game.Techs;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
 using System;
@@ -20,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace OrbitReborn_Emulator.Game.Handlers
 {
-    public static class Fight
+    public static partial class Fight
     {
         private const double RANGE_LASER = 700.0;
         private const double RANGE_ROCKET = 750.0;
@@ -1283,31 +1284,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         public static void SendTechStatus(Session Session)
         {
-            if (Session == null || Session.CharacterInfo == null)
-                return;
-
-            string payload = "S";
-            for (int techId = 1; techId <= 5; ++techId)
-            {
-                int status;
-                int amount;
-                int secondsLeft;
-                Fight.ResolveTechRuntimeState(Session, techId, out status, out amount, out secondsLeft);
-                payload = payload + "|" + (object)status + "|" + (object)amount + "|" + (object)secondsLeft;
-            }
-
-            Session.SendData(PacketComposer.Compose("TX", payload));
-
-            if (Session.CharacterInfo.CoolDownTechEla > 0)
-                Session.SendData(PacketComposer.Compose("A", "CLD|ELA|" + (object)Session.CharacterInfo.CoolDownTechEla));
-            if (Session.CharacterInfo.CoolDownTechEci > 0)
-                Session.SendData(PacketComposer.Compose("A", "CLD|ECI|" + (object)Session.CharacterInfo.CoolDownTechEci));
-            if (Session.CharacterInfo.CoolDownTechRpm > 0)
-                Session.SendData(PacketComposer.Compose("A", "CLD|RPM|" + (object)Session.CharacterInfo.CoolDownTechRpm));
-            if (Session.CharacterInfo.CoolDownTechSh > 0)
-                Session.SendData(PacketComposer.Compose("A", "CLD|SBU|" + (object)Session.CharacterInfo.CoolDownTechSh));
-            if (Session.CharacterInfo.CoolDownTechHp > 0)
-                Session.SendData(PacketComposer.Compose("A", "CLD|BRB|" + (object)Session.CharacterInfo.CoolDownTechHp));
+            SendTechStatusIfChanged(Session, true);
         }
 
         public static void SendOwnerTechVisualReplay(Session Session)
@@ -1329,94 +1306,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.SendData(PacketComposer.Compose("TX", "A|0|BRB|" + (object)Session.CharacterId + "|" + (object)Session.CharacterInfo.BattleRepairCount));
         }
 
-        private static void ResolveTechRuntimeState(Session session, int techId, out int status, out int amount, out int secondsLeft)
-        {
-            status = 0;
-            amount = 0;
-            secondsLeft = 0;
-
-            if (session == null || session.CharacterInfo == null)
-                return;
-
-            switch (techId)
-            {
-                case 1:
-                    amount = 1;
-                    if (session.CharacterInfo.EnergyLeechActive)
-                    {
-                        status = 2;
-                        secondsLeft = session.CharacterInfo.EnergyLeechSecondsLeft;
-                    }
-                    else if (session.CharacterInfo.CoolDownTechEla > 0)
-                    {
-                        status = 3;
-                        secondsLeft = session.CharacterInfo.CoolDownTechEla;
-                    }
-                    else
-                    {
-                        status = 1;
-                    }
-                    break;
-                case 2:
-                    amount = 1;
-                    if (session.CharacterInfo.CoolDownTechEci > 0)
-                    {
-                        status = 3;
-                        secondsLeft = session.CharacterInfo.CoolDownTechEci;
-                    }
-                    else
-                    {
-                        status = 1;
-                    }
-                    break;
-                case 3:
-                    amount = 1;
-                    if (session.CharacterInfo.RocketProbabilityMaximizerActive)
-                    {
-                        status = 2;
-                        secondsLeft = session.CharacterInfo.RocketProbabilityMaximizerSecondsLeft;
-                    }
-                    else if (session.CharacterInfo.CoolDownTechRpm > 0)
-                    {
-                        status = 3;
-                        secondsLeft = session.CharacterInfo.CoolDownTechRpm;
-                    }
-                    else
-                    {
-                        status = 1;
-                    }
-                    break;
-                case 4:
-                    amount = 1;
-                    if (session.CharacterInfo.CoolDownTechSh > 0)
-                    {
-                        status = 3;
-                        secondsLeft = session.CharacterInfo.CoolDownTechSh;
-                    }
-                    else
-                    {
-                        status = 1;
-                    }
-                    break;
-                case 5:
-                    amount = 1;
-                    if (session.CharacterInfo.BattleRepairTimer != null)
-                    {
-                        status = 2;
-                        secondsLeft = Math.Max(0, session.CharacterInfo.BattleRepairCount);
-                    }
-                    else if (session.CharacterInfo.CoolDownTechHp > 0)
-                    {
-                        status = 3;
-                        secondsLeft = session.CharacterInfo.CoolDownTechHp;
-                    }
-                    else
-                    {
-                        status = 1;
-                    }
-                    break;
-            }
-        }
 
         private static bool IsShipSkillActive(Session session, int skillType)
         {
@@ -1787,8 +1676,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (session.CharacterInfo.CoolDownTechEla > 0 || session.CharacterInfo.EnergyLeechActive)
                 return;
 
-            session.CharacterInfo.LastTechEla = UnixTimestamp.GetCurrent();
-            session.CharacterInfo.EnergyLeechUntil = UnixTimestamp.GetCurrent() + (double)TECH_ENERGY_LEECH_DURATION_SECONDS;
+            session.CharacterInfo.LastTechEla = session.TechState.Records[1].CooldownUntil - TECH_ENERGY_LEECH_COOLDOWN_SECONDS;
+            session.CharacterInfo.EnergyLeechUntil = session.TechState.Records[1].ActiveUntil;
 
             if (session.CharacterInfo.EnergyLeechTimer != null)
             {
@@ -1796,7 +1685,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.CharacterInfo.EnergyLeechTimer = (System.Threading.Timer)null;
             }
 
-            session.CharacterInfo.EnergyLeechTimer = new System.Threading.Timer(new TimerCallback(Fight.StopEnergyLeech), (object)session, TECH_ENERGY_LEECH_DURATION_SECONDS * 1000, 0);
+            session.CharacterInfo.EnergyLeechTimer = TechInventoryService.GuardedTimer(session, 1, Fight.StopEnergyLeech, RemainingMilliseconds(session.CharacterInfo.EnergyLeechUntil), Timeout.Infinite);
 
             session.SendData(PacketComposer.Compose("A", "CLD|ELA|" + (object)TECH_ENERGY_LEECH_COOLDOWN_SECONDS));
             SendSessionScopedMessage(instance, session, PacketComposer.Compose("TX", "A|0|ELA|" + (object)session.CharacterId + "|" + (object)TECH_ENERGY_LEECH_DURATION_SECONDS));
@@ -1804,23 +1693,19 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Fight.SendTechStatus(session);
         }
 
-        private static void ActivateChainImpulse(Session session, MapInstance instance)
+        private static void ActivateChainImpulse(Session session, MapInstance instance, List<ChainImpulseTarget> preparedTargets)
         {
             if (session == null || session.CharacterInfo == null || instance == null)
                 return;
             if (session.CharacterInfo.CoolDownTechEci > 0)
                 return;
 
-            Session primaryPlayerTarget = Fight.ResolveChainImpulsePrimaryPlayerTarget(session);
-            Npc primaryNpcTarget = primaryPlayerTarget == null ? Fight.ResolveChainImpulsePrimaryNpcTarget(session) : (Npc)null;
-            if (primaryPlayerTarget == null && primaryNpcTarget == null)
-                return;
-
-            List<ChainImpulseTarget> chainImpulseTargets = Fight.BuildChainImpulseTargets(session, instance, primaryPlayerTarget, primaryNpcTarget);
+            // Targets were prepared and validated before the persistent debit.
+            List<ChainImpulseTarget> chainImpulseTargets = preparedTargets;
             if (chainImpulseTargets.Count == 0)
                 return;
 
-            session.CharacterInfo.LastTechEci = UnixTimestamp.GetCurrent();
+            session.CharacterInfo.LastTechEci = session.TechState.Records[2].CooldownUntil - TECH_CHAIN_IMPULSE_COOLDOWN_SECONDS;
             session.SendData(PacketComposer.Compose("A", "CLD|ECI|" + (object)TECH_CHAIN_IMPULSE_COOLDOWN_SECONDS));
 
             string text = "ECI|" + (object)session.CharacterId;
@@ -1854,9 +1739,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (session.CharacterInfo.RocketProbabilityMaximizerActive || session.CharacterInfo.CoolDownTechRpm > 0)
                 return;
 
-            double now = UnixTimestamp.GetCurrent();
-            session.CharacterInfo.RocketProbabilityMaximizerUntil = now + (double)TECH_ROCKET_PROBABILITY_MAXIMIZER_DURATION_SECONDS;
-            session.CharacterInfo.RocketProbabilityMaximizerCooldownUntil = 0.0;
+            session.CharacterInfo.RocketProbabilityMaximizerUntil = session.TechState.Records[3].ActiveUntil;
+            session.CharacterInfo.RocketProbabilityMaximizerCooldownUntil = session.TechState.Records[3].CooldownUntil;
 
             if (session.CharacterInfo.RocketProbabilityMaximizerTimer != null)
             {
@@ -1864,12 +1748,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.CharacterInfo.RocketProbabilityMaximizerTimer = null;
             }
 
-            session.CharacterInfo.RocketProbabilityMaximizerTimer = new System.Threading.Timer(
-                new TimerCallback(Fight.StopRocketProbabilityMaximizer),
-                (object)session,
-                TECH_ROCKET_PROBABILITY_MAXIMIZER_DURATION_SECONDS * 1000,
-                Timeout.Infinite
-            );
+            session.CharacterInfo.RocketProbabilityMaximizerTimer = TechInventoryService.GuardedTimer(
+                session, 3, Fight.StopRocketProbabilityMaximizer,
+                RemainingMilliseconds(session.CharacterInfo.RocketProbabilityMaximizerUntil), Timeout.Infinite);
 
             session.SendData(PacketComposer.Compose("TX", "A|0|RPM|" + (object)session.CharacterId + "|" + (object)TECH_ROCKET_PROBABILITY_MAXIMIZER_DURATION_SECONDS));
             Fight.SendTechStatus(session);
@@ -1890,7 +1771,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
 
                 session.CharacterInfo.RocketProbabilityMaximizerUntil = 0.0;
-                session.CharacterInfo.RocketProbabilityMaximizerCooldownUntil = UnixTimestamp.GetCurrent() + (double)TECH_ROCKET_PROBABILITY_MAXIMIZER_COOLDOWN_SECONDS;
+                session.CharacterInfo.RocketProbabilityMaximizerCooldownUntil = session.TechState.Records[3] != null ? session.TechState.Records[3].CooldownUntil : session.CharacterInfo.RocketProbabilityMaximizerCooldownUntil;
 
                 session.SendData(PacketComposer.Compose("TX", "D|0|RPM|" + (object)session.CharacterId));
                 Fight.SendTechStatus(session);
@@ -2412,93 +2293,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Fight.PersistShipSkillCooldowns(Session);
         }
 
-        private static void Techs(Session Session, ClientMessage Message)
-        {
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(Session.CurrentMapId);
-            if (instanceByMapId == null || Session == null || Session.CharacterInfo == null)
-                return;
-
-            int nextInt = Message.GetNextInt(1);
-            switch (nextInt)
-            {
-                case 1:
-                    Fight.ActivateEnergyLeech(Session, instanceByMapId);
-                    return;
-                case 2:
-                    Fight.ActivateChainImpulse(Session, instanceByMapId);
-                    return;
-                case 3:
-                    Fight.ActivateRocketProbabilityMaximizer(Session, instanceByMapId);
-                    return;
-                case 4:
-                    if (Session.CharacterInfo.CoolDownTechSh > 0)
-                        return;
-
-                    Session.SendData(PacketComposer.Compose("A", "CLD|SBU|" + (object)45));
-                    Session.CharacterInfo.LastTechSh = UnixTimestamp.GetCurrent();
-
-                    SendSessionScopedMessage(instanceByMapId, Session, PacketComposer.Compose("TX", "A|" + (object)0 + "|SBU|" + (object)Session.CharacterId + "|" + (object)TECH_SHIELD_BACKUP_VISUAL_SECONDS));
-
-                    int num = 75000;
-                    if (Session.CharacterInfo.ShipShield < Session.CharacterInfo.ShipMaxShield)
-                    {
-                        if (Session.CharacterInfo.ShipShield + num > Session.CharacterInfo.ShipMaxShield)
-                        {
-                            num = Session.CharacterInfo.ShipMaxShield - Session.CharacterInfo.ShipShield;
-                            Session.CharacterInfo.ShipShield = Session.CharacterInfo.ShipMaxShield;
-                        }
-                        else
-                        {
-                            Session.CharacterInfo.ShipShield = Session.CharacterInfo.ShipShield + num;
-                        }
-
-                        Session.SendData(PacketComposer.Compose(
-                            "A",
-                            "HL|1|" + (object)Session.CharacterInfo.Id + "|SHD|" + (object)Session.CharacterInfo.ShipShield + "|" + (object)num
-                        ));
-
-                        foreach (MapActor key in instanceByMapId.GetActorSnapshot())
-                        {
-                            if (key.Type == MapActorType.UserCharacter)
-                            {
-                                Session sessionById = SessionManager.GetSessionById(key.ReferenceSessionId);
-                                if (sessionById != null && sessionById.CharacterInfo != null && sessionById.CharacterInfo.SelectedPlayer == Session.CharacterId)
-                                {
-                                    sessionById.SendData(PacketComposer.Compose(
-                                        "A",
-                                        "HL|1|" + (object)Session.CharacterInfo.Id + "|SHD|" + (object)Session.CharacterInfo.ShipShield + "|" + (object)num
-                                    ));
-                                }
-                            }
-                        }
-                    }
-
-                    Fight.InterruptDiminisherOnTarget(Session, instanceByMapId);
-                    Fight.SendTechStatus(Session);
-                    return;
-                case 5:
-                    if (Session.CharacterInfo.CoolDownTechHp > 0)
-                        return;
-
-                    Session.SendData(PacketComposer.Compose("A", "CLD|BRB|" + (object)45));
-                    Session.CharacterInfo.LastTechHp = UnixTimestamp.GetCurrent();
-
-                    SendSessionScopedMessage(instanceByMapId, Session, PacketComposer.Compose("TX", "A|" + (object)0 + "|BRB|" + (object)Session.CharacterId + "|" + (object)8));
-
-                    Session.CharacterInfo.BattleRepairCount = 8;
-                    Session.CharacterInfo.BattleRepairTimer = new System.Threading.Timer(
-                        new TimerCallback(Fight.BattleRepairTimer),
-                        (object)Session,
-                        0,
-                        1000
-                    );
-
-                    Fight.SendTechStatus(Session);
-                    return;
-                default:
-                    return;
-            }
-        }
 
         private static void BattleRepairTimer(object state)
         {
@@ -4465,6 +4259,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
         }
 
         public static void KillPlayer(Session Session, bool keepCargo = false)
+        {
+            if (Session == null) return;
+            using (TechInventoryService.BeginTransition(Session))
+                KillPlayerCore(Session, keepCargo);
+        }
+
+        private static void KillPlayerCore(Session Session, bool keepCargo = false)
         {
             if (Session == null || Session.CharacterInfo == null)
                 return;

@@ -1,0 +1,121 @@
+-- Andromeda Tech Factory V1 -- MANUAL installation only, MariaDB 10.4+ / InnoDB.
+-- The owner runs this file in phpMyAdmin, in the LOCAL Andromeda database.
+-- No application component executes this DDL. Do not edit/import andromeda.sql.
+-- Back up before manual installation. DDL implicitly commits in MariaDB.
+-- Existing rows/quantities/unlocked halls are NEVER reset on a second run.
+-- IF NOT EXISTS is not an upgrade for an incompatible table: the services check
+-- column types and indexes and fail closed; inspect the verification below.
+-- users.id is signed INT in the supplied dump. No foreign keys are added: this
+-- avoids changing existing tables or coupling their deletion policy to history.
+-- DATETIME fields below store UTC, independent of the connection time zone.
+-- Generic halls: no permanent tech_id on slots. One build produces one unit.
+
+CREATE TABLE IF NOT EXISTS player_tech_inventory (
+  player_id INT NOT NULL,
+  tech_id TINYINT UNSIGNED NOT NULL,
+  amount INT UNSIGNED NOT NULL DEFAULT 0,
+  cooldown_until DATETIME(6) NULL,
+  active_until DATETIME(6) NULL,
+  active_use_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
+  version BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (player_id, tech_id),
+  CONSTRAINT tf_inventory_id CHECK (tech_id BETWEEN 1 AND 5),
+  CONSTRAINT tf_inventory_amount CHECK (amount <= 2147483647)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS player_tech_slots (
+  player_id INT NOT NULL,
+  slot_no TINYINT UNSIGNED NOT NULL,
+  unlocked_at DATETIME(6) NULL,
+  unlock_request_key CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
+  unlock_paid_uridium BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (player_id, slot_no),
+  UNIQUE KEY tf_unlock_request (player_id, unlock_request_key),
+  CONSTRAINT tf_slot_no CHECK (slot_no BETWEEN 1 AND 3)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS player_tech_builds (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  player_id INT NOT NULL,
+  slot_no TINYINT UNSIGNED NOT NULL,
+  tech_id TINYINT UNSIGNED NOT NULL,
+  request_key CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  active_slot_no TINYINT UNSIGNED NULL,
+  started_at DATETIME(6) NOT NULL,
+  ends_at DATETIME(6) NOT NULL,
+  credited_at DATETIME(6) NULL,
+  recipe_version VARCHAR(64) NOT NULL,
+  paid_credits BIGINT UNSIGNED NOT NULL,
+  paid_uridium BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  paid_seprom BIGINT UNSIGNED NOT NULL,
+  paid_logfiles BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY tf_build_request (player_id, request_key),
+  UNIQUE KEY tf_active_slot (player_id, active_slot_no),
+  KEY tf_due (player_id, credited_at, ends_at),
+  CONSTRAINT tf_build_tech CHECK (tech_id BETWEEN 1 AND 5),
+  CONSTRAINT tf_build_slot CHECK (slot_no BETWEEN 1 AND 3),
+  CONSTRAINT tf_build_dates CHECK (ends_at >= started_at),
+  CONSTRAINT tf_build_delivery CHECK (
+    (credited_at IS NULL AND active_slot_no IS NOT NULL AND active_slot_no = slot_no)
+    OR (credited_at IS NOT NULL AND active_slot_no IS NULL)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS player_tech_use_events (
+  use_id CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  player_id INT NOT NULL,
+  tech_id TINYINT UNSIGNED NOT NULL,
+  reserved_at DATETIME(6) NOT NULL,
+  resolved_at DATETIME(6) NULL,
+  session_generation CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  state VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  details VARCHAR(1024) NOT NULL DEFAULT '',
+  PRIMARY KEY (use_id),
+  KEY tf_use_player (player_id, reserved_at),
+  KEY tf_use_review (state, reserved_at),
+  CONSTRAINT tf_use_tech CHECK (tech_id BETWEEN 1 AND 5),
+  CONSTRAINT tf_use_state CHECK (state IN ('reserved','applied','needs_review','compensated'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- DATA seed only. Missing rows are also initialized transactionally by services
+-- for future accounts. Duplicate keys are a no-op, not an inventory reset.
+START TRANSACTION;
+INSERT INTO player_tech_slots (player_id, slot_no, unlocked_at)
+SELECT u.id, s.slot_no, IF(s.slot_no = 1, UTC_TIMESTAMP(6), NULL)
+FROM users u CROSS JOIN (SELECT 1 AS slot_no UNION ALL SELECT 2 UNION ALL SELECT 3) s
+ORDER BY u.id, s.slot_no
+ON DUPLICATE KEY UPDATE player_id = VALUES(player_id);
+
+INSERT INTO player_tech_inventory (player_id, tech_id, amount)
+SELECT u.id, t.tech_id, 0
+FROM users u CROSS JOIN
+  (SELECT 1 AS tech_id UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5) t
+ORDER BY u.id, t.tech_id
+ON DUPLICATE KEY UPDATE player_id = VALUES(player_id);
+COMMIT;
+
+-- Verification only (inspect the result sets; this file does not repair or delete).
+SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN
+ ('users','player_skylab_state','player_skylab_modules','skylab_module_levels',
+  'player_tech_inventory','player_tech_slots','player_tech_builds','player_tech_use_events');
+SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE
+FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()
+AND TABLE_NAME IN ('player_tech_inventory','player_tech_slots','player_tech_builds','player_tech_use_events')
+ORDER BY TABLE_NAME, ORDINAL_POSITION;
+SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS columns_in_order
+FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE()
+AND TABLE_NAME IN ('player_tech_inventory','player_tech_slots','player_tech_builds','player_tech_use_events')
+GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE;
+SELECT u.id AS player_with_missing_rows FROM users u
+LEFT JOIN (SELECT player_id, COUNT(*) n FROM player_tech_inventory GROUP BY player_id) i ON i.player_id=u.id
+LEFT JOIN (SELECT player_id, COUNT(*) n FROM player_tech_slots GROUP BY player_id) s ON s.player_id=u.id
+WHERE COALESCE(i.n,0) <> 5 OR COALESCE(s.n,0) <> 3;
+SELECT * FROM player_tech_inventory WHERE tech_id NOT BETWEEN 1 AND 5 OR amount > 2147483647;
+SELECT id, player_id, slot_no FROM player_tech_builds
+WHERE ends_at < started_at OR (credited_at IS NULL AND active_slot_no IS NULL)
+OR (credited_at IS NOT NULL AND active_slot_no IS NOT NULL);
+SELECT b.id AS orphan_build FROM player_tech_builds b LEFT JOIN users u ON u.id=b.player_id WHERE u.id IS NULL;
+SELECT use_id, player_id, tech_id, state, reserved_at FROM player_tech_use_events
+WHERE state IN ('reserved','needs_review') ORDER BY reserved_at;

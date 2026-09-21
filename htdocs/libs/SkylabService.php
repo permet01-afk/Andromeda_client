@@ -125,6 +125,33 @@ class SkylabService
         });
     }
 
+    /** Factory integration: caller owns the PDO transaction, before locking users.
+     * No nested transaction; all partial production seconds are settled first.
+     */
+    public function lockFactorySeprom(): int
+    {
+        if (!$this->db->inTransaction()) {
+            throw new LogicException('Factory Seprom requires an existing transaction.');
+        }
+        $this->ensurePlayerRows();
+        $this->applyCatchUpLocked(true);
+        $state = $this->loadResourceStateLocked();
+        return (int)$state['seprom'];
+    }
+
+    public function debitFactorySeprom(int $amount): void
+    {
+        if (!$this->db->inTransaction() || $amount < 0) {
+            throw new LogicException('Invalid Factory Seprom debit.');
+        }
+        if ($amount === 0) { return; }
+        $stmt = $this->db->prepare('UPDATE player_skylab_state SET seprom=seprom-:amount, updated_at=NOW() WHERE player_id=:player_id AND seprom>=:required');
+        $stmt->execute([':amount'=>$amount, ':required'=>$amount, ':player_id'=>$this->playerId]);
+        if ($stmt->rowCount() !== 1) {
+            throw new RuntimeException('Not enough Seprom.');
+        }
+    }
+
     public function toggleModule(string $moduleKey): array
     {
         $moduleKey = $this->normalizeModuleKey($moduleKey);

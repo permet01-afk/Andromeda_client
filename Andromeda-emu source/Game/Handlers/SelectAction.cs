@@ -480,7 +480,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            Session.CharacterInfo.RemoveReward(0, CLOAK_COST_URIDIUM);
+            if (!Session.CharacterInfo.RemoveReward(0, CLOAK_COST_URIDIUM))
+            {
+                Session.SendData(PacketComposer.Compose("A", "STD|Cloak purchase failed. Check your Uridium and try again."));
+                return;
+            }
 
             Session.SendData(UserDataComposer.Compose(Session));
 

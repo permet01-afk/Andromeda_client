@@ -1,0 +1,7 @@
+[
+  {"tech_id":1,"code":"ELA","displayName":"Energy Leech","buildCredits":1000000,"buildSeprom":500,"buildLogfiles":5,"buildSeconds":43200,"recipeVersion":"andromeda-tech-v1"},
+  {"tech_id":2,"code":"ECI","displayName":"Chain Impulse","buildCredits":500000,"buildSeprom":200,"buildLogfiles":1,"buildSeconds":21600,"recipeVersion":"andromeda-tech-v1"},
+  {"tech_id":3,"code":"RPM","displayName":"Precision Targeter","buildCredits":20000,"buildSeprom":0,"buildLogfiles":0,"buildSeconds":7200,"recipeVersion":"andromeda-tech-v1"},
+  {"tech_id":4,"code":"SBU","displayName":"Backup Shield","buildCredits":500000,"buildSeprom":250,"buildLogfiles":2,"buildSeconds":43200,"recipeVersion":"andromeda-tech-v1"},
+  {"tech_id":5,"code":"BRB","displayName":"Battle Repair Bot","buildCredits":500000,"buildSeprom":250,"buildLogfiles":2,"buildSeconds":43200,"recipeVersion":"andromeda-tech-v1"}
+]

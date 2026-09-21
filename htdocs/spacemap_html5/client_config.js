@@ -6759,14 +6759,6 @@ const FLASH_TECH_CODE_ALIASES = Object.freeze({
     CLINGING_IMPULSE_DRONE: "CID"
 });
 
-const FLASH_TECH_IMPLICIT_OWNERSHIP = Object.freeze({
-    ELA: true,
-    ECI: true,
-    RPM: true,
-    SBU: true,
-    BRB: true
-});
-
 function flashResolveCanonicalTechCode(codeOrId) {
     const numericId = Number(codeOrId);
     if (Number.isInteger(numericId) && TECH_ID_TO_CODE[numericId]) {
@@ -6775,11 +6767,6 @@ function flashResolveCanonicalTechCode(codeOrId) {
     const rawCode = String(codeOrId || "").trim().toUpperCase();
     if (!rawCode) return null;
     return FLASH_TECH_CODE_ALIASES[rawCode] || rawCode;
-}
-
-function flashTechRuntimeHasImplicitOwnership(code) {
-    const normalizedCode = String(code || "").trim().toUpperCase();
-    return !!(normalizedCode && FLASH_TECH_IMPLICIT_OWNERSHIP[normalizedCode]);
 }
 
 const FLASH_SKILL_TYPE_TO_ABILITY = Object.freeze({
@@ -7637,7 +7624,7 @@ function flashNormalizeTechRuntimeReadyState(code) {
     const runtimeRemaining = Math.max(Number(state.cooldownRemaining) || 0, metaRemaining);
     const hasCooldown = runtimeRemaining > 0;
     const amount = Number.isFinite(Number(state.amount)) ? Math.max(0, Number(state.amount)) : null;
-    const hasChargesAvailable = amount == null || amount > 0 || flashTechRuntimeHasImplicitOwnership(normalizedCode);
+    const hasChargesAvailable = state.quantityKnown === true && Number.isInteger(amount) && amount > 0 && amount <= 2147483647;
     let status = Number.isFinite(Number(state.flashStatus)) ? Number(state.flashStatus) : null;
 
     if (activeUntil > 0 && activeUntil <= nowSeconds) {
@@ -7671,6 +7658,7 @@ function flashNormalizeTechRuntimeReadyState(code) {
         state.secondsLeft = 0;
     }
 
+    if (!hasChargesAvailable) state.available = false;
     return state;
 }
 
@@ -8239,6 +8227,7 @@ function showActionTooltip(e, item) {
     const code = typeof flashGetCooldownCodeForItem === "function" ? flashGetCooldownCodeForItem(item) : item.cooldownCode || item.code || null;
     if (item.type === "tech") {
         const techCode = String(item.code || code || "").toUpperCase();
+        pushRow(flashActionLocaleText("stock", "Stock"), flashGetActionStockCount(item));
         if (techCode && window.heroTechRuntimeState && window.heroTechRuntimeState[techCode]) {
             const state = typeof flashNormalizeTechRuntimeReadyState === "function" ? flashNormalizeTechRuntimeReadyState(techCode) || window.heroTechRuntimeState[techCode] : window.heroTechRuntimeState[techCode];
             const nowSeconds = Date.now() / 1e3;
@@ -8743,6 +8732,11 @@ function flashGetActionStockId(item) {
 }
 
 function flashGetActionStockCount(item) {
+    if (item && item.type === "tech") {
+        const code = flashResolveCanonicalTechCode(item.code || item.id);
+        const state = window.heroTechRuntimeState && window.heroTechRuntimeState[code];
+        return state && state.quantityKnown === true && Number.isInteger(state.amount) && state.amount >= 0 && state.amount <= 2147483647 ? state.amount : 0;
+    }
     const stockId = flashGetActionStockId(item);
     if (stockId == null || typeof ammoStock === "undefined" || ammoStock == null) return 0;
     const value = parseInt(ammoStock[stockId], 10);
@@ -9273,7 +9267,7 @@ function flashGetActionRuntimeState(item, cpuInfo) {
                 result.enabled = true;
             }
         }
-        if (result.active || result.cooling) {
+        if (!state || state.quantityKnown !== true || flashGetActionStockCount(item) <= 0 || result.active || result.cooling) {
             result.enabled = false;
         }
         return result;
@@ -9845,7 +9839,9 @@ function flashUpdateActionDrawerItemBox(div, item, index, category, hasActivateB
 
     let ammoBarHtml = "";
     let qtyHtml = "";
-    if (item.buttonId === 46) {
+    if (item.type === "tech") {
+        qtyHtml = `<span class="amItemQty amTechQty">${qty > 0 ? String(qty) : ""}</span>`;
+    } else if (item.buttonId === 46) {
         qtyHtml = "";
     } else if (item.ammobar && hasStock) {
         const maxVal = item.type === "ammo" ? 2000 : 100;
@@ -10270,6 +10266,7 @@ function initActionDrawer() {
             pointer-events: none; z-index: 6;
         }
         .amItemQty.empty { color: #ff6363; }
+        .amItemQty.amTechQty { left:auto; right:3px; top:auto; bottom:2px; transform:none; font-size:11px; line-height:11px; color:#fff; z-index:10; }
         .amItemLabel { position: absolute; left: 0; right: 0; top: 11px; font-size: 9px; line-height: 10px; text-align: center; color: #ddd; pointer-events: none; z-index: 4; }
         .amLauncherSelectedRocket { position:absolute; left:0; top:0; width:${actionMenuLayout.slotWidth}px; height:${actionMenuLayout.slotHeight}px; pointer-events:none; z-index:4; image-rendering:auto; }
         .amLauncherSlots { position:absolute; top:15px; height:4px; pointer-events:none; z-index:5; image-rendering:auto; }

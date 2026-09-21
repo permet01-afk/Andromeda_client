@@ -4,6 +4,7 @@ using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Game.Handlers;
 using OrbitReborn_Emulator.Game.Characters;
+using OrbitReborn_Emulator.Game.Techs;
 using OrbitReborn_Emulator.Game.Chat;
 using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Misc;
@@ -20,6 +21,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
 {
     public class Session : IDisposable
     {
+        public readonly TechRuntimeState TechState = new TechRuntimeState();
+
         private const int RX_CHUNK_SIZE = 8192;
         private const int RX_BUFFER_MAX = 1024 * 1024;
 
@@ -253,20 +256,23 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     }
                 }
 
-                CharacterInfo characterInfo = CharacterInfoLoader.GetCharacterInfo(client, CharacterId, this.mId, Ticket, true);
-                if (characterInfo == null || !characterInfo.HasLinkedSession)
+                lock (TechInventoryService.SyncRoot(CharacterId))
                 {
-                    Output.WriteLine((object)("[AUTH] Reject sessionId=" + this.mId + ": linked session invalid (charId=" + CharacterId + ", hasInfo=" + (characterInfo != null) + ", linkedSessionId=" + (characterInfo != null ? characterInfo.SessionId : 0) + ")"), OutputLevel.Warning);
-                    SessionManager.StopSession(this.mId);
-                    return;
-                }
+                    CharacterInfo characterInfo = CharacterInfoLoader.GetCharacterInfo(client, CharacterId, this.mId, Ticket, true);
+                    if (characterInfo == null || !characterInfo.HasLinkedSession)
+                    {
+                        Output.WriteLine((object)("[AUTH] Reject sessionId=" + this.mId + ": linked session invalid (charId=" + CharacterId + ", hasInfo=" + (characterInfo != null) + ", linkedSessionId=" + (characterInfo != null ? characterInfo.SessionId : 0) + ")"), OutputLevel.Warning);
+                        SessionManager.StopSession(this.mId);
+                        return;
+                    }
 
-                this.mCharacterInfo = characterInfo;
-                this.mCharacterInfo.TimestampLastOnline = UnixTimestamp.GetCurrent();
-                CharacterResolverCache.AddToCache(this.mCharacterInfo.Id, this.mCharacterInfo.Username, true);
-                this.mAuthProcessed = true;
-                SessionManager.RegisterAuthenticatedSession(this);
-                Output.WriteLine((object)("[AUTH] OK sessionId=" + this.mId + " charId=" + this.mCharacterInfo.Id), OutputLevel.DebugInformation);
+                    this.mCharacterInfo = characterInfo;
+                    this.mCharacterInfo.TimestampLastOnline = UnixTimestamp.GetCurrent();
+                    CharacterResolverCache.AddToCache(this.mCharacterInfo.Id, this.mCharacterInfo.Username, true);
+                    this.mAuthProcessed = true;
+                    SessionManager.RegisterAuthenticatedSession(this);
+                    Output.WriteLine((object)("[AUTH] OK sessionId=" + this.mId + " charId=" + this.mCharacterInfo.Id), OutputLevel.DebugInformation);
+                }
             }
         }
 
@@ -497,6 +503,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         public void Stop(SqlDatabaseClient MySqlClient)
         {
+            if (this == null) return;
+            using (TechInventoryService.BeginTransition(this))
+                StopCore(MySqlClient);
+        }
+
+        private void StopCore(SqlDatabaseClient MySqlClient)
+        {
             if (this.Stopped) return;
 
             if (!this.StoppedPlayer
@@ -506,6 +519,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 && UnixTimestamp.GetCurrent() - this.mLastReconnectHandoffTimestamp < 2.0)
                 return;
 
+            TechInventoryService.Suspend(this);
             SessionManager.UnregisterAuthenticatedSession(this);
 
             try { this.mSocket.Close(); } catch { }
@@ -519,6 +533,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         public void Dispose()
         {
+            if (this == null) return;
+            using (TechInventoryService.BeginTransition(this))
+                DisposeCore();
+        }
+
+        private void DisposeCore()
+        {
             if (!this.Stopped)
                 throw new InvalidOperationException("Cannot dispose of a session that has not been stopped");
 
@@ -527,6 +548,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
             if (this.Authenticated)
             {
+                TechInventoryService.Suspend(this);
                 SessionManager.UnregisterAuthenticatedSession(this);
 
                 if (this.CurrentMapId > 0)

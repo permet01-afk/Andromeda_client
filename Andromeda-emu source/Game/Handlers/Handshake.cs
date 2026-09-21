@@ -1,4 +1,5 @@
-﻿
+﻿using OrbitReborn_Emulator.Game.Techs;
+
 
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
@@ -148,6 +149,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
             Output.WriteLine("[LOGIN_FLOW] Preparing map " + startMapId + " for " + Session.CharacterId, OutputLevel.DebugInformation);
+            TechInventoryService.Start(Session);
             if (reconnectHandoff)
                 MapHandler.ResyncCurrentMap(Session);
             else

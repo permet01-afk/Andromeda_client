@@ -3245,15 +3245,20 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.ExecuteNonQuery("UPDATE users SET rankpoints = rankpoints - " + (object)amount + " WHERE id = @id LIMIT 1");
         }
 
-        public void RemoveReward(long credits, long uridium)
+        public bool RemoveReward(long credits, long uridium)
         {
+            if (credits < 0 || uridium < 0) return false;
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE users SET uridium = uridium - " + (object)uridium + ", credits = credits - " + (object)credits + " WHERE id = @id LIMIT 1");
-                this.Uridium -= uridium;
-                this.Credits -= credits;
+                client.SetParameter("credits", credits);
+                client.SetParameter("uridium", uridium);
+                int changed = client.ExecuteNonQuery("UPDATE users SET uridium = uridium - @uridium, credits = credits - @credits WHERE id = @id AND credits >= @credits AND uridium >= @uridium LIMIT 1");
+                if (changed != 1) return false;
+                this.Uridium = Math.Max(0L, this.Uridium - uridium);
+                this.Credits = Math.Max(0L, this.Credits - credits);
+                return true;
             }
         }
 
@@ -5184,8 +5189,13 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             client.ClearParameters();
             client.SetParameter("id", (object)this.mId);
-            client.ExecuteNonQuery("UPDATE users SET uridium = uridium - " + (object)unlockCost + " WHERE id = @id LIMIT 1");
-            this.mUridium -= (long)unlockCost;
+            client.SetParameter("cost", unlockCost);
+            if (client.ExecuteNonQuery("UPDATE users SET uridium = uridium - @cost WHERE id = @id AND uridium >= @cost LIMIT 1") != 1)
+            {
+                error = "not_enough_uridium";
+                return false;
+            }
+            this.mUridium = Math.Max(0L, this.mUridium - (long)unlockCost);
 
             this.mSepromSafeLevel = targetLevel;
 

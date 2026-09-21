@@ -11164,6 +11164,17 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
                         flashDrawCooldownOverlayOnCanvas(ctx, slotX, slotY, slotWidth, slotHeight, ratio, item.type === "tech" || item.type === "ability" ? 0.82 : 0.72);
                     }
                 }
+                if (item.type === "tech" && qty > 0) {
+                    ctx.save();
+                    ctx.font = "11px Arial";
+                    ctx.fillStyle = "#ffffff";
+                    ctx.textAlign = "right";
+                    ctx.textBaseline = "bottom";
+                    ctx.shadowColor = "#000000";
+                    ctx.shadowBlur = 1;
+                    ctx.fillText(String(qty), slotX + slotWidth - 3, slotY + slotHeight - 2);
+                    ctx.restore();
+                }
             }
 
             flashQuickbarDrawDigit(slot, slotX, slotY, slotWidth, slotHeight);

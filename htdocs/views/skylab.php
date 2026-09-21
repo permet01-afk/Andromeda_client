@@ -1,4 +1,9 @@
 <?php
+// Explicit subtab allowlist. Unknown values retain the ordinary Skylab page.
+if (($_GET['tab'] ?? '') === 'tech_factory') {
+    require __DIR__ . '/skylab/tech_factory.php';
+    return;
+}
 $skylabAssets = 'img/skylab/';
 $skylabModuleAssets = $skylabAssets . 'modules_large/';
 
@@ -783,6 +788,7 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
     }
 </style>
 
+<link rel="stylesheet" href="styles/tech_factory.css?v=1">
 <section class="skylab-page">
     <div class="skylab-shell">
         <header class="skylab-head">
@@ -791,6 +797,10 @@ $skylabCsrfToken = (string)($skylabCsrfToken ?? ($_SESSION['skylab_csrf_token'] 
                 <p class="skylab-subtitle"><?php echo $skylabAvailable ? 'Click a module to manage upgrades, activation and transports.' : htmlspecialchars($skylabMessage, ENT_QUOTES, 'UTF-8'); ?></p>
             </div>
         </header>
+        <nav class="tf-tabs" aria-label="Skylab sections">
+            <a class="selected" aria-current="page" href="view.php?page=skylab">Skylab</a>
+            <a href="view.php?page=skylab&amp;tab=tech_factory">Tech Factory</a>
+        </nav>
         <div class="skylab-status-line<?php echo $skylabAvailable ? '' : ' is-preview'; ?>" id="skylab-status-line">
             <?php echo htmlspecialchars($skylabMessage, ENT_QUOTES, 'UTF-8'); ?>
         </div>

@@ -747,8 +747,11 @@ function sendRocketLauncherLoadOrFire() {
 
 function sendTechActivation(techId) {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    if (techId == null) return;
-    const packet = `TX|${techId}`;
+    const id = Number(techId);
+    if (!Number.isInteger(id) || id < 1 || id > 5) return;
+    const item = { type: "tech", id: id, code: TECH_ID_TO_CODE[id], supported: true };
+    if (typeof flashGetActionRuntimeState !== "function" || !flashGetActionRuntimeState(item).enabled) return;
+    const packet = `TX|${id}`;
     sendRaw(packet);
 }
 

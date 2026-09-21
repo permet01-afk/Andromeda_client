@@ -111,6 +111,11 @@
     <Compile Include="Game\Event\TeamDeathMatch.cs" />
     <Compile Include="Game\Handlers\Chat.cs" />
     <Compile Include="Game\Handlers\Fight.cs" />
+    <Compile Include="Storage\SqlDatabaseTransaction.cs" />
+    <Compile Include="Game\Techs\TechRuntimeState.cs" />
+    <Compile Include="Game\Techs\TechSchema.cs" />
+    <Compile Include="Game\Techs\TechInventoryService.cs" />
+    <Compile Include="Game\Handlers\Fight.Techs.cs" />
     <Compile Include="Game\Handlers\Handshake.cs" />
     <Compile Include="Game\Handlers\Laboratory.cs" />
     <Compile Include="Game\Handlers\Others.cs" />
