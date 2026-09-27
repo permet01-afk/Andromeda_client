@@ -4279,6 +4279,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
 
                 Session.CharacterInfo.Destroy = true;
+                TechInventoryService.StopBattleRepairOnDeath(Session);
 
                 Fight.StopLaser(Session, null);
                 Fight.StopCurrentShipSkill(Session, true);

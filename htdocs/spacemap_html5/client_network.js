@@ -5766,6 +5766,7 @@ function runEntityVisualCleanupJob(job) {
 }
 
 function flushEntityVisualCleanups() {
+    const startedAt = __rxNowMs();
     entityVisualCleanupScheduled = false;
     let processed = 0;
     while (PENDING_ENTITY_VISUAL_CLEANUPS.size > 0) {
@@ -7161,6 +7162,20 @@ function handlePacket_SD(parts, i) {
 
 function handlePacket_TX(parts, i) {
     const action = parts[i];
+    if (action === "U") {
+        // A failed authoritative DB read is not a known zero quantity.
+        window.heroTechRuntimeState = window.heroTechRuntimeState || Object.create(null);
+        for (let techId = 1; techId <= 5; techId++) {
+            const code = TECH_ID_TO_CODE[techId];
+            const state = window.heroTechRuntimeState[code] || (window.heroTechRuntimeState[code] = {});
+            state.quantityKnown = false;
+            state.amount = 0;
+            state.available = false;
+        }
+        if (typeof renderActionDrawerItems === "function") renderActionDrawerItems();
+        if (typeof refreshTechActionTooltip === "function") refreshTechActionTooltip();
+        return;
+    }
     if (action === "S") {
         // Exactly five complete triplets. Never turn a missing/invalid quantity into ownership.
         const values = parts.slice(i + 1);
@@ -7206,6 +7221,7 @@ function handlePacket_TX(parts, i) {
             flashNormalizeTechRuntimeReadyState(code);
         }
         if (typeof renderActionDrawerItems === "function") renderActionDrawerItems();
+        if (typeof refreshTechActionTooltip === "function") refreshTechActionTooltip();
         return;
     }
     if (action === "ECI" || action === "CHAIN_BOLT") {

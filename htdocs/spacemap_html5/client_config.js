@@ -8174,6 +8174,7 @@ function initActionDrawerTooltips() {
 function showActionTooltip(e, item) {
     const tt = document.getElementById("amTooltip");
     if (!tt || !item) return;
+    tt.techTooltipItem = item.type === "tech" ? item : null;
     const escapeHtml = value => String(value == null ? "" : value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] || ch));
     const rows = [];
     const pushRow = (label, value, accent = "") => {
@@ -8267,9 +8268,17 @@ function showActionTooltip(e, item) {
 
 function moveActionTooltip(e) {
     const tt = document.getElementById("amTooltip");
-    if (tt && tt.style.display === "block") {
+    if (e && tt && tt.style.display === "block") {
         tt.style.left = e.clientX + 15 + "px";
         tt.style.top = e.clientY + 15 + "px";
+    }
+}
+
+function refreshTechActionTooltip() {
+    const tt = typeof document !== "undefined" ? document.getElementById("amTooltip") : null;
+    if (tt && tt.style.display === "block" && tt.techTooltipItem) {
+        // TX can change stock/state while the pointer stays on the same icon.
+        showActionTooltip(null, tt.techTooltipItem);
     }
 }
 

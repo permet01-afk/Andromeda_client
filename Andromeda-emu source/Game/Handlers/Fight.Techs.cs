@@ -26,9 +26,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 string payload = TechRules.Payload(session.TechState.Records, session.TechState.Available,
                     ActiveTechFlags(session), UnixTimestamp.GetCurrent());
-                if (!force && payload == session.TechState.LastStatus) return;
-                session.TechState.LastStatus = payload;
+                string statusKey = (session.TechState.Available ? "available:" : "unavailable:") + payload;
+                if (!force && statusKey == session.TechState.LastStatus) return;
+                session.TechState.LastStatus = statusKey;
                 session.SendData(PacketComposer.Compose("TX",payload));
+                // Flash ignores unknown subcommands; HTML5 distinguishes a failed read from real zero stock.
+                if (!session.TechState.Available) session.SendData(PacketComposer.Compose("TX","U"));
                 double now = UnixTimestamp.GetCurrent();
                 for (int id = 1; id <= 5; ++id)
                 {
@@ -87,6 +90,20 @@ namespace OrbitReborn_Emulator.Game.Handlers
             return (int)Math.Min(int.MaxValue,Math.Max(1,Math.Ceiling((until-UnixTimestamp.GetCurrent())*1000)));
         }
 
+        private static void SendTechRejection(Session session, int id, string restriction = null)
+        {
+            string[] names = { "", "Energy Leech", "Chain Impulse", "Precision Targeter", "Backup Shield", "Battle Repair Bot" };
+            TechRecord record = session.TechState.Records[id];
+            double now = UnixTimestamp.GetCurrent();
+            string reason;
+            if (!session.TechState.Available || record == null) reason = "Tech status unavailable. Please wait.";
+            else if (ActiveTechFlags(session)[id] && record.ActiveUntil > now) reason = names[id] + " is already active.";
+            else if (record.CooldownUntil > now) reason = names[id] + " is on cooldown: " + TechRules.Seconds(record.CooldownUntil,now) + "s remaining.";
+            else if (record.Amount == 0) reason = "No " + names[id] + " available. Produce one in the Tech Factory.";
+            else reason = restriction ?? "This Tech cannot be used in the current state.";
+            session.SendData(PacketComposer.Compose("A","STD|"+reason));
+        }
+
         private static void Techs(Session session, ClientMessage message)
         {
             if (session == null || session.CharacterInfo == null) return;
@@ -100,19 +117,21 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (map == null || session.CurrentMapId != session.CharacterInfo.MapId) return;
                 var info = session.CharacterInfo;
                 List<ChainImpulseTarget> chain = null;
-                if (id == 1 && (info.EnergyLeechActive || info.CoolDownTechEla > 0)) return;
+                if (id == 1 && (info.EnergyLeechActive || info.CoolDownTechEla > 0)) { SendTechRejection(session,id); return; }
                 if (id == 2)
                 {
-                    if (info.CoolDownTechEci > 0) return;
+                    if (info.CoolDownTechEci > 0) { SendTechRejection(session,id); return; }
                     Session player = ResolveChainImpulsePrimaryPlayerTarget(session);
                     Npc npc = player == null ? ResolveChainImpulsePrimaryNpcTarget(session) : null;
-                    if (player == null && npc == null) return;
+                    if (player == null && npc == null) { SendTechRejection(session,id,"Chain Impulse requires a valid target within 700 units."); return; }
                     chain = BuildChainImpulseTargets(session,map,player,npc);
-                    if (chain.Count == 0) return;
+                    if (chain.Count == 0) { SendTechRejection(session,id,"Chain Impulse requires a valid target within 700 units."); return; }
                 }
-                if (id == 3 && (info.RocketProbabilityMaximizerActive || info.CoolDownTechRpm > 0)) return;
-                if (id == 4 && (info.CoolDownTechSh > 0 || info.ShipShield >= info.ShipMaxShield)) return;
-                if (id == 5 && (info.CoolDownTechHp > 0 || info.BattleRepairTimer != null || info.ShipHp >= info.ShipMaxHp)) return;
+                if (id == 3 && (info.RocketProbabilityMaximizerActive || info.CoolDownTechRpm > 0)) { SendTechRejection(session,id); return; }
+                if (id == 4 && (info.CoolDownTechSh > 0 || info.ShipShield >= info.ShipMaxShield))
+                { SendTechRejection(session,id,"Backup Shield cannot be used while your shields are full."); return; }
+                if (id == 5 && (info.CoolDownTechHp > 0 || info.BattleRepairTimer != null || info.ShipHp >= info.ShipMaxHp))
+                { SendTechRejection(session,id,"Battle Repair Bot cannot be used while your HP is full."); return; }
                 int originalMap = session.CurrentMapId;
                 string detail = "Validated map="+originalMap+"; runtime effect; no durable damage replay.";
                 if (chain != null) detail += " Targets="+string.Join(",",chain.ConvertAll(target=>target.Id.ToString()).ToArray());
@@ -120,7 +139,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (!TechInventoryService.TryConsume(session,id,detail,out useId))
                 {
                     SendTechStatus(session);
-                    session.SendData(PacketComposer.Compose("A","STD|Tech unavailable: check stock and cooldown."));
+                    SendTechRejection(session,id);
                     return;
                 }
                 try

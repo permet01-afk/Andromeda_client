@@ -65,13 +65,12 @@ namespace OrbitReborn_Emulator.Game.Techs
         {
             if (db.Query("SELECT id FROM users WHERE id=@id FOR UPDATE", "@id",playerId).Rows.Count != 1)
                 throw new InvalidOperationException("TECH player does not exist.");
-            for (int slot = 1; slot <= 3; ++slot)
-                db.Execute("INSERT INTO player_tech_slots (player_id,slot_no,unlocked_at) VALUES (@id,@slot,IF(@slot=1,UTC_TIMESTAMP(6),NULL)) ON DUPLICATE KEY UPDATE player_id=VALUES(player_id)", "@id",playerId,"@slot",slot);
+            // Keep idempotent seeding, but avoid eight separate insert round trips per refresh.
+            db.Execute("INSERT INTO player_tech_slots (player_id,slot_no,unlocked_at) VALUES (@id,1,UTC_TIMESTAMP(6)),(@id,2,NULL),(@id,3,NULL) ON DUPLICATE KEY UPDATE player_id=VALUES(player_id)", "@id",playerId);
             DataTable slots = db.Query("SELECT slot_no FROM player_tech_slots WHERE player_id=@id ORDER BY slot_no FOR UPDATE", "@id",playerId);
             if (slots.Rows.Count != 3) throw new InvalidOperationException("Invalid TECH halls.");
             DataTable builds = db.Query("SELECT id,tech_id,ends_at,credited_at FROM player_tech_builds WHERE player_id=@id AND credited_at IS NULL ORDER BY id FOR UPDATE", "@id",playerId);
-            for (int tech = 1; tech <= 5; ++tech)
-                db.Execute("INSERT INTO player_tech_inventory (player_id,tech_id,amount) VALUES (@id,@tech,0) ON DUPLICATE KEY UPDATE player_id=VALUES(player_id)", "@id",playerId,"@tech",tech);
+            db.Execute("INSERT INTO player_tech_inventory (player_id,tech_id,amount) VALUES (@id,1,0),(@id,2,0),(@id,3,0),(@id,4,0),(@id,5,0) ON DUPLICATE KEY UPDATE player_id=VALUES(player_id)", "@id",playerId);
             // Lock in tech_id order BEFORE updating any individual inventory row.
             ReadRecords(db,playerId,true);
             return builds;
@@ -242,11 +241,25 @@ namespace OrbitReborn_Emulator.Game.Techs
                 lock (SyncRoot(session.CharacterId))
                 {
                     if (!IsCurrent(session) || session.TechState.TransitionDepth != 0 || session.TechState.CallbackEpoch != epoch || use == null
-                        || session.TechState.TimerUseIds[techId] != use) return;
+                        || session.TechState.TimerUseIds[techId] != use
+                        || (techId == 5 && session.CharacterInfo.BattleRepairCount <= 0)) return;
                     try { callback(session); }
                     catch (Exception error) { Log(session,error); }
                 }
             }, null, due, period);
+        }
+
+        public static void StopBattleRepairOnDeath(Session session)
+        {
+            if (session == null || session.CharacterInfo == null) return;
+            lock (SyncRoot(session.CharacterId))
+            {
+                // A queued pulse must not heal the next life, even after a stock refresh.
+                session.CharacterInfo.BattleRepairCount = 0;
+                if (session.CharacterInfo.BattleRepairTimer != null) session.CharacterInfo.BattleRepairTimer.Dispose();
+                session.CharacterInfo.BattleRepairTimer = null;
+                // The paid charge, use event and persistent cooldown remain unchanged.
+            }
         }
 
         public static void Suspend(Session session)
