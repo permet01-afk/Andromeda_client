@@ -143,6 +143,7 @@ function ensureEntityVisualLife(ent) {
 
 function resetEntityVisualLife(ent) {
     if (!ent) return null;
+    ent._idleFloating = null;
     ent.visualLifeId = nextEntityVisualLifeId();
     ent.visualLifeCreatedAt = performance.now();
     ent.destroyedVisualAt = 0;
@@ -1984,15 +1985,23 @@ document.addEventListener("visibilitychange", () => {
     if (document.hidden) resetFlashGameplayKeys();
 });
 
-function addInfoMessage(text, durationMs) {
+function addInfoMessage(text, durationMs, highPriority = false) {
     if (!text) return;
-    const safeDuration = Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 2500;
-    infoMessages.unshift({
-        text: String(text),
-        createdAt: performance.now(),
-        duration: safeDuration
-    });
-    if (infoMessages.length > 6) infoMessages.pop();
+    const now = performance.now();
+    const profileMs = Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 4000;
+    // Flash profiles ST=4 / HP=10 start fading one second before the profile end.
+    const holdMs = Math.max(100, profileMs - 1000);
+    for (let i = infoMessages.length - 1; i >= 0; i--) {
+        const m = infoMessages[i];
+        if (now - m.createdAt >= m.duration) infoMessages.splice(i, 1);
+    }
+    infoMessages.push({ text: String(text), createdAt: now, holdMs: holdMs,
+        duration: holdMs + 300, highPriority: highPriority, lines: null,
+        y: null, fromY: 0, targetY: null, layoutAt: now });
+    let standardCount = 0;
+    for (let i = infoMessages.length - 1; i >= 0; i--) {
+        if (!infoMessages[i].highPriority && ++standardCount > 4) infoMessages.splice(i, 1);
+    }
 }
 
 function mapToScreenX(x) {

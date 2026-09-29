@@ -3099,6 +3099,8 @@ const SHIP_ENERGY_Y_OFFSETS = {
     696: 30
 };
 
+let SHIP_IDLE_ELIGIBLE_FROM_XML = null;
+
 let SHIP_LABEL_Y_OFFSETS_FROM_XML = null;
 
 let SHIP_ENERGY_Y_OFFSETS_FROM_XML = null;
@@ -3117,6 +3119,18 @@ let SHIP_MOVE_RADIUS_SQUARED_FROM_XML = null;
 
 function parseShipOffsetsFromXml(xmlDoc) {
     if (!xmlDoc) return;
+    const idleMap = {};
+    const engineClasses = new Set();
+    xmlDoc.querySelectorAll("enginePositions > enginePosition").forEach(node => {
+        const lists = node.querySelectorAll("positionsList");
+        for (const list of lists) {
+            const data = (list.getAttribute("data") || "").split(",");
+            if (data.length >= 2 && data.length % 2 === 0 && data.every(v => v.trim() !== "" && Number.isFinite(Number(v)))) {
+                engineClasses.add(Number(node.getAttribute("class")));
+                break;
+            }
+        }
+    });
     const labelMap = {};
     const energyMap = {};
     const labelVisibleMap = {};
@@ -3136,6 +3150,8 @@ function parseShipOffsetsFromXml(xmlDoc) {
         xmlDoc.querySelectorAll("ships > ship").forEach(shipNode => {
             const type = parseInt(shipNode.getAttribute("type") || "", 10);
             if (!Number.isFinite(type)) return;
+            const engineClass = Number.parseInt(shipNode.getAttribute("enginePositionClassID"), 10);
+            idleMap[type] = engineClass !== -1 && engineClasses.has(engineClass);
             const labelRaw = shipNode.getAttribute("labelYOffset");
             if (labelRaw !== null) {
                 const v = parseInt(labelRaw, 10);
@@ -3181,6 +3197,7 @@ function parseShipOffsetsFromXml(xmlDoc) {
     } catch (e) {
         console.warn("[XML] parseShipOffsetsFromXml failed:", e);
     }
+    SHIP_IDLE_ELIGIBLE_FROM_XML = idleMap;
     if (Object.keys(labelMap).length > 0) {
         SHIP_LABEL_Y_OFFSETS_FROM_XML = labelMap;
         window._shipLabelYOffsetById = labelMap;

@@ -16,6 +16,7 @@ using OrbitReborn_Emulator.Storage;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -846,7 +847,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     BeginRocketLauncherReload(Session);
                     break;
                 case "A":
-                    FireRocketLauncher(Session);
+                    FireRocketLauncher(Session, true);
                     break;
                 case "SEL":
                     SelectRocketLauncherRocket(Session, Message);
@@ -1019,7 +1020,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             return rng.Next(ROCKET_LAUNCHER_EFFECT_DELAY_MIN_MS, ROCKET_LAUNCHER_EFFECT_DELAY_MAX_MS + 1);
         }
 
-        private static void FireRocketLauncher(Session Session)
+        private static void FireRocketLauncher(Session Session, bool notifyRefusal = false)
         {
             if (Session == null || Session.CharacterInfo == null || !Session.Authenticated)
                 return;
@@ -1094,7 +1095,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (targetSession == null || targetSession.CharacterInfo == null)
                     return;
 
-                if (!Fight.PlayerCanAttack(Session, targetSession)
+                if (!(notifyRefusal ? CheckInitialPvpAttack(Session, targetSession) : PlayerCanAttack(Session, targetSession))
                     || targetSession.CharacterInfo.PeaceZone
                     || targetSession.CharacterInfo.ActiveISH
                     || Fight.GetDistance(Session, targetSession) >= RANGE_ROCKET)
@@ -2505,57 +2506,124 @@ namespace OrbitReborn_Emulator.Game.Handlers
             session.SendData(PacketComposer.Compose("A", "CLD|RSB|3"));
         }
 
-        private static bool PlayerCanAttack(Session Player, Session Ennemy)
+        private enum PvpRefusalReason
+        {
+            None, InvalidTarget, PeaceZone, TargetProtected, GroupMember,
+            ProtectedFaction, GalaxyGate, TeamDeathMatchSafe, SurvivorSafe,
+            InvasionSafe, DuelProtected
+        }
+
+        private sealed class PvpRefusalState
+        {
+            public PvpRefusalState() { }
+            public int TargetId;
+            public int MapId;
+            public PvpRefusalReason Reason;
+        }
+
+        // Session-owned weak state: no retained players after logout, no global
+        // text deduplication. Only initial attacks call this notification path.
+        private static readonly ConditionalWeakTable<Session, PvpRefusalState> PvpRefusals =
+            new ConditionalWeakTable<Session, PvpRefusalState>();
+
+        private static bool CheckInitialPvpAttack(Session player, Session target)
+        {
+            PvpRefusalReason reason = GetPvpRefusalReason(player, target);
+            bool allowed = reason == PvpRefusalReason.None;
+            // ISH already blocks damage/launcher elsewhere. Explain it without
+            // changing the existing laser, rocket or TECH permission rules.
+            if (allowed && target.CharacterInfo.ActiveISH)
+                reason = PvpRefusalReason.TargetProtected;
+            if (player == null || player.CharacterInfo == null || target == null || target.CharacterInfo == null)
+                return allowed;
+            PvpRefusalState state = PvpRefusals.GetOrCreateValue(player);
+            lock (state)
+            {
+                if (state.TargetId == target.CharacterId && state.MapId == player.CurrentMapId && state.Reason == reason)
+                    return allowed;
+                state.TargetId = target.CharacterId;
+                state.MapId = player.CurrentMapId;
+                state.Reason = reason;
+                if (reason == PvpRefusalReason.PeaceZone)
+                    player.SendData(PacketComposer.Compose("P", ""));
+                else if (reason == PvpRefusalReason.GroupMember)
+                    player.SendData(PacketComposer.Compose("ps", "err|a"));
+                else
+                {
+                    // ANDROMEDA ADAPTATION: these rule-specific texts are not Flash translations.
+                    string text = null;
+                    switch (reason)
+                    {
+                        case PvpRefusalReason.TargetProtected: text = "The target is protected by an Insta-Shield."; break;
+                        case PvpRefusalReason.ProtectedFaction: text = "You cannot attack your own faction on its protected starting maps."; break;
+                        case PvpRefusalReason.GalaxyGate: text = "You cannot attack other players in this Galaxy Gate."; break;
+                        case PvpRefusalReason.TeamDeathMatchSafe: text = "You cannot attack during the Team Deathmatch safe phase."; break;
+                        case PvpRefusalReason.SurvivorSafe: text = "You cannot attack during the Survivor safe phase."; break;
+                        case PvpRefusalReason.InvasionSafe: text = "You cannot attack during the Invasion safe phase."; break;
+                        case PvpRefusalReason.DuelProtected: text = "You cannot attack this player outside an active duel."; break;
+                    }
+                    if (text != null) player.SendData(PacketComposer.Compose("A", "STD|" + text));
+                }
+            }
+            return allowed;
+        }
+
+        private static bool PlayerCanAttack(Session player, Session target)
+        {
+            return GetPvpRefusalReason(player, target) == PvpRefusalReason.None;
+        }
+
+        private static PvpRefusalReason GetPvpRefusalReason(Session Player, Session Ennemy)
         {
             if (Player == null || Ennemy == null || Player.CharacterInfo == null || Ennemy.CharacterInfo == null)
-                return false;
+                return PvpRefusalReason.InvalidTarget;
 
             if (Player.CharacterInfo.Id == Ennemy.CharacterInfo.Id)
-                return false;
+                return PvpRefusalReason.InvalidTarget;
 
             if (_1v1.IsOnMap(Player.CharacterInfo.MapId) || _1v1.IsOnMap(Ennemy.CharacterInfo.MapId))
             {
                 if (Player.CharacterInfo.MapId != Ennemy.CharacterInfo.MapId)
-                    return false;
+                    return PvpRefusalReason.DuelProtected;
 
                 if (!_1v1.AreOpponents(Player.CharacterId, Ennemy.CharacterId, Player.CharacterInfo.MapId))
-                    return false;
+                    return PvpRefusalReason.DuelProtected;
 
-                return _1v1.isSafeBattle(Player.CharacterInfo.MapId) != true;
+                return _1v1.isSafeBattle(Player.CharacterInfo.MapId) ? PvpRefusalReason.DuelProtected : PvpRefusalReason.None;
             }
 
             if ((Player.CharacterInfo.Members != null && Player.CharacterInfo.Members.Contains(Ennemy.CharacterInfo.Id))
                 || (Ennemy.CharacterInfo.Members != null && Ennemy.CharacterInfo.Members.Contains(Player.CharacterInfo.Id)))
-                return false;
+                return PvpRefusalReason.GroupMember;
 
             if (IsSessionInGalaxyGate(Player) || IsSessionInGalaxyGate(Ennemy))
-                return false;
+                return PvpRefusalReason.GalaxyGate;
 
             if (Player.CharacterInfo.MapId == 83)
-                return TeamDeathMatch.SafeBattle() != true;
+                return TeamDeathMatch.SafeBattle() ? PvpRefusalReason.TeamDeathMatchSafe : PvpRefusalReason.None;
 
-            if (Ennemy.CharacterInfo.PeaceZone
-                || Player.CharacterInfo.MapId == 80 && Survivor.Active && Survivor.SafeBattle
-                || Player.CharacterInfo.MapId == 81 && Invasion.Active && Invasion.SafeBattle)
-            {
-                return false;
-            }
+            if (Ennemy.CharacterInfo.PeaceZone)
+                return PvpRefusalReason.PeaceZone;
+            if (Player.CharacterInfo.MapId == 80 && Survivor.Active && Survivor.SafeBattle)
+                return PvpRefusalReason.SurvivorSafe;
+            if (Player.CharacterInfo.MapId == 81 && Invasion.Active && Invasion.SafeBattle)
+                return PvpRefusalReason.InvasionSafe;
 
             if (Player.CharacterInfo.FactionId != Ennemy.CharacterInfo.FactionId
                 || (Player.CharacterInfo.ClanWar.Contains(Ennemy.CharacterInfo.ClanId)
                     || Ennemy.CharacterInfo.ClanWar.Contains(Player.CharacterInfo.ClanId)))
             {
-                return true;
+                return PvpRefusalReason.None;
             }
 
             if (Player.CharacterInfo.MapId == 1 || Player.CharacterInfo.MapId == 2)
-                return Player.CharacterInfo.FactionId != 1;
+                return Player.CharacterInfo.FactionId != 1 ? PvpRefusalReason.None : PvpRefusalReason.ProtectedFaction;
 
             if (Player.CharacterInfo.MapId == 5 || Player.CharacterInfo.MapId == 6)
-                return Player.CharacterInfo.FactionId != 2;
+                return Player.CharacterInfo.FactionId != 2 ? PvpRefusalReason.None : PvpRefusalReason.ProtectedFaction;
 
             return Player.CharacterInfo.MapId != 9 && Player.CharacterInfo.MapId != 10
-                || Player.CharacterInfo.FactionId != 3;
+                || Player.CharacterInfo.FactionId != 3 ? PvpRefusalReason.None : PvpRefusalReason.ProtectedFaction;
         }
 
         private static void SelectAmmo(Session Session, ClientMessage Message)
@@ -2863,7 +2931,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (sessionByCharacterId == null || sessionByCharacterId.CharacterInfo == null)
                     return;
 
-                if (!Fight.PlayerCanAttack(Session, sessionByCharacterId)
+                if (!CheckInitialPvpAttack(Session, sessionByCharacterId)
                     || sessionByCharacterId.CharacterInfo.PeaceZone
                     || Fight.GetDistance(Session, sessionByCharacterId) >= RANGE_ROCKET)
                 {
@@ -3176,7 +3244,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 referenceObject = SessionManager.GetSessionByCharacterId(actorByReferenceId2.ReferenceId);
                 if (referenceObject == null
                     || ((Session)referenceObject).CharacterInfo == null
-                    || !Fight.PlayerCanAttack(Session, (Session)referenceObject))
+                    || !CheckInitialPvpAttack(Session, (Session)referenceObject))
                 {
                     return;
                 }

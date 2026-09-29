@@ -3516,15 +3516,14 @@ function drawRageGlow(effect, img, x, y, scale, now) {
 
 function drawShip() {
     const shipScreenX = mapToScreenX(shipX);
-    const syBase = mapToScreenY(shipY);
-    const bobOffset = getHeroIdleOffset();
-    const sy = syBase + bobOffset;
+    const baseY = mapToScreenY(shipY);
+    const hullY = baseY + getHeroIdleOffset();
     const entityScale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
     let shipAnchorX = shipScreenX;
-    let shipAnchorY = sy;
+    let shipAnchorY = baseY;
     ctx.save();
     ctx.globalAlpha = heroCloaked ? .3 : 1;
-    drawHeroCollectorBeamAt(shipScreenX, sy);
+    drawHeroCollectorBeamAt(shipScreenX, baseY);
     const shipId = heroShipId;
     const def = SHIP_SPRITE_DEFS[shipId];
     let shipDrawnHeight = 20;
@@ -3541,13 +3540,13 @@ function drawShip() {
             shiftY = shift.y;
         }
         shipAnchorX = shipScreenX - shiftX;
-        shipAnchorY = sy - shiftY;
+        shipAnchorY = baseY - shiftY;
         if (typeof getShipGlowFrame === "function") {
             glowImg = getShipGlowFrame(shipId, frameIndex);
             if (glowImg && glowImg.complete && glowImg.width > 0 && glowImg.height > 0) {
                 const gw = glowImg.width * entityScale;
                 const gh = glowImg.height * entityScale;
-                ctx.drawImage(glowImg, shipScreenX - gw / 2 - shiftX, sy - gh / 2 - shiftY, gw, gh);
+                ctx.drawImage(glowImg, shipScreenX - gw / 2 - shiftX, hullY - gh / 2 - shiftY, gw, gh);
             }
         }
         const heroVisualShift = drawShip._visualShift || (drawShip._visualShift = {
@@ -3562,10 +3561,10 @@ function drawShip() {
             const w = img.width * entityScale;
             const h = img.height * entityScale;
             shipDrawnHeight = h;
-            drawRageGlow(heroRageEffect, img, shipAnchorX, shipAnchorY, entityScale, performance.now());
-            ctx.drawImage(img, shipScreenX - w / 2 - shiftX, sy - h / 2 - shiftY, w, h);
+            drawRageGlow(heroRageEffect, img, shipAnchorX, hullY - shiftY, entityScale, performance.now());
+            ctx.drawImage(img, shipScreenX - w / 2 - shiftX, hullY - h / 2 - shiftY, w, h);
         }
-        drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, sy, heroVisualShift);
+        drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, hullY, heroVisualShift);
         drawShipSkillVisualEffectsForEntity(heroId, shipAnchorX, shipAnchorY, shipId, frameIndex, heroAngle || 0, shipDrawnHeight, "hero", shipX, shipY);
         drawHeroLevelUpEffects(shipAnchorX, shipAnchorY);
     } else {
@@ -3576,23 +3575,23 @@ function drawShip() {
         shipDrawnHeight = size;
         ctx.fillStyle = "#cccccc";
         ctx.beginPath();
-        ctx.arc(shipScreenX, sy, size / 2, 0, Math.PI * 2, false);
+        ctx.arc(shipScreenX, hullY, size / 2, 0, Math.PI * 2, false);
         ctx.fill();
     }
     if (heroTargetFaded) {
         ctx.save();
         ctx.fillStyle = `rgba(80,80,80,${TARGET_FADE_OVERLAY_ALPHA})`;
         ctx.beginPath();
-        ctx.arc(shipScreenX, sy, TARGET_FADE_OVERLAY_RADIUS, 0, Math.PI * 2, false);
+        ctx.arc(shipScreenX, baseY, TARGET_FADE_OVERLAY_RADIUS, 0, Math.PI * 2, false);
         ctx.fill();
         ctx.restore();
     }
-    drawShieldAura(shipScreenX, sy, heroShield, heroMaxShield, heroIshActive, heroInvincible, heroIshSince, heroIshUntil, heroInvSince, heroInvUntil, typeof heroShieldBackupUntil !== "undefined" ? heroShieldBackupUntil : 0);
+    drawShieldAura(shipScreenX, baseY, heroShield, heroMaxShield, heroIshActive, heroInvincible, heroIshSince, heroIshUntil, heroInvSince, heroInvUntil, typeof heroShieldBackupUntil !== "undefined" ? heroShieldBackupUntil : 0);
     if (typeof heroShieldBackupStartedAt !== "undefined" && heroShieldBackupStartedAt > 0) {
-        flashDrawShieldBackupBurst(shipScreenX, sy, heroShieldBackupStartedAt, typeof heroShieldBackupUntil !== "undefined" ? heroShieldBackupUntil : 0, heroShipId);
+        flashDrawShieldBackupBurst(shipScreenX, baseY, heroShieldBackupStartedAt, typeof heroShieldBackupUntil !== "undefined" ? heroShieldBackupUntil : 0, heroShipId);
     }
     if (window.heroTechEnergyLeechActive) {
-        flashDrawEnergyLeechAura(shipScreenX, sy, shipDrawnHeight, Number(window.heroTechEnergyLeechStartedAt) || performance.now(), Number(window.heroTechEnergyLeechUntil) || 0);
+        flashDrawEnergyLeechAura(shipScreenX, baseY, shipDrawnHeight, Number(window.heroTechEnergyLeechStartedAt) || performance.now(), Number(window.heroTechEnergyLeechUntil) || 0);
     }
     if (setting_show_drones && window.heroDrones && window.heroDrones.groups && window.heroDrones.groups.length > 0) {
         const heroDefForDrones = SHIP_SPRITE_DEFS[heroShipId];
@@ -3600,16 +3599,16 @@ function drawShip() {
         drawDrones(shipX, shipY, window.heroDrones, heroAngle, heroDronesFrameIndex);
     }
     if (heroRepairing) {
-        drawRepairRobot(shipScreenX, sy, shipDrawnHeight);
+        drawRepairRobot(shipScreenX, baseY, shipDrawnHeight);
     }
     if (heroBattleRepairing) {
-        drawBattleRepairRobot(shipScreenX, sy);
+        drawBattleRepairRobot(shipScreenX, baseY);
     }
     if (setting_show_player_names && heroName && (typeof isShipLabelVisible !== "function" || isShipLabelVisible(heroShipId))) {
-        const baseY = computeNameplateY(sy, shipDrawnHeight, heroShipId, entityScale);
+        const nameplateY = computeNameplateY(baseY, shipDrawnHeight, heroShipId, entityScale);
         const clanTagColor = heroClanTag ? getClanTagColor(0) : null;
         const heroNameplateColor = typeof getGameXmlColorPattern === "function" ? getGameXmlColorPattern("neutral", "#ffffff") : "#ffffff";
-        const heroNameplateLayout = drawNameplateWithIcons(ctx, heroName, heroClanTag, shipScreenX, baseY, heroNameplateColor, clanTagColor, heroRankId, window.heroFactionId || 0, heroGalaxyGatesFinished || 0, window.heroGameTitleKey || "");
+        const heroNameplateLayout = drawNameplateWithIcons(ctx, heroName, heroClanTag, shipScreenX, nameplateY, heroNameplateColor, clanTagColor, heroRankId, window.heroFactionId || 0, heroGalaxyGatesFinished || 0, window.heroGameTitleKey || "");
         if (!setting_show_drones) {
             const heroDroneDisplayCounts = getSimpleDroneDisplayCounts(window.heroDrones, window.heroDroneDisplayCounts || null);
             drawSimpleDroneDisplayUnderNameplate(ctx, heroNameplateLayout, heroDroneDisplayCounts);
@@ -3617,7 +3616,7 @@ function drawShip() {
     }
     heroHpShieldBarOptions.referenceShipId = heroShipId;
     heroHpShieldBarOptions.alpha = 1;
-    drawHpShieldBars(shipScreenX, sy, shipDrawnHeight, heroHp, heroMaxHp, heroShield, heroMaxShield, heroShipId, entityScale, heroHpShieldBarOptions);
+    drawHpShieldBars(shipScreenX, baseY, shipDrawnHeight, heroHp, heroMaxHp, heroShield, heroMaxShield, heroShipId, entityScale, heroHpShieldBarOptions);
     ctx.restore();
 }
 
@@ -4055,14 +4054,15 @@ function drawEntities() {
             e.targetFaded = false;
         }
         const entityScreenX = mapToScreenX(e.x);
-        const entityScreenY = mapToScreenY(e.y);
+        const baseY = mapToScreenY(e.y);
+        const hullY = baseY + (e._idleFloating ? e._idleFloating.offsetY : 0);
         const visualShipId = typeof resolveEntityVisualShipId === "function" ? resolveEntityVisualShipId(e.shipId) : e.shipId;
         const def = SHIP_SPRITE_DEFS[visualShipId];
         let drewSprite = false;
         let spriteHeight = scaledMarkerSize;
         let img = null;
         let entityAnchorX = entityScreenX;
-        let entityAnchorY = entityScreenY;
+        let entityAnchorY = baseY;
         let shiftX = 0;
         let shiftY = 0;
         if (def) {
@@ -4087,13 +4087,13 @@ function drawEntities() {
                 shiftY = shift.y;
             }
             entityAnchorX = entityScreenX - shiftX;
-            entityAnchorY = entityScreenY - shiftY;
+            entityAnchorY = baseY - shiftY;
             if (typeof getShipGlowFrame === "function") {
                 const glowImg = getShipGlowFrame(e.shipId, frameIndex);
                 if (glowImg && glowImg.complete && glowImg.width > 0 && glowImg.height > 0) {
                     const gw = glowImg.width * entityScale;
                     const gh = glowImg.height * entityScale;
-                    ctx.drawImage(glowImg, entityScreenX - gw / 2 - shiftX, entityScreenY - gh / 2 - shiftY, gw, gh);
+                    ctx.drawImage(glowImg, entityScreenX - gw / 2 - shiftX, hullY - gh / 2 - shiftY, gw, gh);
                 }
             }
             const forceEngineMoving = typeof e.speed === "number" && e.speed > 0;
@@ -4116,11 +4116,11 @@ function drawEntities() {
                 const w = img.width * entityScale;
                 const h = img.height * entityScale;
                 spriteHeight = h;
-                drawRageGlow(e.rageEffect, img, entityAnchorX, entityAnchorY, entityScale, now);
-                ctx.drawImage(img, entityScreenX - w / 2 - shiftX, entityScreenY - h / 2 - shiftY, w, h);
+                drawRageGlow(e.rageEffect, img, entityAnchorX, hullY - shiftY, entityScale, now);
+                ctx.drawImage(img, entityScreenX - w / 2 - shiftX, hullY - h / 2 - shiftY, w, h);
                 drewSprite = true;
             }
-            drawShipExpansionOverlay(e.shipId, frameIndex, entityScreenX, entityScreenY, {
+            drawShipExpansionOverlay(e.shipId, frameIndex, entityScreenX, hullY, {
                 x: shiftX,
                 y: shiftY
             });
@@ -4130,27 +4130,27 @@ function drawEntities() {
             spriteHeight = scaledMarkerSize;
             ctx.fillStyle = getEntityColor(e);
             ctx.beginPath();
-            ctx.arc(entityScreenX, entityScreenY, scaledMarkerSize / 2, 0, Math.PI * 2, false);
+            ctx.arc(entityScreenX, hullY, scaledMarkerSize / 2, 0, Math.PI * 2, false);
             ctx.fill();
         }
         if (faded) {
             ctx.save();
             ctx.fillStyle = `rgba(80,80,80,${TARGET_FADE_OVERLAY_ALPHA})`;
             ctx.beginPath();
-            ctx.arc(entityScreenX, entityScreenY, TARGET_FADE_OVERLAY_RADIUS, 0, Math.PI * 2, false);
+            ctx.arc(entityScreenX, baseY, TARGET_FADE_OVERLAY_RADIUS, 0, Math.PI * 2, false);
             ctx.fill();
             ctx.restore();
         }
         if (e.kind === "player") {
-            drawShieldAura(entityScreenX, entityScreenY, e.shield, e.maxShield, e.ishActive, e.invincible, e.ishSince, e.ishUntil, e.invSince, e.invUntil, e.techShieldBackupUntil || 0);
+            drawShieldAura(entityScreenX, baseY, e.shield, e.maxShield, e.ishActive, e.invincible, e.ishSince, e.ishUntil, e.invSince, e.invUntil, e.techShieldBackupUntil || 0);
             if (e.techShieldBackupStartedAt) {
-                flashDrawShieldBackupBurst(entityScreenX, entityScreenY, Number(e.techShieldBackupStartedAt) || 0, Number(e.techShieldBackupUntil) || 0, visualShipId);
+                flashDrawShieldBackupBurst(entityScreenX, baseY, Number(e.techShieldBackupStartedAt) || 0, Number(e.techShieldBackupUntil) || 0, visualShipId);
             }
             if (e.techEnergyLeechActive) {
-                flashDrawEnergyLeechAura(entityScreenX, entityScreenY, spriteHeight, Number(e.techEnergyLeechStartedAt) || performance.now(), Number(e.techEnergyLeechUntil) || 0);
+                flashDrawEnergyLeechAura(entityScreenX, baseY, spriteHeight, Number(e.techEnergyLeechStartedAt) || performance.now(), Number(e.techEnergyLeechUntil) || 0);
             }
             if (e.techBattleRepairing || (e.techBattleRepairFadeUntil && e.techBattleRepairFadeUntil > performance.now())) {
-                drawBattleRepairRobot(entityScreenX, entityScreenY, e);
+                drawBattleRepairRobot(entityScreenX, baseY, e);
             }
         }
         if (setting_show_drones && e.drones && e.drones.groups && e.drones.groups.length > 0) {
@@ -4162,7 +4162,7 @@ function drawEntities() {
         if (selectedTargetId !== null && e.id === selectedTargetId && isSelectedTargetStatsReady(e)) {
             selectedTargetHpShieldBarOptions.referenceShipId = visualShipId;
             selectedTargetHpShieldBarOptions.alpha = getSelectedTargetBarFadeAlpha(e.id);
-            drawHpShieldBars(entityScreenX, entityScreenY, spriteHeight, e.hp, e.maxHp, e.shield, e.maxShield, e.shipId, entityScale, selectedTargetHpShieldBarOptions);
+            drawHpShieldBars(entityScreenX, baseY, spriteHeight, e.hp, e.maxHp, e.shield, e.maxShield, e.shipId, entityScale, selectedTargetHpShieldBarOptions);
         }
         if (e.id === selectedTargetId || e.id === currentLaserTargetId) {
             const useRedCircle = !e.targetRingGray;
@@ -4171,15 +4171,15 @@ function drawEntities() {
             if (ringImg && ringImg.complete) {
                 const w = ringImg.width * ringScale;
                 const h = ringImg.height * ringScale;
-                ctx.drawImage(ringImg, entityScreenX - w / 2, entityScreenY - h / 2, w, h);
+                ctx.drawImage(ringImg, entityScreenX - w / 2, baseY - h / 2, w, h);
             }
         }
         if (setting_show_player_names && e.name && e.kind !== "box" && (typeof isShipLabelVisible !== "function" || isShipLabelVisible(e.shipId))) {
-            const baseY = computeNameplateY(entityScreenY, spriteHeight, e.shipId, entityScale);
+            const nameplateY = computeNameplateY(baseY, spriteHeight, e.shipId, entityScale);
             const rankId = e.rankId || (e.id === heroId ? heroRankId : 0);
             const achievementId = e.galaxyGatesFinished || (e.id === heroId ? heroGalaxyGatesFinished : 0);
             const clanTagColor = e.kind === "player" && e.clanTag ? getClanTagColor(e.clanDiplomacy) : null;
-            const entityNameplateLayout = drawNameplateWithIcons(ctx, e.name, e.kind === "player" ? e.clanTag : null, entityScreenX, baseY, getNameplateColor(e), clanTagColor, rankId, e.factionId || 0, achievementId, e.gameTitleKey || "");
+            const entityNameplateLayout = drawNameplateWithIcons(ctx, e.name, e.kind === "player" ? e.clanTag : null, entityScreenX, nameplateY, getNameplateColor(e), clanTagColor, rankId, e.factionId || 0, achievementId, e.gameTitleKey || "");
             if (!setting_show_drones && e.kind === "player") {
                 const entityDroneDisplayCounts = getSimpleDroneDisplayCounts(e.drones, e.droneDisplayCounts || null);
                 drawSimpleDroneDisplayUnderNameplate(ctx, entityNameplateLayout, entityDroneDisplayCounts);
@@ -4464,43 +4464,116 @@ function drawTooltip() {
     ctx.restore();
 }
 
+// GlobalNotificationView is a separate, sequential channel (MSG).
+const globalNotifications = [];
+
+function addGlobalNotification(text) {
+    if (text) globalNotifications.push({ text: String(text), createdAt: null,
+        holdMs: 4000, duration: 4300, lines: null });
+}
+
+function flashMessageAlpha(message, now) {
+    const age = Math.max(0, now - message.createdAt);
+    if (age < 100) return age / 100;
+    if (age <= message.holdMs) return 1;
+    const fade = Math.min(1, (age - message.holdMs) / 300);
+    return (1 - fade) * (1 - fade); // Quad.easeOut applied to alpha 1 -> 0.
+}
+
+function wrapFlashMessage(message, width, fontReady) {
+    if (message.lines && message.wrapWidth === width && message.fontReady === fontReady) return;
+    const lines = [];
+    for (const paragraph of message.text.split(/\r?\n/)) {
+        let line = "";
+        for (const word of paragraph.split(/\s+/)) {
+            if (!word) continue;
+            const candidate = line ? line + " " + word : word;
+            if (ctx.measureText(candidate).width <= width) { line = candidate; continue; }
+            if (line) lines.push(line);
+            line = "";
+            // Long unbroken identifiers must wrap too.
+            for (const character of word) {
+                if (line && ctx.measureText(line + character).width > width) {
+                    lines.push(line);
+                    line = "";
+                }
+                line += character;
+            }
+        }
+        lines.push(line);
+    }
+    message.lines = lines;
+    message.wrapWidth = width;
+    message.fontReady = fontReady;
+}
+
 function drawDebugInfo() {
-    if (!infoMessages || infoMessages.length === 0) return;
     const now = performance.now();
     let writeIndex = 0;
-    for (let k = 0; k < infoMessages.length; k++) {
-        const m = infoMessages[k];
-        if (!m || now - m.createdAt > (m.duration || 2500)) {
-            continue;
-        }
-        infoMessages[writeIndex++] = m;
-    }
-    infoMessages.length = writeIndex;
-    if (infoMessages.length === 0) return;
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.font = "bold 16px Arial";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    const x = canvas.width / 2;
-    const y = 20;
-    const lineH = 20;
-    ctx.lineJoin = "round";
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = "rgba(0,0,0,0.90)";
-    ctx.fillStyle = "#ffffff";
     for (let i = 0; i < infoMessages.length; i++) {
         const m = infoMessages[i];
-        const age = now - m.createdAt;
-        const dur = m.duration || 2500;
-        const alpha = Math.max(0, Math.min(1, 1 - age / dur));
-        ctx.globalAlpha = alpha;
-        const yy = y + i * lineH;
-        ctx.strokeText(m.text, x, yy);
-        ctx.fillText(m.text, x, yy);
+        if (m && now - m.createdAt < m.duration) infoMessages[writeIndex++] = m;
+    }
+    infoMessages.length = writeIndex;
+    if (globalNotifications.length) {
+        const active = globalNotifications[0];
+        if (active.createdAt !== null && now - active.createdAt >= active.duration) globalNotifications.shift();
+        if (globalNotifications.length && globalNotifications[0].createdAt === null) globalNotifications[0].createdAt = now;
+    }
+    if (!infoMessages.length && !globalNotifications.length) return;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.font = '14px "EurostileHeaFl", Arial, sans-serif';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(0,0,0,0.9)";
+    ctx.shadowColor = "#000000";
+    ctx.shadowBlur = 4;
+    ctx.fillStyle = "#ffffff";
+    const fontReady = !!(document.fonts && document.fonts.check('14px "EurostileHeaFl"'));
+    const width = Math.max(1, Math.min(300, canvas.width - 16));
+    const x = canvas.width / 2;
+    // Persistent zone labels retain their existing y=14/y=34 and 16 px font.
+    // Shift only the message stack; do not tween through a zone label.
+    const top = inTradeZone ? 58 : inDemilitarizedZone ? 38 : 0;
+    let targetY = 0;
+    let bottom = top;
+    for (const m of infoMessages) {
+        wrapFlashMessage(m, width, fontReady);
+        if (m.targetY !== targetY) {
+            m.fromY = m.y === null ? Math.max(targetY, bottom - top) : m.y;
+            m.targetY = targetY;
+            m.layoutAt = now;
+        }
+        const t = Math.min(1, Math.max(0, now - m.layoutAt) / 400);
+        m.y = m.fromY + (m.targetY - m.fromY) * (1 - (1 - t) * (1 - t));
+        // Keep adjacent wrapped messages apart throughout the layout tween.
+        const y = Math.max(top + m.y, bottom);
+        ctx.globalAlpha = flashMessageAlpha(m, now);
+        for (let line = 0; line < m.lines.length; line++) {
+            ctx.strokeText(m.lines[line], x, y + line * 17);
+            ctx.fillText(m.lines[line], x, y + line * 17);
+        }
+        bottom = y + m.lines.length * 17 + 6;
+        targetY += m.lines.length * 17 + 6;
+    }
+    if (globalNotifications.length) {
+        const m = globalNotifications[0];
+        ctx.font = '28px "EurostileHeaFl", Arial, sans-serif';
+        ctx.fillStyle = "#e9e2c0";
+        wrapFlashMessage(m, Math.max(1, Math.min(500, canvas.width - 16)), fontReady);
+        ctx.globalAlpha = flashMessageAlpha(m, now);
+        const y = Math.max(16, bottom);
+        for (let line = 0; line < m.lines.length; line++) {
+            ctx.strokeText(m.lines[line], x, y + line * 32);
+            ctx.fillText(m.lines[line], x, y + line * 32);
+        }
     }
     ctx.restore();
 }
+
 
 function initWindowManager() {
     const FLASH_W1_BORDER_NONRES = "graphics/ui/window1/images/w1_border_nonres.png";
@@ -9925,10 +9998,9 @@ function updateLogoutWindowText() {
 }
 
 function requestLogoutCancel(fromUser) {
+    if (fromUser && logoutBreakByUser) return;
     logoutBreakByUser = !!fromUser;
-    if (fromUser && typeof addLogEntry === "function") {
-        addLogEntry("Logout cancelled by user.");
-    }
+    if (fromUser) logFlashCombatLocaleMessage("logoutbreak_user");
     if (typeof sendLogoutCancel === "function") {
         sendLogoutCancel();
     }
@@ -9945,9 +10017,7 @@ function handleLogoutCancelFromServer() {
     updateLogoutWindowText();
     minimizeLogoutWindow();
     logoutControlsLocked = false;
-    if (!logoutBreakByUser && typeof addLogEntry === "function") {
-        addLogEntry("Logout cancelled.");
-    }
+    if (!logoutBreakByUser) logFlashCombatLocaleMessage("logoutbreak");
     logoutBreakByUser = false;
 }
 

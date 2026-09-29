@@ -508,11 +508,20 @@ namespace OrbitReborn_Emulator.Game.Handlers
             int id = Message.GetNextInt(2);
             Session sessiontwo = SessionManager.GetSessionByCharacterId(id);
 
+            if (Session == null || Session.CharacterInfo == null || Session.CharacterInfo.Members == null)
+                return;
+            if (!Session.CharacterInfo.Members.Contains(id))
+                return;
+            if (sessiontwo == null || sessiontwo.CharacterInfo == null)
+            {
+                Session.SendData(PacketComposer.Compose("ps", "err|f"));
+                return;
+            }
             if (!Session.CharacterInfo.Members.Contains(sessiontwo.CharacterInfo.Id))
                 return;
             if (Session.CharacterInfo.MapId != sessiontwo.CharacterInfo.MapId)
             {
-                Session.SendData(PacketComposer.Compose("A", "STD| Player is not on this Map!"));
+                Session.SendData(PacketComposer.Compose("ps", "err|f"));
                 return;
             }
             else

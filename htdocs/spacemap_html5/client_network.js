@@ -1121,6 +1121,7 @@ function connectToServer(isReconnect = false) {
         ws = null;
         resetReadyFlags();
         clearFlashStatusEffects();
+        clearIdleFloating();
         dispatchWsEvent("andromeda:ws-close", {
             code: code,
             reason: reason,
@@ -1275,6 +1276,7 @@ const PACKET_HANDLERS = {
     p: handlePacket_portal,
     SMP: handlePacket_SMP,
     P: handlePacket_noAttack,
+    V: handlePacket_V,
     O: handlePacket_O,
     X: handlePacket_X,
     F: handlePacket_F,
@@ -1386,16 +1388,14 @@ function addInstantLogMessage(text, sourceOpcode) {
     const msg = String(text == null ? "" : text);
     if (!msg) return;
     if (typeof addInfoMessage === "function") {
-        addInfoMessage(msg, getInstantLogDurationMs(sourceOpcode));
+        addInfoMessage(msg, getInstantLogDurationMs(sourceOpcode), sourceOpcode === "HP");
     }
 }
 
 function addFlashScreenMessage(text, durationMs) {
     const msg = String(text == null ? "" : text);
     if (!msg) return;
-    if (typeof addInfoMessage === "function") {
-        addInfoMessage(msg, durationMs);
-    }
+    addGlobalNotification(msg);
 }
 
 function resolveFlashDisplayMessage(payloadParts) {
@@ -2397,7 +2397,11 @@ function handlePacket_ps(parts) {
         if (sub === "conn") {
             resetGroup(true);
             pendingGroupInvite = null;
-        } else if (sub === "a" || sub === "f" || sub === "png") {
+        } else if (sub === "a") {
+            logFlashCombatLocaleMessage("msg_grp_attack_impossible");
+        } else if (sub === "f") {
+            logFlashCombatLocaleMessage("label_grp_follow_impossible");
+        } else if (sub === "png") {
             addServerInfoLogMessage("Group action not possible.");
         }
         return;
@@ -2681,6 +2685,7 @@ function handlePacket_N(parts, i) {
 function resetMapState(newMapId) {
     resetReadyFlags();
     clearFlashStatusEffects();
+    clearIdleFloating();
     if (!isNaN(newMapId)) {
         currentMapId = newMapId;
         cfg.mapID = newMapId;
@@ -4730,7 +4735,12 @@ function handlePacket_D(parts, i) {
     setRadiationWarning(radiation);
 }
 
+function handlePacket_V() {
+    logFlashCombatLocaleMessage("attescape");
+}
+
 function handlePacket_noAttack(parts, i) {
+    logFlashCombatLocaleMessage("peacearea");
     lastNoAttackZoneTime = performance.now();
     if (typeof currentLaserTargetId !== "undefined" && currentLaserTargetId != null) {
         sendLaserStop(currentLaserTargetId, true);
@@ -6634,6 +6644,7 @@ function handlePacket_K(parts, i) {
             }
         } catch (_) {}
         clearEntityFlashStatusEffects(heroId);
+        heroIdleFloating = null;
         heroHp = 0;
         heroShield = 0;
         moveTargetX = null;

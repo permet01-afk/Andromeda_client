@@ -1,0 +1,13 @@
+## OrbitReborn## Server output log file## mardi, 29 septembre 2026 20:50:57[20h50s57m80]Initializing Andromeda's Emulator...[20h50s57m82]Configuration value 'debug.sso' missing; using default value.[20h50s57m82]Initializing MySQL manager...[20h50s57m99]Could not initialize Orbit Reborn: Authentication to host '127.0.0.1' for user 'root' using method 'mysql_native_password' failed with message: Access denied for user 'root'@'localhost' (using password: YES)
+   à MySql.Data.MySqlClient.Authentication.MySqlAuthenticationPlugin.AuthenticationFailed(Exception ex)
+   à MySql.Data.MySqlClient.Authentication.MySqlAuthenticationPlugin.ReadPacket()
+   à MySql.Data.MySqlClient.Authentication.MySqlAuthenticationPlugin.Authenticate(Boolean reset)
+   à MySql.Data.MySqlClient.NativeDriver.Open()
+   à MySql.Data.MySqlClient.Driver.Open()
+   à MySql.Data.MySqlClient.Driver.Create(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPool..ctor(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlPoolManager.GetPool(MySqlConnectionStringBuilder settings)
+   à MySql.Data.MySqlClient.MySqlConnection.Open()
+   à OrbitReborn_Emulator.Storage.SqlDatabaseManager.CreateClient(Int32 Id) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseManager.cs:ligne 222
+   à OrbitReborn_Emulator.Storage.SqlDatabaseManager.SetClientAmount(Int32 ClientAmount, String LogReason) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Storage\SqlDatabaseManager.cs:ligne 128
+   à OrbitReborn_Emulator.Program.Main(String[] args) dans C:\Users\the_k\OneDrive\Desktop\Git upload\Andromeda_client\Andromeda-emu source\Program.cs:ligne 75[20h50s57m99]Cannot proceed; press any key to stop the server.

@@ -237,8 +237,87 @@ function getClanTagColor(clanDiplomacy) {
     }
 }
 
+// Flash MapObject.whip: shared 25 ms clock, visual state owned by each ship.
+// HTML5 has no qualityShip setting: its existing sprite renderer maps to HIGH.
+let heroIdleFloating = null;
+let idleFloatingLastTime = null;
+let idleFloatingRemainder = 0;
+
+function createIdleFloatingState(x, y, shipId) {
+    return { phase: Math.floor(Math.random() * 10001) * .1, offsetY: 0,
+        lastX: x, lastY: y, movingCnt: 0, shipId: shipId };
+}
+
+function stepIdleFloating(state, x, y, ticks) {
+    if (x !== state.lastX || y !== state.lastY) {
+        state.lastX = x;
+        state.lastY = y;
+        state.offsetY = 0;
+        // Refill on actual coordinate changes (not speed). Three logical ticks
+        // avoid a render-rate-dependent counter at 30/60/120/144 Hz.
+        state.movingCnt = 3;
+    }
+    for (let tick = 0; tick < ticks; tick++) {
+        if (state.movingCnt > 0) {
+            state.offsetY = 0;
+            state.movingCnt--;
+        } else {
+            state.offsetY += .15 * Math.cos(state.phase);
+            state.phase += .05;
+            if (state.phase > 1000) {
+                state.phase = 0;
+                state.offsetY = 0;
+            }
+        }
+    }
+}
+
+function isShipIdleFloatingEligible(shipId) {
+    // Fail closed until game.xml supplies BOTH the ship and engine positions.
+    return SHIP_IDLE_ELIGIBLE_FROM_XML !== null && SHIP_IDLE_ELIGIBLE_FROM_XML[shipId] === true;
+}
+
+function resetIdleFloatingClock() {
+    idleFloatingLastTime = null;
+    idleFloatingRemainder = 0;
+}
+
+function clearIdleFloating() {
+    heroIdleFloating = null;
+    resetIdleFloatingClock();
+    for (const id in entities) entities[id]._idleFloating = null;
+}
+
+function updateIdleFloating(now) {
+    if (!window.__ANDRO_WS_CONNECTED) return;
+    let elapsed = idleFloatingLastTime === null ? 0 : now - idleFloatingLastTime;
+    idleFloatingLastTime = now;
+    if (document.hidden || !Number.isFinite(elapsed) || elapsed < 0 || elapsed > 250) {
+        elapsed = 0;
+        idleFloatingRemainder = 0;
+    }
+    idleFloatingRemainder += elapsed;
+    const ticks = Math.floor((idleFloatingRemainder + 1e-7) / 25);
+    idleFloatingRemainder = Math.max(0, idleFloatingRemainder - ticks * 25);
+    if (heroHp > 0 && isShipIdleFloatingEligible(heroShipId)) {
+        if (!heroIdleFloating || heroIdleFloating.shipId !== heroShipId)
+            heroIdleFloating = createIdleFloatingState(shipX, shipY, heroShipId);
+        stepIdleFloating(heroIdleFloating, shipX, shipY, ticks);
+    } else heroIdleFloating = null;
+    for (const id in entities) {
+        const e = entities[id];
+        if ((e.kind !== "player" && e.kind !== "npc") || e.id === heroId || e.hp === 0 || !isShipIdleFloatingEligible(e.shipId)) {
+            e._idleFloating = null;
+            continue;
+        }
+        if (!e._idleFloating || e._idleFloating.shipId !== e.shipId)
+            e._idleFloating = createIdleFloatingState(e.x, e.y, e.shipId);
+        stepIdleFloating(e._idleFloating, e.x, e.y, ticks);
+    }
+}
+
 function getHeroIdleOffset() {
-    return 0;
+    return heroIdleFloating ? heroIdleFloating.offsetY : 0;
 }
 
 const AUTO_NAMEPLATE_OFFSET = 15;
@@ -2770,8 +2849,7 @@ function drawShieldTwinkles() {
     const entityScale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
     const shipScreenX = mapToScreenX(shipX);
     const syBase = mapToScreenY(shipY);
-    const bobOffset = typeof getHeroIdleOffset === "function" ? getHeroIdleOffset() : 0;
-    const sy = syBase + bobOffset;
+    const sy = syBase;
     let shiftX = 0;
     let shiftY = 0;
     let shipW = 20 * entityScale;

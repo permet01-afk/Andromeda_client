@@ -140,6 +140,7 @@ function render(now) {
     if (typeof beginEntitySnapshotFrame === "function") beginEntitySnapshotFrame();
     try {
         updateGameLogic(now);
+        updateIdleFloating(now);
         updateVisualEffectsOncePerFrame(now);
         const worldScale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
         const mapScale = typeof getMapViewScaleValue === "function" ? getMapViewScaleValue() : 1;
@@ -235,6 +236,7 @@ function stopBackgroundLogicLoop() {
 }
 
 document.addEventListener("visibilitychange", () => {
+    resetIdleFloatingClock();
     if (document.hidden) startBackgroundLogicLoop(); else stopBackgroundLogicLoop();
 });
 
