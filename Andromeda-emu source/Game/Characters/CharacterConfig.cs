@@ -4,6 +4,8 @@ namespace OrbitReborn_Emulator.Game.Characters
 {
   public class CharacterConfig
   {
+    public EquipmentSnapshot Equipment { get; internal set; } = EquipmentSnapshot.Empty;
+
     private int mShield;
     private int mMaxShield;
     private int mShipSpeed;

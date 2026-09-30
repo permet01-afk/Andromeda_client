@@ -11,6 +11,7 @@ using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Game.Titles;
 using OrbitReborn_Emulator.Game.Techs;
+using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
 using System;
@@ -3363,7 +3364,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (referenceObject == null || referenceObject.IsDestroying)
                     return;
 
-                Fight.AttackNpc(instanceByMapId, Session, referenceObject, Session.CharacterInfo.SelectedAmmo, false);
+                Fight.AttackNpc(instanceByMapId, Session, referenceObject, 0, false);
             }
             else if (Session.CharacterInfo.MapId == 80 && Survivor.Active && Survivor.SafeBattle)
             {
@@ -3381,7 +3382,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 else if (sessionByCharacterId.CharacterInfo.PeaceZone)
                     return;
                 else
-                    Fight.AttackPlayer(instanceByMapId, Session, sessionByCharacterId, Session.CharacterInfo.SelectedAmmo, false);
+                    Fight.AttackPlayer(instanceByMapId, Session, sessionByCharacterId, 0, false);
             }
         }
 
@@ -3426,7 +3427,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                             return;
                         }
 
-                        Fight.AttackNpc(instanceByMapId, Session, referenceObject, Session.CharacterInfo.SelectedAmmo);
+                        Fight.AttackNpcCore(instanceByMapId, Session, referenceObject, 0);
                     }
                     else if (Session.CharacterInfo.MapId == 80 && Survivor.Active && Survivor.SafeBattle)
                     {
@@ -3449,7 +3450,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         }
                         else
                         {
-                            Fight.AttackPlayer(instanceByMapId, Session, sessionByCharacterId, Session.CharacterInfo.SelectedAmmo);
+                            Fight.AttackPlayerCore(instanceByMapId, Session, sessionByCharacterId, 0);
                         }
                     }
                 }
@@ -3484,10 +3485,29 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void AttackNpc(MapInstance Instance, Session Session, Npc Npc, int Ammo, bool damage = true)
         {
+            // Immediate RSB shares the timer's admission guard; the timer calls Core while holding it.
+            if (Session == null || Session.CharacterInfo == null) return;
+            if (damage && !Session.CharacterInfo.TryEnterLaserAttackTick()) return;
+            try { AttackNpcCore(Instance, Session, Npc, Ammo, damage); }
+            finally { if (damage) Session.CharacterInfo.ExitLaserAttackTick(); }
+        }
+
+        private static void AttackNpcCore(MapInstance Instance, Session Session, Npc Npc, int Ammo, bool damage = true)
+        {
             if (Session == null || Session.CharacterInfo == null || Npc == null || !CanSessionAttackNpc(Session, Npc))
             {
                 if (Session != null)
                     Fight.StopLaser(Session, null, false);
+                return;
+            }
+
+            LaserVolleySnapshot volley = Session.CharacterInfo.CaptureLaserVolley(Ammo);
+            Ammo = volley.AmmoId;
+            if (volley.LaserCount <= 0)
+            {
+                Fight.StopLaser(Session, null, false);
+                if (damage)
+                    Session.SendData(PacketComposer.Compose("A", "STD|Your ship doesn't have any laser cannons. That's why you can't attack."));
                 return;
             }
 
@@ -3509,7 +3529,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     if (Ammo == 6 && !Fight.IsRsbReady(Session))
                         return;
 
-                    if (!Session.CharacterInfo.TryConsumeLaserAmmo(Ammo))
+                    if (!Session.CharacterInfo.TryConsumeLaserAmmo(volley))
                     {
                         Fight.StopLaser(Session, null, false);
 
@@ -3532,7 +3552,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                     SendNpcScopedMessage(Instance, Npc, PacketComposer.Compose(
                         "a",
-                        Session.CharacterId.ToString() + "|" + (object)Npc.Id + "|" + (object)Fight.GetAmmoType(Ammo) + "|" + (object)Npc.ShieldMechanics + "|" + (object)Session.CharacterInfo.FatLasers
+                        Session.CharacterId.ToString() + "|" + (object)Npc.Id + "|" + (object)volley.VisualLaserType + "|" + (object)Npc.ShieldMechanics + "|" + (object)volley.SkilledLaser
                     ), Session);
                 }
 
@@ -3541,7 +3561,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 if (damage && !missed)
                 {
-                    Fight.DoDamageNpc(Instance, Session, Npc, Ammo);
+                    Fight.DoDamageNpc(Instance, Session, Npc, volley);
                     if (Ammo == 6)
                         Fight.StartRsbCooldown(Session);
                 }
@@ -3577,16 +3597,17 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        private static void DoDamageNpc(MapInstance Instance, Session Session, Npc Npc, int Ammo)
+        private static void DoDamageNpc(MapInstance Instance, Session Session, Npc Npc, LaserVolleySnapshot volley)
         {
+            int Ammo = volley.AmmoId;
             if (Npc == null)
                 return;
             if (!CanSessionAttackNpc(Session, Npc))
                 return;
 
-            double multiplier = Fight.GetMultiplier(Ammo, Session.CharacterInfo.ApisBuilt);
+            double multiplier = Fight.GetMultiplier(Ammo, volley.ApisBuilt);
 
-            int baseDamage = Convert.ToInt32((double)Session.CharacterInfo.MaxDamage * multiplier * Session.CharacterInfo.MultiplierAgainstNpcs);
+            int baseDamage = Convert.ToInt32((double)volley.MaxDamage * multiplier * volley.NpcMultiplier);
             int spread = Math.Max(1, (int)Math.Round(baseDamage * 0.10));
             int num1 = Session.CharacterInfo.RandomDamage.Next(-spread, spread + 1);
             int num2 = baseDamage + num1;
@@ -3613,7 +3634,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             if (Npc.ShipId == 442)
             {
-                if (Session.CharacterInfo.SelectedAmmo == 5)
+                if (Ammo == 5)
                     return;
 
                 Spaceball.DoDamage(num2, Session.CharacterInfo.FactionId);
@@ -3722,8 +3743,27 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void AttackPlayer(MapInstance Instance, Session Session, Session Ennemy, int Ammo, bool damage = true)
         {
+            // Same guard as NPC attacks, including immediate RSB requests.
+            if (Session == null || Session.CharacterInfo == null) return;
+            if (damage && !Session.CharacterInfo.TryEnterLaserAttackTick()) return;
+            try { AttackPlayerCore(Instance, Session, Ennemy, Ammo, damage); }
+            finally { if (damage) Session.CharacterInfo.ExitLaserAttackTick(); }
+        }
+
+        private static void AttackPlayerCore(MapInstance Instance, Session Session, Session Ennemy, int Ammo, bool damage = true)
+        {
             if (!PlayerCanAttack(Session, Ennemy))
                 return;
+
+            LaserVolleySnapshot volley = Session.CharacterInfo.CaptureLaserVolley(Ammo);
+            Ammo = volley.AmmoId;
+            if (volley.LaserCount <= 0)
+            {
+                Fight.StopLaser(Session, Ennemy, false);
+                if (damage)
+                    Session.SendData(PacketComposer.Compose("A", "STD|Your ship doesn't have any laser cannons. That's why you can't attack."));
+                return;
+            }
 
             double distance = Fight.GetDistance(Session, Ennemy);
 
@@ -3740,7 +3780,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     if (Ammo == 6 && !Fight.IsRsbReady(Session))
                         return;
 
-                    if (!Session.CharacterInfo.TryConsumeLaserAmmo(Ammo))
+                    if (!Session.CharacterInfo.TryConsumeLaserAmmo(volley))
                     {
                         Fight.StopLaser(Session, Ennemy, false);
 
@@ -3761,7 +3801,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                     SendPlayerScopedCombatMessage(Instance, Session, Ennemy, PacketComposer.Compose(
                         "a",
-                        Session.CharacterId.ToString() + "|" + (object)Ennemy.CharacterId + "|" + (object)Fight.GetAmmoType(Ammo) + "|" + (object)Ennemy.CharacterInfo.ShieldMechanics + "|" + (object)Session.CharacterInfo.FatLasers
+                        Session.CharacterId.ToString() + "|" + (object)Ennemy.CharacterId + "|" + (object)volley.VisualLaserType + "|" + (object)Ennemy.CharacterInfo.ShieldMechanics + "|" + (object)volley.SkilledLaser
                     ));
                 }
 
@@ -3772,7 +3812,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 if (damage && !missed)
                 {
-                    Fight.DoDamage(Instance, Session, Ennemy, Ammo);
+                    Fight.DoDamage(Instance, Session, Ennemy, volley);
                     if (Ammo == 6)
                         Fight.StartRsbCooldown(Session);
                 }
@@ -3816,8 +3856,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        private static void DoDamage(MapInstance Instance, Session Session, Session Ennemy, int Ammo)
+        private static void DoDamage(MapInstance Instance, Session Session, Session Ennemy, LaserVolleySnapshot volley)
         {
+            int Ammo = volley.AmmoId;
             if (Instance == null
                 || (Session == null || Session.CharacterInfo == null)
                 || (Ennemy == null || Ennemy.CharacterInfo == null || Ennemy.CharacterInfo.ActiveISH))
@@ -3825,9 +3866,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            double multiplier = Fight.GetMultiplier(Ammo, Session.CharacterInfo.ApisBuilt);
+            double multiplier = Fight.GetMultiplier(Ammo, volley.ApisBuilt);
 
-            int baseDamage = Convert.ToInt32((double)Session.CharacterInfo.MaxDamage * multiplier * Session.CharacterInfo.MultiplierAgainstPlayers);
+            int baseDamage = Convert.ToInt32((double)volley.MaxDamage * multiplier * volley.PlayerMultiplier);
             int spread = Math.Max(1, (int)Math.Round(baseDamage * 0.10));
             int num1 = Session.CharacterInfo.RandomDamage.Next(-spread, spread + 1);
             int num2 = baseDamage + num1;
@@ -4224,39 +4265,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Ennemy.CharacterInfo.Attacked.Remove(Session);
             }
         }
-
-        private static int GetAmmoType(int _SelectedAmmo)
-        {
-            int num;
-
-            switch (_SelectedAmmo)
-            {
-                case 1:
-                    num = 1;
-                    break;
-                case 2:
-                    num = 1;
-                    break;
-                case 3:
-                    num = 2;
-                    break;
-                case 4:
-                    num = 3;
-                    break;
-                case 5:
-                    num = 4;
-                    break;
-                case 6:
-                    num = 6;
-                    break;
-                default:
-                    num = 1;
-                    break;
-            }
-
-            return num;
-        }
-
 
         private static int CalculatePlayerCargoLossAmount(int cargoAmount)
         {

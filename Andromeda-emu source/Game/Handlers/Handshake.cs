@@ -347,26 +347,25 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (s == null || s.CharacterInfo == null || !s.Authenticated || s.Stopped)
                     return;
 
+                if (!s.CharacterInfo.TryEnterWebsiteConfigRefresh()) return;
+
                 perfUserId = s.CharacterId;
                 perfActive = true;
                 using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("ConfigRefreshTick"))
                 {
-                    int dbActiveConfig;
-
-                    if (!s.CharacterInfo.HasPendingWebsiteConfigRefresh(client, out dbActiveConfig))
-                        return;
-
-                    s.CharacterInfo.RefreshUserData(client);
-
-                    if (dbActiveConfig == 1 || dbActiveConfig == 2)
-                        s.CharacterInfo.ActiveConfig = dbActiveConfig;
-
-                    SelectAction.SendConfigurationRefresh(s, true, true);
-
-                    s.SendData(PacketComposer.Compose("B", s.CharacterInfo.GetPrimaryWeaponInfoPayload()));
-                    s.SendData(PacketComposer.Compose("3", s.CharacterInfo.GetSecondaryWeaponInfoPayload()));
-
-                    s.CharacterInfo.ClearPendingWebsiteConfigRefreshFlag(client);
+                    if (!s.CharacterInfo.TryClaimWebsiteConfigRefresh(client)) return;
+                    try
+                    {
+                        s.CharacterInfo.RefreshUserDataPreservingRuntime(client, false);
+                        SelectAction.SendConfigurationRefresh(s, true, true);
+                        s.SendData(PacketComposer.Compose("B", s.CharacterInfo.GetPrimaryWeaponInfoPayload()));
+                        s.SendData(PacketComposer.Compose("3", s.CharacterInfo.GetSecondaryWeaponInfoPayload()));
+                    }
+                    catch
+                    {
+                        s.CharacterInfo.RetryWebsiteConfigRefresh(client);
+                        throw;
+                    }
                 }
             }
             catch (Exception ex)
@@ -376,7 +375,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             finally
             {
                 if (perfActive)
+                {
+                    ((Session)state).CharacterInfo.ExitWebsiteConfigRefresh();
                     PerformanceProfiler.LogTimer("ConfigRefreshTick", perfUserId, perfStart);
+                }
             }
         }
 

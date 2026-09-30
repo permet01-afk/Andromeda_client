@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Communication;
+﻿using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
 using OrbitReborn_Emulator.Game.Laboratory;
@@ -193,6 +193,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         private int mFightUntilDb = 0;
         private readonly object mFightUntilDbSyncLock = new object();
         private readonly object mPrimaryAmmoSyncLock = new object();
+        private readonly object mPrimaryAmmoFlushLock = new object();
         private bool mPrimaryAmmoDirty;
         private long mDbAmmoLcb10;
         private long mDbAmmoMcb25;
@@ -215,6 +216,9 @@ namespace OrbitReborn_Emulator.Game.Characters
         private int mAmmoSyncClientUpdatePending;
         private int mLaserAttackTickGuard;
         private bool mOutOfRange;
+        private readonly object mEquipmentSnapshotLock = new object();
+        private int mWebsiteConfigRefreshGuard;
+
         private int mActiveConfig;
         private int mTmpActiveConfig;
         private bool mWarningZone;
@@ -1090,7 +1094,8 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
             set
             {
-                this.mSelectedAmmo = value;
+                lock (this.mEquipmentSnapshotLock)
+                    this.mSelectedAmmo = value;
             }
         }
 
@@ -1329,7 +1334,8 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
             set
             {
-                this.mActiveConfig = value;
+                lock (this.mEquipmentSnapshotLock)
+                    this.mActiveConfig = value == 2 ? 2 : 1;
                 this.UpdateCargoMaxForCurrentConfig();
             }
         }
@@ -3262,38 +3268,53 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        public void RefreshUserDataPreservingRuntime(SqlDatabaseClient MySqlClient)
+        public void RefreshUserDataPreservingRuntime(SqlDatabaseClient MySqlClient, bool preserveActiveConfig = true)
         {
-            int oldHp = this.ShipHp;
-            int oldShield1 = this.Config1.Shield;
-            int oldShield2 = this.Config2.Shield;
-            int oldActiveConfig = this.ActiveConfig == 2 ? 2 : 1;
-            int oldMapId = this.MapId;
-            int oldLocX = this.LocX;
-            int oldLocY = this.LocY;
-            int oldNewLocX = this.NewLocX;
-            int oldNewLocY = this.NewLocY;
-            int oldOldLocX = this.OldLocX;
-            int oldOldLocY = this.OldLocY;
+            lock (this.mEquipmentSnapshotLock)
+            {
+                int oldHp = this.ShipHp;
+                int oldShield1 = this.Config1.Shield;
+                int oldShield2 = this.Config2.Shield;
+                int oldActiveConfig = this.ActiveConfig == 2 ? 2 : 1;
+                int oldMapId = this.MapId;
+                int oldLocX = this.LocX;
+                int oldLocY = this.LocY;
+                int oldNewLocX = this.NewLocX;
+                int oldNewLocY = this.NewLocY;
+                int oldOldLocX = this.OldLocX;
+                int oldOldLocY = this.OldLocY;
 
-            this.RefreshUserData(MySqlClient);
+                this.RefreshUserData(MySqlClient);
 
-            this.ActiveConfig = oldActiveConfig;
-            this.MapId = oldMapId;
-            this.LocX = oldLocX;
-            this.LocY = oldLocY;
-            this.NewLocX = oldNewLocX;
-            this.NewLocY = oldNewLocY;
-            this.OldLocX = oldOldLocX;
-            this.OldLocY = oldOldLocY;
-            this.ShipHp = ClampRuntimeValue(oldHp, 0, this.ShipOverhealMaxHp);
-            this.Config1.Shield = ClampRuntimeValue(oldShield1, 0, this.Config1.MaxShield);
-            this.Config2.Shield = ClampRuntimeValue(oldShield2, 0, this.Config2.MaxShield);
+                if (preserveActiveConfig) this.ActiveConfig = oldActiveConfig;
+                this.MapId = oldMapId;
+                this.LocX = oldLocX;
+                this.LocY = oldLocY;
+                this.NewLocX = oldNewLocX;
+                this.NewLocY = oldNewLocY;
+                this.OldLocX = oldOldLocX;
+                this.OldLocY = oldOldLocY;
+                this.ShipHp = ClampRuntimeValue(oldHp, 0, this.ShipOverhealMaxHp);
+                this.Config1.Shield = ClampRuntimeValue(oldShield1, 0, this.Config1.MaxShield);
+                this.Config2.Shield = ClampRuntimeValue(oldShield2, 0, this.Config2.MaxShield);
 
-            this.SynchronizeStatistics(MySqlClient, 1);
+                // A website refresh must not write its older active_config over a newer web save.
+                if (preserveActiveConfig) this.SynchronizeStatistics(MySqlClient, 1);
+            }
         }
 
         public void RefreshUserData(SqlDatabaseClient MySqlClient)
+        {
+            lock (this.mEquipmentSnapshotLock)
+            lock (this.mPrimaryAmmoFlushLock)
+            {
+                this.mConfig1.Equipment = EquipmentSnapshot.Empty;
+                this.mConfig2.Equipment = EquipmentSnapshot.Empty;
+                this.RefreshUserDataCore(MySqlClient);
+            }
+        }
+
+        private void RefreshUserDataCore(SqlDatabaseClient MySqlClient)
         {
             CharacterInfo.EnsureRuntimeStateColumns(MySqlClient);
             MySqlClient.ClearParameters();
@@ -3579,13 +3600,28 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("pid", (object)this.mId);
             MySqlClient.SetParameter("sid", (object)this.mShipId);
 
+            EquipmentSnapshot equipmentA = EquipmentSnapshot.Empty;
+            EquipmentSnapshot equipmentB = EquipmentSnapshot.Empty;
             DataTable cfgTable = MySqlClient.ExecuteQueryTable(
-                "SELECT scs.config, scs.damage_total, scs.shield_total, scs.speed_total " +
-                "FROM ship_config_stats scs " +
-                "INNER JOIN ship_config sc ON scs.ship_config_id = sc.id " +
-                "WHERE sc.player_id = @pid AND sc.ship_design_id = @sid"
+                "SELECT sc.name AS config, sc.lasers_slots AS laser_capacity, scs.damage_total, scs.shield_total, scs.speed_total, " +
+                "sl.ship_count, sl.ship_lf1, sl.ship_mp1, sl.ship_lf2, sl.ship_lf3, " +
+                "dl.drone_count, dl.drone_lf1, dl.drone_mp1, dl.drone_lf2, dl.drone_lf3 " +
+                "FROM ship_config sc LEFT JOIN ship_config_stats scs ON scs.ship_config_id = sc.id " +
+                "LEFT JOIN (SELECT ss.ship_config_id, COUNT(*) AS ship_count, " +
+                "SUM(ss.item_id=10) AS ship_lf1, SUM(ss.item_id=11) AS ship_mp1, SUM(ss.item_id=12) AS ship_lf2, SUM(ss.item_id=1) AS ship_lf3 " +
+                "FROM ship_slot ss INNER JOIN ship_config owner ON owner.id=ss.ship_config_id " +
+                "INNER JOIN items i ON i.id=ss.item_id AND i.category='laser' " +
+                "WHERE owner.player_id=@pid AND owner.ship_design_id=@sid AND ss.row_name='lasers' " +
+                "GROUP BY ss.ship_config_id) sl ON sl.ship_config_id=sc.id " +
+                "LEFT JOIN (SELECT ds.config, COUNT(*) AS drone_count, " +
+                "SUM(ds.item_id=10) AS drone_lf1, SUM(ds.item_id=11) AS drone_mp1, SUM(ds.item_id=12) AS drone_lf2, SUM(ds.item_id=1) AS drone_lf3 " +
+                "FROM drone_slot_config ds INNER JOIN drone d ON d.id=ds.drone_id " +
+                "INNER JOIN items i ON i.id=ds.item_id AND i.category='laser' " +
+                "WHERE d.player_id=@pid GROUP BY ds.config) dl ON dl.config=sc.name " +
+                "WHERE sc.player_id=@pid AND sc.ship_design_id=@sid"
             );
-
+            if (cfgTable == null)
+                throw new InvalidOperationException("Could not load the equipment snapshot.");
 
             if (cfgTable != null)
             {
@@ -3600,6 +3636,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
                     if (cfgName == "A")
                     {
+                        equipmentA = EquipmentSnapshot.FromRow(r);
                         this.mConfig1.MaxDamage = dmgCfg;
                         this.mConfig1.MaxShield = shdCfg;
                         this.mConfig1.Shield = shdCfg;
@@ -3607,6 +3644,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                     }
                     else if (cfgName == "B")
                     {
+                        equipmentB = EquipmentSnapshot.FromRow(r);
                         this.mConfig2.MaxDamage = dmgCfg;
                         this.mConfig2.MaxShield = shdCfg;
                         this.mConfig2.Shield = shdCfg;
@@ -3865,6 +3903,8 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.Members.Clear();
             this.InvitationSend.Clear();
             this.InvitationReceive.Clear();
+            this.mConfig1.Equipment = equipmentA;
+            this.mConfig2.Equipment = equipmentB;
         }
 
 
@@ -5656,6 +5696,14 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool FlushPendingPrimaryAmmoToDb()
         {
+            // Timer, stop-combat and logout must not persist the same delta twice.
+            // Keep the short stock lock separate: shots may continue during database I/O.
+            lock (this.mPrimaryAmmoFlushLock)
+                return this.FlushPendingPrimaryAmmoToDbCore();
+        }
+
+        private bool FlushPendingPrimaryAmmoToDbCore()
+        {
             long ammoLcb10;
             long ammoMcb25;
             long ammoMcb50;
@@ -5699,7 +5747,9 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (consumeLcb10 <= 0L && consumeMcb25 <= 0L && consumeMcb50 <= 0L && consumeUcb100 <= 0L && consumeSab50 <= 0L && consumeRsb75 <= 0L)
             {
                 lock (this.mPrimaryAmmoSyncLock)
-                    this.mPrimaryAmmoDirty = false;
+                    this.mPrimaryAmmoDirty = this.AmmoLcb10 != ammoLcb10 || this.AmmoMcb25 != ammoMcb25
+                        || this.AmmoMcb50 != ammoMcb50 || this.AmmoUcb100 != ammoUcb100
+                        || this.AmmoSab50 != ammoSab50 || this.AmmoRsb75 != ammoRsb75;
                 return false;
             }
 
@@ -5714,9 +5764,22 @@ namespace OrbitReborn_Emulator.Game.Characters
                 client.SetParameter("consume_ucb100", (object)consumeUcb100);
                 client.SetParameter("consume_sab50", (object)consumeSab50);
                 client.SetParameter("consume_rsb75", (object)consumeRsb75);
-                client.ExecuteNonQuery(
+                int changed = client.ExecuteNonQuery(
                     "UPDATE users SET ammo_lcb10=IF(ammo_lcb10 > @consume_lcb10, ammo_lcb10 - @consume_lcb10, 0), ammo_mcb25=IF(ammo_mcb25 > @consume_mcb25, ammo_mcb25 - @consume_mcb25, 0), ammo_mcb50=IF(ammo_mcb50 > @consume_mcb50, ammo_mcb50 - @consume_mcb50, 0), ammo_ucb100=IF(ammo_ucb100 > @consume_ucb100, ammo_ucb100 - @consume_ucb100, 0), ammo_sab50=IF(ammo_sab50 > @consume_sab50, ammo_sab50 - @consume_sab50, 0), ammo_rsb75=IF(ammo_rsb75 > @consume_rsb75, ammo_rsb75 - @consume_rsb75, 0) WHERE id=@id LIMIT 1"
                 );
+                if (changed != 1)
+                    throw new InvalidOperationException("Could not persist the primary ammo delta.");
+
+                // The debit is acknowledged. A failed following SELECT must not replay it.
+                lock (this.mPrimaryAmmoSyncLock)
+                {
+                    this.mDbAmmoLcb10 = ammoLcb10;
+                    this.mDbAmmoMcb25 = ammoMcb25;
+                    this.mDbAmmoMcb50 = ammoMcb50;
+                    this.mDbAmmoUcb100 = ammoUcb100;
+                    this.mDbAmmoSab50 = ammoSab50;
+                    this.mDbAmmoRsb75 = ammoRsb75;
+                }
 
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
@@ -6027,11 +6090,25 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        public bool TryConsumeLaserAmmo(int ammoId)
+        public LaserVolleySnapshot CaptureLaserVolley(int ammoOverride = 0)
         {
-            int lasersCount = 18;
+            lock (this.mEquipmentSnapshotLock)
+            {
+                int active = this.mActiveConfig == 2 ? 2 : 1;
+                CharacterConfig config = active == 2 ? this.mConfig2 : this.mConfig1;
+                return new LaserVolleySnapshot(active, ammoOverride == 0 ? this.mSelectedAmmo : ammoOverride,
+                    config.Equipment, config.MaxDamage, this.MultiplierAgainstNpcs, this.MultiplierAgainstPlayers,
+                    this.FatLasers, this.ApisBuilt);
+            }
+        }
 
-            switch (ammoId)
+        public bool TryConsumeLaserAmmo(LaserVolleySnapshot volley)
+        {
+            int lasersCount = volley.LaserCount;
+            // Andromeda V1: no partial volley, no free shot when equipment is empty.
+            if (lasersCount <= 0) return false;
+
+            switch (volley.AmmoId)
             {
                 case 1: return this.TryConsumePrimaryLaserColumn(ref this.AmmoLcb10, lasersCount);
                 case 2: return this.TryConsumePrimaryLaserColumn(ref this.AmmoMcb25, lasersCount);
@@ -6086,6 +6163,12 @@ namespace OrbitReborn_Emulator.Game.Characters
 
 
         public bool RefreshQuestRewardData()
+        {
+            lock (this.mPrimaryAmmoFlushLock)
+                return this.RefreshQuestRewardDataCore();
+        }
+
+        private bool RefreshQuestRewardDataCore()
         {
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
@@ -6168,6 +6251,12 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool RefreshAmmoFromDbIfHigher()
         {
+            lock (this.mPrimaryAmmoFlushLock)
+                return this.RefreshAmmoFromDbIfHigherCore();
+        }
+
+        private bool RefreshAmmoFromDbIfHigherCore()
+        {
             long perfStart = PerformanceProfiler.Start();
             try
             {
@@ -6236,62 +6325,35 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        public bool HasPendingWebsiteConfigRefresh(SqlDatabaseClient client, out int activeConfig)
+        public bool TryEnterWebsiteConfigRefresh()
         {
-            long perfStart = PerformanceProfiler.Start();
-            activeConfig = this.ActiveConfig;
-
-            try
-            {
-                if (client == null)
-                    return false;
-
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-
-                DataRow row = client.ExecuteQueryRow(
-                    "SELECT config_refresh_pending, active_config, shipid FROM users WHERE id=@id LIMIT 1"
-                );
-
-                if (row == null)
-                    return false;
-
-                int pending = 0;
-                if (row.Table.Columns.Contains("config_refresh_pending") && row["config_refresh_pending"] != DBNull.Value)
-                    pending = Convert.ToInt32(row["config_refresh_pending"]);
-
-                if (row.Table.Columns.Contains("active_config") && row["active_config"] != DBNull.Value)
-                    activeConfig = Convert.ToInt32(row["active_config"]);
-
-                return pending > 0;
-            }
-            catch
-            {
-                return false;
-            }
-            finally
-            {
-                PerformanceProfiler.LogTimer("HasPendingWebsiteConfigRefresh", this.mId, perfStart);
-            }
+            return Interlocked.CompareExchange(ref this.mWebsiteConfigRefreshGuard, 1, 0) == 0;
         }
 
-        public void ClearPendingWebsiteConfigRefreshFlag(SqlDatabaseClient client)
+        public void ExitWebsiteConfigRefresh()
         {
-            if (client == null)
-                return;
-
-            try
-            {
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE users SET config_refresh_pending = 0 WHERE id=@id LIMIT 1");
-            }
-            catch
-            {
-            }
+            Interlocked.Exchange(ref this.mWebsiteConfigRefreshGuard, 0);
         }
 
+        public bool TryClaimWebsiteConfigRefresh(SqlDatabaseClient client)
+        {
+            client.ClearParameters();
+            client.SetParameter("id", this.mId);
+            DataRow row = client.ExecuteQueryRow("SELECT config_refresh_pending FROM users WHERE id=@id LIMIT 1");
+            if (row == null || Convert.ToInt32(row["config_refresh_pending"]) == 0) return false;
+            client.SetParameter("id", this.mId);
+            int changed = client.ExecuteNonQuery("UPDATE users SET config_refresh_pending=0 WHERE id=@id AND config_refresh_pending>0 LIMIT 1");
+            if (changed < 0) throw new InvalidOperationException("Could not claim equipment refresh.");
+            return changed == 1;
+        }
 
+        public void RetryWebsiteConfigRefresh(SqlDatabaseClient client)
+        {
+            client.ClearParameters();
+            client.SetParameter("id", this.mId);
+            if (client.ExecuteNonQuery("UPDATE users SET config_refresh_pending=1 WHERE id=@id LIMIT 1") < 0)
+                throw new InvalidOperationException("Could not retry equipment refresh.");
+        }
 
 
         public bool HasAutoRocketCpu
