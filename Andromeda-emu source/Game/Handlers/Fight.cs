@@ -3894,11 +3894,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
 
 
-            if (num2 > 45000)
-            {
-                Output.WriteLine((object)"Hacker have damage !");
-            }
-            else
             {
                 if (Ammo == 5)
                 {
