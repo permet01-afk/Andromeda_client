@@ -1,0 +1,17 @@
+# Local Visual Studio state and intermediate compiler output.
+/Andromeda-emu source/.vs/
+/Andromeda-emu source/obj/
+/Andromeda-emu source/*.user
+/Andromeda-emu source/*.suo
+/Andromeda-emu source/*.pdb
+
+# Compiled binaries and runtime logs. Keep the manually maintained runtime files:
+# the project does not generate/copy data, language files or legacy settings.ini.
+/Andromeda-emu source/bin/**
+!/Andromeda-emu source/bin/*/
+!/Andromeda-emu source/bin/*/data/
+!/Andromeda-emu source/bin/*/data/crossdomain.xml
+!/Andromeda-emu source/bin/*/data/server-main.cfg
+!/Andromeda-emu source/bin/*/lang/
+!/Andromeda-emu source/bin/*/lang/*.lang
+!/Andromeda-emu source/bin/*/settings.ini
