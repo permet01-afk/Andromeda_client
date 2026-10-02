@@ -3552,7 +3552,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                     SendNpcScopedMessage(Instance, Npc, PacketComposer.Compose(
                         "a",
-                        Session.CharacterId.ToString() + "|" + (object)Npc.Id + "|" + (object)volley.VisualLaserType + "|" + (object)Npc.ShieldMechanics + "|" + (object)volley.SkilledLaser
+                        Session.CharacterId.ToString() + "|" + (object)Npc.Id + "|" + (object)volley.VisualLaserType + "|" + (object)Npc.ShieldMechanics + "|" + (object)volley.SkilledLaser + "|" + volley.ExpansionStage
                     ), Session);
                 }
 
@@ -3801,7 +3801,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                     SendPlayerScopedCombatMessage(Instance, Session, Ennemy, PacketComposer.Compose(
                         "a",
-                        Session.CharacterId.ToString() + "|" + (object)Ennemy.CharacterId + "|" + (object)volley.VisualLaserType + "|" + (object)Ennemy.CharacterInfo.ShieldMechanics + "|" + (object)volley.SkilledLaser
+                        Session.CharacterId.ToString() + "|" + (object)Ennemy.CharacterId + "|" + (object)volley.VisualLaserType + "|" + (object)Ennemy.CharacterInfo.ShieldMechanics + "|" + (object)volley.SkilledLaser + "|" + volley.ExpansionStage
                     ));
                 }
 

@@ -27,7 +27,7 @@ namespace OrbitReborn_Emulator.Communication.Outgoing
             serverMessage.Append(Session.CharacterInfo.ClanId);
             serverMessage.Append("10000");
             serverMessage.Append("100");
-            serverMessage.Append("4");
+            serverMessage.Append(Session.CharacterInfo.ExpansionStage);
             serverMessage.Append("1");
             serverMessage.Append(Session.CharacterInfo.Experience.ToString());
             serverMessage.Append(Session.CharacterInfo.Honor.ToString());

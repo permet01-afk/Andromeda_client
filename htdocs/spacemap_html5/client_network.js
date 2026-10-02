@@ -1269,6 +1269,7 @@ const PACKET_HANDLERS = {
     MSG: handlePacket_displayMessage,
     d: handlePacket_d,
     RDY: handlePacket_RDY,
+    ES: handlePacket_expansionStage,
     c: handlePacket_c,
     f: handlePacket_f,
     H: handlePacket_H,
@@ -4192,21 +4193,30 @@ function handlePacket_4(parts, i) {
 }
 
 function resolveExpansionStage(stage, shipId = null) {
-    const numericShipId = Number(shipId);
-    if (Number.isFinite(numericShipId) && numericShipId > 0 && typeof getMaxExpansionStageForShip === "function") {
-        const maxStage = getMaxExpansionStageForShip(numericShipId);
-        if (Number.isFinite(maxStage) && maxStage > 0) {
-            return maxStage;
-        }
+    if (shipId !== null && !SHIP_EXPANSION_DEFS[shipId]) return 1;
+    const value = Number(stage);
+    return Number.isInteger(value) && value > 0 ? Math.min(3, value) : 1;
+}
+
+function applyExpansionStage(entity, stage) {
+    if (!entity) return;
+    const resolved = resolveExpansionStage(stage, entity.shipId);
+    if (entity.expansionTypeId !== resolved) {
+        entity.laserSalvoIndex = 0;
+        entity.laserSalvoStage = resolved;
+        if (entity.id === heroId) heroLaserSalvoIndex = 0;
     }
-    if (Number.isFinite(stage)) {
-        return stage > 0 ? stage : 0;
-    }
-    const parsed = parseInt(stage, 10);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-        return 0;
-    }
-    return parsed;
+    entity.expansionTypeId = resolved;
+    if (entity.id === heroId) heroExpansionTypeId = resolved;
+    // Overlay cache keys include asset/stage/frame. No entity or effect recreation.
+}
+
+function handlePacket_expansionStage(parts, i) {
+    const id = Number(parts[i]);
+    if (!Number.isInteger(id)) return;
+    // Do not create ghosts for out-of-range, removed or hidden ships. Their next C/I is authoritative.
+    const entity = entities[id];
+    if (entity) applyExpansionStage(entity, parts[i + 1]);
 }
 
 function handlePacket_RDY(parts, i) {
@@ -4240,7 +4250,7 @@ function handlePacket_RDY(parts, i) {
     const clanId = nextInt();
     nextStr();
     nextStr();
-    nextStr();
+    const receivedExpansionStage = nextStr();
     const premiumFlag = nextStr();
     heroPremium = premiumFlag === "1";
     const expStr = nextStr();
@@ -4284,17 +4294,7 @@ function handlePacket_RDY(parts, i) {
         } else if (Number.isFinite(heroShipId)) {
             heroEntity.shipId = heroShipId;
         }
-        let stageCandidate = null;
-        if (Number.isFinite(heroEntity.expansionTypeId) && heroEntity.expansionTypeId > 0) {
-            stageCandidate = heroEntity.expansionTypeId;
-        } else if (Number.isFinite(heroExpansionTypeId) && heroExpansionTypeId > 0) {
-            stageCandidate = heroExpansionTypeId;
-        }
-        const resolvedStage = resolveExpansionStage(stageCandidate, heroEntity.shipId);
-        heroEntity.expansionTypeId = resolvedStage;
-        if (!Number.isFinite(heroExpansionTypeId) || heroExpansionTypeId <= 0) {
-            heroExpansionTypeId = resolvedStage;
-        }
+        applyExpansionStage(heroEntity, receivedExpansionStage);
     }
     if (locX !== null && locY !== null) {
         if (isInitialRdyI || mapChanged) {
@@ -4461,7 +4461,6 @@ function handlePacket_f(parts, i) {
         idx++;
     }
     if (isNaN(id) || isNaN(x) || isNaN(y)) return;
-    const resolvedStage = resolveExpansionStage(expansionStage, shipId);
     const e = ensureEntity(id);
     e.kind = "player";
     e.gameTitleKey = "";
@@ -4478,7 +4477,7 @@ function handlePacket_f(parts, i) {
         e.shipId = shipId;
     }
     resetEntityInterpolationTo(e, x, y);
-    e.expansionTypeId = resolvedStage;
+    applyExpansionStage(e, expansionStage);
     const groupMember = groupMembers[id];
     if (groupMember) {
         const beforeMinimapState = getGroupMemberMinimapState(groupMember);
@@ -4498,7 +4497,7 @@ function handlePacket_f(parts, i) {
     if (heroId !== null && id === heroId) {
         shipX = x;
         shipY = y;
-        heroExpansionTypeId = resolvedStage;
+        heroExpansionTypeId = e.expansionTypeId;
         if (!isNaN(shipId)) {
             heroShipId = shipId;
         }
@@ -5301,61 +5300,45 @@ function shouldSuppressVisibleNpcLaser(attackerId, attackerSnap) {
     return npcName === "-=[ Mordon ]=-" || npcName === "-=[ Boss Mordon ]=-";
 }
 
-function resolveLaserSalvoOffsets(attackerId, attackerSnap, visual) {
-    const fallback = [ {
-        x: 0,
-        y: 0
-    } ];
+function captureLaserSalvo(attackerId, attackerSnap, visual, packetStage) {
+    const entity = entities[attackerId];
+    const shipId = attackerSnap && attackerSnap.shipId;
+    const isNpc = entity && entity.kind === "npc";
+    const family = SHIP_EXPANSION_DEFS[shipId];
+    // Player stages are authoritative. Existing NPC patterns are outside equipment stage rules.
+    const stage = isNpc ? getMaxExpansionStageForShip(shipId) : resolveExpansionStage(
+        packetStage === undefined ? (attackerId === heroId ? heroExpansionTypeId : entity?.expansionTypeId) : packetStage, shipId);
+    const classId = isNpc ? getShipExpansionClass(shipId) : family?.expansionClass;
+    const pattern = visual?.allowOffsets && !shouldForceSingleCenterNpcLaser(attackerId, attackerSnap)
+        && classId ? getExpansionPattern(classId, stage) : null;
+    const angle = attackerId === heroId ? heroAngle : entity?.angle ?? attackerSnap?.angle ?? 0;
+    const frame = getDirectionFrameIndex(angle, SHIP_SPRITE_DEFS[shipId]?.frameCount || 32);
+    const index = entity?.laserSalvoStage === stage
+        ? (attackerId === heroId ? heroLaserSalvoIndex : entity.laserSalvoIndex || 0) : 0;
+    const registration = isNpc ? { x: 0, y: 0 } : getShipFlashRegistration(shipId, frame);
+    return { stage, pattern, frame, index, registration };
+}
+
+function resolveLaserSalvoOffsets(attackerId, attackerSnap, visual, captured = null) {
+    const fallback = [{ x: 0, y: 0 }];
     if (!attackerSnap || !visual?.allowOffsets) return fallback;
-    if (shouldForceSingleCenterNpcLaser(attackerId, attackerSnap)) return fallback;
-    const shipId = attackerSnap.shipId;
-    if (!shipId) return fallback;
-    const expansionClassId = typeof getShipExpansionClass === "function" ? getShipExpansionClass(shipId) : 0;
-    if (!expansionClassId) return fallback;
-    const entityStage = attackerId === heroId ? heroExpansionTypeId : entities[attackerId]?.expansionTypeId ?? 0;
-    const preferredStage = typeof getMaxExpansionStageForShip === "function" ? getMaxExpansionStageForShip(shipId) : 0;
-    const expansionTypeId = Number.isFinite(preferredStage) && preferredStage > 0 ? preferredStage : entityStage;
-    const frameCount = SHIP_SPRITE_DEFS[shipId]?.frameCount || 32;
-    const attackerAngle = attackerId === heroId ? heroAngle : entities[attackerId]?.angle ?? attackerSnap.angle ?? 0;
-    const frameIndex = typeof getDirectionFrameIndex === "function" ? getDirectionFrameIndex(attackerAngle, frameCount) : 0;
-    const currentIndex = attackerId === heroId ? heroLaserSalvoIndex : entities[attackerId]?.laserSalvoIndex ?? 0;
-    const buildOffsetsForPattern = (pattern, salvoIndex) => {
-        const salvos = pattern?.salvosData;
-        if (!salvos || salvos.length === 0) {
-            return {
-                offsets: [],
-                salvosLength: 0,
-                salvoIndex: 0
-            };
-        }
-        const normalizedIndex = (salvoIndex % salvos.length + salvos.length) % salvos.length;
-        const salvo = salvos[normalizedIndex] || [];
-        const offsets = [];
-        for (const positionsList of salvo) {
-            if (!positionsList || positionsList.length === 0) continue;
-            const point = positionsList[frameIndex] || positionsList[0];
-            if (point) {
-                offsets.push({
-                    x: point.x,
-                    y: point.y
-                });
-            }
-        }
-        return {
-            offsets: offsets,
-            salvosLength: salvos.length,
-            salvoIndex: normalizedIndex
-        };
-    };
-    const pattern = typeof getExpansionPattern === "function" ? getExpansionPattern(expansionClassId, expansionTypeId) : null;
-    const selected = buildOffsetsForPattern(pattern, currentIndex);
-    if (!selected || selected.salvosLength === 0) return fallback;
-    if (attackerId === heroId) {
-        heroLaserSalvoIndex = (selected.salvoIndex + 1) % selected.salvosLength;
-    } else if (entities[attackerId]) {
-        entities[attackerId].laserSalvoIndex = (selected.salvoIndex + 1) % selected.salvosLength;
+    const state = captured || captureLaserSalvo(attackerId, attackerSnap, visual);
+    const salvos = state.pattern?.salvosData;
+    if (!salvos || !salvos.length) return fallback;
+    const index = ((state.index % salvos.length) + salvos.length) % salvos.length;
+    const offsets = [];
+    for (const positions of salvos[index]) {
+        const point = positions[state.frame];
+        if (point) offsets.push({ x: point.x + state.registration.x, y: point.y + state.registration.y });
     }
-    return selected.offsets.length > 0 ? selected.offsets : fallback;
+    state.index = (index + 1) % salvos.length;
+    const entity = entities[attackerId];
+    if (entity) {
+        entity.laserSalvoIndex = state.index;
+        entity.laserSalvoStage = state.stage;
+    }
+    if (attackerId === heroId) heroLaserSalvoIndex = state.index;
+    return offsets.length ? offsets : fallback;
 }
 
 function applyLaserLength(startX, startY, endX, endY, laserLength, absorber) {
@@ -5897,10 +5880,10 @@ function handlePacket_laserAttack(parts, i) {
     const baseStartY = origin.y;
     const baseEndX = destination.x;
     const baseEndY = destination.y;
-    const salvoOffsets = visual.absorber ? [ {
-        x: 0,
-        y: 0
-    } ] : resolveLaserSalvoOffsets(attackerId, attackerSnap, visual);
+    // Optional final a-field is captured by the server with config/N/color. Flash ignores it.
+    const salvoState = captureLaserSalvo(attackerId, attackerSnap, visual, parts[i + 5]);
+    const nextSalvoOffsets = () => visual.absorber ? [{ x: 0, y: 0 }]
+        : resolveLaserSalvoOffsets(attackerId, attackerSnap, visual, salvoState);
     const baseDuration = visual.speedMs || DEFAULT_LASER_SPEED_MS;
     const duration = visual.playLoop ? visual.attackLengthMs || LASER_ATTACK_LENGTH_MS : baseDuration;
     const attackerLive = entities[attackerId];
@@ -5955,7 +5938,7 @@ function handlePacket_laserAttack(parts, i) {
             }
         }
     }
-    const spawnBeamEntries = (createdAt, flagShowShield = showShieldDamage, playSound = true, options = null) => {
+    const spawnBeamEntries = (createdAt, flagShowShield = showShieldDamage, playSound = true, options = null, pulseOffsets = null) => {
         const flipX = visual.flipX === true;
         const entries = [];
         let showShield = flagShowShield;
@@ -5963,7 +5946,7 @@ function handlePacket_laserAttack(parts, i) {
         let fallbackSoundY = baseStartY;
         const suppressImpactVisual = !!(options && options.suppressImpactVisual);
         const localSabVisual = !!(options && options.localSabVisual);
-        salvoOffsets.forEach((offset, slotIndex) => {
+        (pulseOffsets || nextSalvoOffsets()).forEach((offset, slotIndex) => {
             const offsetX = Number.isFinite(offset?.x) ? offset.x : 0;
             const offsetY = Number.isFinite(offset?.y) ? offset.y : 0;
             let startX = baseStartX + offsetX;
@@ -5982,6 +5965,7 @@ function handlePacket_laserAttack(parts, i) {
                     attackerId: attackerId,
                     targetId: targetId,
                     patternId: patternId,
+                    expansionStage: salvoState.stage,
                     spriteId: visual.spriteId,
                     showShieldDamage: showShield,
                     skilledLaser: skilledLaser,
@@ -6110,10 +6094,12 @@ function handlePacket_laserAttack(parts, i) {
         for (let b = 0; b < burstCount; b++) {
             const delay = b * burstSpacing;
             const isFirst = b === 0;
+            // Reserve each pulse now. Delayed callbacks never reread the entity's mutable stage/index.
+            const pulseOffsets = nextSalvoOffsets();
             const timeoutId = setTimeout(() => {
                 const state = RSB_BURST_STATE.get(String(attackerId));
                 if (!state || state.seq !== seq) return;
-                spawnBeamEntries(performance.now(), isFirst ? showShieldDamage : false);
+                spawnBeamEntries(performance.now(), isFirst ? showShieldDamage : false, true, null, pulseOffsets);
             }, delay);
             const state = RSB_BURST_STATE.get(String(attackerId));
             if (state) state.timeouts.push(timeoutId);

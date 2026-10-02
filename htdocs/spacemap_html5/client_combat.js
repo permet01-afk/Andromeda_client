@@ -3786,24 +3786,17 @@ function warmShipRuntimeFrame(job) {
 function collectShipExpansionRuntimeWarmupJobs() {
     const jobs = [];
     const seen = new Set();
-    const defs = typeof SHIP_EXPANSION_DEFS === "object" && SHIP_EXPANSION_DEFS ? SHIP_EXPANSION_DEFS : null;
-    if (!defs) return jobs;
-    for (const rawShipId in defs) {
-        if (!Object.prototype.hasOwnProperty.call(defs, rawShipId)) continue;
-        const def = defs[rawShipId];
-        if (!def) continue;
-        const numericShipId = Number(rawShipId);
-        const shipId = Number.isFinite(numericShipId) ? numericShipId : rawShipId;
-        const frames = typeof getFrameNumbersForDef === "function" ? getFrameNumbersForDef(def, 1) : null;
-        const frameCount = Array.isArray(frames) && frames.length ? frames.length : Math.max(1, Number(def.frameCount) || 1);
-        for (let frameIndex = 0; frameIndex < frameCount; frameIndex++) {
-            const cacheKey = typeof getShipExpansionFrameCacheKey === "function" ? getShipExpansionFrameCacheKey(shipId, frameIndex) : `${shipId}_${frameIndex}`;
-            if (cacheKey && seen.has(cacheKey)) continue;
-            if (cacheKey) seen.add(cacheKey);
-            jobs.push({
-                shipId: shipId,
-                frameIndex: frameIndex
-            });
+    for (const rawShipId of Object.keys(SHIP_EXPANSION_DEFS)) {
+        const shipId = Number(rawShipId);
+        for (const stage of [2, 3]) {
+            const def = getShipExpansionDef(shipId, stage);
+            if (!def) continue;
+            for (let frameIndex = 0; frameIndex < def.frameCount; frameIndex++) {
+                const cacheKey = getShipExpansionFrameCacheKey(shipId, frameIndex, stage);
+                if (seen.has(cacheKey)) continue;
+                seen.add(cacheKey);
+                jobs.push({ shipId, frameIndex, stage });
+            }
         }
     }
     return jobs;
@@ -3811,13 +3804,9 @@ function collectShipExpansionRuntimeWarmupJobs() {
 
 function warmShipExpansionRuntimeFrame(job, warmCtx) {
     if (!job || typeof getShipExpansionFrame !== "function") return false;
-    const frameDef = getShipExpansionFrame(job.shipId, job.frameIndex);
+    const frameDef = getShipExpansionFrame(job.shipId, job.frameIndex, job.stage);
     if (!frameDef || frameDef.pendingAtlas) return false;
     const warmed = warmFrameDefOnContext(warmCtx, frameDef, {});
-    const source = frameDef.atlas ? null : frameDef.img || frameDef;
-    if (source && source.complete && source.width > 0 && source.height > 0 && typeof getResolvedShipExpansionVisualShift === "function") {
-        getResolvedShipExpansionVisualShift(job.shipId, job.frameIndex, source, 1);
-    }
     return warmed;
 }
 

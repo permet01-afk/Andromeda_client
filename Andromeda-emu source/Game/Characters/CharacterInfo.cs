@@ -6090,6 +6090,18 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
+        public int ExpansionStage
+        {
+            get
+            {
+                lock (this.mEquipmentSnapshotLock)
+                {
+                    CharacterConfig config = this.mActiveConfig == 2 ? this.mConfig2 : this.mConfig1;
+                    return (config == null ? EquipmentSnapshot.Empty : config.Equipment).GetExpansionStage(this.mShipId);
+                }
+            }
+        }
+
         public LaserVolleySnapshot CaptureLaserVolley(int ammoOverride = 0)
         {
             lock (this.mEquipmentSnapshotLock)
@@ -6098,7 +6110,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 CharacterConfig config = active == 2 ? this.mConfig2 : this.mConfig1;
                 return new LaserVolleySnapshot(active, ammoOverride == 0 ? this.mSelectedAmmo : ammoOverride,
                     config.Equipment, config.MaxDamage, this.MultiplierAgainstNpcs, this.MultiplierAgainstPlayers,
-                    this.FatLasers, this.ApisBuilt);
+                    this.FatLasers, this.ApisBuilt, this.mShipId);
             }
         }
 

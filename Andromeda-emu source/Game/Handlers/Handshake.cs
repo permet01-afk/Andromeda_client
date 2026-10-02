@@ -356,7 +356,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     if (!s.CharacterInfo.TryClaimWebsiteConfigRefresh(client)) return;
                     try
                     {
+                        int previousStage = s.CharacterInfo.ExpansionStage;
                         s.CharacterInfo.RefreshUserDataPreservingRuntime(client, false);
+                        SelectAction.PublishExpansionStage(s, previousStage);
                         SelectAction.SendConfigurationRefresh(s, true, true);
                         s.SendData(PacketComposer.Compose("B", s.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                         s.SendData(PacketComposer.Compose("3", s.CharacterInfo.GetSecondaryWeaponInfoPayload()));

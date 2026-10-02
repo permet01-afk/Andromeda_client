@@ -2,6 +2,7 @@
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
+using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Misc;
 using OrbitReborn_Emulator.Game.Npcs;
@@ -74,6 +75,24 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
+        // Andromeda text extension, ignored by Flash 4.1. No entity recreation.
+        public static void PublishExpansionStage(Session session, int previousStage)
+        {
+            if (session == null || session.CharacterInfo == null) return;
+            lock (session)
+            {
+                int stage = session.CharacterInfo.ExpansionStage;
+                if (stage == previousStage) return;
+                ServerMessage message = PacketComposer.Compose("ES", session.CharacterId + "|" + stage);
+                session.SendData(message);
+                CharacterInfo info = session.CharacterInfo;
+                if (info.IsInvisibleForAll && info.IsAdmin) return;
+                MapInstance map = MapManager.GetInstanceByMapId(info.MapId);
+                if (map != null && session.MapJoined)
+                    map.BroadcastMessageForOtherOnly(message, session);
+            }
+        }
+
         private static void ChangeCfg(Session Session, ClientMessage Message)
         {
             int result;
@@ -82,7 +101,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             if (new CList<int>() { 1, 2 }.Contains(result) && Session.CharacterInfo.CanChangeConfig)
             {
+                int previousStage = Session.CharacterInfo.ExpansionStage;
                 Session.CharacterInfo.ActiveConfig = result;
+                PublishExpansionStage(Session, previousStage);
                 Session.CharacterInfo.LastConfigChange = UnixTimestamp.GetCurrent();
 
                 using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())

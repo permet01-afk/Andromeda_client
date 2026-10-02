@@ -3420,43 +3420,26 @@ window.triggerHeroLevelUpEffect = triggerHeroLevelUpEffect;
 
 window.clearHeroLevelUpEffects = clearHeroLevelUpEffects;
 
-function drawShipExpansionOverlay(shipId, frameIndex, screenX, screenY, shipShift = null) {
-    const expansionDef = SHIP_EXPANSION_DEFS && SHIP_EXPANSION_DEFS[shipId];
+function drawShipExpansionOverlay(shipId, frameIndex, screenX, screenY, shipShift = null, stage = 1) {
+    const expansionDef = getShipExpansionDef(shipId, stage);
     if (!expansionDef) return;
-    const frameDef = getShipExpansionFrame(shipId, frameIndex);
+    const frameDef = getShipExpansionFrame(shipId, frameIndex, stage);
     if (!frameDef || frameDef.pendingAtlas) return;
     const source = frameDef.atlas || frameDef.img || frameDef;
-    if (!source) return;
-    if (!frameDef.atlas && (!source.complete || source.width === 0 || source.height === 0)) return;
-    if (frameDef.atlas && (!source.complete || source.width === 0 || source.height === 0)) return;
-    const sourceW = frameDef.width || source.width || 0;
-    const sourceH = frameDef.height || source.height || 0;
-    if (sourceW <= 0 || sourceH <= 0) return;
-    const entityScale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
-    const offset = expansionDef && expansionDef.offset || getShipExpansionAnchor(shipId);
-    const drawW = sourceW * entityScale;
-    const drawH = sourceH * entityScale;
-    let drawX = screenX - drawW / 2 + (offset.x || 0) * entityScale;
-    let drawY = screenY - drawH / 2 + (offset.y || 0) * entityScale;
-
-    if (expansionDef.useVisualCenterRegistration && !frameDef.atlas) {
-        const expansionShift = typeof getResolvedShipExpansionVisualShift === "function" ? getResolvedShipExpansionVisualShift(shipId, frameIndex, source, entityScale) : {
-            x: 0,
-            y: 0
-        };
-        drawX -= expansionShift.x;
-        drawY -= expansionShift.y;
-    } else {
-        const shiftX = shipShift ? shipShift.x : 0;
-        const shiftY = shipShift ? shipShift.y : 0;
-        drawX -= shiftX;
-        drawY -= shiftY;
-    }
-
+    if (!source || !source.complete || source.width <= 0 || source.height <= 0) return;
+    const sourceW = frameDef.width || source.width;
+    const sourceH = frameDef.height || source.height;
+    const scale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
+    const index = ((frameIndex % 32) + 32) % 32;
+    const origin = expansionDef.nativeOrigins[index];
+    const registration = getShipFlashRegistration(shipId, index, shipShift, scale);
+    // screenY is the hull's existing idle position. Engines/drones/effects retain their own anchors.
+    const drawX = screenX + origin[0] * scale + registration.x;
+    const drawY = screenY + origin[1] * scale + registration.y;
     if (frameDef.atlas) {
-        ctx.drawImage(source, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, drawX, drawY, drawW, drawH);
+        ctx.drawImage(source, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, drawX, drawY, sourceW * scale, sourceH * scale);
     } else {
-        ctx.drawImage(source, drawX, drawY, drawW, drawH);
+        ctx.drawImage(source, drawX, drawY, sourceW * scale, sourceH * scale);
     }
 }
 
@@ -3564,7 +3547,7 @@ function drawShip() {
             drawRageGlow(heroRageEffect, img, shipAnchorX, hullY - shiftY, entityScale, performance.now());
             ctx.drawImage(img, shipScreenX - w / 2 - shiftX, hullY - h / 2 - shiftY, w, h);
         }
-        drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, hullY, heroVisualShift);
+        drawShipExpansionOverlay(shipId, frameIndex, shipScreenX, hullY, heroVisualShift, heroExpansionTypeId);
         drawShipSkillVisualEffectsForEntity(heroId, shipAnchorX, shipAnchorY, shipId, frameIndex, heroAngle || 0, shipDrawnHeight, "hero", shipX, shipY);
         drawHeroLevelUpEffects(shipAnchorX, shipAnchorY);
     } else {
@@ -4123,7 +4106,7 @@ function drawEntities() {
             drawShipExpansionOverlay(e.shipId, frameIndex, entityScreenX, hullY, {
                 x: shiftX,
                 y: shiftY
-            });
+            }, e.expansionTypeId);
             drawShipSkillVisualEffectsForEntity(e.id, entityAnchorX, entityAnchorY, e.shipId, frameIndex, e.angle || 0, spriteHeight, `entity_${e.id}`, e.x, e.y);
         }
         if (!drewSprite) {

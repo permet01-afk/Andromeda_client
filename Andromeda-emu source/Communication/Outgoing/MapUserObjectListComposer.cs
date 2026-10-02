@@ -25,7 +25,7 @@ namespace OrbitReborn_Emulator.Communication.Outgoing
                 serverMessage.AppendShort("f|C");
                 serverMessage.Append(key.ReferenceId);
                 serverMessage.Append(((CharacterInfo)key.ReferenceObject).ShipId);
-                serverMessage.Append(3);
+                serverMessage.Append(((CharacterInfo)key.ReferenceObject).ExpansionStage);
                 serverMessage.Append(((CharacterInfo)key.ReferenceObject).ClanTag);
                 serverMessage.Append(key.Name);
                 serverMessage.Append(((CharacterInfo)key.ReferenceObject).LocX);

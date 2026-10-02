@@ -53,6 +53,20 @@ namespace OrbitReborn_Emulator.Game.Characters
             return row[column] == DBNull.Value ? 0 : Convert.ToInt32(row[column]);
         }
 
+        // ANDROMEDA ADAPTATION — historically probable. Hull slots only; never drones/damage.
+        // Unmapped legacy ships have no certified expansion family.
+        public int GetExpansionStage(int shipId)
+        {
+            switch (shipId)
+            {
+                case 1: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10:
+                case 17: case 18: case 56: case 59: case 63: case 64: case 65: case 66: case 67:
+                    if (ShipLaserCapacity <= 0 || ShipLaserCount < ShipLaserCapacity) return 1;
+                    return IsShipFullLF3 ? 3 : 2;
+                default: return 1;
+            }
+        }
+
         public int GetVisualLaserType(int ammoId)
         {
             switch (ammoId)
@@ -79,12 +93,14 @@ namespace OrbitReborn_Emulator.Game.Characters
         public double PlayerMultiplier { get; private set; }
         public int SkilledLaser { get; private set; }
         public bool ApisBuilt { get; private set; }
+        public int ExpansionStage { get; private set; }
         public int LaserCount { get { return Equipment.TotalLaserCount; } }
         public int VisualLaserType { get { return Equipment.GetVisualLaserType(AmmoId); } }
 
         internal LaserVolleySnapshot(int config, int ammoId, EquipmentSnapshot equipment, int maxDamage,
-            double npcMultiplier, double playerMultiplier, int skilledLaser, bool apisBuilt)
+            double npcMultiplier, double playerMultiplier, int skilledLaser, bool apisBuilt, int shipId)
         {
+            ExpansionStage = equipment.GetExpansionStage(shipId);
             ActiveConfig = config;
             AmmoId = ammoId;
             Equipment = equipment;

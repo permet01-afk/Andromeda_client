@@ -24,7 +24,7 @@ namespace OrbitReborn_Emulator.Communication.Outgoing
                 serverMessage.Append("10");
             else
                 serverMessage.Append(Info.ShipId);
-            serverMessage.Append(3);
+            serverMessage.Append(Info.ExpansionStage);
             if (Info.MapId == 80)
                 serverMessage.Append("***");
             else

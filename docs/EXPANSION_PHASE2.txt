@@ -1,0 +1,311 @@
+PHASE 2 — EQUIPMENT EXPANSIONS / LASER ORIGINS
+==================================================
+ANDROMEDA ADAPTATION — historically probable.
+
+Rule / source of truth
+----------------------
+EquipmentSnapshot.GetExpansionStage(shipId) is the sole server rule.
+Unmapped ID, capacity <= 0 or incomplete hull -> 1.
+Full hull with mixed laser types -> 2. Full LF3 hull -> 3.
+Drone lasers do not determine stage; their existing contribution to N/damage stays unchanged.
+The active CharacterConfig chooses the existing immutable EquipmentSnapshot.
+Stage is captured in LaserVolleySnapshot together with config/N/color/skill.
+This is the approved Andromeda adaptation, not a certified Bigpoint historical rule.
+
+Wire contract (text protocol)
+-----------------------------
+RDY|I: existing expansion field, zero-based split index 19 -> 1/2/3.
+f|C: existing expansion field, zero-based split index 4 -> 1/2/3.
+The initial object list uses the same C composer contract.
+New server-only extension: 0|ES|userId|stage (normal map broadcast plus owner).
+No inventory details. No remove/recreate. Same stage does not publish an ES.
+Admin invisibility and existing map delivery rules remain in force.
+Publish after A/B assignment and after successful existing website snapshot refresh.
+No added query/polling. No new DB field/table/SQL.
+Player attack extension: 0|a|attacker|target|visualLaserType|shield|skilledLaser|capturedStage.
+The last field fixes the stage for this logical volley, even if ES arrives first.
+HTML5 accepts old a packets by capturing the entity stage when that field is absent.
+Invalid/non-positive/non-integer stage -> 1; values > 3 clamp to 3 for mapped ships.
+Unmapped/legacy IDs including 2 and 58 -> 1, with no invented overlay.
+
+Flash 4.1 policy
+----------------
+Correct stage on natural I/C login/spawn/jump. No promise of live A/B stage updates.
+The local Flash text router ignores ES; its laser parser reads only the original fields.
+No binary Unknown 1099 and no artificial R+C/respawn/recreation.
+
+HTML5 assets / registration
+---------------------------
+SHIP_EXPANSION_DEFS maps ship -> expansionClass -> stage asset.
+SHIP_EXPANSION_ASSETS defines the native frames and nativeOrigins.
+Stage 1 has no overlay. A missing Emed never falls back to Emax.
+Failed atlas requests are cached, with one diagnostic per path.
+Atlas/sprite cache keys include asset, stage and orientation.
+All assets have 32 orientations; new atlases use 8x4 cells, 1px padding and native pixels.
+No frame resize, recolor or invented coordinate rotation.
+16 atlases imported; 15 existing Emax assets reused without modifying their pixels.
+
+Native registration is recovered from the SWF symbol bounds and alpha crop translation.
+Per orientation, let C be the current hull raster, N the native raster, B the SWF bounds:
+  hullOrigin = -size(C)/2 + alphaMin(C) - alphaMin(N) - min(B)
+  registration = hullOrigin * entityScale - existingHullVisualShift
+Overlay origin = native SWF bounds origin (new assets), or bounds + native alpha minimum
+minus current alpha minimum (existing cropped assets). Drawing uses this origin plus registration.
+Laser XML coordinates use the same registration in world units; the camera already scales them.
+The current hull render anchor itself is unchanged. Overlays receive the existing hullY idle offset.
+The Goliath correction follows the native pivot; no hardcoded -2.7px compensation.
+32-frame hullOrigins/renderShifts are metadata of the current hull images, not a new equipment source.
+If those hull images or the existing hull-centering algorithm change, regenerate/verify this metadata.
+
+Vengeance / design exceptions
+-----------------------------
+8 uses the modern Unknown family matching the current hull, never the incompatible old local hull.
+17 explicitly keeps expansionClass 8 and the same Unknown overlays as 8.
+10 Emed comes from Unknown; Emax remains the compatible local asset.
+56/59 use ship10_Emed and ship10_Ecombat from Unknown, expansionClass 56.
+63..67 retain their own local Emed/Emax and XML patterns.
+
+Salvos / gameplay preservation
+------------------------------
+game.xml provides every positionsList for 32 orientations; no approximate sin/cos rotation.
+Stage patterns are expansionClass data, not laserClass (these player ships use laserClass 0).
+Classes 1/3/4/5/6/7/8/9: [1] / [2] / [2,1,2,1].
+Classes 10/56: [1] / [2,1,2,1] / [2,3,2,3].
+Class 18: [1] / [2] / [2,1,2,1,2].
+Class 63: [1] / [1,1] / [2,1,2,1].
+Classes 64..67: [1] / [1,1] / [2,1,2,1,2,1,2,1].
+Each RSB pulse reserves its next origins from the captured stage before scheduling its callback.
+The existing 5 pulses, 120ms spacing, N and gameplay cooldown remain unchanged.
+SAB keeps a single center-to-center ring per pulse, target -> attacker.
+Skilled lasers change sprites only, with the same origins and beam count.
+N, ammo delta persistence, damage/MISS, full-LF3 colors and PvP >45k behavior are unchanged.
+NPC equipment stages are outside this patch; their existing maximum-pattern selection is retained.
+
+Tests
+------
+Tests/ExpansionStageTests.cs: compile against the emulator and EquipmentPhase1Tests.cs,
+select /main:ExpansionStageTests. Synthetic snapshots, actual composers, loopback sockets; no SQL.
+htdocs/spacemap_html5/tests/expansion-stage.test.cjs: Node source-function/XML tests.
+Optional argument 1: result JSON path; argument 2: packet file produced by ExpansionStageTests.
+Existing Phase 1 and ammo-persistence regression harnesses remain applicable.
+The full external report records actual test results and limitations; test harness coverage is not
+a claim that authenticated web login, natural jump/respawn and mobile device testing were completed.
+
+SHIP / FAMILY / STAGE 2 / STAGE 3
+--------------------------------
+1 Phoenix | class 1 | local:ship1_Emed | local:ship1_Emax
+3 Leonov | class 3 | local:ship3_Emed | local:ship3_Emax
+4 Defcom | class 4 | local:ship4_Emed | local:ship4_Emax
+5 Liberator | class 5 | local:ship5_Emed | local:ship5_Emax
+6 Piranha | class 6 | local:ship6_Emed | local:ship6_Emax
+7 Nostromo | class 7 | local:ship7_Emed | local:ship7_Emax
+8 Vengeance | class 8 | unknown:ship8_Emed | unknown:ship8_Emax
+9 Bigboy | class 9 | local:ship9_Emed | local:ship9_Emax
+10 Goliath | class 10 | unknown:ship10_Emed | local:ship10_Emax
+17 Vengeance Enforcer / Corsair | class 8 | unknown:ship8_Emed | unknown:ship8_Emax
+18 Lightning | class 18 | local:ship18_Emed | local:ship18_Emax
+56 Enforcer Goliath | class 56 | unknown:ship10_Emed | unknown:ship10_Ecombat
+59 Bastion Goliath | class 56 | unknown:ship10_Emed | unknown:ship10_Ecombat
+63 Solace | class 63 | local:ship63_Emed | local:ship63_Emax
+64 Diminisher | class 64 | local:ship64_Emed | local:ship64_Emax
+65 Spectrum | class 65 | local:ship65_Emed | local:ship65_Emax
+66 Sentinel | class 66 | local:ship66_Emed | local:ship66_Emax
+67 Venom | class 67 | local:ship67_Emed | local:ship67_Emax
+
+SOURCE MANIFEST (paths relative to repository unless marked HTML5)
+======================================================================
+
+local:ship1_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship1_Emed.swf
+  SHA256: f8c2bf4d0a87463122fbd77dd9f66b05d74372b2327181d1b6fafa39390432a0
+  Native bounds: [-46.65, -29.6, 49.35, 47.4]
+  HTML5: graphics/atlas/expansion_ship1_emed_phase2.png
+
+local:ship1_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship1_Emax.swf
+  SHA256: 4aedf08450989b7ac3d6b2610a6fb139aeb1e5bec4ae3ed662cf9e6505ebd675
+  Native bounds: [-42.55, -34.6, 50.95, 42.4]
+  HTML5: graphics/atlas/expansion_ship1_emax_v1.png
+
+local:ship3_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship3_Emed.swf
+  SHA256: d45ac554bb0a691f38438c55e9ab535dcd72e4b18e8dbea469f3ad6d31e009fd
+  Native bounds: [-65.0, -47.0, 70.0, 51.0]
+  HTML5: graphics/atlas/expansion_ship3_emed_phase2.png
+
+local:ship3_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship3_Emax.swf
+  SHA256: bff597771cae74a500de677c28cacd476891cefb1df746759ba351b18c7a4521
+  Native bounds: [-65.0, -47.0, 69.0, 50.0]
+  HTML5: graphics/atlas/expansion_ship3_emax_v1.png
+
+local:ship4_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship4_Emed.swf
+  SHA256: 95ffa9846839517f55d04db3cec200d59f3b06957c4210a0266730f78a49a229
+  Native bounds: [-49.95, -37.0, 57.0, 49.0]
+  HTML5: graphics/atlas/expansion_ship4_emed_phase2.png
+
+local:ship4_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship4_Emax.swf
+  SHA256: 0b55eafb3b6c55313e37cd08302b5bbeb427a3527b07226d32f6c5246aaffa2d
+  Native bounds: [-49.95, -37.0, 57.0, 49.0]
+  HTML5: graphics/atlas/expansion_ship4_emax_v1.png
+
+local:ship5_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship5_Emed.swf
+  SHA256: ac0e6653a0e6f16486754dbd9df5d82c2b483e25c309d817ebd76d2e956583b4
+  Native bounds: [-63.45, -43.5, 54.55, 41.5]
+  HTML5: graphics/atlas/expansion_ship5_emed_phase2.png
+
+local:ship5_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship5_Emax.swf
+  SHA256: d5cba5a739a17e32655b953d5727053d9dab4b7ea37a8c0a0b4d8ad3c02a2343
+  Native bounds: [-63.45, -44.0, 54.55, 41.0]
+  HTML5: graphics/atlas/expansion_ship5_emax_v1.png
+
+local:ship6_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship6_Emed.swf
+  SHA256: d906bf64b2557fd6b394e646613fab088a5bb5ee99fddb30db8fecc1f687fb41
+  Native bounds: [-109.95, -71.0, 108.05, 83.0]
+  HTML5: graphics/atlas/expansion_ship6_emed_phase2.png
+
+local:ship6_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship6_Emax.swf
+  SHA256: aeee8ccd9000e030170a328d4d7aaad4b324316bd90b956b09f8ba63080289d4
+  Native bounds: [-109.95, -71.0, 108.05, 83.0]
+  HTML5: graphics/atlas/expansion_ship6_emax_v1.png
+
+local:ship7_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship7_Emed.swf
+  SHA256: bc8cee21b9442d9223569d05dca634efe8f80acb30730726f534850697b734a2
+  Native bounds: [-78.95, -51.0, 77.05, 61.0]
+  HTML5: graphics/atlas/expansion_ship7_emed_phase2.png
+
+local:ship7_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship7_Emax.swf
+  SHA256: e74144899fc958c7fabe586400a15b127af076f9d20f1b0671c180188e23109b
+  Native bounds: [-78.95, -51.0, 77.05, 61.0]
+  HTML5: graphics/atlas/expansion_ship7_emax_v1.png
+
+unknown:ship8_Emed — IMPORTED
+  SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship8_Emed.swf
+  SHA256: e218e6ff6b61ffe9a54733db6bf8a5ce8e73365d36bd7721be619cfdf66c1ff3
+  Native bounds: [-59.0, -47.0, 60.0, 42.0]
+  HTML5: graphics/atlas/expansion_ship8_emed_phase2.png
+
+unknown:ship8_Emax — REUSED UNCHANGED
+  SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship8_Emax.swf
+  SHA256: c0767169d2b827f7425b5247b83b6527f2afc668ed752930566fdc608aef5138
+  Native bounds: [-98.5, -71.0, 98.5, 71.0]
+  HTML5: graphics/atlas/expansion_ship8_emax_v1.png
+
+local:ship9_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship9_Emed.swf
+  SHA256: 7549af2114967b8d6d1b8e3d6705c5c5e4a9de411bb26d07e3147da4b8f2ee8c
+  Native bounds: [-71.95, -66.0, 72.05, 61.0]
+  HTML5: graphics/atlas/expansion_ship9_emed_phase2.png
+
+local:ship9_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship9_Emax.swf
+  SHA256: 4942939f3390ac12b6b0edd11ad62ba78d0e750dc9487442119fd70f3315707f
+  Native bounds: [-100.25, -67.25, 102.75, 73.0]
+  HTML5: graphics/atlas/expansion_ship9_emax_v1.png
+
+unknown:ship10_Emed — IMPORTED
+  SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship10_Emed.swf
+  SHA256: 6ce31ba983fe65b95e08278ee54a24b5bbfce7517bbe8fcf909e0d930b0763be
+  Native bounds: [-92.0, -76.0, 93.0, 56.0]
+  HTML5: graphics/atlas/expansion_ship10_emed_phase2.png
+
+local:ship10_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship10_Emax.swf
+  SHA256: 71ed72f824afdcb6c6e7e54f4ddbaf02dcda4148bec9737b7056cf48dbab71b2
+  Native bounds: [-92.0, -76.0, 93.0, 56.0]
+  HTML5: graphics/expansions/ship10_Emax/
+  Existing atlas: graphics/expansions/ship10_Emax/expansion_atlas_v1.png
+
+local:ship18_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship18_Emed.swf
+  SHA256: cdc542be1e50d1f975db9cfeef32595ff8869c16294c06fb34a84f1021713464
+  Native bounds: [-72.0, -56.0, 73.0, 51.0]
+  HTML5: graphics/atlas/expansion_ship18_emed_phase2.png
+
+local:ship18_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship18_Emax.swf
+  SHA256: afff439d747de09a81560492bb0c9c1c6db6ee1012531f6caa75fcee9b6ae28d
+  Native bounds: [-90.5, -67.5, 90.5, 64.5]
+  HTML5: graphics/expansions/ship18_Emax/
+  Existing atlas: graphics/expansions/ship18_Emax/expansion_atlas_v1.png
+
+unknown:ship10_Ecombat — IMPORTED
+  SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship10_Ecombat.swf
+  SHA256: d2d48d9391e3a5983658b27ed6cbcb454c972f03ea3a79b08802a6c99175a56a
+  Native bounds: [-92.0, -76.0, 93.0, 56.0]
+  HTML5: graphics/atlas/expansion_ship10_ecombat_phase2.png
+
+local:ship63_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship63_Emed.swf
+  SHA256: 671e12ff43ded643caa05a7780d6f0c2ba2217dcef50602da4561686d4ace1bc
+  Native bounds: [-35.0, -46.0, 34.0, 6.0]
+  HTML5: graphics/atlas/expansion_ship63_emed_phase2.png
+
+local:ship63_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship63_Emax.swf
+  SHA256: ac5a944bd5b5342dacc57ce47bfc4d262cc87d1049afb43d3286d422beaec07e
+  Native bounds: [-85.0, -75.0, 84.0, 60.0]
+  HTML5: graphics/expansions/ship63_Emax/
+  Existing atlas: graphics/expansions/ship63_Emax/expansion_atlas_v1.png
+
+local:ship64_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship64_Emed.swf
+  SHA256: b381d9ec8b34f42f28047b98f38a3af0417b0869a81481a91bf28f99b9d93ae4
+  Native bounds: [-80.5, -73.0, 80.5, 64.0]
+  HTML5: graphics/atlas/expansion_ship64_emed_phase2.png
+
+local:ship64_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship64_Emax.swf
+  SHA256: 869af2276c760fb5fd01d758dd93e0f92001f2ab7b35634d3c4d258db9c37f1b
+  Native bounds: [-80.5, -75.0, 80.5, 62.0]
+  HTML5: graphics/expansions/ship64_Emax/
+  Existing atlas: graphics/expansions/ship64_Emax/expansion_atlas_v1.png
+
+local:ship65_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship65_Emed.swf
+  SHA256: d13a80daf7fb5de4a9137aa25f783ff8fb0285916e9da4792eb9cb65779717ee
+  Native bounds: [-87.0, -73.0, 88.0, 58.0]
+  HTML5: graphics/atlas/expansion_ship65_emed_phase2.png
+
+local:ship65_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship65_Emax.swf
+  SHA256: 9c61aaea1221cc8439e248f24fe165ee8509bee6523e4dc6ecaf1c429fd07c6e
+  Native bounds: [-105.0, -77.0, 106.0, 68.0]
+  HTML5: graphics/expansions/ship65_Emax/
+  Existing atlas: graphics/expansions/ship65_Emax/expansion_atlas_v1.png
+
+local:ship66_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship66_Emed.swf
+  SHA256: a2b084483811a9d9a001da717331ed5738ece90842305bce90184a3a7a4ff70b
+  Native bounds: [-82.0, -79.0, 83.0, 51.0]
+  HTML5: graphics/atlas/expansion_ship66_emed_phase2.png
+
+local:ship66_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship66_Emax.swf
+  SHA256: c3bfb14bed417b2d98f1f8ca7ad561fc99c1c3822a9a82ee20b317b5999f444a
+  Native bounds: [-103.0, -79.0, 104.0, 100.0]
+  HTML5: graphics/expansions/ship66_Emax/
+  Existing atlas: graphics/expansions/ship66_Emax/expansion_atlas_v1.png
+
+local:ship67_Emed — IMPORTED
+  SWF: htdocs/spacemap/graphics/expansions/ship67_Emed.swf
+  SHA256: 6f687b43d5a54ed0d5ff307d549e66c8080a5d420923902a543cde251df9ee05
+  Native bounds: [-55.0, -58.0, 56.0, 20.0]
+  HTML5: graphics/atlas/expansion_ship67_emed_phase2.png
+
+local:ship67_Emax — REUSED UNCHANGED
+  SWF: htdocs/spacemap/graphics/expansions/ship67_Emax.swf
+  SHA256: 9f864dc60e2b2990eeada0e5fdc924264c812e118510f997e6bcb65319da2cf7
+  Native bounds: [-86.0, -75.0, 87.0, 53.0]
+  HTML5: graphics/expansions/ship67_Emax/
+  Existing atlas: graphics/expansions/ship67_Emax/expansion_atlas_v1.png
+
+Added atlas paths are listed above; no source SWF or original Emax was modified.
