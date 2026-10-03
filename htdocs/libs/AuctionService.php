@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/DroneLevelService.php';
 
 class AuctionService
 {
@@ -255,16 +256,7 @@ class AuctionService
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
         );
 
-        $this->db->exec(
-            "CREATE TABLE IF NOT EXISTS drone_slot_config (
-                drone_id INT(11) NOT NULL,
-                config CHAR(1) NOT NULL,
-                slot_index TINYINT(4) NOT NULL,
-                item_id INT(11) DEFAULT NULL,
-                PRIMARY KEY (drone_id, config, slot_index),
-                KEY idx_drone_config (drone_id, config)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-        );
+        $this->db->query('SELECT drone_id, config, slot_index FROM drone_slot_config LIMIT 0');
     }
 
     private function syncCatalog(): void
@@ -816,6 +808,8 @@ class AuctionService
         $this->grantInventoryItem($playerId, 3, 1);
 
         $this->syncDronesTablesForReward($playerId, $desired);
+        DroneLevelService::recalculate($this->db, $playerId);
+        $this->db->prepare('UPDATE users SET config_refresh_pending=1 WHERE id=?')->execute([$playerId]);
     }
 
     private function grantBooster(int $playerId, string $column, int $hours): void
@@ -1079,7 +1073,7 @@ class AuctionService
             return $candidate;
         };
 
-        $insDrone = $this->db->prepare('INSERT INTO drone (player_id, name, item_id, level) VALUES (:p, :n, :iid, 6)');
+        $insDrone = $this->db->prepare('INSERT INTO drone (player_id, name, item_id, level, progress_points) VALUES (:p, :n, :iid, 1, 0)');
         $updDroneItem = $this->db->prepare('UPDATE drone SET item_id = :iid WHERE id = :id AND (item_id IS NULL OR item_id = 0)');
         $insGlobalSlot = $this->db->prepare('INSERT IGNORE INTO drone_slot (drone_id, slot_index, item_id) VALUES (:d, :s, NULL)');
         $delGlobalExtra = $this->db->prepare('DELETE FROM drone_slot WHERE drone_id = :d AND slot_index >= :sc');

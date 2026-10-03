@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../../../libs/DroneLevelService.php';
 header('Content-Type: application/json');
 
 $pid = $_SESSION['player_id'] ?? null;
@@ -33,6 +34,8 @@ if ($cfgNum === 2 || strtoupper($cfgName) === 'B') $activeConfig = 2;
 
 try {
     $db->beginTransaction();
+    DroneLevelService::lockPlayer($db, (int)$pid);
+    DroneLevelService::recalculate($db, (int)$pid);
 
     
     $db->prepare("UPDATE users SET active_config = :ac WHERE id = :pid")

@@ -3611,27 +3611,116 @@ var DRONE_GROUP_DIMENSION = DRONE_GROUP_RADIUS * 2;
 
 const DRONE_DEFAULT_DIMENSION = 30;
 
-const DRONES_ATLAS_PATH = "graphics/atlas/drones_v1.png";
+const DRONES_ATLAS_PATH = "graphics/atlas/drones_v1.png?v=phase3-levels";
 
-const DRONES_ATLAS_CELL_WIDTH = 62;
+const DRONES_ATLAS_CELL_WIDTH = 84;
 
-const DRONES_ATLAS_CELL_HEIGHT = 62;
+const DRONES_ATLAS_CELL_HEIGHT = 68;
 
 const DRONES_ATLAS_PADDING = 1;
 
+// Whole Unknown drones2 family; native SWF bounds and pivots (twips / 20).
 const DRONES_ATLAS_ROWS = Object.freeze({
-    iris: {
-        atlasRow: 0,
-        frameWidth: 60,
-        frameHeight: 60,
-        frameCount: 32
-    },
-    flax: {
-        atlasRow: 1,
-        frameWidth: 60,
-        frameHeight: 60,
-        frameCount: 32
-    }
+    "iris": [
+        {
+            "atlasRow": 0,
+            "frameWidth": 36,
+            "frameHeight": 27,
+            "frameCount": 32,
+            "pivotX": 18.5,
+            "pivotY": 12.5
+        },
+        {
+            "atlasRow": 1,
+            "frameWidth": 36,
+            "frameHeight": 30,
+            "frameCount": 32,
+            "pivotX": 18.5,
+            "pivotY": 15.5
+        },
+        {
+            "atlasRow": 2,
+            "frameWidth": 36,
+            "frameHeight": 30,
+            "frameCount": 32,
+            "pivotX": 18.5,
+            "pivotY": 15.5
+        },
+        {
+            "atlasRow": 3,
+            "frameWidth": 81,
+            "frameHeight": 58,
+            "frameCount": 32,
+            "pivotX": 40.5,
+            "pivotY": 22.5
+        },
+        {
+            "atlasRow": 4,
+            "frameWidth": 81,
+            "frameHeight": 65,
+            "frameCount": 32,
+            "pivotX": 40.5,
+            "pivotY": 29.5
+        },
+        {
+            "atlasRow": 5,
+            "frameWidth": 81,
+            "frameHeight": 65,
+            "frameCount": 32,
+            "pivotX": 40.5,
+            "pivotY": 29.5
+        }
+    ],
+    "flax": [
+        {
+            "atlasRow": 6,
+            "frameWidth": 45,
+            "frameHeight": 33,
+            "frameCount": 32,
+            "pivotX": 23.0,
+            "pivotY": 16.5
+        },
+        {
+            "atlasRow": 7,
+            "frameWidth": 45,
+            "frameHeight": 33,
+            "frameCount": 32,
+            "pivotX": 23.0,
+            "pivotY": 16.5
+        },
+        {
+            "atlasRow": 8,
+            "frameWidth": 45,
+            "frameHeight": 33,
+            "frameCount": 32,
+            "pivotX": 23.0,
+            "pivotY": 16.5
+        },
+        {
+            "atlasRow": 9,
+            "frameWidth": 45,
+            "frameHeight": 33,
+            "frameCount": 32,
+            "pivotX": 23.0,
+            "pivotY": 16.5
+        },
+        {
+            "atlasRow": 10,
+            "frameWidth": 45,
+            "frameHeight": 33,
+            "frameCount": 32,
+            "pivotX": 23.0,
+            "pivotY": 16.5
+        },
+        {
+            "atlasRow": 11,
+            "frameWidth": 54,
+            "frameHeight": 56,
+            "frameCount": 32,
+            "pivotX": 27.0,
+            "pivotY": 29.5
+        }
+    ]
 });
 
 let dronesAtlasImage = null;
@@ -3657,21 +3746,17 @@ let havokDroneAtlasStatus = "idle";
 let havokDroneAtlasListenersBound = false;
 
 const droneSpriteFrameDefCache = {
-    iris: new Array(DRONE_DIRECTION_FRAME_COUNT),
-    flax: new Array(DRONE_DIRECTION_FRAME_COUNT),
+    iris: new Array(6 * DRONE_DIRECTION_FRAME_COUNT),
+    flax: new Array(6 * DRONE_DIRECTION_FRAME_COUNT),
     havok: new Array(DRONE_DIRECTION_FRAME_COUNT)
 };
 
 const pendingDroneSpriteFrameDefs = {
     iris: {
-        pendingAtlas: true,
-        width: DRONES_ATLAS_ROWS.iris.frameWidth,
-        height: DRONES_ATLAS_ROWS.iris.frameHeight
+        pendingAtlas: true
     },
     flax: {
-        pendingAtlas: true,
-        width: DRONES_ATLAS_ROWS.flax.frameWidth,
-        height: DRONES_ATLAS_ROWS.flax.frameHeight
+        pendingAtlas: true
     },
     havok: {
         pendingAtlas: true,
@@ -3769,12 +3854,13 @@ function getDronesAtlasImage() {
     return dronesAtlasImage;
 }
 
-function getDroneSpriteFrame(kind, directionIndex) {
+function getDroneSpriteFrame(kind, directionIndex, levelIndex = 0) {
     const rowKey = kind === "flax" ? "flax" : kind === "havok" ? "havok" : "iris";
     if (rowKey === "havok") {
         return getHavokDroneSpriteFrame(directionIndex);
     }
-    const row = DRONES_ATLAS_ROWS[rowKey];
+    const level = Number.isInteger(levelIndex) ? Math.max(0, Math.min(5, levelIndex)) : 0;
+    const row = DRONES_ATLAS_ROWS[rowKey][level];
     if (!row) return null;
     const atlas = getDronesAtlasImage();
     if (!atlas) return null;
@@ -3782,7 +3868,8 @@ function getDroneSpriteFrame(kind, directionIndex) {
         return dronesAtlasStatus === "error" ? null : pendingDroneSpriteFrameDefs[rowKey];
     }
     const idx = (directionIndex % row.frameCount + row.frameCount) % row.frameCount;
-    const cached = droneSpriteFrameDefCache[rowKey][idx];
+    const cacheIndex = level * DRONE_DIRECTION_FRAME_COUNT + idx;
+    const cached = droneSpriteFrameDefCache[rowKey][cacheIndex];
     if (cached) return cached;
     const sx = idx * DRONES_ATLAS_CELL_WIDTH + DRONES_ATLAS_PADDING;
     const sy = row.atlasRow * DRONES_ATLAS_CELL_HEIGHT + DRONES_ATLAS_PADDING;
@@ -3799,9 +3886,11 @@ function getDroneSpriteFrame(kind, directionIndex) {
         sw: sw,
         sh: sh,
         width: row.frameWidth,
-        height: row.frameHeight
+        height: row.frameHeight,
+        pivotX: row.pivotX,
+        pivotY: row.pivotY
     };
-    droneSpriteFrameDefCache[rowKey][idx] = frameDef;
+    droneSpriteFrameDefCache[rowKey][cacheIndex] = frameDef;
     return frameDef;
 }
 
@@ -3985,18 +4074,20 @@ function drawDrones(worldX, worldY, droneConnector, shipAngle = 0, shipFrameInde
         const item = geometryCache.items[i];
         const drone = item.drone;
         const kind = pickDroneKind(drone);
-        const frameDef = getDroneSpriteFrame(kind, directionIndex);
+        const frameDef = getDroneSpriteFrame(kind, directionIndex, drone.level);
         if (!frameDef || frameDef.pendingAtlas) continue;
         const droneScreenX = mapToScreenX(worldX + item.offsetX);
         const droneScreenY = mapToScreenY(worldY + item.offsetY);
         const drawW = frameDef.width * entityScale;
         const drawH = frameDef.height * entityScale;
+        const pivotX = (Number.isFinite(frameDef.pivotX) ? frameDef.pivotX : frameDef.width / 2) * entityScale;
+        const pivotY = (Number.isFinite(frameDef.pivotY) ? frameDef.pivotY : frameDef.height / 2) * entityScale;
         if (frameDef.atlas) {
-            ctx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, droneScreenX - drawW / 2, droneScreenY - drawH / 2, drawW, drawH);
+            ctx.drawImage(frameDef.atlas, frameDef.sx, frameDef.sy, frameDef.sw, frameDef.sh, droneScreenX - pivotX, droneScreenY - pivotY, drawW, drawH);
         } else {
             const img = frameDef.img || frameDef;
             if (!img || !img.complete || img.width === 0 || img.height === 0) continue;
-            ctx.drawImage(img, droneScreenX - drawW / 2, droneScreenY - drawH / 2, drawW, drawH);
+            ctx.drawImage(img, droneScreenX - pivotX, droneScreenY - pivotY, drawW, drawH);
         }
     }
     ctx.restore();

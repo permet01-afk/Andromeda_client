@@ -56,16 +56,7 @@ function sync_drones_tables(PDO $db, int $playerId, array $desiredItemIds): void
     $desiredItemIds = array_values(array_slice($desiredItemIds, 0, 8));
 
     
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS drone_slot_config (
-            drone_id    INT(11) NOT NULL,
-            config      CHAR(1) NOT NULL,
-            slot_index  TINYINT(4) NOT NULL,
-            item_id     INT(11) DEFAULT NULL,
-            PRIMARY KEY (drone_id, config, slot_index),
-            KEY idx_drone_config (drone_id, config)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
+    $db->query('SELECT drone_id, config, slot_index FROM drone_slot_config LIMIT 0');
 
     
     $cur = $db->prepare("SELECT id, item_id, name FROM drone WHERE player_id=:p ORDER BY id");
@@ -116,7 +107,7 @@ function sync_drones_tables(PDO $db, int $playerId, array $desiredItemIds): void
     }
 
     
-    $insDrone = $db->prepare("INSERT INTO drone (player_id, name, item_id, level) VALUES (:p,:n,:iid,6)");
+    $insDrone = $db->prepare("INSERT INTO drone (player_id, name, item_id, level, progress_points) VALUES (:p,:n,:iid,1,0)");
     $updDroneItem = $db->prepare("UPDATE drone SET item_id = :iid WHERE id = :id AND (item_id IS NULL OR item_id = 0)");
 
     $insGlobalSlot = $db->prepare("
@@ -191,13 +182,7 @@ function sync_drones_tables(PDO $db, int $playerId, array $desiredItemIds): void
 
 function ensure_drone_design_equipped_table(PDO $db): void
 {
-    $db->exec("CREATE TABLE IF NOT EXISTS drone_design_equipped (
-        drone_id INT(11) NOT NULL,
-        design_item_id INT(11) NOT NULL,
-        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (drone_id),
-        KEY idx_design_item_id (design_item_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $db->query('SELECT * FROM drone_design_equipped LIMIT 0');
 }
 
 function drone_design_code_from_item(?array $item): ?string

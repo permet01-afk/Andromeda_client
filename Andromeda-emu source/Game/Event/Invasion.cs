@@ -274,6 +274,27 @@ namespace OrbitReborn_Emulator.Game.Event
             BroadcastMapPacket(npc.MapId, PacketComposer.Compose("LK", npc.Id.ToString() + "|-1"));
         }
 
+        // One beneficiary for drone progression; never every member of the damage-share list.
+        // Resolve under the event lock, then award outside it (avoids event/player lock inversion).
+        public static Session ResolveDroneRewardOwner(Npc npc, Session claimedOwner)
+        {
+            lock (SyncRoot)
+            {
+                InvasionRun run;
+                if (npc == null || !RunsByNpcId.TryGetValue(npc.Id, out run) || npc.Attackers == null) return null;
+                int damage;
+                if (IsEligibleRewardSession(claimedOwner, run)
+                    && npc.Attackers.TryGetValue(claimedOwner.CharacterId, out damage) && damage > 0) return claimedOwner;
+                Session best = null; int bestDamage = 0;
+                foreach (var hit in npc.Attackers)
+                {
+                    Session candidate = SessionManager.GetSessionByCharacterId(hit.Key);
+                    if (hit.Value > bestDamage && IsEligibleRewardSession(candidate, run)) { best = candidate; bestDamage = hit.Value; }
+                }
+                return best;
+            }
+        }
+
         public static bool HandleNpcDestroyed(Npc npc, MapInstance map)
         {
             if (npc == null)

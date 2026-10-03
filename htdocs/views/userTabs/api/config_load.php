@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../../../libs/DroneLevelService.php';
 require_once __DIR__ . '/helpers_drones.php';
 header('Content-Type: application/json');
 
@@ -161,14 +162,7 @@ function config_load_attach_ship_slots(PDO $db, array $configs): array
 
 function config_load_ensure_drone_slot_config_table(PDO $db): void
 {
-  $db->exec("CREATE TABLE IF NOT EXISTS drone_slot_config (
-    drone_id    INT(11) NOT NULL,
-    config      CHAR(1) NOT NULL,
-    slot_index  TINYINT(4) NOT NULL,
-    item_id     INT(11) DEFAULT NULL,
-    PRIMARY KEY (drone_id, config, slot_index),
-    KEY idx_drone_config (drone_id, config)
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->query('SELECT drone_id, config, slot_index FROM drone_slot_config LIMIT 0');
 }
 
 function config_load_drone_slot_count(?int $droneItemId, string $name=''): int
@@ -323,6 +317,9 @@ function config_load_build_drones_by_config(PDO $db, array $dronesBase): array
   foreach (['A', 'B'] as $cfg) {
     foreach ($dronesBase as $d) {
       $copy = $d;
+      $copy['level'] = (int)$d['level'];
+      $copy['progress_points'] = (int)$d['progress_points'];
+      $copy['next_threshold'] = DroneLevelService::threshold($copy['level']);
       $did = (int)($copy['id'] ?? 0);
       $design = $designsByDrone[$did] ?? null;
       $copy['design_item_id'] = $design ? (int)$design['design_item_id'] : 0;
@@ -372,6 +369,9 @@ function config_load_build_drones_by_config(PDO $db, array $dronesBase): array
 }
 
 try {
+  DroneLevelService::assertSchema($db);
+  $db->beginTransaction();
+  DroneLevelService::lockPlayer($db, $pid);
   $userStmt = $db->prepare('SELECT shipid, drones, apis_built, zeus_built, active_config FROM users WHERE id = :pid LIMIT 1');
   $userStmt->execute([':pid' => $pid]);
   $userRow = $userStmt->fetch(PDO::FETCH_ASSOC) ?: [];
@@ -480,12 +480,13 @@ try {
     if ($desired > 0) $desiredTypes = array_fill(0, $desired, 3);
   }
 
-  $dr = $db->prepare('SELECT id, name, item_id FROM drone WHERE player_id=:p ORDER BY id');
+  $dr = $db->prepare('SELECT id, name, item_id, level, progress_points FROM drone WHERE player_id=:p ORDER BY id');
   $dr->execute([':p' => $pid]);
   $dronesBase = $dr->fetchAll(PDO::FETCH_ASSOC);
 
   if (!empty($desiredTypes) && function_exists('sync_drones_tables') && config_load_drones_need_sync($dronesBase, $desiredTypes)) {
     sync_drones_tables($db, $pid, $desiredTypes);
+    $db->prepare('UPDATE users SET config_refresh_pending=1 WHERE id=?')->execute([$pid]);
     $dr->execute([':p' => $pid]);
     $dronesBase = $dr->fetchAll(PDO::FETCH_ASSOC);
   }
@@ -499,6 +500,8 @@ try {
   $activeName = ($ac === 2) ? 'B' : 'A';
   $dronesCompat = ($activeName === 'B') ? $dronesB : $dronesA;
 
+  DroneLevelService::recalculate($db, $pid);
+  $db->commit();
   echo json_encode([
     'player_id' => $pid,
     'ship_design_id' => $currentShipId,
@@ -514,6 +517,7 @@ try {
   ]);
 
 } catch (Exception $e) {
+  if ($db->inTransaction()) $db->rollBack();
   http_response_code(500);
   echo json_encode(['error' => 'load_failed', 'message' => $e->getMessage()]);
 }

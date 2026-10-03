@@ -594,18 +594,14 @@ const API_PREFIX = '/views/userTabs/api';
 const ICONS_BASE = '/views/userTabs/icons';
 const ITEMS_ICONS_BASE = ICONS_BASE + '/items';
 const HAVOK_ICON = '/spacemap_html5/graphics/havoks/1.png';
-const HAVOK_SET_SIZE = 8;
-const HAVOK_DAMAGE_PER_DRONE = 2;
-const HAVOK_FULL_SET_DAMAGE = 20;
+const HAVOK_FULL_SET_DAMAGE = 10;
 const NON_SELLABLE_ITEM_IDS = new Set([9001]);
 
-function getHavokDamageBonus(equippedCount){
-  const count = Math.max(0, Math.min(HAVOK_SET_SIZE, Number(equippedCount || 0) || 0));
-  return count >= HAVOK_SET_SIZE ? HAVOK_FULL_SET_DAMAGE : count * HAVOK_DAMAGE_PER_DRONE;
+function getHavokDamageBonus(equippedCount, eligibleCount){
+  return eligibleCount > 0 && equippedCount === eligibleCount ? HAVOK_FULL_SET_DAMAGE : 0;
 }
-
 function havokBonusText(){
-  return `Havok: +${HAVOK_DAMAGE_PER_DRONE}% drone damage each. Full set (${HAVOK_SET_SIZE}): +${HAVOK_FULL_SET_DAMAGE}%.`;
+  return 'Havok: +10% Iris laser damage only when every owned Iris has a Havok. No incomplete-set bonus.';
 }
 
 // PRIX D'ACHAT (Pour le tooltip, info indicative)
@@ -1364,12 +1360,14 @@ function getDroneDesignMeta(drone){
 function getEquippedHavokCount(tabName){
   const state = DRONES_STATE[tabName] || [];
   let count = 0;
+  const seen = new Set();
   for (const drone of state) {
-    if (isFlaxDroneState(drone)) continue;
+    if (isFlaxDroneState(drone) || seen.has(drone.id)) continue;
+    seen.add(drone.id);
     const designMeta = getDroneDesignMeta(drone);
     if (designMeta && isHavokDesignItem(designMeta)) count++;
   }
-  return Math.min(HAVOK_SET_SIZE, count);
+  return count;
 }
 
 function equipDroneDesignOnDrone(tab, idx, item){
@@ -1847,6 +1845,9 @@ function ensureDronesStateFromList(list){
       name: d.name || `DRONE ${i+1}`,
       drone_item_id: droneItemId || 3,
       slot_count: slotCount,
+      level: Number(d.level) || 1,
+      progress_points: Number(d.progress_points) || 0,
+      next_threshold: Number(d.next_threshold) || 0,
       design_item_id: Number(d.design_item_id || d.designItemId || 0) || 0,
       design_code: d.design_code || d.designCode || null,
       design_name: d.design_name || d.designName || null,
@@ -1864,8 +1865,9 @@ function renderDrones(tabName){
 
   const state = DRONES_STATE[tabName] || [];
   const equippedHavoks = getEquippedHavokCount(tabName);
-  const havokDamage = getHavokDamageBonus(equippedHavoks);
-  wrap.append(el('div', {class: 'havok-summary'}, `Havok bonus: ${equippedHavoks}/${HAVOK_SET_SIZE} equipped • +${havokDamage}% drone damage`));
+  const eligibleIris = new Set(state.filter(d => Number(d.drone_item_id || d.item_id) === 3).map(d => d.id)).size;
+  const havokDamage = getHavokDamageBonus(equippedHavoks, eligibleIris);
+  wrap.append(el('div', {class: 'havok-summary'}, `Havok bonus: ${equippedHavoks}/${eligibleIris} Iris equipped • +${havokDamage}% Iris laser damage`));
 
   const list = el('div',{id:'droneList'});
   wrap.append(list);
@@ -1965,7 +1967,12 @@ function renderDrones(tabName){
     }
 
     const block = el('div',{class:'droneBlock' + (hasHavokDesign ? ' havokBlock' : '')});
-    block.append(rowTitle, row);
+    const level = Math.max(1, Math.min(6, Number(d.level) || 1));
+    const points = Math.max(0, Number(d.progress_points) || 0);
+    const progress = level === 6 ? 'MAX LEVEL' : `Progress: ${points} / ${Number(d.next_threshold) || [100,200,400,800,1600][level-1]}`;
+    const levelInfo = el('div', {class:'drone-level',style:'padding:4px 10px;color:#a8c4d9;font-size:12px'},
+      `Level ${level} · ${progress} · Laser +${(level-1)*2}% · Shield +${(level-1)*4}%`);
+    block.append(rowTitle, levelInfo, row);
     list.append(block);
   });
 }

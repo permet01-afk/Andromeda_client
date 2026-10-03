@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/DroneLevelService.php';
 
 class ShopPurchaseService
 {
@@ -131,6 +132,8 @@ class ShopPurchaseService
 
             $this->grantInventoryItem($this->playerId, $itemId, 1);
             $this->syncDronesTables($this->playerId, $desired);
+            DroneLevelService::recalculate($this->db, $this->playerId);
+            $this->db->prepare('UPDATE users SET config_refresh_pending=1 WHERE id=?')->execute([$this->playerId]);
             $this->debitCurrency($currency, $price);
         }, 'Bought: ' . $displayName, function () use (&$pricePreview) {
             return $pricePreview;
@@ -443,14 +446,7 @@ class ShopPurchaseService
         }
 
         try {
-            $this->db->exec("CREATE TABLE IF NOT EXISTS drone_slot_config (
-                drone_id INT(11) NOT NULL,
-                config CHAR(1) NOT NULL,
-                slot_index TINYINT(4) NOT NULL,
-                item_id INT(11) DEFAULT NULL,
-                PRIMARY KEY (drone_id, config, slot_index),
-                KEY idx_drone_config (drone_id, config)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $this->db->query('SELECT drone_id, config, slot_index FROM drone_slot_config LIMIT 0');
 
             $cur = $this->db->prepare('SELECT id, item_id, name FROM drone WHERE player_id = :pid ORDER BY id ASC FOR UPDATE');
             $cur->execute([':pid' => $playerId]);
@@ -486,7 +482,7 @@ class ShopPurchaseService
                 return $candidate;
             };
 
-            $insDrone = $this->db->prepare('INSERT INTO drone (player_id, name, item_id, level) VALUES (:p, :n, :iid, 6)');
+            $insDrone = $this->db->prepare('INSERT INTO drone (player_id, name, item_id, level, progress_points) VALUES (:p, :n, :iid, 1, 0)');
             $updDroneItem = $this->db->prepare('UPDATE drone SET item_id = :iid WHERE id = :id AND (item_id IS NULL OR item_id = 0)');
             $insGlobalSlot = null;
             try {

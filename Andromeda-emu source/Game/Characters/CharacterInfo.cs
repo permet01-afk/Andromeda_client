@@ -1,4 +1,4 @@
-﻿using OrbitReborn_Emulator.Communication;
+using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
 using OrbitReborn_Emulator.Game.Laboratory;
@@ -3604,24 +3604,8 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             EquipmentSnapshot equipmentA = EquipmentSnapshot.Empty;
             EquipmentSnapshot equipmentB = EquipmentSnapshot.Empty;
-            DataTable cfgTable = MySqlClient.ExecuteQueryTable(
-                "SELECT sc.name AS config, sc.lasers_slots AS laser_capacity, scs.damage_total, scs.shield_total, scs.speed_total, " +
-                "sl.ship_count, sl.ship_lf1, sl.ship_mp1, sl.ship_lf2, sl.ship_lf3, " +
-                "dl.drone_count, dl.drone_lf1, dl.drone_mp1, dl.drone_lf2, dl.drone_lf3 " +
-                "FROM ship_config sc LEFT JOIN ship_config_stats scs ON scs.ship_config_id = sc.id " +
-                "LEFT JOIN (SELECT ss.ship_config_id, COUNT(*) AS ship_count, " +
-                "SUM(ss.item_id=10) AS ship_lf1, SUM(ss.item_id=11) AS ship_mp1, SUM(ss.item_id=12) AS ship_lf2, SUM(ss.item_id=1) AS ship_lf3 " +
-                "FROM ship_slot ss INNER JOIN ship_config owner ON owner.id=ss.ship_config_id " +
-                "INNER JOIN items i ON i.id=ss.item_id AND i.category='laser' " +
-                "WHERE owner.player_id=@pid AND owner.ship_design_id=@sid AND ss.row_name='lasers' " +
-                "GROUP BY ss.ship_config_id) sl ON sl.ship_config_id=sc.id " +
-                "LEFT JOIN (SELECT ds.config, COUNT(*) AS drone_count, " +
-                "SUM(ds.item_id=10) AS drone_lf1, SUM(ds.item_id=11) AS drone_mp1, SUM(ds.item_id=12) AS drone_lf2, SUM(ds.item_id=1) AS drone_lf3 " +
-                "FROM drone_slot_config ds INNER JOIN drone d ON d.id=ds.drone_id " +
-                "INNER JOIN items i ON i.id=ds.item_id AND i.category='laser' " +
-                "WHERE d.player_id=@pid GROUP BY ds.config) dl ON dl.config=sc.name " +
-                "WHERE sc.player_id=@pid AND sc.ship_design_id=@sid"
-            );
+            DroneEquipmentState droneEquipment = DroneProgressionService.Load(this.mId);
+            DataTable cfgTable = droneEquipment.ForShip(this.mShipId);
             if (cfgTable == null)
                 throw new InvalidOperationException("Could not load the equipment snapshot.");
 
@@ -3907,6 +3891,11 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.InvitationReceive.Clear();
             this.mConfig1.Equipment = equipmentA;
             this.mConfig2.Equipment = equipmentB;
+            this.mDroneDamageBonusPct = bonusDamagePct;
+            this.mDroneShieldBonusPct = bonusShieldPct;
+            this.mDronePilotShieldMultiplier = pilotBioShieldMultiplier;
+            System.Threading.Volatile.Write(ref this.mDroneFleet, droneEquipment.Drones);
+
         }
 
 
@@ -4494,6 +4483,9 @@ namespace OrbitReborn_Emulator.Game.Characters
 
                     if (rewardAsEnemy)
                     {
+                        // Do not turn a mixed-faction same-clan kill into drone farming.
+                        if (attackerInfo.Id != victimInfo.Id && (attackerInfo.ClanId <= 0 || attackerInfo.ClanId != victimInfo.ClanId))
+                            DroneProgressionService.Award(this.Attacker, DroneRules.PvpAward(attackerInfo.ShipId, victimInfo.ShipId));
                         attackerInfo.AddKill(client);
                         attackerInfo.AddLog(client, _Message1);
                         victimInfo.AddLog(client, _Message2);
@@ -5565,73 +5557,50 @@ namespace OrbitReborn_Emulator.Game.Characters
             return false;
         }
 
-        private List<string> GetDronePacketCodesFromDroneTable()
-        {
-            List<string> codes = new List<string>();
+        private DroneState[] mDroneFleet = new DroneState[0];
+        private int mDroneDamageBonusPct, mDroneShieldBonusPct;
+        private double mDronePilotShieldMultiplier = 1.0;
 
-            try
-            {
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-                {
-                    client.ClearParameters();
-                    client.SetParameter("player_id", (object)this.mId);
-
-                    DataTable table = client.ExecuteQueryTable("SELECT d.id, d.item_id, dde.design_item_id, i.name AS design_name, i.category AS design_category FROM drone d LEFT JOIN drone_design_equipped dde ON dde.drone_id = d.id LEFT JOIN items i ON i.id = dde.design_item_id WHERE d.player_id = @player_id ORDER BY d.id ASC LIMIT 8");
-                    if (table == null)
-                        return codes;
-
-                    foreach (DataRow row in table.Rows)
-                    {
-                        if (codes.Count >= 8) break;
-
-                        int itemId = SafeDataRowInt(row, "item_id");
-                        if (itemId == 3)
-                        {
-                            codes.Add(IsHavokDroneDesignRow(row) ? "25,H" : "25");
-                        }
-                        else if (itemId == 2 || itemId == 5)
-                        {
-                            codes.Add("15");
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                codes.Clear();
-            }
-
-            return codes;
-        }
-
+        // Loaded/published atomically with A/B; packet construction performs no DB access.
         public string GetDronePacketString()
         {
-            List<string> codes = GetDronePacketCodesFromDroneTable();
-
-            if (codes.Count == 0 && !string.IsNullOrEmpty(this.Drones))
-            {
-                string[] entries = this.Drones.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (string entry in entries)
-                {
-                    if (codes.Count >= 8) break;
-
-                    string[] p = entry.Split('/');
-                    if (p.Length == 0) continue;
-
-                    int t;
-                    if (!int.TryParse(p[0], out t))
-                        continue;
-
-                    if (t == 3) codes.Add("25");
-                    else if (t == 2 || t == 5) codes.Add("15");
-                }
-            }
+            List<string> codes = System.Threading.Volatile.Read(ref mDroneFleet).Take(8).Select(d => d.PacketCode).ToList();
 
             var right = codes.Take(2).ToList();
             var down = codes.Skip(2).Take(4).ToList();
             var left = codes.Skip(6).Take(2).ToList();
 
             return "3/" + BuildGroup(right) + "/" + BuildGroup(down) + "/" + BuildGroup(left);
+        }
+
+        public void ApplyDroneProgression(DroneEquipmentState state)
+        {
+            lock (this.mEquipmentSnapshotLock)
+            {
+                if (state.LeveledUp && state.ShipId == this.ShipId)
+                {
+                    int now = (int)UnixTimestamp.GetCurrent();
+                    foreach (DataRow row in state.ForShip(this.ShipId).Rows)
+                    {
+                        bool configB = Convert.ToString(row["config"]) == "B";
+                        CharacterConfig config = configB ? this.mConfig2 : this.mConfig1;
+                        int damage = Convert.ToInt32(row["damage_total"]);
+                        int shield = Convert.ToInt32(row["shield_total"]);
+                        damage += (int)(damage * (this.mDroneDamageBonusPct / 100.0));
+                        shield += (int)(shield * (this.mDroneShieldBonusPct / 100.0));
+                        if (this.mDronePilotShieldMultiplier > 1.0) shield = ApplyPilotBioMultiplier(shield, this.mDronePilotShieldMultiplier);
+                        if (this.IsAdmin && configB) damage *= 10;
+                        if (this.mBoosterDmgTime > now) damage += (int)(damage * 0.10);
+                        if (this.mBoosterShdTime > now) shield += (int)(shield * 0.25);
+                        config.MaxDamage = damage;
+                        config.MaxShield = shield;
+                        config.Shield = ClampRuntimeValue(config.Shield, 0, shield);
+                        config.Equipment = EquipmentSnapshot.FromRow(row);
+                    }
+                }
+                // No HP, position, target, cloak, RAGE, TECH, ammo or group mutation.
+                System.Threading.Volatile.Write(ref this.mDroneFleet, state.Drones);
+            }
         }
 
         private static string BuildGroup(List<string> g)

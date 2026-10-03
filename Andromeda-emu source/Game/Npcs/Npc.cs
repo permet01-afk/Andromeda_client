@@ -1,3 +1,4 @@
+using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
@@ -1959,6 +1960,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.ShipHp = this.ShipMaxHp;
             this.ShipShield = this.ShipMaxShield;
 
+            System.Threading.Interlocked.Exchange(ref this.mDeathRewardAdmission, 0);
             this.IsDestroying = false;
 
             MapInstance map = MapManager.GetInstanceByMapId(this.MapId);
@@ -2026,10 +2028,17 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.SpawnedMinions.Clear();
         }
 
+        private int mDeathRewardAdmission;
+
+        private bool TryAdmitDeathReward()
+        {
+            return this.Attackers != null && !this.IsDestroying
+                && System.Threading.Interlocked.CompareExchange(ref this.mDeathRewardAdmission, 1, 0) == 0;
+        }
+
         public void Destroy(MapInstance map)
         {
-            if (this.Attackers == null || this.IsDestroying)
-                return;
+            if (!TryAdmitDeathReward()) return;
 
             this.IsDestroying = true;
 
@@ -2104,6 +2113,45 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             TitleService.OnNpcDestroyed(this);
 
+            int ownerId = this.mRewardOwnerId;
+
+            if (ownerId <= 0 && this.Attackers != null && this.Attackers.Count > 0)
+            {
+                foreach (var kvp in (ConcurrentDictionary<int, int>)this.Attackers)
+                {
+                    ownerId = kvp.Key;
+                    break;
+                }
+            }
+
+            Session ownerSession = (ownerId > 0) ? SessionManager.GetSessionByCharacterId(ownerId) : null;
+
+            if (!IsSessionValidOnMap(ownerSession))
+            {
+                int bestId = 0;
+                int bestDmg = -1;
+
+                foreach (var kvp in (ConcurrentDictionary<int, int>)this.Attackers)
+                {
+                    Session s = SessionManager.GetSessionByCharacterId(kvp.Key);
+                    if (!IsSessionValidOnMap(s)) continue;
+
+                    if (kvp.Value > bestDmg)
+                    {
+                        bestDmg = kvp.Value;
+                        bestId = kvp.Key;
+                    }
+                }
+
+                ownerId = bestId;
+                ownerSession = (ownerId > 0) ? SessionManager.GetSessionByCharacterId(ownerId) : null;
+            }
+
+            bool invasionDroneKill = Invasion.IsInvasionNpc(this);
+            Session droneBeneficiary = invasionDroneKill ? Invasion.ResolveDroneRewardOwner(this, ownerSession) : ownerSession;
+            if (IsSessionValidOnMap(droneBeneficiary) && GetTrackedDamage(droneBeneficiary.CharacterId) > 0)
+                DroneProgressionService.Award(droneBeneficiary, DroneRules.NpcAward(droneBeneficiary.CharacterInfo.ShipId, this.Name, invasionDroneKill));
+
             if (Invasion.HandleNpcDestroyed(this, map))
             {
                 StopNpcAttack();
@@ -2142,40 +2190,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 }
 
                 return;
-            }
-
-            int ownerId = this.mRewardOwnerId;
-
-            if (ownerId <= 0 && this.Attackers != null && this.Attackers.Count > 0)
-            {
-                foreach (var kvp in (ConcurrentDictionary<int, int>)this.Attackers)
-                {
-                    ownerId = kvp.Key;
-                    break;
-                }
-            }
-
-            Session ownerSession = (ownerId > 0) ? SessionManager.GetSessionByCharacterId(ownerId) : null;
-
-            if (!IsSessionValidOnMap(ownerSession))
-            {
-                int bestId = 0;
-                int bestDmg = -1;
-
-                foreach (var kvp in (ConcurrentDictionary<int, int>)this.Attackers)
-                {
-                    Session s = SessionManager.GetSessionByCharacterId(kvp.Key);
-                    if (!IsSessionValidOnMap(s)) continue;
-
-                    if (kvp.Value > bestDmg)
-                    {
-                        bestDmg = kvp.Value;
-                        bestId = kvp.Key;
-                    }
-                }
-
-                ownerId = bestId;
-                ownerSession = (ownerId > 0) ? SessionManager.GetSessionByCharacterId(ownerId) : null;
             }
 
             bool isGalaxyGateReward = GalaxyGateWaveService.IsGateMap(this.MapId);

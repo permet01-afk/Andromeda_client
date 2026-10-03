@@ -1,0 +1,80 @@
+-- PHASE 3 DRONE LEVELS — MANUAL OWNER EXECUTION ONLY.
+-- Stop the local emulator and prevent web equipment/purchase writes during this operation.
+-- In phpMyAdmin select your Andromeda DB. Export drone, drone_slot, drone_slot_config,
+-- drone_design_equipped, ship_config_stats, users and player_config before executing.
+-- INTENTIONAL RESET: existing Iris/Flax instances -> level 1 / 0 points.
+-- Instance IDs, ownership, equipment A/B, designs and inventory are retained.
+-- No DROP/TRUNCATE, no runtime DDL. Requires the existing InnoDB equipment schema.
+-- ROLLBACK: DDL is auto-committing in MySQL/MariaDB. This is NOT one atomic DDL transaction.
+-- Before restarting gameplay, an owner can restore the exported rows by original primary key.
+-- Do not restore users wholesale after play resumes (would overwrite unrelated rewards/ammo).
+-- For code rollback, restore previous binaries/assets and recompute the old equipment cache;
+-- the additional progress_points column may remain. Never reset IDs or drop drone records.
+
+SELECT DATABASE() AS target_database;
+SELECT item_id, level, COUNT(*) AS instances FROM drone GROUP BY item_id, level ORDER BY item_id,level;
+SELECT COUNT(*) AS drone_count, SUM(id) AS id_sum FROM drone;
+SELECT COUNT(*) AS slots_ab FROM drone_slot_config;
+SELECT COUNT(*) AS equipped_designs FROM drone_design_equipped;
+
+-- A nullable sentinel makes interrupted installation resumable and reruns non-destructive.
+-- Only rows never initialized by this migration (NULL) get the intentional L1 reset.
+SET @phase3_add = IF((SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='drone' AND COLUMN_NAME='progress_points')=0,
+    'ALTER TABLE drone ADD COLUMN progress_points INT UNSIGNED NULL DEFAULT NULL', 'SELECT 1');
+PREPARE phase3_stmt FROM @phase3_add;
+EXECUTE phase3_stmt;
+DEALLOCATE PREPARE phase3_stmt;
+
+START TRANSACTION;
+UPDATE drone SET level=1, progress_points=0 WHERE item_id IN (3,5) AND progress_points IS NULL;
+UPDATE drone SET progress_points=0 WHERE progress_points IS NULL;
+
+-- Recompute base equipment caches NOW, including all ship configurations A/B.
+-- Same fixed-point formula as PHP/C#: per-instance level, then full-set Havok on Iris;
+-- round half UP once on the whole config. No ship/Pilot Bio/booster bonus in this base cache.
+INSERT INTO ship_config_stats(ship_config_id,config,lasers_slots,gen_slots,extras_slots,damage_total,shield_total,speed_total)
+SELECT sc.id,sc.name,sc.lasers_slots,sc.gen_slots,sc.extras_slots,
+    FLOOR((COALESCE(ship.damage,0)*10000+COALESCE(ds.damage_units,0)+5000)/10000),
+    FLOOR((COALESCE(ship.shield,0)*10000+COALESCE(ds.shield_units,0)+5000)/10000),
+    GREATEST(1,sd.base_speed_2010)+COALESCE(ship.speed,0)
+FROM ship_config sc JOIN ship_design sd ON sd.ship_design_id=sc.ship_design_id
+LEFT JOIN (
+    SELECT ship_config_id, SUM(CASE item_id WHEN 10 THEN 40 WHEN 11 THEN 60 WHEN 12 THEN 100 WHEN 1 THEN 150 ELSE 0 END) AS damage, SUM(CASE item_id WHEN 35 THEN 1000 WHEN 36 THEN 2000 WHEN 37 THEN 4000 WHEN 2 THEN 10000 ELSE 0 END) AS shield, SUM(CASE item_id WHEN 30 THEN 2 WHEN 31 THEN 3 WHEN 32 THEN 4 WHEN 33 THEN 5 WHEN 34 THEN 7 WHEN 4 THEN 10 ELSE 0 END) AS speed
+    FROM ship_slot GROUP BY ship_config_id
+) ship ON ship.ship_config_id=sc.id
+LEFT JOIN (
+    SELECT d.player_id,s.config,
+      SUM((CASE s.item_id WHEN 10 THEN 40 WHEN 11 THEN 60 WHEN 12 THEN 100 WHEN 1 THEN 150 ELSE 0 END)*(100+2*(d.level-1))*IF(d.item_id=3 AND h.iris_count>0 AND h.iris_count=h.havok_count,110,100)) AS damage_units,
+      SUM((CASE s.item_id WHEN 35 THEN 1000 WHEN 36 THEN 2000 WHEN 37 THEN 4000 WHEN 2 THEN 10000 ELSE 0 END)*(100+4*(d.level-1))*100) AS shield_units
+    FROM drone_slot_config s JOIN drone d ON d.id=s.drone_id
+    LEFT JOIN (
+      SELECT d.player_id,SUM(d.item_id=3) AS iris_count,
+        SUM(d.item_id=3 AND i.id IS NOT NULL AND (i.id=9001 OR LOWER(i.name) LIKE '%havok%' OR LOWER(i.name) LIKE '%havoc%')) AS havok_count
+      FROM drone d LEFT JOIN drone_design_equipped de ON de.drone_id=d.id LEFT JOIN items i ON i.id=de.design_item_id
+      GROUP BY d.player_id
+    ) h ON h.player_id=d.player_id
+    WHERE d.item_id IN (3,5) AND s.slot_index>=0 AND s.slot_index<IF(d.item_id=3,2,1)
+    GROUP BY d.player_id,s.config
+) ds ON ds.player_id=sc.player_id AND ds.config=sc.name
+WHERE sc.name IN ('A','B')
+ON DUPLICATE KEY UPDATE damage_total=VALUES(damage_total),shield_total=VALUES(shield_total),speed_total=VALUES(speed_total);
+
+UPDATE users u JOIN ship_config c ON c.player_id=u.id AND c.ship_design_id=u.shipid AND c.name=IF(u.active_config=2,'B','A')
+JOIN ship_config_stats s ON s.ship_config_id=c.id
+SET u.damages=s.damage_total,u.max_shield=s.shield_total,u.speed=s.speed_total,u.config_refresh_pending=1;
+COMMIT;
+
+ALTER TABLE drone MODIFY COLUMN progress_points INT UNSIGNED NOT NULL DEFAULT 0;
+ALTER TABLE drone ALTER COLUMN level SET DEFAULT 1;
+
+-- Post checks: first run all Iris/Flax must be L1/0; later reruns retain earned progress.
+SELECT item_id,level,progress_points,COUNT(*) AS instances FROM drone GROUP BY item_id,level,progress_points ORDER BY item_id,level,progress_points;
+SELECT COUNT(*) AS invalid_progress FROM drone WHERE item_id IN (3,5) AND
+    (level NOT BETWEEN 1 AND 6 OR (level=6 AND progress_points<>0) OR
+     (level<6 AND progress_points>=CASE level WHEN 1 THEN 100 WHEN 2 THEN 200 WHEN 3 THEN 400 WHEN 4 THEN 800 WHEN 5 THEN 1600 END));
+SELECT COUNT(*) AS drone_count, SUM(id) AS id_sum FROM drone;
+SELECT COUNT(*) AS slots_ab FROM drone_slot_config;
+SELECT COUNT(*) AS equipped_designs FROM drone_design_equipped;
+SELECT c.player_id,c.ship_design_id,c.name,s.damage_total,s.shield_total,s.speed_total FROM ship_config c JOIN ship_config_stats s ON s.ship_config_id=c.id ORDER BY c.player_id,c.ship_design_id,c.name;
+-- A/B caches and login are authoritative. No test account or currency fixture is installed here.

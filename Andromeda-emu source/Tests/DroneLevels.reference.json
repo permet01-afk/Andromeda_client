@@ -1,0 +1,347 @@
+{
+  "ships": [
+    "Phoenix",
+    "Yamato",
+    "Leonov",
+    "Defcom",
+    "Liberator",
+    "Piranha",
+    "Nostromo",
+    "Vengeance",
+    "Bigboy",
+    "Goliath"
+  ],
+  "npc": {
+    "Streuner": [
+      4,
+      3,
+      3,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "Lordakia": [
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    "Devolarium": [
+      40,
+      35,
+      30,
+      25,
+      20,
+      15,
+      10,
+      9,
+      8,
+      7
+    ],
+    "Mordon": [
+      16,
+      14,
+      12,
+      10,
+      8,
+      6,
+      4,
+      2,
+      1,
+      1
+    ],
+    "Sibelon": [
+      50,
+      45,
+      40,
+      35,
+      30,
+      25,
+      22,
+      19,
+      17,
+      12
+    ],
+    "Saimon": [
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1
+    ],
+    "Sibelonit": [
+      20,
+      18,
+      16,
+      14,
+      12,
+      10,
+      8,
+      6,
+      4,
+      3
+    ],
+    "Lordakium": [
+      60,
+      55,
+      50,
+      45,
+      40,
+      35,
+      30,
+      25,
+      20,
+      15
+    ],
+    "Kristallin": [
+      30,
+      25,
+      20,
+      18,
+      16,
+      14,
+      12,
+      10,
+      7,
+      4
+    ],
+    "Kristallon": [
+      72,
+      70,
+      64,
+      60,
+      53,
+      40,
+      40,
+      30,
+      24,
+      18
+    ],
+    "StreuneR": [
+      14,
+      13,
+      11,
+      9,
+      7,
+      5,
+      4,
+      3,
+      2,
+      1
+    ]
+  },
+  "pvp": [
+    [
+      10,
+      10,
+      10,
+      10,
+      10,
+      10,
+      10,
+      20,
+      20,
+      25
+    ],
+    [
+      8,
+      10,
+      10,
+      10,
+      10,
+      10,
+      10,
+      20,
+      20,
+      25
+    ],
+    [
+      6,
+      8,
+      10,
+      10,
+      10,
+      10,
+      10,
+      20,
+      20,
+      25
+    ],
+    [
+      4,
+      6,
+      8,
+      10,
+      10,
+      10,
+      10,
+      20,
+      20,
+      25
+    ],
+    [
+      2,
+      4,
+      6,
+      8,
+      10,
+      10,
+      10,
+      20,
+      20,
+      25
+    ],
+    [
+      1,
+      2,
+      4,
+      6,
+      8,
+      10,
+      10,
+      20,
+      20,
+      25
+    ],
+    [
+      0,
+      1,
+      2,
+      4,
+      6,
+      8,
+      10,
+      20,
+      20,
+      25
+    ],
+    [
+      0,
+      0,
+      1,
+      2,
+      4,
+      6,
+      8,
+      20,
+      20,
+      25
+    ],
+    [
+      0,
+      0,
+      0,
+      1,
+      2,
+      4,
+      6,
+      8,
+      20,
+      25
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      1,
+      2,
+      4,
+      6,
+      8,
+      25
+    ]
+  ],
+  "sources": {
+    "en": "https://board-en.darkorbit.com/threads/drone-faq.896/",
+    "de_extension": "https://board-de.darkorbit.com/threads/faq-drohnen.2892/",
+    "note": "EN primary; DE extension only for Yamato, Defcom, Nostromo; PvP rows=attacker, columns=victim."
+  },
+  "bonus_vectors": [
+    {
+      "level": 1,
+      "iris_2lf3": 300,
+      "flax_lf3": 150,
+      "drone_bo2": 10000
+    },
+    {
+      "level": 2,
+      "iris_2lf3": 306,
+      "flax_lf3": 153,
+      "drone_bo2": 10400
+    },
+    {
+      "level": 3,
+      "iris_2lf3": 312,
+      "flax_lf3": 156,
+      "drone_bo2": 10800
+    },
+    {
+      "level": 4,
+      "iris_2lf3": 318,
+      "flax_lf3": 159,
+      "drone_bo2": 11200
+    },
+    {
+      "level": 5,
+      "iris_2lf3": 324,
+      "flax_lf3": 162,
+      "drone_bo2": 11600
+    },
+    {
+      "level": 6,
+      "iris_2lf3": 330,
+      "flax_lf3": 165,
+      "drone_bo2": 12000
+    }
+  ],
+  "configuration_vectors": [
+    {
+      "level": 1,
+      "full_havok": false,
+      "ship_lf3": 15,
+      "drone_lf3": 16,
+      "N": 31,
+      "damage": 4650
+    },
+    {
+      "level": 6,
+      "full_havok": false,
+      "ship_lf3": 15,
+      "drone_lf3": 16,
+      "N": 31,
+      "damage": 4890
+    },
+    {
+      "level": 1,
+      "full_havok": true,
+      "ship_lf3": 15,
+      "drone_lf3": 16,
+      "N": 31,
+      "damage": 4890
+    },
+    {
+      "level": 6,
+      "full_havok": true,
+      "ship_lf3": 15,
+      "drone_lf3": 16,
+      "N": 31,
+      "damage": 5154
+    }
+  ]
+}

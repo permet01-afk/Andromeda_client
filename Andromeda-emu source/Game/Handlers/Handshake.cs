@@ -1,4 +1,5 @@
-﻿using OrbitReborn_Emulator.Game.Techs;
+using OrbitReborn_Emulator.Game.Characters;
+using OrbitReborn_Emulator.Game.Techs;
 
 
 using OrbitReborn_Emulator.Communication;
@@ -359,9 +360,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         if (!s.CharacterInfo.TryClaimWebsiteConfigRefresh(client)) return;
                         try
                         {
+                            string previousDrones = s.CharacterInfo.GetDronePacketString();
                             int previousStage = s.CharacterInfo.ExpansionStage;
                             s.CharacterInfo.RefreshUserDataPreservingRuntime(client, false);
                             SelectAction.PublishExpansionStage(s, previousStage);
+                            if (previousDrones != s.CharacterInfo.GetDronePacketString()) DroneProgressionService.PublishDrones(s);
                             SelectAction.SendConfigurationRefresh(s, true, true);
                             s.SendData(PacketComposer.Compose("B", s.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                             s.SendData(PacketComposer.Compose("3", s.CharacterInfo.GetSecondaryWeaponInfoPayload()));

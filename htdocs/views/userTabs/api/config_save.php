@@ -2,6 +2,7 @@
 
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../../../libs/DroneLevelService.php';
 require_once __DIR__ . '/helpers_drones.php';
 header('Content-Type: application/json');
 
@@ -73,42 +74,8 @@ function computeConfigPoints(int $lasers, int $shields, int $speeds): array
 try {
 
     
-    $col = $db->query("SHOW COLUMNS FROM users LIKE 'config_refresh_pending'")->fetchColumn();
-    if (!$col) {
-        $db->exec("ALTER TABLE users ADD COLUMN config_refresh_pending TINYINT(1) NOT NULL DEFAULT 0");
-    }
+    DroneLevelService::assertSchema($db);
 
-
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS ship_config_stats (
-            ship_config_id INT PRIMARY KEY,
-            config        CHAR(1) NOT NULL,
-            lasers_slots  INT NOT NULL DEFAULT 0,
-            gen_slots     INT NOT NULL DEFAULT 0,
-            extras_slots  INT NOT NULL DEFAULT 0,
-            damage_total  INT NOT NULL DEFAULT 0,
-            shield_total  INT NOT NULL DEFAULT 0,
-            speed_total   INT NOT NULL DEFAULT 0
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    
-    $db->exec("
-        CREATE TABLE IF NOT EXISTS drone_slot_config (
-            drone_id    INT(11) NOT NULL,
-            config      CHAR(1) NOT NULL,
-            slot_index  TINYINT(4) NOT NULL,
-            item_id     INT(11) DEFAULT NULL,
-            PRIMARY KEY (drone_id, config, slot_index),
-            KEY idx_drone_config (drone_id, config)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
-
-    if (function_exists('ensure_drone_design_equipped_table')) {
-        ensure_drone_design_equipped_table($db);
-    }
-
-    
     $raw = file_get_contents('php://input');
     if (!$raw && isset($_POST['payload'])) $raw = $_POST['payload'];
 
@@ -133,6 +100,8 @@ try {
     $hasDrones = (is_array($dronesA) && count($dronesA) > 0) || (is_array($dronesB) && count($dronesB) > 0);
 
     $db->beginTransaction();
+    $lockedPlayer = DroneLevelService::lockPlayer($db, (int)$pid);
+    if ((int)$lockedPlayer['in_fight_until'] > time()) throw new RuntimeException('in_combat');
 
     
     
@@ -433,7 +402,8 @@ $saveDroneConfig = function (string $cfg, array $dronesPayload) use ($db, $drIds
     foreach ($dronesPayload as $idx => $d) {
         if (!is_array($d)) continue;
 
-        $did = $drIds[$idx] ?? null;
+        $did = (int)($d['id'] ?? 0);
+        if (!in_array($did, $drIds, true)) throw new RuntimeException('Drone ownership changed; reload equipment.');
         if (!$did) continue;
         $did = (int)$did;
 
@@ -492,7 +462,8 @@ $requestedDroneDesigns = [];
 $collectDroneDesigns = function (array $dronesPayload) use (&$requestedDroneDesigns, $drIds) {
     foreach ($dronesPayload as $idx => $dronePayload) {
         if (!is_array($dronePayload)) continue;
-        $did = $drIds[$idx] ?? null;
+        $did = (int)($dronePayload['id'] ?? 0);
+        if (!in_array($did, $drIds, true)) throw new RuntimeException('Drone ownership changed; reload equipment.');
         if (!$did) continue;
         $designItemId = (int)($dronePayload['design_item_id'] ?? $dronePayload['designItemId'] ?? 0);
         if ($designItemId > 0 && !isset($requestedDroneDesigns[(int)$did])) {
@@ -539,228 +510,10 @@ if ($hasDrones && !empty($drIds)) {
     }
 }
 
-$havokDroneIds = [];
-if (!empty($drIds)) {
-    $inHavokDrones = implode(',', array_map('intval', $drIds));
-    try {
-        $havokStmt = $db->query("
-            SELECT dde.drone_id, dde.design_item_id, i.name, CASE WHEN i.id=9001 OR LOWER(i.name) LIKE '%havok%' OR LOWER(i.name) LIKE '%havoc%' THEN 'drone_design' ELSE i.category END AS category, i.type
-            FROM drone_design_equipped dde
-            LEFT JOIN items i ON i.id = dde.design_item_id
-            WHERE dde.drone_id IN ($inHavokDrones)
-        ");
-        foreach ($havokStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $item = [
-                'id' => (int)($row['design_item_id'] ?? 0),
-                'name' => (string)($row['name'] ?? ''),
-                'cat' => (string)($row['category'] ?? ''),
-                'category' => (string)($row['category'] ?? ''),
-                'type' => (int)($row['type'] ?? 0),
-            ];
-            if (function_exists('is_havok_design_item') && is_havok_design_item($item)) {
-                $havokDroneIds[(int)$row['drone_id']] = true;
-            }
-        }
-    } catch (Exception $e) {
-        $havokDroneIds = [];
-    }
-}
-
-
-    
-    $BASE_SPEED = $baseSpeed2010;
-
-    
-    $LASER_DAMAGE_BY_ID = [
-        10 => 40,   
-        11 => 60,   
-        12 => 100,  
-        1  => 150,  
-    ];
-
-    $SHIELD_VALUE_BY_ID = [
-        35 => 1000,   
-        36 => 2000,   
-        37 => 4000,   
-        2  => 10000,  
-    ];
-
-    $SPEED_BONUS_BY_ID = [
-        30 => 2,   
-        31 => 3,   
-        32 => 4,   
-        33 => 5,   
-        34 => 7,   
-        4  => 10,  
-    ];
-
-    
-    $cfg = $db->prepare("
-        SELECT id, name, lasers_slots, gen_slots, extras_slots
-        FROM ship_config
-        WHERE player_id = :p AND ship_design_id = :sid
-        ORDER BY name
-    ");
-    $cfg->execute([':p' => $pid, ':sid' => $shipDesignId]);
-    $configs = $cfg->fetchAll(PDO::FETCH_ASSOC);
-
-    
-    $countShip = $db->prepare("
-        SELECT s.item_id, i.category, i.type, COUNT(*) AS n
-        FROM ship_slot s
-        JOIN items i ON i.id = s.item_id
-        WHERE s.item_id IS NOT NULL AND s.ship_config_id = :cid
-        GROUP BY s.item_id, i.category, i.type
-    ");
-
-    
-    $droneTotals = [
-        'A' => ['laser' => 0, 'shield' => 0, 'damage' => 0.0, 'boostable_damage' => 0.0, 'shield_points' => 0],
-        'B' => ['laser' => 0, 'shield' => 0, 'damage' => 0.0, 'boostable_damage' => 0.0, 'shield_points' => 0],
-    ];
-    $equippedHavokCount = min(8, count($havokDroneIds));
-
-    // Havok rule: 2% per equipped Havok from 1 to 7, full 8 Havoks = 20% total.
-    $havokBonusPct = ($equippedHavokCount >= 8)
-        ? 20
-        : ($equippedHavokCount * 2);
-
-    $havokDroneDamageMultiplier = 1.0 + ($havokBonusPct / 100.0);
-
-    if (!empty($drIds)) {
-        $in = implode(',', array_map('intval', $drIds));
-
-        $qd = $db->prepare("
-            SELECT dsc.drone_id, dsc.item_id, i.category, i.type
-            FROM drone_slot_config dsc
-            JOIN items i ON i.id = dsc.item_id
-            WHERE dsc.item_id IS NOT NULL
-              AND dsc.config = :cfg
-              AND dsc.drone_id IN ($in)
-            ORDER BY dsc.drone_id, dsc.slot_index
-        ");
-
-        foreach (['A', 'B'] as $cfgName) {
-            $qd->execute([':cfg' => $cfgName]);
-            foreach ($qd->fetchAll(PDO::FETCH_ASSOC) as $r) {
-                $droneId = (int)$r['drone_id'];
-                $iid = (int)$r['item_id'];
-                $cat = $r['category'];
-                $typ = (int)$r['type'];
-
-                if ($cat === 'laser') {
-                    $droneTotals[$cfgName]['laser'] += 1;
-                    $dmgPer = (float)($LASER_DAMAGE_BY_ID[$iid] ?? 0);
-                    $droneTotals[$cfgName]['damage'] += $dmgPer;
-
-                    // Havok v2 rule: each equipped Havok gives +2% to Iris drone laser damage
-                    // in the saved configuration. Flax laser damage stays unboosted.
-                    if ((int)($drItemIdById[$droneId] ?? 0) === 3) {
-                        $droneTotals[$cfgName]['boostable_damage'] += $dmgPer;
-                    }
-
-                } elseif ($cat === 'generator' && $typ === 4) {
-                    $droneTotals[$cfgName]['shield'] += 1;
-                    $shdPer = $SHIELD_VALUE_BY_ID[$iid] ?? 0;
-                    $droneTotals[$cfgName]['shield_points'] += $shdPer;
-                }
-                
-            }
-        }
-    }
-
-    $upStats = $db->prepare("
-        INSERT INTO ship_config_stats (
-            ship_config_id, config,
-            lasers_slots, gen_slots, extras_slots,
-            damage_total, shield_total, speed_total
-        ) VALUES (
-            :cid, :cfg,
-            :ls, :gs, :es,
-            :dmg, :shd, :spd
-        )
-        ON DUPLICATE KEY UPDATE
-            lasers_slots = VALUES(lasers_slots),
-            gen_slots    = VALUES(gen_slots),
-            extras_slots = VALUES(extras_slots),
-            damage_total = VALUES(damage_total),
-            shield_total = VALUES(shield_total),
-            speed_total  = VALUES(speed_total)
-    ");
-
-    $statsByName       = [];
+// Level/Havok totals come from the authoritative instance rows, under the same lock as the save.
+    $statsByName = DroneLevelService::recalculate($db, (int)$pid);
     $equipCountsByName = [];
-
-    foreach ($configs as $c) {
-        $cid  = (int)$c['id'];
-        $name = $c['name']; 
-
-        
-        $shipLasers  = 0;
-        $shipShields = 0;
-        $shipSpeeds  = 0;
-
-        
-        $shipDamage     = 0;
-        $shipShieldPts  = 0;
-        $shipSpeedBonus = 0;
-
-        $countShip->execute([':cid' => $cid]);
-        foreach ($countShip as $r) {
-            $iid = (int)$r['item_id'];
-            $cat = $r['category'];
-            $typ = (int)$r['type'];
-            $n   = (int)$r['n'];
-
-            if ($cat === 'laser') {
-                $shipLasers += $n;
-                $shipDamage += ($LASER_DAMAGE_BY_ID[$iid] ?? 0) * $n;
-
-            } elseif ($cat === 'generator' && $typ === 4) {
-                $shipShields += $n;
-                $shipShieldPts += ($SHIELD_VALUE_BY_ID[$iid] ?? 0) * $n;
-
-            } elseif ($cat === 'generator' && $typ === 3) {
-                $shipSpeeds += $n;
-                $shipSpeedBonus += ($SPEED_BONUS_BY_ID[$iid] ?? 0) * $n;
-            }
-        }
-
-        $droneLasers  = $droneTotals[$name]['laser'] ?? 0;
-        $droneShields = $droneTotals[$name]['shield'] ?? 0;
-        $baseDroneDamage = (float)($droneTotals[$name]['damage'] ?? 0);
-        $boostableDroneDamage = (float)($droneTotals[$name]['boostable_damage'] ?? 0);
-        $nonBoostableDroneDamage = max(0.0, $baseDroneDamage - $boostableDroneDamage);
-        $droneDamage = $nonBoostableDroneDamage + ($boostableDroneDamage * $havokDroneDamageMultiplier);
-        $droneShield  = $droneTotals[$name]['shield_points'] ?? 0;
-
-        $totalLasers  = $shipLasers  + $droneLasers;
-        $totalShields = $shipShields + $droneShields;
-
-        $damage = (int)round($shipDamage + $droneDamage);
-        $shield = (int)($shipShieldPts + $droneShield);
-        $speed  = (int)($BASE_SPEED + $shipSpeedBonus);
-
-        $upStats->execute([
-            ':cid' => $cid,
-            ':cfg' => $name,
-            ':ls'  => (int)$c['lasers_slots'],
-            ':gs'  => (int)$c['gen_slots'],
-            ':es'  => (int)$c['extras_slots'],
-            ':dmg' => $damage,
-            ':shd' => $shield,
-            ':spd' => $speed
-        ]);
-
-        $statsByName[$name] = ['damage' => $damage, 'shield' => $shield, 'speed' => $speed];
-        $equipCountsByName[$name] = [
-            'lasers'  => $totalLasers,
-            'shields' => $totalShields,
-            'speeds'  => $shipSpeeds
-        ];
-    }
-
-
+    foreach ($statsByName as $name => $stats) $equipCountsByName[$name] = $stats['counts'];
 
     $AStats = $statsByName['A'] ?? ['damage' => 0, 'shield' => 0, 'speed' => 0];
     $BStats = $statsByName['B'] ?? ['damage' => 0, 'shield' => 0, 'speed' => 0];

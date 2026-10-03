@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/../../../libs/DroneLevelService.php';
 require_once __DIR__ . '/helpers_drones.php'; 
 header('Content-Type: application/json');
 
@@ -64,6 +65,8 @@ $clampIndex = function(int $n): int {
 
 try {
     $db->beginTransaction();
+    DroneLevelService::lockPlayer($db, (int)$userId);
+    DroneLevelService::assertSchema($db);
     if (function_exists('ensure_drone_design_equipped_table')) {
         ensure_drone_design_equipped_table($db);
     }
@@ -284,7 +287,9 @@ try {
     $pay = $db->prepare($sql);
     $pay->execute([':amount' => $refundAmount, ':id' => $userId]);
 
-    $db->commit();
+    DroneLevelService::recalculate($db, (int)$userId);
+        $db->prepare('UPDATE users SET config_refresh_pending=1 WHERE id=?')->execute([(int)$userId]);
+        $db->commit();
 
     echo json_encode([
         'success' => true,
