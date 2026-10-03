@@ -503,6 +503,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             public int SourceId;
             public int SkillType;
             public int[] TargetIds;
+            public GameplayDeathContext TargetLife;
         }
 
         private sealed class ChainImpulseTarget
@@ -532,6 +533,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             public int TargetId;
             public bool TargetIsNpc;
             public int TargetSpawnSeq;
+            public GameplayDeathContext TargetLife;
             public int RocketId;
             public int Damage;
             public System.Threading.Timer Timer;
@@ -544,6 +546,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             public int TargetId;
             public bool TargetIsNpc;
             public int TargetSpawnSeq;
+            public GameplayDeathContext TargetLife;
             public int RocketId;
             public System.Threading.Timer Timer;
         }
@@ -1059,6 +1062,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             int targetId = 0;
             int targetSpawnSeq = 0;
             int targetNpcShipId = 0;
+            GameplayDeathContext targetLife = null;
 
             MapActor actorNpc = instanceByMapId.GetActorByReferenceId(Session.CharacterInfo.SelectedPlayer, MapActorType.AiBot);
             if (actorNpc != null)
@@ -1105,6 +1109,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
 
                 targetId = targetSession.CharacterId;
+                targetLife = DroneWearService.Capture(targetSession, GameplayDeathCause.Pvp);
 
                 Session.CharacterInfo.NoFightTimer = 0;
                 Session.CharacterInfo.PeaceZone = false;
@@ -1144,6 +1149,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 context.TargetId = targetId;
                 context.TargetIsNpc = targetIsNpc;
                 context.TargetSpawnSeq = targetSpawnSeq;
+                context.TargetLife = targetLife;
                 context.RocketId = rocketId;
                 context.Damage = missileDamage;
                 context.Timer = new System.Threading.Timer(new TimerCallback(Fight.EffectRocketLauncher), (object)context, GetRocketLauncherEffectDelayMs(Session), Timeout.Infinite);
@@ -1225,7 +1231,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (targetSession.CharacterInfo.ActiveISH || targetSession.CharacterInfo.PeaceZone)
                     return;
 
-                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId);
+                if (context == null || context.TargetLife == null || !DroneWearService.IsCurrentLife(targetSession, context.TargetLife)) return;
+                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId, context.TargetLife);
 
             }
             catch (Exception ex)
@@ -1990,7 +1997,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 SourceId = session.CharacterId,
                 SkillType = skillType,
-                TargetIds = targetIds.ToArray()
+                TargetIds = targetIds.ToArray(),
+                TargetLife = DroneWearService.Capture(SessionManager.GetSessionByCharacterId(targetId), GameplayDeathCause.Pvp)
             };
 
             if (skillType == 5)
@@ -2104,6 +2112,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         return;
                     }
 
+                    var deathContext = DroneWearService.Capture(target, GameplayDeathCause.Pvp);
+                    lock (target.CharacterInfo.DroneImpactSyncRoot)
+                    {
+                    if (!DroneWearService.IsCurrentLife(target, deathContext) || !DroneWearService.IsCurrentLife(target, timerContext.TargetLife) || target.CharacterInfo.ShipHp <= 0) return;
                     target.CharacterInfo.UpdateAttacker(attacker);
 
                     if (target.CharacterInfo.ShipHp - damagePerTick > 0)
@@ -2114,6 +2126,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         target.CharacterInfo.ShipHp = 0;
                     }
 
+                    DroneWearService.MarkLethalImpact(target, deathContext);
+                    }
                     if (damagePerTick > 0)
                         target.CharacterInfo.RegisterShieldDamageReceived();
 
@@ -2123,11 +2137,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     if (attacker.CharacterInfo.ActiveShipSkillTicksRemaining > 0)
                         --attacker.CharacterInfo.ActiveShipSkillTicksRemaining;
 
-                    if (target.CharacterInfo.ShipHp <= 0)
+                    if (DroneWearService.IsPendingDeath(target, deathContext))
                     {
                         Fight.StopCurrentShipSkill(attacker, true);
                         Fight.SendShipSkillStatus(attacker);
-                        Fight.KillPlayer(target);
+                        Fight.KillGameplayPlayer(target, deathContext);
                         return;
                     }
 
@@ -2984,6 +2998,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 context.TargetId = sessionByCharacterId.CharacterId;
                 context.TargetIsNpc = false;
                 context.TargetSpawnSeq = 0;
+                context.TargetLife = DroneWearService.Capture(sessionByCharacterId, GameplayDeathCause.Pvp);
                 context.RocketId = rocketId;
                 context.Timer = new System.Threading.Timer(
                     new TimerCallback(Fight.EffectRocket),
@@ -3140,7 +3155,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 }
 
-                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId);
+                if (context == null || context.TargetLife == null || !DroneWearService.IsCurrentLife(targetSession, context.TargetLife)) return;
+                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId, context.TargetLife);
             }
             catch (Exception ex)
             {
@@ -3866,6 +3882,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
+            var deathContext = DroneWearService.Capture(Ennemy, GameplayDeathCause.Pvp);
             double multiplier = Fight.GetMultiplier(Ammo, volley.ApisBuilt);
 
             int baseDamage = Convert.ToInt32((double)volley.MaxDamage * multiplier * volley.PlayerMultiplier);
@@ -3895,6 +3912,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
 
             {
+                lock (Ennemy.CharacterInfo.DroneImpactSyncRoot)
+                {
+                if (!DroneWearService.IsCurrentLife(Ennemy, deathContext) || Ennemy.CharacterInfo.ShipHp <= 0) return;
+                Ennemy.CharacterInfo.UpdateAttacker(Session);
                 if (Ammo == 5)
                 {
                     num2 = Fight.ApplyDiminisherShieldBonus(Session, Ennemy, num2);
@@ -3949,6 +3970,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     num2 = num3 + num4;
                 }
 
+                DroneWearService.MarkLethalImpact(Ennemy, deathContext);
+                }
                 Fight.ApplyEnergyLeech(Session, num2, Ammo, Instance);
 
                 MapInstance damageObserverInstance = MapManager.GetInstanceByMapId(Session.CharacterInfo.MapId);
@@ -3973,24 +3996,21 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
 
-                Ennemy.CharacterInfo.UpdateAttacker(Session);
                 if (num2 > 0)
                     Ennemy.CharacterInfo.RegisterShieldDamageReceived();
 
-                if (Ennemy.CharacterInfo.Destroy)
+                if (Ennemy.CharacterInfo.Destroy && !DroneWearService.IsPendingDeath(Ennemy, deathContext))
                 {
                     Fight.StopLaser(Session, Ennemy);
                     return;
                 }
 
-                if (Ennemy.CharacterInfo.ShipHp > 0)
+                if (!DroneWearService.IsPendingDeath(Ennemy, deathContext))
                     return;
 
                 Fight.StopLaser(Session, Ennemy);
 
-                Ennemy.CharacterInfo.SendReward(Ennemy);
-
-                Fight.KillPlayer(Ennemy);
+                Fight.KillGameplayPlayer(Ennemy, deathContext, true);
             }
         }
 
@@ -4329,14 +4349,63 @@ namespace OrbitReborn_Emulator.Game.Handlers
             instance.BroadcastMessage(PacketComposer.Compose("c", num.ToString() + "|" + (object)1 + "|" + (object)locX + "|" + (object)locY), false);
         }
 
-        public static void KillPlayer(Session Session, bool keepCargo = false)
+        // Administrative relocation is deliberately separate from gameplay death.
+        public static void EvacuatePlayer(Session Session, bool keepCargo = false)
         {
             if (Session == null) return;
             using (TechInventoryService.BeginTransition(Session))
                 KillPlayerCore(Session, keepCargo);
         }
 
-        private static void KillPlayerCore(Session Session, bool keepCargo = false)
+        public static void KillGameplayPlayer(Session player, GameplayDeathContext context, bool grantPvpReward = false)
+        {
+            if (player == null || player.CharacterInfo == null) return;
+            DroneDeathResult result;
+            try
+            {
+                lock (TechInventoryService.SyncRoot(player.CharacterId))
+                lock (player.CharacterInfo.DroneImpactSyncRoot)
+                {
+                    if (!DroneWearService.IsPendingDeath(player, context)) return;
+                    int faction = player.CharacterInfo.RealFaction;
+                    bool x8 = context.MapId == 16 || context.MapId == 29 || (context.MapId >= 17 && context.MapId <= 28);
+                    int destination = MapAccessService.GetHomeMapX1(faction), required;
+                    if (x8 && MapAccessService.CanAccessMap(faction,player.CharacterInfo.Level,MapAccessService.GetHomeMapX8(faction),out required))
+                        destination = MapAccessService.GetHomeMapX8(faction);
+                    result = DroneWearService.AdmitDeath(player.CharacterId,context,destination,
+                        faction == 1 ? 2000 : faction == 2 ? 18500 : 19000, faction == 3 ? 11300 : 1100);
+                    if (result == null) return;
+                    player.CharacterInfo.Destroy = true;
+                    player.CharacterInfo.DroneDeathPublishing = true;
+                    Interlocked.Exchange(ref player.DroneLifeEpoch,result.NextEpoch);
+                    player.CharacterInfo.ApplyDroneProgression(result.Equipment);
+                }
+                // Rewarding another player can acquire that player's lock. Never do
+                // this while holding the victim lifecycle lock (reciprocal PvP kills).
+                if (grantPvpReward) player.CharacterInfo.SendReward(player, true);
+                lock (TechInventoryService.SyncRoot(player.CharacterId))
+                using (TechInventoryService.BeginTransition(player))
+                {
+                    KillPlayerCore(player,false,result);
+                    player.CharacterInfo.DroneDeathPublishing = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Fail closed: no respawn with uncertain wear, no old location/stat
+                // save over a committed result. A restart/relogin reads durable state.
+                player.CharacterInfo.DroneDeathPublishing = false;
+                player.CharacterInfo.DroneWearPersistenceBlocked = true;
+                player.CharacterInfo.Disconnected = true;
+                player.CharacterInfo.Destroy = true;
+                player.StoppedPlayer = true;
+                player.SendData(PacketComposer.Compose("A","STD|Your session could not be saved. Please reconnect after the server recovers."));
+                SessionManager.StopSession(player.Id);
+                Output.WriteLine("[Drone wear] death failed player=" + player.CharacterId + ": " + ex, OutputLevel.CriticalError);
+            }
+        }
+
+        private static void KillPlayerCore(Session Session, bool keepCargo = false, DroneDeathResult durableDeath = null)
         {
             if (Session == null || Session.CharacterInfo == null)
                 return;
@@ -4346,7 +4415,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             try
             {
-                if (Session.CharacterInfo.Destroy)
+                if (Session.CharacterInfo.Destroy && durableDeath == null)
                     return;
 
                 Session.CharacterInfo.Destroy = true;
@@ -4364,7 +4433,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
 
-                GalaxyGateWaveService.OnPlayerKilled(Session);
+                if (durableDeath != null) GalaxyGateWaveService.PublishDroneWearDeath(Session, durableDeath.GateLives);
                 TitleService.OnPlayerDestroyed(Session);
 
                 Session.CharacterInfo.FactionId = Session.CharacterInfo.RealFaction;
@@ -4402,10 +4471,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.Attacker = null;
 
                 Session.CharacterInfo.ShipHp = 1000;
-                Session.CharacterInfo.Config1.Shield = 1000;
-                Session.CharacterInfo.Config2.Shield = 1000;
+                Session.CharacterInfo.Config1.Shield = Math.Min(1000, Session.CharacterInfo.Config1.MaxShield);
+                Session.CharacterInfo.Config2.Shield = Math.Min(1000, Session.CharacterInfo.Config2.MaxShield);
 
-                Session.CharacterInfo.Destroy = false;
                 Session.CharacterInfo.OutOfRange = false;
 
                 Session.CharacterInfo.CanMove = true;
@@ -4459,6 +4527,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.CharacterInfo.LocY = 11300;
                 }
 
+                if (durableDeath != null)
+                {
+                    targetMapId = durableDeath.RespawnMap;
+                    Session.CharacterInfo.LocX = durableDeath.RespawnX;
+                    Session.CharacterInfo.LocY = durableDeath.RespawnY;
+                }
                 Session.CharacterInfo.NewLocX = Session.CharacterInfo.LocX;
                 Session.CharacterInfo.NewLocY = Session.CharacterInfo.LocY;
                 Session.CharacterInfo.MapId = targetMapId;
@@ -4467,18 +4541,26 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                     MapManager.RemoveUserFromMap(Session);
 
+                    Session.CharacterInfo.DroneDeathPublishing = false;
+                    Session.CharacterInfo.PendingDroneDeath = null;
                     using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                     {
                         Session.CharacterInfo.SynchronizeStatistics(client, 0);
                     }
 
                     Session.CharacterInfo.Disconnected = true;
+                    DroneWearService.EndGameplay(Session.CharacterId, Session.DroneGameplayToken);
                     Session.StoppedPlayer = true;
                     SessionManager.StopSession(Session.Id);
                     return;
                 }
 
                 MapHandler.OpenPublicConnection(Session, Session.CharacterInfo.MapId, (PortalInfo)null);
+                lock (Session.CharacterInfo.DroneImpactSyncRoot)
+                {
+                    Session.CharacterInfo.PendingDroneDeath = null;
+                    Session.CharacterInfo.Destroy = false;
+                }
             }
             finally
             {
@@ -4715,19 +4797,25 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 npc.LockTarget(session.CharacterId);
         }
 
-        private static void ApplyDamageToPlayer(Session attacker, Session target, int damage, MapInstance instance)
+        private static void ApplyDamageToPlayer(Session attacker, Session target, int damage, MapInstance instance, GameplayDeathContext launchedLife = null)
         {
             if (attacker == null || attacker.CharacterInfo == null || target == null || target.CharacterInfo == null || instance == null)
                 return;
+            if (launchedLife != null && !DroneWearService.IsCurrentLife(target, launchedLife)) return;
             if (!PlayerCanAttack(attacker, target))
                 return;
 
             target.CharacterInfo.UpdateAttacker(attacker);
 
+            var deathContext = DroneWearService.Capture(target, GameplayDeathCause.Pvp);
+            int shieldPart, hpPart;
+            lock (target.CharacterInfo.DroneImpactSyncRoot)
+            {
+            if (!DroneWearService.IsCurrentLife(target, deathContext) || (launchedLife != null && !DroneWearService.IsCurrentLife(target, launchedLife)) || target.CharacterInfo.ShipHp <= 0) return;
             int baseShieldPart = Convert.ToInt32(damage * target.CharacterInfo.ShieldAbsorption);
-            int shieldPart = baseShieldPart;
+            shieldPart = baseShieldPart;
             shieldPart = Fight.ApplySentinelShieldReduction(target, shieldPart);
-            int hpPart = damage - baseShieldPart;
+            hpPart = damage - baseShieldPart;
 
             if (target.CharacterInfo.ShipShield - shieldPart > 0)
                 target.CharacterInfo.ShipShield -= shieldPart;
@@ -4742,6 +4830,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             else
                 target.CharacterInfo.ShipHp = 0;
 
+            DroneWearService.MarkLethalImpact(target, deathContext);
+            }
             if (shieldPart + hpPart > 0)
                 target.CharacterInfo.RegisterShieldDamageReceived();
 
@@ -4763,13 +4853,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
 
-            if (target.CharacterInfo.ShipHp <= 0 && !target.CharacterInfo.Destroy)
+            if (DroneWearService.IsPendingDeath(target, deathContext))
             {
-                target.CharacterInfo.SendReward(target);
-
                 Fight.StopLaser(attacker, target);
-
-                Fight.KillPlayer(target);
+                Fight.KillGameplayPlayer(target, deathContext, true);
             }
         }
 

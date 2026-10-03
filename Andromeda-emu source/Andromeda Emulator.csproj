@@ -103,6 +103,8 @@
     <Compile Include="Game\Characters\EquipmentSnapshot.cs" />
     <Compile Include="Game\Characters\DroneRules.cs" />
     <Compile Include="Game\Characters\DroneProgressionService.cs" />
+    <Compile Include="Game\Characters\DroneWearRules.cs" />
+    <Compile Include="Game\Characters\DroneWearService.cs" />
     <Compile Include="Game\Characters\CharacterInfo.cs" />
     <Compile Include="Game\Characters\CharacterInfoLoader.cs" />
     <Compile Include="Game\Characters\Settings.cs" />

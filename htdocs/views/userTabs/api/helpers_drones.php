@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../../libs/DroneWearService.php';
 
 
 function drone_slot_count_from_item(int $itemId): int {
@@ -107,7 +108,7 @@ function sync_drones_tables(PDO $db, int $playerId, array $desiredItemIds): void
     }
 
     
-    $insDrone = $db->prepare("INSERT INTO drone (player_id, name, item_id, level, progress_points) VALUES (:p,:n,:iid,1,0)");
+    $insDrone = $db->prepare("INSERT INTO drone (player_id, name, item_id, level, progress_points, damage_units) VALUES (:p,:n,:iid,1,0,0)");
     $updDroneItem = $db->prepare("UPDATE drone SET item_id = :iid WHERE id = :id AND (item_id IS NULL OR item_id = 0)");
 
     $insGlobalSlot = $db->prepare("
@@ -132,6 +133,7 @@ function sync_drones_tables(PDO $db, int $playerId, array $desiredItemIds): void
 
             $insDrone->execute([':p' => $playerId, ':n' => $name, ':iid' => $iid]);
             $did = (int)$db->lastInsertId();
+            DroneWearService::bumpVersion($db, $playerId);
 
             
             $slotCount = drone_slot_count_from_item($iid);

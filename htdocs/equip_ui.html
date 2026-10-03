@@ -457,6 +457,8 @@
   .drone-design-label { display:block; color:#f9a1a1; font-size:9px; margin-top:3px; letter-spacing:.06em; }
   .drone-progress { height:3px; background:#07101c; border-radius:2px; overflow:hidden; }
   .drone-progress-fill { height:100%; background:#5eead4; }
+  .drone-damage { font-size:11px; color:#cbd5e1; margin:7px 0 0; border-top:1px solid #334155; padding-top:5px; }
+  .btn-drone-repair { width:100%; margin-top:6px; }
   .drone-progress-text { color:#8daac0; font-size:10px; text-align:right; margin:4px 0 7px; }
   .drone-row { margin-top:0; }
   .bar { flex:0 0 auto; }
@@ -485,6 +487,7 @@
   <div class="tooltip-price" id="ttPrice">Sell Price: 0 C</div>
   <div class="tooltip-actions">
     <button class="btn-sell" id="btnSellAction">SELL ITEM (50%)</button>
+    <button class="btn btn-drone-repair" id="btnDroneRepair" style="display:none">REPAIR</button>
   </div>
 </div>
 
@@ -746,6 +749,9 @@ function getSellQuote(itemOrId){
 let DATA = { items:{}, inventory:[], configs:{}, drones:[] };
 let INVENTORY_TOTAL = [];
 let DRONES_STATE = { A: [], B: [] };
+let DRONE_WEAR = {equipment_version:0,repair_offline:false,repair_prices:{}};
+let EQUIPMENT_VERSION = 0, DRONE_REPAIR_CSRF = '', repairBusy = false;
+const pendingDroneRepairs = new Map();
 let SHIP_DESIGN_ID = 1;
 let AVAILABLE_SKINS = [];
 let SELECTED_DESIGN_ID = 1;
@@ -780,6 +786,7 @@ function showTooltip(item, x, y, isLocked = false) {
     const droneLevel = Number(item.droneLevel) || 0;
     const details = droneLevel ? [`Level ${droneLevel}`, droneLevel === 6 ? 'MAX LEVEL' : `Progress: ${item.dronePoints} / ${item.droneThreshold || [100,200,400,800,1600][droneLevel-1]}`,
       `Drone equipment: Laser +${(droneLevel-1)*2}% · Shield +${(droneLevel-1)*4}%`] : [];
+    if (droneLevel) details.push(`Damage ${item.droneDamagePercent || 0}%`, `Design: ${isHavok ? 'Havok' : 'None'}`);
     if (isHavok) details.push(havokBonusText());
     ttBonus.textContent = details.join('\n');
     ttBonus.classList.toggle('visible', details.length > 0);
@@ -788,7 +795,13 @@ function showTooltip(item, x, y, isLocked = false) {
   // Mettre à jour le bouton (taux affiché)
   const btnSell = document.getElementById('btnSellAction');
   const tooltipActions = document.querySelector('.tooltip-actions');
-  if (tooltipActions) tooltipActions.style.display = sellable ? '' : 'none';
+  const repairable = item.category === 'drone' && Number(item.drone_id) > 0;
+  if (tooltipActions) tooltipActions.style.display = sellable || repairable ? '' : 'none';
+  const repairButton = document.getElementById('btnDroneRepair');
+  repairButton.style.display = repairable ? '' : 'none';
+  repairButton.disabled = repairBusy || !DRONE_WEAR.repair_offline || !(item.droneDamageUnits > 0);
+  repairButton.title = !DRONE_WEAR.repair_offline ? 'Disconnect from the spacemap before repairing a drone.' : '';
+  repairButton.onclick = repairable ? () => repairDrone(Number(item.drone_id)) : null;
   if (btnSell) {
     btnSell.disabled = !sellable;
     btnSell.style.display = sellable ? '' : 'none';
@@ -835,11 +848,12 @@ document.addEventListener('click', (e) => {
 });
 
 // --- NOUVELLE LOGIQUE DE CONFIRMATION ---
-function openConfirmModal(msg) {
+function openConfirmModal(msg, actionLabel = 'Sell Item') {
   return new Promise((resolve) => {
     const modal = document.getElementById('confirmModal');
     const msgEl = document.getElementById('confirmMessage');
     const btnYes = document.getElementById('btnConfirmYes');
+    btnYes.textContent = actionLabel;
     const btnNo = document.getElementById('btnConfirmNo');
 
     msgEl.innerHTML = msg; // Permet de mettre du gras ou couleur
@@ -1877,6 +1891,8 @@ function ensureDronesStateFromList(list){
       slot_count: slotCount,
       level: Number(d.level) || 1,
       progress_points: Number(d.progress_points) || 0,
+      damage_units: Number(d.damage_units) || 0,
+      damage_percent: Number(d.damage_percent) || 0,
       next_threshold: Number(d.next_threshold) || 0,
       design_item_id: Number(d.design_item_id || d.designItemId || 0) || 0,
       design_code: d.design_code || d.designCode || null,
@@ -1948,6 +1964,8 @@ function renderDrones(tabName){
       havokEquipped: hasHavokDesign,
       get droneLevel() { return Math.max(1, Math.min(6, Number(d.level) || 1)); },
       get dronePoints() { return Number(d.progress_points) || 0; },
+      get droneDamageUnits() { return Number(d.damage_units) || 0; },
+      get droneDamagePercent() { return Number(d.damage_percent) || 0; },
       get droneThreshold() { return Number(d.next_threshold) || 0; },
 
       // ✅ IMPORTANT : index de prix progressif PAR TYPE
@@ -2015,11 +2033,52 @@ function renderDrones(tabName){
     const progressBar = el('div', {class:'drone-progress', role:'progressbar', 'aria-label':`${label} progress`, 'aria-valuemin':0,
       'aria-valuemax':level === 6 ? 1 : threshold, 'aria-valuenow':level === 6 ? 1 : points, 'aria-valuetext':progressText},
       el('div', {class:'drone-progress-fill',style:`width:${progressPercent}%`}));
-    block.append(rowTitle, progressBar, el('div', {class:'drone-progress-text'}, progressText), row);
+    block.append(rowTitle, progressBar, el('div', {class:'drone-progress-text'}, progressText), row, el('div', {class:'drone-damage'}, `Damage ${d.damage_percent || 0}%`));
     list.append(block);
   });
 }
 
+
+function preserveDroneDraftById(){
+  const drafts = new Map((DRONES_STATE[activeTab()] || []).map(d => [Number(d.id), d]));
+  for (const block of document.querySelectorAll('#droneList .droneBlock')) {
+    const d=drafts.get(Number(block.dataset.droneId));
+    if (d) d.slots=[...block.querySelectorAll('.drone-row > .slot')].map(cell => cell.classList.contains('filled') && cell.dataset.item ? Number(JSON.parse(cell.dataset.item).id) || 0 : 0);
+  }
+}
+
+async function repairDrone(droneId){
+  if (repairBusy) return;
+  const drone=(DRONES_STATE[activeTab()] || []).find(d => Number(d.id) === droneId);
+  if (!drone) return;
+  if (!DRONE_WEAR.repair_offline) { toast('Disconnect from the spacemap before repairing a drone.'); return; }
+  const price=DRONE_WEAR.repair_prices[String(drone.drone_item_id)];
+  if (!price) return;
+  tooltipLocked=false; hideTooltip();
+  const currency=price.currency === 'uridium' ? 'Uridium' : 'Credits';
+  const confirmed=await openConfirmModal(`Repair this drone for <b>${Number(price.amount).toLocaleString('en-US')} ${currency}</b>?<br>Damage: ${Number(drone.damage_percent)}% → 0%<br>Level ${Number(drone.level)} → ${Math.max(1,Number(drone.level)-1)}<br>Progress: 0 points<br>Equipment and design are kept.`, 'Repair');
+  if (!confirmed || repairBusy) return;
+  repairBusy=true; ++droneProgressGeneration;
+  let payload=pendingDroneRepairs.get(droneId);
+  if (!payload) {
+    const bytes=crypto.getRandomValues(new Uint8Array(16));
+    payload={drone_id:droneId,request_key:[...bytes].map(b=>b.toString(16).padStart(2,'0')).join(''),csrf:DRONE_REPAIR_CSRF,equipment_version:Number(DRONE_WEAR.equipment_version)};
+    pendingDroneRepairs.set(droneId,payload);
+  }
+  try {
+    const response=await fetch(`${API_PREFIX}/repair_drone.php`,{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await response.json();
+    if (response.ok && data.ok) {
+      pendingDroneRepairs.delete(droneId);
+      if (EQUIPMENT_VERSION === payload.equipment_version) EQUIPMENT_VERSION=Number(data.equipment_version);
+      toast('Drone repaired.',true);
+    } else {
+      if (response.status < 500) pendingDroneRepairs.delete(droneId);
+      toast(data.error || 'Drone repair is unavailable. Please try again later.');
+    }
+  } catch (_) { toast('The repair result could not be confirmed. Retry to check the same request.'); }
+  finally { repairBusy=false; await refreshDroneProgress(); }
+}
 
 // Refresh only progression metadata. Rebuilding the cards here would discard unsaved slots.
 let droneProgressReady = false;
@@ -2027,7 +2086,7 @@ let droneProgressBusy = false;
 let droneProgressGeneration = 0;
 
 async function refreshDroneProgress(){
-  if (!droneProgressReady || droneProgressBusy || document.hidden || byId('dronesSection').style.display === 'none') return;
+  if (!droneProgressReady || droneProgressBusy || repairBusy || IS_DRAGGING || document.hidden || byId('dronesSection').style.display === 'none') return;
   droneProgressBusy = true;
   const generation = droneProgressGeneration;
   const controller = new AbortController();
@@ -2039,7 +2098,19 @@ async function refreshDroneProgress(){
     if (!response.ok) return;
     const data = await response.json();
     if (!droneProgressReady || generation !== droneProgressGeneration || !Array.isArray(data.drone_progress)) return;
+    if (data.drone_wear) DRONE_WEAR = data.drone_wear;
     const byIdProgress = new Map(data.drone_progress.map(d => [Number(d.id), d]));
+    preserveDroneDraftById();
+    let removed = false;
+    for (const tab of ['A','B']) {
+      const before = DRONES_STATE[tab] || [];
+      DRONES_STATE[tab] = before.filter(d => byIdProgress.has(Number(d.id)));
+      removed ||= before.length !== DRONES_STATE[tab].length;
+    }
+    if (removed) {
+      toast('A drone was removed. Your other changes are kept. Reload before saving.');
+      tooltipLocked=false; hideTooltip();
+    }
     for (const tab of ['A','B']) {
       for (const drone of DRONES_STATE[tab] || []) {
         const value = byIdProgress.get(Number(drone.id));
@@ -2048,8 +2119,14 @@ async function refreshDroneProgress(){
         drone.level = value.level;
         drone.progress_points = value.progress_points;
         drone.next_threshold = value.next_threshold;
+        drone.damage_units = value.damage_units;
+        drone.damage_percent = value.damage_percent;
       }
     }
+    if ([...byIdProgress.keys()].some(id => !(DRONES_STATE[activeTab()] || []).some(d => Number(d.id) === id))) {
+      toast('Your drones changed. Your draft is kept. Reload before saving.');
+    }
+    if (removed) { renderDrones(activeTab()); refreshInventoryView(); }
     const state = new Map((DRONES_STATE[activeTab()] || []).map(d => [Number(d.id), d]));
     for (const block of document.querySelectorAll('#droneList .droneBlock')) {
       const drone = state.get(Number(block.dataset.droneId));
@@ -2069,7 +2146,16 @@ async function refreshDroneProgress(){
       bar.setAttribute('aria-valuetext', text);
       bar.querySelector('.drone-progress-fill').style.width = `${level === 6 ? 100 : Math.min(100,points*100/threshold)}%`;
       block.querySelector('.drone-progress-text').textContent = text;
+      block.querySelector('.drone-damage').textContent = `Damage ${drone.damage_percent || 0}%`;
     }
+    if (activeTooltipItem?.category === 'drone' && tooltip.classList.contains('visible')) {
+      const drone=state.get(Number(activeTooltipItem.drone_id));
+      if (drone) {
+        const position=tooltip.getBoundingClientRect();
+        showTooltip(activeTooltipItem,position.left-15,position.top-15,tooltipLocked);
+      }
+    }
+
   } catch (_) {
     // Keep the last confirmed values; retry on the next visible refresh.
   } finally {
@@ -2119,6 +2205,9 @@ async function loadAll(){
     return;
   }
 
+  DRONE_WEAR = data.drone_wear || DRONE_WEAR;
+  EQUIPMENT_VERSION = Number(DRONE_WEAR.equipment_version);
+  DRONE_REPAIR_CSRF = data.drone_repair_csrf || '';
   SHIP_DESIGN_ID = Number(data.ship_design_id || 1);
   updateShipPreview();
   AVAILABLE_SKINS = Array.isArray(data.available_skins) ? data.available_skins : [];
@@ -2154,6 +2243,7 @@ async function loadAll(){
 }
 
 async function saveAll(){
+  if (repairBusy) return;
   clearSelection();
   const tab = activeTab();
   const rows = [...document.querySelectorAll('#dronesWrap .drone-row')];
@@ -2187,6 +2277,7 @@ async function saveAll(){
   const cfgA = byId('cfgA')?.collect ? byId('cfgA').collect() : {name:'A',slots:{lasers:[],generators:[],extras:[]}};
   const cfgB = byId('cfgB')?.collect ? byId('cfgB').collect() : {name:'B',slots:{lasers:[],generators:[],extras:[]}};
   const payload = {
+  equipment_version:EQUIPMENT_VERSION,
   configs:[cfgA, cfgB],
   dronesA: DRONES_STATE.A,
   dronesB: DRONES_STATE.B,

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/DroneLevelService.php';
+require_once __DIR__ . '/DroneWearService.php';
 
 class ShopPurchaseService
 {
@@ -482,7 +483,7 @@ class ShopPurchaseService
                 return $candidate;
             };
 
-            $insDrone = $this->db->prepare('INSERT INTO drone (player_id, name, item_id, level, progress_points) VALUES (:p, :n, :iid, 1, 0)');
+            $insDrone = $this->db->prepare('INSERT INTO drone (player_id, name, item_id, level, progress_points, damage_units) VALUES (:p, :n, :iid, 1, 0, 0)');
             $updDroneItem = $this->db->prepare('UPDATE drone SET item_id = :iid WHERE id = :id AND (item_id IS NULL OR item_id = 0)');
             $insGlobalSlot = null;
             try {
@@ -499,6 +500,7 @@ class ShopPurchaseService
                     $label = ($itemId === 5) ? 'Flax' : 'Iris';
                     $insDrone->execute([':p' => $playerId, ':n' => $makeUniqueName($label), ':iid' => $itemId]);
                     $droneId = (int)$this->db->lastInsertId();
+                DroneWearService::bumpVersion($this->db, $playerId);
                     $slotCount = $this->droneSlotCountFromItem($itemId);
                     for ($slot = 0; $slot < $slotCount; $slot++) {
                         if ($insGlobalSlot !== null) {

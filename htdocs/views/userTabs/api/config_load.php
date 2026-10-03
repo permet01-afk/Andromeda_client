@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../../../libs/DroneLevelService.php';
+require_once __DIR__ . '/../../../libs/DroneWearService.php';
 require_once __DIR__ . '/helpers_drones.php';
 header('Content-Type: application/json');
 
@@ -12,6 +13,11 @@ if (!$pid) {
   exit;
 }
 $pid = (int)$pid;
+if (empty($_SESSION['drone_repair_csrf'])) {
+  session_start();
+  if (empty($_SESSION['drone_repair_csrf'])) $_SESSION['drone_repair_csrf']=bin2hex(random_bytes(32));
+  session_write_close();
+}
 
 
 // Lightweight, read-only refresh: do not run equipment synchronization while editing.
@@ -24,17 +30,25 @@ if (isset($_GET['drone_progress']) && $_GET['drone_progress'] === '1') {
     exit;
   }
   try {
-    $q = $db->prepare('SELECT id, level, progress_points FROM drone WHERE player_id=? AND item_id IN (3,5) ORDER BY id');
+    DroneWearService::assertSchema($db);
+    $db->beginTransaction();
+    DroneLevelService::lockPlayer($db,$pid);
+    $wear=DroneWearService::metadata($db,$pid);
+    $q = $db->prepare('SELECT id, level, progress_points, damage_units FROM drone WHERE player_id=? AND item_id IN (3,5) ORDER BY id');
     $q->execute([$pid]);
     $progress = [];
     foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $drone) {
       $progress[] = ['id' => (int)$drone['id'], 'level' => (int)$drone['level'],
         'progress_points' => (int)$drone['progress_points'],
+        'damage_units'=>(int)$drone['damage_units'],'damage_percent'=>DroneWearService::displayPercent((int)$drone['damage_units']),
         'next_threshold' => DroneLevelService::threshold((int)$drone['level'])];
     }
-    echo json_encode(['drone_progress' => $progress]);
+    $db->commit();
+    echo json_encode(['drone_progress' => $progress,'drone_wear'=>$wear]);
   } catch (Throwable $e) {
-    http_response_code(500);
+    if ($db->inTransaction()) $db->rollBack();
+    error_log('[Drone refresh] '.$e->getMessage());
+    http_response_code(503);
     echo json_encode(['error' => 'drone_progress_unavailable']);
   }
   exit;
@@ -346,6 +360,8 @@ function config_load_build_drones_by_config(PDO $db, array $dronesBase): array
       $copy = $d;
       $copy['level'] = (int)$d['level'];
       $copy['progress_points'] = (int)$d['progress_points'];
+      $copy['damage_units'] = (int)$d['damage_units'];
+      $copy['damage_percent'] = DroneWearService::displayPercent($copy['damage_units']);
       $copy['next_threshold'] = DroneLevelService::threshold($copy['level']);
       $did = (int)($copy['id'] ?? 0);
       $design = $designsByDrone[$did] ?? null;
@@ -397,6 +413,7 @@ function config_load_build_drones_by_config(PDO $db, array $dronesBase): array
 
 try {
   DroneLevelService::assertSchema($db);
+  DroneWearService::assertSchema($db);
   $db->beginTransaction();
   DroneLevelService::lockPlayer($db, $pid);
   $userStmt = $db->prepare('SELECT shipid, drones, apis_built, zeus_built, active_config FROM users WHERE id = :pid LIMIT 1');
@@ -507,7 +524,7 @@ try {
     if ($desired > 0) $desiredTypes = array_fill(0, $desired, 3);
   }
 
-  $dr = $db->prepare('SELECT id, name, item_id, level, progress_points FROM drone WHERE player_id=:p ORDER BY id');
+  $dr = $db->prepare('SELECT id, name, item_id, level, progress_points, damage_units FROM drone WHERE player_id=:p ORDER BY id');
   $dr->execute([':p' => $pid]);
   $dronesBase = $dr->fetchAll(PDO::FETCH_ASSOC);
 
@@ -528,8 +545,10 @@ try {
   $dronesCompat = ($activeName === 'B') ? $dronesB : $dronesA;
 
   DroneLevelService::recalculate($db, $pid);
+  $wear=DroneWearService::metadata($db,$pid);
   $db->commit();
   echo json_encode([
+    'drone_wear'=>$wear,'drone_repair_csrf'=>$_SESSION['drone_repair_csrf'],
     'player_id' => $pid,
     'ship_design_id' => $currentShipId,
     'current_skin_id' => $currentShipId,

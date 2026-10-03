@@ -121,7 +121,7 @@ namespace OrbitReborn_Emulator.Game.Maps
                 Session.SendData(PacketComposer.Compose("A", "STD|The map is full for your company !"));
                 if (Session.CharacterInfo.MapId != MapId)
                     return;
-                Fight.KillPlayer(Session);
+                Fight.EvacuatePlayer(Session);
             }
             else
             {

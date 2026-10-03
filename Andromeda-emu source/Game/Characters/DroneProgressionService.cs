@@ -17,8 +17,9 @@ namespace OrbitReborn_Emulator.Game.Characters
         public readonly DataTable Configs;
         public readonly int ShipId;
         public readonly bool LeveledUp;
-        public DroneEquipmentState(DroneState[] drones, DataTable configs, int shipId, bool leveledUp)
-        { Drones = drones; Configs = configs; ShipId = shipId; LeveledUp = leveledUp; }
+        public readonly bool StatsChanged;
+        public DroneEquipmentState(DroneState[] drones, DataTable configs, int shipId, bool leveledUp, bool statsChanged = false)
+        { Drones = drones; Configs = configs; ShipId = shipId; LeveledUp = leveledUp; StatsChanged = leveledUp || statsChanged; }
         public DataTable ForShip(int shipId)
         {
             DataTable copy = Configs.Clone();
@@ -111,7 +112,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        private static DataTable Recalculate(SqlDatabaseTransaction db, int playerId, List<DroneState> fleet)
+        internal static DataTable Recalculate(SqlDatabaseTransaction db, int playerId, List<DroneState> fleet)
         {
             bool full = DroneRules.FullHavok(fleet); var byId = fleet.ToDictionary(d => d.Id);
             var droneSlots = db.Query("SELECT s.drone_id,s.config,s.item_id,i.category FROM drone_slot_config s JOIN drone d ON d.id=s.drone_id LEFT JOIN items i ON i.id=s.item_id WHERE d.player_id=@p AND s.slot_index>=0 AND s.slot_index<CASE WHEN d.item_id=3 THEN 2 ELSE 1 END ORDER BY d.id,s.config,s.slot_index", "@p",playerId);

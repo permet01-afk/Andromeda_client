@@ -1,5 +1,6 @@
 ﻿
 
+using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
@@ -1241,6 +1242,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     NextRadiationTick(session.CharacterId);
                     return;
                 }
+                var deathContext = DroneWearService.Capture(session, GameplayDeathCause.Radiation);
                 int tick = NextRadiationTick(session.CharacterId);
                 double percent = Math.Min(0.05, 0.01 * tick);
 
@@ -1252,9 +1254,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (totalDamage < 1)
                     totalDamage = 1;
 
-                session.CharacterInfo.ShipHp -= totalDamage;
-                if (session.CharacterInfo.ShipHp < 0)
-                    session.CharacterInfo.ShipHp = 0;
+                lock (session.CharacterInfo.DroneImpactSyncRoot)
+                {
+                    if (!DroneWearService.IsCurrentLife(session, deathContext) || session.CharacterInfo.ShipHp <= 0) return;
+                    session.CharacterInfo.ShipHp = Math.Max(0, session.CharacterInfo.ShipHp - totalDamage);
+                    DroneWearService.MarkLethalImpact(session, deathContext);
+                }
 
                 var dmgMsg = PacketComposer.Compose(
                     "Y",
@@ -1281,13 +1286,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
 
-                if (session.CharacterInfo.ShipHp <= 0 && !session.CharacterInfo.Destroy)
+                if (DroneWearService.IsPendingDeath(session, deathContext))
                 {
                     if (session.CharacterInfo.LaserAttackTimer != null)
                         session.CharacterInfo.LaserAttackTimer.Dispose();
 
-                    session.CharacterInfo.SendReward(session);
-                    Fight.KillPlayer(session);
+                    Fight.KillGameplayPlayer(session, deathContext, true);
 
                     ClearRadiationTicks(session.CharacterId);
 

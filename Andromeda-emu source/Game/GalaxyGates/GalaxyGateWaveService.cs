@@ -781,6 +781,27 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             return destination != null;
         }
 
+        internal static int PersistDroneWearDeath(SqlDatabaseTransaction db, int playerId, int mapId)
+        {
+            int gateId = GateIdFromMap(mapId);
+            if (!IsGateMap(mapId) || gateId == 0) return -1;
+            var rows = db.Query("SELECT on_map,lives FROM player_galaxy_gates WHERE user_id=@p AND gate_id=@g FOR UPDATE", "@p",playerId,"@g",gateId);
+            if (rows.Rows.Count == 0 || Convert.ToInt32(rows.Rows[0]["on_map"]) != 1) return -1;
+            int lives = Math.Max(0, Convert.ToInt32(rows.Rows[0]["lives"]) - 1);
+            db.Execute("UPDATE player_galaxy_gates SET lives=@l,on_map=IF(@l=0,0,on_map),completed=IF(@l=0,0,completed),current_wave=IF(@l=0,0,current_wave) WHERE user_id=@p AND gate_id=@g", "@l",lives,"@p",playerId,"@g",gateId);
+            return lives;
+        }
+
+        internal static void PublishDroneWearDeath(Session session, int lives)
+        {
+            if (lives < 0) return;
+            GateRun run = null;
+            lock (SyncRoot) { if (Runs.ContainsKey(session.CharacterId)) run = Runs[session.CharacterId]; }
+            if (run != null) CleanupRun(session, run);
+            session.SendData(PacketComposer.Compose("A", "STD|" + (lives > 0
+                ? "Galaxy Gate: -1 life. Lives left: " + lives : "Galaxy Gate failed: no lives left.")));
+        }
+
         public static void OnPlayerKilled(Session session)
         {
             if (session == null || session.CharacterInfo == null) return;

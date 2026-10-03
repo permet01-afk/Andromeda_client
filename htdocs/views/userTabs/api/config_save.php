@@ -3,6 +3,7 @@
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../../../libs/DroneLevelService.php';
+require_once __DIR__ . '/../../../libs/DroneWearService.php';
 require_once __DIR__ . '/helpers_drones.php';
 header('Content-Type: application/json');
 
@@ -75,6 +76,7 @@ try {
 
     
     DroneLevelService::assertSchema($db);
+    DroneWearService::assertSchema($db);
 
     $raw = file_get_contents('php://input');
     if (!$raw && isset($_POST['payload'])) $raw = $_POST['payload'];
@@ -101,6 +103,7 @@ try {
 
     $db->beginTransaction();
     $lockedPlayer = DroneLevelService::lockPlayer($db, (int)$pid);
+    DroneWearService::requireVersion($db,(int)$pid,$payload['equipment_version'] ?? null);
     if ((int)$lockedPlayer['in_fight_until'] > time()) throw new RuntimeException('in_combat');
 
     
@@ -603,6 +606,7 @@ if ($hasDrones && !empty($drIds)) {
         WHERE id = :u
     ")->execute([':u' => $pid]);
 
+    DroneWearService::bumpVersion($db,(int)$pid);
     $db->commit();
     echo json_encode(['ok' => true]);
 

@@ -21,6 +21,7 @@ using System.Threading;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Titles;
+using OrbitReborn_Emulator.Game.Techs;
 
 namespace OrbitReborn_Emulator.Game.Characters
 {
@@ -2835,8 +2836,23 @@ namespace OrbitReborn_Emulator.Game.Characters
             return this.mFactionId != 0 && this.mFactionId == other.FactionId;
         }
 
+        public bool DroneWearPersistenceBlocked;
+        public volatile bool DroneDeathPublishing;
+        public volatile GameplayDeathContext PendingDroneDeath;
+        private object mDroneImpactSyncRoot;
+        public object DroneImpactSyncRoot
+        {
+            get { System.Threading.Interlocked.CompareExchange(ref mDroneImpactSyncRoot, new object(), null); return mDroneImpactSyncRoot; }
+        }
+
         public void SynchronizeStatistics(SqlDatabaseClient MySqlClient, int online)
         {
+            lock (TechInventoryService.SyncRoot(this.Id)) SynchronizeStatisticsCore(MySqlClient, online);
+        }
+
+        private void SynchronizeStatisticsCore(SqlDatabaseClient MySqlClient, int online)
+        {
+            if (DroneWearPersistenceBlocked || DroneDeathPublishing || PendingDroneDeath != null) return; // An uncertain death must not overwrite its durable respawn.
             this.SynchronizeShipSkillCooldowns(MySqlClient);
             CharacterInfo.EnsureRuntimeStateColumns(MySqlClient);
             MySqlClient.ClearParameters();
@@ -3272,6 +3288,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public void RefreshUserDataPreservingRuntime(SqlDatabaseClient MySqlClient, bool preserveActiveConfig = true)
         {
+            lock (TechInventoryService.SyncRoot(this.Id))
             lock (this.mEquipmentSnapshotLock)
             {
                 int oldHp = this.ShipHp;
@@ -3307,6 +3324,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public void RefreshUserData(SqlDatabaseClient MySqlClient)
         {
+            lock (TechInventoryService.SyncRoot(this.Id))
             lock (this.mEquipmentSnapshotLock)
             lock (this.mPrimaryAmmoFlushLock)
             {
@@ -4445,7 +4463,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             Interlocked.Exchange(ref this.mPvpRewardGuard, 0);
         }
 
-        public void SendReward(Session ennemy)
+        public void SendReward(Session ennemy, bool admittedGameplayDeath = false)
         {
             if (ennemy == null)
             {
@@ -4454,7 +4472,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             try
             {
                 CharacterInfo victimInfo = ennemy.CharacterInfo;
-                if (victimInfo == null || victimInfo.Destroy || this.Attacker == null)
+                if (victimInfo == null || (victimInfo.Destroy && !admittedGameplayDeath) || this.Attacker == null)
                     return;
                 if (this.Attacker.CharacterInfo == null)
                     return;
@@ -5577,7 +5595,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         {
             lock (this.mEquipmentSnapshotLock)
             {
-                if (state.LeveledUp && state.ShipId == this.ShipId)
+                if (state.StatsChanged && state.ShipId == this.ShipId)
                 {
                     int now = (int)UnixTimestamp.GetCurrent();
                     foreach (DataRow row in state.ForShip(this.ShipId).Rows)

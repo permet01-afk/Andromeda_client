@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/DroneLevelService.php';
+require_once __DIR__ . '/DroneWearService.php';
 
 class AuctionService
 {
@@ -1073,7 +1074,7 @@ class AuctionService
             return $candidate;
         };
 
-        $insDrone = $this->db->prepare('INSERT INTO drone (player_id, name, item_id, level, progress_points) VALUES (:p, :n, :iid, 1, 0)');
+        $insDrone = $this->db->prepare('INSERT INTO drone (player_id, name, item_id, level, progress_points, damage_units) VALUES (:p, :n, :iid, 1, 0, 0)');
         $updDroneItem = $this->db->prepare('UPDATE drone SET item_id = :iid WHERE id = :id AND (item_id IS NULL OR item_id = 0)');
         $insGlobalSlot = $this->db->prepare('INSERT IGNORE INTO drone_slot (drone_id, slot_index, item_id) VALUES (:d, :s, NULL)');
         $delGlobalExtra = $this->db->prepare('DELETE FROM drone_slot WHERE drone_id = :d AND slot_index >= :sc');
@@ -1088,6 +1089,7 @@ class AuctionService
 
                 $insDrone->execute([':p' => $playerId, ':n' => $name, ':iid' => $itemId]);
                 $droneId = (int)$this->db->lastInsertId();
+                DroneWearService::bumpVersion($this->db, $playerId);
                 $slotCount = $this->droneSlotCountFromItem($itemId);
 
                 $delGlobalExtra->execute([':d' => $droneId, ':sc' => $slotCount]);

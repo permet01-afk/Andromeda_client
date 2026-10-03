@@ -243,7 +243,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Session.CharacterInfo.UpdateGroupTimer = new System.Threading.Timer(new TimerCallback(GroupManager.UpdateGroup), (object)Session, (int)0, 1000);
             if (Session.CharacterInfo.MapId == 83 || _1v1.IsOnMap(Session.CharacterInfo.MapId))
             {
-                Fight.KillPlayer(Session, true);
+                Fight.EvacuatePlayer(Session, true);
             }
 
             try

@@ -410,7 +410,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
                                 // A reconnect can arrive after the monitor built clist1.
                                 // Recheck under the same per-player lock as authentication.
                                 lock (TechInventoryService.SyncRoot(key.CharacterId))
+                                lock (key.CharacterInfo != null ? key.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(key.CharacterId))
                                 {
+                                    if (key.HasPendingGameplayDeath) continue;
                                     if (key.StoppedPlayer)
                                     {
                                         key.Stop(client); // Transport only; terminal sessions never persist twice.

@@ -1,0 +1,62 @@
+-- PHASE 4: MANUAL OWNER EXECUTION ONLY. Select your Andromeda database first.
+-- Stop the emulator and prevent equipment/purchase writes before applying this file.
+-- Export drone, users, player_inventory, drone_slot, drone_slot_config,
+-- drone_design_equipped, ship_config_stats and player_galaxy_gates first.
+-- DDL auto-commits. Reruns preserve existing damage, levels, points and journals.
+-- No application executes this file. andromeda.sql is not changed.
+SELECT DATABASE() AS target_database;
+-- The existing equipment tables must already use InnoDB for atomic operations.
+-- This migration never converts or rebuilds existing tables automatically.
+SELECT TABLE_NAME,ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()
+ AND TABLE_NAME IN ('users','drone','player_inventory','drone_slot','drone_slot_config',
+ 'drone_design_equipped','ship_config','ship_slot','ship_config_stats','player_galaxy_gates');
+SELECT COUNT(*) AS drone_count, SUM(id) AS id_sum, SUM(level) AS level_sum,
+       SUM(progress_points) AS points_sum FROM drone;
+
+SET @phase4_add = IF((SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='drone' AND COLUMN_NAME='damage_units')=0,
+  'ALTER TABLE drone ADD COLUMN damage_units INT UNSIGNED NOT NULL DEFAULT 0', 'SELECT 1');
+PREPARE phase4_stmt FROM @phase4_add;
+EXECUTE phase4_stmt;
+DEALLOCATE PREPARE phase4_stmt;
+
+-- One persistent lifecycle and equipment revision per player. Rows are also inserted
+-- lazily for new accounts, under the existing users row lock. No expiry-based unlock:
+-- manual repair remains blocked while gameplay can still persist the character.
+CREATE TABLE IF NOT EXISTS player_drone_state (
+  player_id INT NOT NULL,
+  life_epoch BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  equipment_version BIGINT UNSIGNED NOT NULL DEFAULT 0,
+  gameplay_token CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL,
+  PRIMARY KEY (player_id)
+) ENGINE=InnoDB;
+
+-- Both death and repair use durable operation keys. NULL life_epoch for repairs
+-- permits multiple repair operations, while one life can admit only one death.
+CREATE TABLE IF NOT EXISTS drone_operation_log (
+  player_id INT NOT NULL,
+  operation_key VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  operation_type VARCHAR(16) NOT NULL,
+  life_epoch BIGINT UNSIGNED NULL,
+  drone_id INT NULL,
+  result_data LONGTEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (player_id, operation_key),
+  UNIQUE KEY one_drone_death_per_life (player_id, life_epoch),
+  KEY drone_operation_created (created_at)
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO player_drone_state(player_id) SELECT id FROM users;
+-- No foreign keys: match the existing equipment schema without imposing a new
+-- account-deletion policy. Do not delete operation keys while replay is possible.
+
+-- Verification only. These queries must report no invalid values / orphan slots.
+SELECT COUNT(*) AS drone_count, SUM(id) AS id_sum, SUM(level) AS level_sum,
+       SUM(progress_points) AS points_sum, SUM(damage_units) AS damage_sum FROM drone;
+SELECT id,player_id,item_id,damage_units FROM drone
+ WHERE damage_units>=60000 OR item_id NOT IN (3,5);
+SELECT s.drone_id FROM drone_slot_config s LEFT JOIN drone d ON d.id=s.drone_id WHERE d.id IS NULL;
+SELECT e.drone_id FROM drone_design_equipped e LEFT JOIN drone d ON d.id=e.drone_id WHERE d.id IS NULL;
+SELECT player_id,life_epoch,equipment_version,gameplay_token FROM player_drone_state LIMIT 10;
+-- A code rollback must not restore previously destroyed instances after play has
+-- resumed. Restore an entire consistent maintenance backup only with the server stopped.

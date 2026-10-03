@@ -242,6 +242,19 @@ namespace OrbitReborn_Emulator.Game.Event
             return IsInvasionNpc(npc) ? InvaderAttackGuardCooldownMs : defaultCooldownMs;
         }
 
+        // Same active runtime / map / faction participation used by Invasion rewards.
+        // An ordinary x-5 map (or an ended run) never grants an exemption.
+        public static bool IsDroneWearExemptParticipant(Session session)
+        {
+            lock (SyncRoot)
+            {
+                InvasionRun run;
+                return session != null && session.CharacterInfo != null && mActive && !mStarting
+                    && RunsByMapId.TryGetValue(session.CharacterInfo.MapId, out run)
+                    && run != null && run.Running && IsEligibleRewardSession(session, run);
+            }
+        }
+
         public static bool IsInvasionRuntimeMap(int mapId)
         {
             lock (SyncRoot)

@@ -24,6 +24,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
     public class Session : IDisposable
     {
         public readonly TechRuntimeState TechState = new TechRuntimeState();
+        internal bool HasPendingGameplayDeath
+        {
+            get { return CharacterInfo != null && !CharacterInfo.DroneWearPersistenceBlocked
+                && (CharacterInfo.PendingDroneDeath != null || CharacterInfo.DroneDeathPublishing || (DroneLifeEpoch > 0 && CharacterInfo.ShipHp <= 0)); }
+        }
+        public readonly string DroneGameplayToken = Guid.NewGuid().ToString("N");
+        public long DroneLifeEpoch;
 
         private const int RX_CHUNK_SIZE = 8192;
         private const int RX_BUFFER_MAX = 1024 * 1024;
@@ -246,7 +253,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 {
                     Session existingGameplaySession = SessionManager.GetSessionByCharacterId(CharacterId);
                     if (existingGameplaySession != null && !object.ReferenceEquals(existingGameplaySession, this))
+                    lock (existingGameplaySession.CharacterInfo.DroneImpactSyncRoot)
                     {
+                        if (existingGameplaySession.HasPendingGameplayDeath)
+                        {
+                            SessionManager.StopSession(this.mId);
+                            return; // Retry after the admitted death has finished publishing.
+                        }
                         client.ClearParameters();
                         client.SetParameter("id", CharacterId);
                         object activeShip = client.ExecuteScalar("SELECT shipid FROM users WHERE id=@id LIMIT 1");
@@ -268,9 +281,20 @@ namespace OrbitReborn_Emulator.Game.Sessions
                         existingGameplaySession.EndGameplay(client, false);
                     }
 
-                    CharacterInfo characterInfo = CharacterInfoLoader.GetCharacterInfo(client, CharacterId, this.mId, Ticket, true);
+                    CharacterInfo characterInfo;
+                    try
+                    {
+                        this.DroneLifeEpoch = DroneWearService.BeginGameplay(CharacterId, this.DroneGameplayToken);
+                        characterInfo = CharacterInfoLoader.GetCharacterInfo(client, CharacterId, this.mId, Ticket, true);
+                    }
+                    catch
+                    {
+                        DroneWearService.EndGameplay(CharacterId, this.DroneGameplayToken);
+                        throw;
+                    }
                     if (characterInfo == null || !characterInfo.HasLinkedSession)
                     {
+                        DroneWearService.EndGameplay(CharacterId, this.DroneGameplayToken);
                         Output.WriteLine((object)("[AUTH] Reject sessionId=" + this.mId + ": linked session invalid (charId=" + CharacterId + ", hasInfo=" + (characterInfo != null) + ", linkedSessionId=" + (characterInfo != null ? characterInfo.SessionId : 0) + ")"), OutputLevel.Warning);
                         SessionManager.StopSession(this.mId);
                         return;
@@ -299,9 +323,10 @@ namespace OrbitReborn_Emulator.Game.Sessions
         public void EndGameplay(SqlDatabaseClient client, bool confirmLogout)
         {
             lock (TechInventoryService.SyncRoot(this.CharacterId))
+            lock (this.CharacterInfo != null ? this.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(this.CharacterId))
             using (TechInventoryService.BeginTransition(this))
             {
-                if (this.StoppedPlayer || this.CharacterInfo == null) return;
+                if (this.StoppedPlayer || this.CharacterInfo == null || this.HasPendingGameplayDeath) return;
                 this.CharacterInfo.Disconnected = true;
                 this.CharacterInfo.StopBoosterAutoRefresh();
                 Socket socket = this.mSocket;
@@ -318,8 +343,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     }
                     MapManager.RemoveUserFromMap(this);
                     if (TeamDeathMatch.IsActive()) TeamDeathMatch.removeUserFromTdm(this);
-                    DisposeCore(true); // Stop callbacks and flush pending ammo before acknowledging logout.
+                    DisposeCore(true, true); // Stop callbacks and flush pending ammo before acknowledging logout.
                     this.CharacterInfo.SynchronizeStatistics(client, 0);
+                    DroneWearService.EndGameplay(this.CharacterId, this.DroneGameplayToken);
                     if (confirmLogout && socket != null)
                     {
                         // Keep only the transport until the client processes the confirmation.
@@ -568,13 +594,14 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             if (this == null) return;
             lock (TechInventoryService.SyncRoot(this.CharacterId))
+            lock (this.CharacterInfo != null ? this.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(this.CharacterId))
             using (TechInventoryService.BeginTransition(this))
                 StopCore(MySqlClient);
         }
 
         private void StopCore(SqlDatabaseClient MySqlClient)
         {
-            if (this.Stopped) return;
+            if (this.Stopped || (this.CharacterInfo != null && this.HasPendingGameplayDeath)) return;
 
             if (!this.StoppedPlayer
                 && this.mCharacterInfo != null
@@ -599,13 +626,14 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             if (this == null) return;
             lock (TechInventoryService.SyncRoot(this.CharacterId))
+            lock (this.CharacterInfo != null ? this.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(this.CharacterId))
             using (TechInventoryService.BeginTransition(this))
                 DisposeCore();
         }
 
-        private void DisposeCore(bool keepSocket = false)
+        private void DisposeCore(bool keepSocket = false, bool deferDroneRelease = false)
         {
-            if (this.StoppedPlayer) return;
+            if (this.StoppedPlayer || (this.CharacterInfo != null && this.HasPendingGameplayDeath)) return;
             if (!this.Stopped && !keepSocket)
                 throw new InvalidOperationException("Cannot dispose of a session that has not been stopped");
 
@@ -693,6 +721,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
             }
 
             this.StoppedPlayer = true;
+            if (!deferDroneRelease && this.Authenticated && !this.IsChat)
+                DroneWearService.EndGameplay(this.CharacterId, this.DroneGameplayToken);
         }
     }
 }

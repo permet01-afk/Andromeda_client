@@ -2623,6 +2623,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     }
                 }
 
+                var deathContext = DroneWearService.Capture(sessionByCharacterId, GameplayDeathCause.Npc);
+                lock (sessionByCharacterId.CharacterInfo.DroneImpactSyncRoot)
+                {
+                if (!DroneWearService.IsCurrentLife(sessionByCharacterId, deathContext) || sessionByCharacterId.CharacterInfo.ShipHp <= 0) return;
                 int shieldDmg = Convert.ToInt32((double)dmg * sessionByCharacterId.CharacterInfo.ShieldAbsorption);
                 int hpDmg = dmg - shieldDmg;
 
@@ -2653,6 +2657,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     sessionByCharacterId.CharacterInfo.ShipShield = 0;
 
                 sessionByCharacterId.CharacterInfo.ShipHp -= hpDmg;
+                DroneWearService.MarkLethalImpact(sessionByCharacterId, deathContext);
+                }
 
                 sessionByCharacterId.CharacterInfo.RegisterIncomingAttackActivity();
 
@@ -2686,10 +2692,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 sessionByCharacterId.CharacterInfo.TouchFightUntilDatabase();
 
-                if (sessionByCharacterId.CharacterInfo.ShipHp > 0 || sessionByCharacterId.CharacterInfo.Destroy)
+                if (!DroneWearService.IsPendingDeath(sessionByCharacterId, deathContext))
                     return;
 
-                Fight.KillPlayer(sessionByCharacterId);
+                Fight.KillGameplayPlayer(sessionByCharacterId, deathContext);
                 StopNpcAttack();
             }
             finally

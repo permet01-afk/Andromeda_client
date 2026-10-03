@@ -71,6 +71,7 @@ namespace OrbitReborn_Emulator
             {
                 Output.WriteLine((object)Localization.GetValue("core.init.mysql", (string[])null));
                 SqlDatabaseManager.Initialize();
+                OrbitReborn_Emulator.Game.Characters.DroneWearService.Initialize();
 
                 Output.WriteLine((object)Localization.GetValue("core.init.net", ConfigManager.GetValue("net.bind.port").ToString()));
                 Program.mServer = new SocketListener(
