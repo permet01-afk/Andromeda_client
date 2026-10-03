@@ -29,6 +29,8 @@ const context = {
     updateEntityClaim() {}, setAttackLockTargetForEntity() {},
     snapshotEntityById(id) {return context.entities[id];},
     getLaserSpriteFrame() {return {width:80};},
+    // This fixture checks Phase 1 laser types; expansion-stage.test.cjs checks real salvo capture.
+    captureLaserSalvo() {return {stage:1};},
     resolveLaserSalvoOffsets() {return [{x:0,y:0}, {x:8,y:0}];},
     applyLaserLength(x,y,endX,endY) {return {endX,endY};},
     clearSabLaserVisualJobsForAttacker() {},

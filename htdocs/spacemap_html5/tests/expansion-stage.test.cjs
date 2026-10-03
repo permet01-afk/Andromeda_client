@@ -68,7 +68,9 @@ test('Stage1 removes overlay; asset keys separate stages and share only same sou
     for(const id of supported){assert.equal(ctx.getShipExpansionDef(id,1),null);for(const st of [2,3])for(let f=0;f<32;f++){
         const def=ctx.getShipExpansionDef(id,st);assert(def);assert.equal(def.frameCount,32);assert.equal(def.nativeOrigins.length,32);
         assert.notEqual(ctx.getShipExpansionFrameCacheKey(id,f,2),ctx.getShipExpansionFrameCacheKey(id,f,3));
-        assert(fs.existsSync(path.join(root,def.atlasPath || def.basePath+'1.png')));
+        // Cache-busting query parameters belong to the URL, not the disk filename.
+        const assetPath = (def.atlasPath || def.basePath+'1.png').split('?')[0];
+        assert(fs.existsSync(path.join(root,assetPath)), `Missing expansion asset: ${assetPath}`);
     }}
     assert(ctx.getShipExpansionDef(8,2).source.startsWith('unknown:ship8_'));
     assert.equal(ctx.getShipExpansionDef(17,2),ctx.getShipExpansionDef(8,2));

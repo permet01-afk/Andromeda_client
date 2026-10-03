@@ -61,7 +61,7 @@ final class DroneLevelService
         foreach($configs as $c){
             $cfg=$c['name'];if(!isset($totals[$cfg]))continue;
             [$damage,$shield]=$totals[$cfg];$counts=['lasers'=>0,'shields'=>0,'speeds'=>0];
-            
+
             $speed=max(1,(int)$c['base_speed_2010']);$slots->execute([(int)$c['id']]);
             foreach($slots as $s){$id=(int)$s['item_id'];$counts['lasers']+=self::laser($id)>0?1:0;$counts['shields']+=self::shield($id)>0?1:0;$counts['speeds']+=self::speed($id)>0?1:0;$damage+=self::laser($id)*10000;$shield+=self::shield($id)*10000;$speed+=self::speed($id);}
             $counts['lasers']+=$droneCounts[$cfg]['lasers'];$counts['shields']+=$droneCounts[$cfg]['shields'];
