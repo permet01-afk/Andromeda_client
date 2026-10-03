@@ -13,6 +13,33 @@ if (!$pid) {
 }
 $pid = (int)$pid;
 
+
+// Lightweight, read-only refresh: do not run equipment synchronization while editing.
+if (isset($_GET['drone_progress']) && $_GET['drone_progress'] === '1') {
+  header('Cache-Control: no-store');
+  if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    http_response_code(405);
+    header('Allow: GET');
+    echo json_encode(['error' => 'method_not_allowed']);
+    exit;
+  }
+  try {
+    $q = $db->prepare('SELECT id, level, progress_points FROM drone WHERE player_id=? AND item_id IN (3,5) ORDER BY id');
+    $q->execute([$pid]);
+    $progress = [];
+    foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $drone) {
+      $progress[] = ['id' => (int)$drone['id'], 'level' => (int)$drone['level'],
+        'progress_points' => (int)$drone['progress_points'],
+        'next_threshold' => DroneLevelService::threshold((int)$drone['level'])];
+    }
+    echo json_encode(['drone_progress' => $progress]);
+  } catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'drone_progress_unavailable']);
+  }
+  exit;
+}
+
 function config_load_icon_case(string $alias = 'i'): string
 {
   return "CASE
