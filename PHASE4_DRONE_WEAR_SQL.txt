@@ -1,62 +1,153 @@
--- PHASE 4: MANUAL OWNER EXECUTION ONLY. Select your Andromeda database first.
--- Stop the emulator and prevent equipment/purchase writes before applying this file.
--- Export drone, users, player_inventory, drone_slot, drone_slot_config,
--- drone_design_equipped, ship_config_stats and player_galaxy_gates first.
--- DDL auto-commits. Reruns preserve existing damage, levels, points and journals.
+USE `andromeda`;
+-- PHASE 4: MANUAL OWNER EXECUTION ONLY. XAMPP MariaDB 10.4 / phpMyAdmin 5.2.
+-- Copy/paste this WHOLE file into the SQL tab. No database selection is required.
+-- Stop the emulator and prevent equipment/purchase writes first.
+-- Back up users, drone, player_inventory, drone_slot, drone_slot_config,
+-- drone_design_equipped, ship_config_stats, player_galaxy_gates and existing Phase 4 tables.
+-- DDL auto-commits: this is not a rollbackable migration. All preflight checks
+-- below run before the first Phase 4 DDL. No missing base/Phase 3 table is created.
+-- Reruns preserve existing damage, levels, points, states and journals.
 -- No application executes this file. andromeda.sql is not changed.
-SELECT DATABASE() AS target_database;
--- The existing equipment tables must already use InnoDB for atomic operations.
--- This migration never converts or rebuilds existing tables automatically.
-SELECT TABLE_NAME,ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()
- AND TABLE_NAME IN ('users','drone','player_inventory','drone_slot','drone_slot_config',
- 'drone_design_equipped','ship_config','ship_slot','ship_config_stats','player_galaxy_gates');
-SELECT COUNT(*) AS drone_count, SUM(id) AS id_sum, SUM(level) AS level_sum,
-       SUM(progress_points) AS points_sum FROM drone;
 
-SET @phase4_add = IF((SELECT COUNT(*) FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='drone' AND COLUMN_NAME='damage_units')=0,
-  'ALTER TABLE drone ADD COLUMN damage_units INT UNSIGNED NOT NULL DEFAULT 0', 'SELECT 1');
-PREPARE phase4_stmt FROM @phase4_add;
-EXECUTE phase4_stmt;
-DEALLOCATE PREPARE phase4_stmt;
+-- The qualified read also anchors phpMyAdmin SQL-tab context to andromeda.
+SELECT DATABASE() AS target_database, COUNT(*) AS base_drone_count FROM `andromeda`.`drone`;
 
--- One persistent lifecycle and equipment revision per player. Rows are also inserted
--- lazily for new accounts, under the existing users row lock. No expiry-based unlock:
--- manual repair remains blocked while gameplay can still persist the character.
-CREATE TABLE IF NOT EXISTS player_drone_state (
-  player_id INT NOT NULL,
-  life_epoch BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  equipment_version BIGINT UNSIGNED NOT NULL DEFAULT 0,
-  gameplay_token CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL,
-  PRIMARY KEY (player_id)
-) ENGINE=InnoDB;
+-- MariaDB anonymous block: SIGNAL stops the entire mutation block on failure,
+-- even if a client is configured to continue with subsequent SQL statements.
+-- Prepared as ONE statement for phpMyAdmin 5.2: no DELIMITER setting is needed.
+-- No nested result sets: final SELECTs below remain readable in phpMyAdmin.
+-- No stored procedure, helper table or persistent routine is created.
+SET @phase4_preflight = 'not_run';
+SET @phase4_migration = 'BEGIN NOT ATOMIC
+    DECLARE phase4_missing TEXT;
+    DECLARE phase4_message VARCHAR(128);
+    DECLARE phase4_column_check INT;
 
--- Both death and repair use durable operation keys. NULL life_epoch for repairs
--- permits multiple repair operations, while one life can admit only one death.
-CREATE TABLE IF NOT EXISTS drone_operation_log (
-  player_id INT NOT NULL,
-  operation_key VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-  operation_type VARCHAR(16) NOT NULL,
-  life_epoch BIGINT UNSIGNED NULL,
-  drone_id INT NULL,
-  result_data LONGTEXT NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (player_id, operation_key),
-  UNIQUE KEY one_drone_death_per_life (player_id, life_epoch),
-  KEY drone_operation_created (created_at)
-) ENGINE=InnoDB;
+    IF DATABASE() IS NULL OR DATABASE() <> ''andromeda'' THEN
+        SIGNAL SQLSTATE ''45000''
+            SET MESSAGE_TEXT = ''PHASE4 STOP: target database must be andromeda; no Phase 4 changes applied.'';
+    END IF;
 
-INSERT IGNORE INTO player_drone_state(player_id) SELECT id FROM users;
--- No foreign keys: match the existing equipment schema without imposing a new
--- account-deletion policy. Do not delete operation keys while replay is possible.
+    SELECT GROUP_CONCAT(required_table.table_name ORDER BY required_table.table_name SEPARATOR '', '')
+      INTO phase4_missing
+      FROM (
+          SELECT ''users'' AS table_name UNION ALL SELECT ''drone''
+          UNION ALL SELECT ''player_inventory'' UNION ALL SELECT ''drone_slot''
+          UNION ALL SELECT ''drone_slot_config'' UNION ALL SELECT ''drone_design_equipped''
+          UNION ALL SELECT ''ship_config'' UNION ALL SELECT ''ship_slot''
+          UNION ALL SELECT ''ship_config_stats'' UNION ALL SELECT ''player_galaxy_gates''
+      ) AS required_table
+      LEFT JOIN information_schema.TABLES AS existing_table
+        ON existing_table.TABLE_SCHEMA = ''andromeda''
+       AND existing_table.TABLE_NAME = required_table.table_name
+       AND existing_table.TABLE_TYPE = ''BASE TABLE''
+     WHERE existing_table.TABLE_NAME IS NULL;
+    IF phase4_missing IS NOT NULL THEN
+        SET phase4_message = CONCAT(''PHASE4 STOP: missing base tables: '', LEFT(phase4_missing, 90));
+        SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = phase4_message;
+    END IF;
 
--- Verification only. These queries must report no invalid values / orphan slots.
-SELECT COUNT(*) AS drone_count, SUM(id) AS id_sum, SUM(level) AS level_sum,
-       SUM(progress_points) AS points_sum, SUM(damage_units) AS damage_sum FROM drone;
-SELECT id,player_id,item_id,damage_units FROM drone
- WHERE damage_units>=60000 OR item_id NOT IN (3,5);
-SELECT s.drone_id FROM drone_slot_config s LEFT JOIN drone d ON d.id=s.drone_id WHERE d.id IS NULL;
-SELECT e.drone_id FROM drone_design_equipped e LEFT JOIN drone d ON d.id=e.drone_id WHERE d.id IS NULL;
-SELECT player_id,life_epoch,equipment_version,gameplay_token FROM player_drone_state LIMIT 10;
--- A code rollback must not restore previously destroyed instances after play has
--- resumed. Restore an entire consistent maintenance backup only with the server stopped.
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ''andromeda'' AND TABLE_NAME = ''drone''
+           AND COLUMN_NAME = ''progress_points''
+    ) THEN
+        SIGNAL SQLSTATE ''45000''
+            SET MESSAGE_TEXT = ''PHASE4 STOP: drone.progress_points missing; install/verify Phase 3 first. No changes applied.'';
+    END IF;
+
+    -- All tables used by the death/repair transaction must already be InnoDB.
+    -- Also validate any Phase 4 tables left by an earlier execution.
+    SELECT GROUP_CONCAT(TABLE_NAME ORDER BY TABLE_NAME SEPARATOR '', '')
+      INTO phase4_missing
+      FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = ''andromeda''
+       AND TABLE_NAME IN (''users'',''drone'',''player_inventory'',''drone_slot'',''drone_slot_config'',
+           ''drone_design_equipped'',''ship_config'',''ship_slot'',''ship_config_stats'',
+           ''player_galaxy_gates'',''player_drone_state'',''drone_operation_log'')
+       AND (TABLE_TYPE <> ''BASE TABLE'' OR ENGINE IS NULL OR ENGINE <> ''InnoDB'');
+    IF phase4_missing IS NOT NULL THEN
+        SET phase4_message = CONCAT(''PHASE4 STOP: InnoDB required: '', LEFT(phase4_missing, 96));
+        SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT = phase4_message;
+    END IF;
+
+    -- Resolve the key base columns before DDL; errors here cannot partially migrate Phase 4.
+    SELECT COUNT(*) INTO phase4_column_check FROM (SELECT id, player_id, item_id, level, progress_points FROM `andromeda`.`drone` LIMIT 0) AS phase4_columns;
+    SELECT COUNT(*) INTO phase4_column_check FROM (SELECT id FROM `andromeda`.`users` LIMIT 0) AS phase4_columns;
+    SELECT COUNT(*) INTO phase4_column_check FROM (SELECT drone_id FROM `andromeda`.`drone_slot` LIMIT 0) AS phase4_columns;
+    SELECT COUNT(*) INTO phase4_column_check FROM (SELECT drone_id FROM `andromeda`.`drone_slot_config` LIMIT 0) AS phase4_columns;
+    SELECT COUNT(*) INTO phase4_column_check FROM (SELECT drone_id FROM `andromeda`.`drone_design_equipped` LIMIT 0) AS phase4_columns;
+
+    IF EXISTS (SELECT 1 FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = ''andromeda'' AND TABLE_NAME = ''player_drone_state'') THEN
+        SELECT COUNT(*) INTO phase4_column_check FROM (SELECT player_id, life_epoch, equipment_version, gameplay_token FROM `andromeda`.`player_drone_state` LIMIT 0) AS phase4_columns;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = ''andromeda'' AND TABLE_NAME = ''drone_operation_log'') THEN
+        SELECT COUNT(*) INTO phase4_column_check FROM (SELECT player_id, operation_key, operation_type, life_epoch, drone_id, result_data, created_at FROM `andromeda`.`drone_operation_log` LIMIT 0) AS phase4_columns;
+    END IF;
+
+    SET @phase4_preflight = ''passed'';
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = ''andromeda'' AND TABLE_NAME = ''drone'' AND COLUMN_NAME = ''damage_units'') THEN
+        ALTER TABLE `andromeda`.`drone` ADD COLUMN damage_units INT UNSIGNED NOT NULL DEFAULT 0;
+    END IF;
+
+    -- Architecture unchanged: lifecycle/version per player, no expiry-based repair unlock.
+    CREATE TABLE IF NOT EXISTS `andromeda`.`player_drone_state` (
+        player_id INT NOT NULL,
+        life_epoch BIGINT UNSIGNED NOT NULL DEFAULT 0,
+        equipment_version BIGINT UNSIGNED NOT NULL DEFAULT 0,
+        gameplay_token CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL,
+        PRIMARY KEY (player_id)
+    ) ENGINE=InnoDB;
+
+    -- NULL life_epoch for repairs allows distinct repairs; non-NULL deaths are unique per life.
+    CREATE TABLE IF NOT EXISTS `andromeda`.`drone_operation_log` (
+        player_id INT NOT NULL,
+        operation_key VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+        operation_type VARCHAR(16) NOT NULL,
+        life_epoch BIGINT UNSIGNED NULL,
+        drone_id INT NULL,
+        result_data LONGTEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (player_id, operation_key),
+        UNIQUE KEY one_drone_death_per_life (player_id, life_epoch),
+        KEY drone_operation_created (created_at)
+    ) ENGINE=InnoDB;
+
+    INSERT IGNORE INTO `andromeda`.`player_drone_state`(player_id)
+        SELECT id FROM `andromeda`.`users`;
+    -- No foreign keys: preserve the existing account-deletion policy.
+    -- Never purge operation keys while replay is possible.
+END';
+PREPARE phase4_migration_stmt FROM @phase4_migration;
+EXECUTE phase4_migration_stmt;
+DEALLOCATE PREPARE phase4_migration_stmt;
+SET @phase4_migration = NULL;
+
+-- Final read-only checks, with every application table explicitly qualified.
+SELECT DATABASE() AS target_database, @phase4_preflight AS preflight_check;
+SELECT COUNT(*) AS drone_count, COALESCE(SUM(id),0) AS id_sum,
+       COALESCE(SUM(level),0) AS level_sum, COALESCE(SUM(progress_points),0) AS points_sum,
+       COALESCE(SUM(damage_units),0) AS damage_sum FROM `andromeda`.`drone`;
+
+-- Expected: no Iris/Flax at or above the destruction threshold.
+SELECT id, player_id, item_id, damage_units FROM `andromeda`.`drone`
+ WHERE item_id IN (3,5) AND (damage_units IS NULL OR damage_units < 0 OR damage_units >= 60000);
+-- Informational only: other/legacy types are OUT OF SCOPE, not declared invalid.
+SELECT item_id, COUNT(*) AS out_of_scope_drone_count FROM `andromeda`.`drone`
+ WHERE item_id IS NULL OR item_id NOT IN (3,5) GROUP BY item_id;
+
+-- Expected: zero orphan rows in each result.
+SELECT s.drone_id FROM `andromeda`.`drone_slot_config` s
+ LEFT JOIN `andromeda`.`drone` d ON d.id=s.drone_id WHERE d.id IS NULL;
+SELECT s.drone_id FROM `andromeda`.`drone_slot` s
+ LEFT JOIN `andromeda`.`drone` d ON d.id=s.drone_id WHERE d.id IS NULL;
+SELECT e.drone_id FROM `andromeda`.`drone_design_equipped` e
+ LEFT JOIN `andromeda`.`drone` d ON d.id=e.drone_id WHERE d.id IS NULL;
+SELECT player_id, life_epoch, equipment_version, gameplay_token
+ FROM `andromeda`.`player_drone_state` ORDER BY player_id LIMIT 10;
+-- A code rollback must not restore destroyed drones after play has resumed.
+-- Restore a whole consistent maintenance backup only with the server stopped.
