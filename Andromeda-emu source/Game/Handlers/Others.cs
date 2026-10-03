@@ -536,28 +536,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.CharacterInfo.DisconnectTimer = (Timer)null;
                 --TimerManager.TimerRunning;
 
-                session.CharacterInfo.StopBoosterAutoRefresh();
-
-                session.SendData(PacketComposer.Compose("l", ""));
-
-                session.CharacterInfo.Disconnected = true;
-
-                foreach (int key in (IEnumerable<int>)session.CharacterInfo.PlayerInRange.Keys)
-                {
-                    Session other = SessionManager.GetSessionByCharacterId(key);
-                    if (other != null && other.CharacterInfo != null)
-                    {
-                        other.CharacterInfo.PlayerInRange.Remove(session.CharacterId);
-                        other.SendData(MapUserLeaveComposer.Compose(session.CharacterId));
-                    }
-                }
-
-                MapManager.RemoveUserFromMap(session);
-
-                if (TeamDeathMatch.IsActive())
-                    TeamDeathMatch.removeUserFromTdm(session);
-
-                SessionManager.StopSession(session.Id);
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("Logout.Complete"))
+                    session.EndGameplay(client, true);
                 return;
             }
 

@@ -2522,7 +2522,7 @@ const SHIP_SPRITE_DEFS = {
 
 const SHIP_ATLAS_DEFS = Object.freeze({
     "graphics/ships/1/": Object.freeze({
-        atlasPath: "graphics/atlas/ship1_unknown_phase2b.png",
+        atlasPath: "graphics/ships/1/ship_atlas_v1.png?v=unknown-phase2b",
         atlasColumns: 8,
         atlasCellWidth: 59,
         atlasCellHeight: 54,
@@ -2531,7 +2531,7 @@ const SHIP_ATLAS_DEFS = Object.freeze({
         frameHeight: 52
     }),
     "graphics/ships/3/": Object.freeze({
-        atlasPath: "graphics/atlas/ship3_unknown_phase2b.png",
+        atlasPath: "graphics/ships/3/ship_atlas_v1.png?v=unknown-phase2b",
         atlasColumns: 8,
         atlasCellWidth: 140,
         atlasCellHeight: 100,
@@ -2540,7 +2540,7 @@ const SHIP_ATLAS_DEFS = Object.freeze({
         frameHeight: 98
     }),
     "graphics/ships/4/": Object.freeze({
-        atlasPath: "graphics/atlas/ship4_unknown_phase2b.png",
+        atlasPath: "graphics/ships/4/ship_atlas_v1.png?v=unknown-phase2b",
         atlasColumns: 8,
         atlasCellWidth: 97,
         atlasCellHeight: 76,
@@ -2549,7 +2549,7 @@ const SHIP_ATLAS_DEFS = Object.freeze({
         frameHeight: 74
     }),
     "graphics/ships/5/": Object.freeze({
-        atlasPath: "graphics/atlas/ship5_unknown_phase2b.png",
+        atlasPath: "graphics/ships/5/ship_atlas_v1.png?v=unknown-phase2b",
         atlasColumns: 8,
         atlasCellWidth: 95,
         atlasCellHeight: 80,
@@ -2558,7 +2558,7 @@ const SHIP_ATLAS_DEFS = Object.freeze({
         frameHeight: 78
     }),
     "graphics/ships/6/": Object.freeze({
-        atlasPath: "graphics/atlas/ship6_unknown_phase2b.png",
+        atlasPath: "graphics/ships/6/ship_atlas_v1.png?v=unknown-phase2b",
         atlasColumns: 8,
         atlasCellWidth: 159,
         atlasCellHeight: 115,
@@ -2585,7 +2585,7 @@ const SHIP_ATLAS_DEFS = Object.freeze({
         frameHeight: 117
     }),
     "graphics/ships/9/": Object.freeze({
-        atlasPath: "graphics/atlas/ship9_unknown_phase2b.png",
+        atlasPath: "graphics/ships/9/ship_atlas_v1.png?v=unknown-phase2b",
         atlasColumns: 8,
         atlasCellWidth: 155,
         atlasCellHeight: 123,
@@ -3628,7 +3628,7 @@ window.bootLoadXmlConfigs = bootLoadXmlConfigs;
 const SHIP_EXPANSION_ASSETS = {
   "unknown:ship1_Emed": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship1_emed_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship1_emed_phase2.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 237,
     "atlasCellHeight": 211,
@@ -3673,7 +3673,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship1_Emax": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship1_emax_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship1_emax_v1.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 237,
     "atlasCellHeight": 211,
@@ -3718,7 +3718,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship3_Emed": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship3_emed_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship3_emed_phase2.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 120,
     "atlasCellHeight": 87,
@@ -3763,7 +3763,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship3_Emax": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship3_emax_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship3_emax_v1.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 200,
     "atlasCellHeight": 144,
@@ -3808,7 +3808,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship4_Emed": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship4_emed_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship4_emed_phase2.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 95,
     "atlasCellHeight": 69,
@@ -3853,7 +3853,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship4_Emax": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship4_emax_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship4_emax_v1.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 95,
     "atlasCellHeight": 77,
@@ -3898,7 +3898,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship5_Emed": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship5_emed_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship5_emed_phase2.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 133,
     "atlasCellHeight": 96,
@@ -3943,7 +3943,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship5_Emax": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship5_emax_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship5_emax_v1.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 133,
     "atlasCellHeight": 96,
@@ -3988,7 +3988,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship6_Emed": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship6_emed_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship6_emed_phase2.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 83,
     "atlasCellHeight": 62,
@@ -4033,7 +4033,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship6_Emax": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship6_emax_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship6_emax_v1.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 209,
     "atlasCellHeight": 150,
@@ -4328,7 +4328,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship9_Emed": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship9_emed_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship9_emed_phase2.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 151,
     "atlasCellHeight": 110,
@@ -4373,7 +4373,7 @@ const SHIP_EXPANSION_ASSETS = {
   },
   "unknown:ship9_Emax": {
     "frameCount": 32,
-    "atlasPath": "graphics/atlas/ship9_emax_unknown_phase2b.png",
+    "atlasPath": "graphics/atlas/expansion_ship9_emax_v1.png?v=unknown-phase2b",
     "atlasColumns": 8,
     "atlasCellWidth": 197,
     "atlasCellHeight": 143,

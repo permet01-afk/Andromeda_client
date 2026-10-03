@@ -121,61 +121,61 @@ unknown:ship1_Emed — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship1_Emed.swf
   SHA256: bf9073a6708065c0fd22ae850ac3164a9cc5dfb3ab0bc0ed53fb73de3fba64aa
   Native bounds: [-117.0, -104.0, 118.0, 105.0]
-  HTML5: graphics/atlas/ship1_emed_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship1_emed_phase2.png
 
 unknown:ship1_Emax — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship1_Emax.swf
   SHA256: ba41f3365f2c022878d10d7583e6454c9c43a6a434d782166da785f14a970481
   Native bounds: [-117.0, -104.0, 118.0, 105.0]
-  HTML5: graphics/atlas/ship1_emax_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship1_emax_v1.png
 
 unknown:ship3_Emed — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship3_Emed.swf
   SHA256: 54ae2a2ccb2077dbd8c753bf7650e4949ff632b75445783a007961a4aca3c17b
   Native bounds: [-59.0, -45.0, 59.0, 40.0]
-  HTML5: graphics/atlas/ship3_emed_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship3_emed_phase2.png
 
 unknown:ship3_Emax — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship3_Emax.swf
   SHA256: 58486e31232af71ca486a4ede459d024186395c947ff3954555706d8ba68e68a
   Native bounds: [-99.0, -71.0, 99.0, 71.0]
-  HTML5: graphics/atlas/ship3_emax_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship3_emax_v1.png
 
 unknown:ship4_Emed — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship4_Emed.swf
   SHA256: 66bd575c73dcbca038758d069fdeddc6e252ed2d67228f2f3b29c3a426e9e431
   Native bounds: [-46.0, -28.0, 47.0, 39.0]
-  HTML5: graphics/atlas/ship4_emed_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship4_emed_phase2.png
 
 unknown:ship4_Emax — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship4_Emax.swf
   SHA256: edd7fea9f178713b439d20a6fd9a98d00b9c7038c3d8979e1e5d020eec9b363a
   Native bounds: [-46.5, -36.0, 46.5, 39.0]
-  HTML5: graphics/atlas/ship4_emax_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship4_emax_v1.png
 
 unknown:ship5_Emed — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship5_Emed.swf
   SHA256: c26fc89c6ee52a4956c7b8a2de50d524ce1078aaafed5053a9983520290a27af
   Native bounds: [-65.0, -44.0, 66.0, 50.0]
-  HTML5: graphics/atlas/ship5_emed_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship5_emed_phase2.png
 
 unknown:ship5_Emax — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship5_Emax.swf
   SHA256: e564a6edfae5db9fb79b1391a2ca1f16a5045777e6d9cce0ca3b95f5477419a5
   Native bounds: [-65.0, -44.0, 66.0, 50.0]
-  HTML5: graphics/atlas/ship5_emax_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship5_emax_v1.png
 
 unknown:ship6_Emed — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship6_Emed.swf
   SHA256: 7a0c4be3063b020ff8d3fb97bf8eab2f5dc9bdf1f6c33d0774d6d2c2ee522a23
   Native bounds: [-40.0, -41.0, 41.0, 19.0]
-  HTML5: graphics/atlas/ship6_emed_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship6_emed_phase2.png
 
 unknown:ship6_Emax — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship6_Emax.swf
   SHA256: ac2d633d88c9031b6b767ab9d13464f28bd4e400fb56fa236f437d3518992c2a
   Native bounds: [-103.0, -84.0, 104.0, 64.0]
-  HTML5: graphics/atlas/ship6_emax_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship6_emax_v1.png
 
 local:ship7_Emed — IMPORTED
   SWF: htdocs/spacemap/graphics/expansions/ship7_Emed.swf
@@ -205,13 +205,13 @@ unknown:ship9_Emed — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship9_Emed.swf
   SHA256: f39410cf619caf2a26b0715e5aaa7aa8edbeccf323a7e4164ab2663c670c4764
   Native bounds: [-74.0, -57.0, 75.0, 51.0]
-  HTML5: graphics/atlas/ship9_emed_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship9_emed_phase2.png
 
 unknown:ship9_Emax — IMPORTED PHASE 2B
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship9_Emax.swf
   SHA256: 3b3266f8baae8ac8ab511c4c8f1f42c97003cb66369e90f0f8ee1a05b3339d1c
   Native bounds: [-97.0, -76.0, 98.0, 65.0]
-  HTML5: graphics/atlas/ship9_emax_unknown_phase2b.png
+  HTML5: graphics/atlas/expansion_ship9_emax_v1.png
 
 unknown:ship10_Emed — IMPORTED
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/expansions/ship10_Emed.swf
@@ -311,7 +311,9 @@ local:ship67_Emax — REUSED UNCHANGED
   Existing atlas: graphics/expansions/ship67_Emax/expansion_atlas_v1.png
 
 Atlas paths are listed above; historical source SWFs are unchanged.
-Phase 2B replaces and removes the superseded HTML5 atlases for its six families.
+Phase 2B replaces the pixels of its six families. The path correction restores
+the historical hull destinations and Phase 2 expansion destinations; temporary
+Phase 2B atlas names are removed without changing their bytes.
 
 PHASE 2B — UNKNOWN HULLS (VISUAL ONLY)
 =====================================
@@ -325,7 +327,9 @@ No old Defcom/Liberator compensation is carried over; no renderer algorithm chan
 Unknown xml/game.php and private/game.php match local game.xml for all six classes:
 stage 1/2/3, positionsList and every coordinate in all 32 orientations are IDENTICAL.
 Keep local XML, [1] / [2] / [2,1,2,1], gameplay, N/ammo/colors and protocol unchanged.
-New atlas URLs and client_config.js?v=1041 prevent reuse of the old generation.
+The 18 atlas URLs use ?v=unknown-phase2b and client_config.js?v=1042 to prevent
+reuse of pre-Unknown pixels at the restored destinations. Physical file checks
+remain unversioned; the preloader and renderer use the same versioned URLs.
 spacemap.php changes concern only preload paths for those six families and the config cache key.
 Other ships, historical Flash assets and Unknown source files are unchanged.
 The external Phase 2B gallery records comparisons, laser origins, tests and limitations.
@@ -338,39 +342,39 @@ unknown:ship1
   SHA256: 4fe2e171c4cfe9eaecb0bd4e9cb7f7d1ece26045a9c20abcafc9319d2ba55037
   Native bounds: [-28.0, -29.0, 29.0, 23.0]
   Native raster: [57, 52]
-  HTML5: graphics/atlas/ship1_unknown_phase2b.png
+  HTML5: graphics/ships/1/ship_atlas_v1.png
 
 unknown:ship3
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/ships/ship3.swf
   SHA256: 46ce56e01f55bf76b0572efee8e38e7f8500889eb4b4fe0e00eaa217333532ef
   Native bounds: [-69.0, -49.0, 69.0, 49.0]
   Native raster: [138, 98]
-  HTML5: graphics/atlas/ship3_unknown_phase2b.png
+  HTML5: graphics/ships/3/ship_atlas_v1.png
 
 unknown:ship4
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/ships/ship4.swf
   SHA256: af490bc9e2ee9b00022e6d14568077903624b4067b6106a052da9ad50e4929dd
   Native bounds: [-47.0, -29.0, 48.0, 45.0]
   Native raster: [95, 74]
-  HTML5: graphics/atlas/ship4_unknown_phase2b.png
+  HTML5: graphics/ships/4/ship_atlas_v1.png
 
 unknown:ship5
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/ships/ship5.swf
   SHA256: 454837d4f69151381392c49f4e65285b3bb6d5c1f751fd6e9fbe9f55f6caf074
   Native bounds: [-46.0, -38.0, 47.0, 40.0]
   Native raster: [93, 78]
-  HTML5: graphics/atlas/ship5_unknown_phase2b.png
+  HTML5: graphics/ships/5/ship_atlas_v1.png
 
 unknown:ship6
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/ships/ship6.swf
   SHA256: 41398fac94fa998fe1de79d38c7c4423358b84876a82d332fa10a7de59f873da
   Native bounds: [-78.0, -67.0, 79.0, 46.0]
   Native raster: [157, 113]
-  HTML5: graphics/atlas/ship6_unknown_phase2b.png
+  HTML5: graphics/ships/6/ship_atlas_v1.png
 
 unknown:ship9
   SWF: unknown-universe-web-master/wwwroot/spacemap/graphics/ships/ship9.swf
   SHA256: 37a9c6fa70102645f2fcbe29a82216c0197b6d761566a9d809d91fee5a5e37b7
   Native bounds: [-76.0, -66.0, 77.0, 55.0]
   Native raster: [153, 121]
-  HTML5: graphics/atlas/ship9_unknown_phase2b.png
+  HTML5: graphics/ships/9/ship_atlas_v1.png

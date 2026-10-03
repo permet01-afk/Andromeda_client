@@ -347,26 +347,30 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (s == null || s.CharacterInfo == null || !s.Authenticated || s.Stopped)
                     return;
 
-                if (!s.CharacterInfo.TryEnterWebsiteConfigRefresh()) return;
-
-                perfUserId = s.CharacterId;
-                perfActive = true;
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("ConfigRefreshTick"))
+                lock (TechInventoryService.SyncRoot(s.CharacterId))
                 {
-                    if (!s.CharacterInfo.TryClaimWebsiteConfigRefresh(client)) return;
-                    try
+                    if (s.Stopped || s.StoppedPlayer || s.CharacterInfo.Disconnected) return;
+                    if (!s.CharacterInfo.TryEnterWebsiteConfigRefresh()) return;
+
+                    perfUserId = s.CharacterId;
+                    perfActive = true;
+                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("ConfigRefreshTick"))
                     {
-                        int previousStage = s.CharacterInfo.ExpansionStage;
-                        s.CharacterInfo.RefreshUserDataPreservingRuntime(client, false);
-                        SelectAction.PublishExpansionStage(s, previousStage);
-                        SelectAction.SendConfigurationRefresh(s, true, true);
-                        s.SendData(PacketComposer.Compose("B", s.CharacterInfo.GetPrimaryWeaponInfoPayload()));
-                        s.SendData(PacketComposer.Compose("3", s.CharacterInfo.GetSecondaryWeaponInfoPayload()));
-                    }
-                    catch
-                    {
-                        s.CharacterInfo.RetryWebsiteConfigRefresh(client);
-                        throw;
+                        if (!s.CharacterInfo.TryClaimWebsiteConfigRefresh(client)) return;
+                        try
+                        {
+                            int previousStage = s.CharacterInfo.ExpansionStage;
+                            s.CharacterInfo.RefreshUserDataPreservingRuntime(client, false);
+                            SelectAction.PublishExpansionStage(s, previousStage);
+                            SelectAction.SendConfigurationRefresh(s, true, true);
+                            s.SendData(PacketComposer.Compose("B", s.CharacterInfo.GetPrimaryWeaponInfoPayload()));
+                            s.SendData(PacketComposer.Compose("3", s.CharacterInfo.GetSecondaryWeaponInfoPayload()));
+                        }
+                        catch
+                        {
+                            s.CharacterInfo.RetryWebsiteConfigRefresh(client);
+                            throw;
+                        }
                     }
                 }
             }

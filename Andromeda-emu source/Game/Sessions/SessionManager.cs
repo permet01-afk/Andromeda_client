@@ -373,7 +373,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 }
                 foreach (Session key in (IEnumerable<Session>)SessionManager.mSessions.Values)
                 {
-                    if (!clist2.Contains(key) && key.Stopped && key.TimeStopped > STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS)
+                    if (!clist2.Contains(key) && ((key.StoppedPlayer && (key.Stopped || key.TimeStopped > STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS))
+                        || (key.Stopped && key.TimeStopped > STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS)))
                     {
                         if (ShouldKeepStoppedGameplaySessionAlive(key))
                             continue;
@@ -406,7 +407,21 @@ namespace OrbitReborn_Emulator.Game.Sessions
                         {
                             try
                             {
-                                SynchronizeStoppedGameplayBeforeAutoLogout(key, client);
+                                // A reconnect can arrive after the monitor built clist1.
+                                // Recheck under the same per-player lock as authentication.
+                                lock (TechInventoryService.SyncRoot(key.CharacterId))
+                                {
+                                    if (key.StoppedPlayer)
+                                    {
+                                        key.Stop(client); // Transport only; terminal sessions never persist twice.
+                                        ForgetSession(key);
+                                        continue;
+                                    }
+                                    if (!key.Stopped || ShouldKeepStoppedGameplaySessionAlive(key)) continue;
+                                    SynchronizeStoppedGameplayBeforeAutoLogout(key, client);
+                                    key.Dispose();
+                                    ForgetSession(key);
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -414,21 +429,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
                             }
                         }
                     }
-                }
-
-                foreach (Session key in (IEnumerable<Session>)clist1.Keys)
-                {
-                    try
-                    {
-                        key.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        Output.WriteLine((object)("[SessionMgr] Dispose failed for sessionId=" + key.Id + ": " + ex.ToString()), OutputLevel.Warning);
-                    }
-
-                    Session session;
-                    SessionManager.mSessions.TryRemove(key.Id, out session);
                 }
             }
             catch (Exception ex)
@@ -440,6 +440,14 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 PerformanceProfiler.LogCleanup("SessionManager.ExecuteMonitor", perfStart);
                 PerformanceProfiler.EndTimerCallback("SessionManager.ExecuteMonitor", SESSION_MONITOR_PERIOD_MS, perfStart);
             }
+        }
+
+        internal static void ForgetSession(Session session)
+        {
+            UnregisterAuthenticatedSession(session);
+            CancelStopSession(session.Id);
+            Session removed;
+            mSessions.TryRemove(session.Id, out removed);
         }
 
         public static void StopSession(int SessionId)

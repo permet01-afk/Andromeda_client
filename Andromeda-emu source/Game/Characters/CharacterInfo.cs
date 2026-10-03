@@ -2869,11 +2869,13 @@ namespace OrbitReborn_Emulator.Game.Characters
                 MySqlClient.SetParameter("mapid", (object)9);
             }
             MySqlClient.SetParameter("online", (object)online);
+            MySqlClient.SetParameter("runtime_shipid", this.mShipId);
             MySqlClient.SetParameter("current_hp", (object)this.ShipHp);
             MySqlClient.SetParameter("current_shield1", (object)ClampRuntimeValue(this.Config1.Shield, 0, this.Config1.MaxShield));
             MySqlClient.SetParameter("current_shield2", (object)ClampRuntimeValue(this.Config2.Shield, 0, this.Config2.MaxShield));
             MySqlClient.SetParameter("active_config", (object)(this.ActiveConfig == 2 ? 2 : 1));
-            MySqlClient.ExecuteNonQuery("UPDATE users SET lastlogin = @lastlogin, locx = @locx, locy = @locy, cooldown_ISH = @cdISH, cooldown_SMB = @cdSMB, mapid = @mapid, online = @online, current_hp = @current_hp, current_shield1 = @current_shield1, current_shield2 = @current_shield2, active_config = @active_config WHERE id = @id LIMIT 1");
+            // A web purchase/design switch must not inherit runtime vitals/config from the retired ship.
+            MySqlClient.ExecuteNonQuery("UPDATE users SET lastlogin = @lastlogin, locx = @locx, locy = @locy, cooldown_ISH = @cdISH, cooldown_SMB = @cdSMB, mapid = @mapid, online = @online, current_hp = IF(shipid = @runtime_shipid, @current_hp, current_hp), current_shield1 = IF(shipid = @runtime_shipid, @current_shield1, current_shield1), current_shield2 = IF(shipid = @runtime_shipid, @current_shield2, current_shield2), active_config = IF(shipid = @runtime_shipid, @active_config, active_config) WHERE id = @id LIMIT 1");
         }
 
         public void addTdmVictory(SqlDatabaseClient MySqlClient, int amount = 1)
