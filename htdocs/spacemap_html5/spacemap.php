@@ -750,7 +750,7 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <script src="client_network.js?v=1108"></script>
 <script src="client_entities.js?v=1018"></script>
 <script src="client_combat.js?v=1022"></script>
-<script src="client_graphics.js?v=1106"></script>
+<script src="client_graphics.js?v=1107"></script>
 <script src="client_ui.js?v=1015"></script>
 <script src="client_quests.js?v=1008"></script>
 <script src="client_bootstrap.js?v=1019"></script>

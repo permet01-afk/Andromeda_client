@@ -148,7 +148,7 @@
             <iframe 
                 id="andromedaEquipFrame" 
                 class="andromeda-config-frame" 
-                src="/equip_ui.html?embed=1&v=havok_style_20260512" 
+                src="/equip_ui.html?embed=1&v=drone-cards-20261003"
                 title="Andromeda Equipment Configurations"
                 loading="lazy"
             ></iframe>

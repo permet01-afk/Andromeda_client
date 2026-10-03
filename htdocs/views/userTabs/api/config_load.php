@@ -16,11 +16,11 @@ $pid = (int)$pid;
 function config_load_icon_case(string $alias = 'i'): string
 {
   return "CASE
-        WHEN {$alias}.id=9001 OR LOWER({$alias}.name) LIKE '%havok%' OR LOWER({$alias}.name) LIKE '%havoc%' THEN '/spacemap_html5/graphics/havoks/1.png'
+        WHEN {$alias}.id=9001 OR LOWER({$alias}.name) LIKE '%havok%' OR LOWER({$alias}.name) LIKE '%havoc%' THEN '/views/userTabs/icons/items/havok.png'
         WHEN {$alias}.category='laser' THEN '/views/userTabs/icons/laser.png'
         WHEN {$alias}.category='generator' AND {$alias}.type=4 THEN '/views/userTabs/icons/shield.png'
         WHEN {$alias}.category='generator' AND {$alias}.type=3 THEN '/views/userTabs/icons/speed.png'
-        WHEN {$alias}.category='drone_design' THEN '/spacemap_html5/graphics/havoks/1.png'
+        WHEN {$alias}.category='drone_design' THEN '/views/userTabs/icons/items/havok.png'
         ELSE NULL
       END";
 }
@@ -306,7 +306,7 @@ function config_load_build_drones_by_config(PDO $db, array $dronesBase): array
         'design_item_id' => (int)$designRow['design_item_id'],
         'design_code' => $designCode,
         'design_name' => $designRow['design_name'] ?: ucfirst($designCode),
-        'design_icon' => $designCode === 'havok' ? '/spacemap_html5/graphics/havoks/1.png' : ($designRow['design_icon'] ?? null),
+        'design_icon' => $designCode === 'havok' ? '/views/userTabs/icons/items/havok.png' : ($designRow['design_icon'] ?? null),
       ];
     }
   } catch (Exception $e) {

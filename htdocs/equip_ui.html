@@ -440,6 +440,32 @@
     to { transform: scale(1); opacity: 1; }
   }
 
+
+  /* The scrolling content may shrink; navigation and Save stay inside the frame. */
+  .cols { grid-template-columns: minmax(0, 1fr) 340px; grid-template-rows: minmax(0, 1fr); }
+  .card { min-width: 0; min-height: 0; }
+  #shipSection, #dronesSection { min-height: 0; flex: 1; overflow-y: auto; padding: 0 10px 10px; }
+  .invWrap { min-height: 0; }
+  #droneList { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .droneBlock { padding: 9px; }
+  .drone-heading { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .drone-identity { min-width:0; flex:1; }
+  .drone-name { display:block; font-size:11px; letter-spacing:.05em; color:#e7f8ff; }
+  .drone-level { display:inline-block; margin-top:4px; color:#a9c7dc; font-size:10px; }
+  .drone-token { width:64px; height:54px; flex-shrink:0; }
+  .drone-portrait { display:block; background-repeat:no-repeat; pointer-events:none; }
+  .drone-design-label { display:block; color:#f9a1a1; font-size:9px; margin-top:3px; letter-spacing:.06em; }
+  .drone-progress { height:3px; background:#07101c; border-radius:2px; overflow:hidden; }
+  .drone-progress-fill { height:100%; background:#5eead4; }
+  .drone-progress-text { color:#8daac0; font-size:10px; text-align:right; margin:4px 0 7px; }
+  .drone-row { margin-top:0; }
+  .bar { flex:0 0 auto; }
+  #saveAll { white-space:nowrap; }
+  .item-tooltip { max-width:min(280px,calc(100vw - 20px)); }
+  .tooltip-bonus { white-space:pre-line; }
+  @media(max-width:900px) { .cols { grid-template-columns:minmax(0,1fr) 270px; gap:10px; } }
+  @media(max-width:650px) { .cols { grid-template-columns:minmax(0,1fr) 190px; gap:6px; } .configHelp{display:none} .bar{justify-content:flex-end;padding:8px} #saveAll{padding:8px 12px} .invTab{font-size:8px} }
+
 </style>
 </head>
 <body>
@@ -593,7 +619,7 @@
 const API_PREFIX = '/views/userTabs/api';
 const ICONS_BASE = '/views/userTabs/icons';
 const ITEMS_ICONS_BASE = ICONS_BASE + '/items';
-const HAVOK_ICON = '/spacemap_html5/graphics/havoks/1.png';
+const HAVOK_ICON = '/views/userTabs/icons/items/havok.png';
 const HAVOK_FULL_SET_DAMAGE = 10;
 const NON_SELLABLE_ITEM_IDS = new Set([9001]);
 
@@ -751,8 +777,12 @@ function showTooltip(item, x, y, isLocked = false) {
   const ttBonus = document.getElementById('ttBonus');
   if (ttBonus) {
     const isHavok = isHavokDesignItem(item) || item?.havokEquipped === true;
-    ttBonus.textContent = isHavok ? havokBonusText() : '';
-    ttBonus.classList.toggle('visible', isHavok);
+    const droneLevel = Number(item.droneLevel) || 0;
+    const details = droneLevel ? [`Level ${droneLevel}`, droneLevel === 6 ? 'MAX LEVEL' : `Progress: ${item.dronePoints} / ${item.droneThreshold || [100,200,400,800,1600][droneLevel-1]}`,
+      `Drone equipment: Laser +${(droneLevel-1)*2}% · Shield +${(droneLevel-1)*4}%`] : [];
+    if (isHavok) details.push(havokBonusText());
+    ttBonus.textContent = details.join('\n');
+    ttBonus.classList.toggle('visible', details.length > 0);
   }
 
   // Mettre à jour le bouton (taux affiché)
@@ -1859,6 +1889,19 @@ function ensureDronesStateFromList(list){
 }
 
 
+// Portraits reuse the in-game atlases. UI levels are 1..6; atlas rows are 0..5.
+function dronePortrait(drone, hasHavokDesign) {
+  const level = Math.max(1, Math.min(6, Number(drone.level) || 1));
+  const flax = Number(drone.drone_item_id || drone.item_id) === 5;
+  const sizes = flax ? [[45,33],[45,33],[45,33],[45,33],[45,33],[54,56]] : [[36,27],[36,30],[36,30],[81,58],[81,65],[81,65]];
+  const [width,height] = sizes[level-1];
+  const row = (flax ? 6 : 0) + level - 1;
+  const path = hasHavokDesign ? '/spacemap_html5/graphics/havoks/havok_atlas.png?v=unknown-havok-levels' : '/spacemap_html5/graphics/atlas/drones_v1.png?v=phase3-levels';
+  const scale = 0.72;
+  return el('span', {class:'drone-portrait', role:'img', 'aria-label':`${flax ? 'Flax' : 'Iris'} level ${level}${hasHavokDesign ? ' with Havok' : ''}`,
+    style:`width:${width*scale}px;height:${height*scale}px;background-image:url('${path}');background-size:${2688*scale}px ${(hasHavokDesign ? 408 : 816)*scale}px;background-position:${-scale}px ${-(row*68+1)*scale}px`});
+}
+
 function renderDrones(tabName){
   const wrap = byId('dronesWrap');
   wrap.innerHTML = '';
@@ -1867,7 +1910,7 @@ function renderDrones(tabName){
   const equippedHavoks = getEquippedHavokCount(tabName);
   const eligibleIris = new Set(state.filter(d => Number(d.drone_item_id || d.item_id) === 3).map(d => d.id)).size;
   const havokDamage = getHavokDamageBonus(equippedHavoks, eligibleIris);
-  wrap.append(el('div', {class: 'havok-summary'}, `Havok bonus: ${equippedHavoks}/${eligibleIris} Iris equipped • +${havokDamage}% Iris laser damage`));
+  wrap.append(el('div', {class: 'havok-summary'}, `Havok ${equippedHavoks}/${eligibleIris} · ${havokDamage ? "+10% Iris lasers" : "Set incomplete"}`));
 
   const list = el('div',{id:'droneList'});
   wrap.append(list);
@@ -1903,6 +1946,9 @@ function renderDrones(tabName){
       icon: hasHavokDesign ? HAVOK_ICON : ITEMS_ICONS_BASE + (isFlax ? '/flax.png' : '/iris.png'),
       drone_id: Number(d.id || 0) || 0,
       havokEquipped: hasHavokDesign,
+      droneLevel: Math.max(1, Math.min(6, Number(d.level) || 1)),
+      dronePoints: Number(d.progress_points) || 0,
+      droneThreshold: Number(d.next_threshold) || 0,
 
       // ✅ IMPORTANT : index de prix progressif PAR TYPE
       priceIndex: typeTier
@@ -1910,15 +1956,12 @@ function renderDrones(tabName){
 
     // Token drone
     const droneToken = el('div', {
-      class: 'token',
-      style: hasHavokDesign ? 'border-color: #ef4444; box-shadow: 0 0 8px rgba(239,68,68,0.35); margin-right: 10px;' : 'border-color: var(--cyan); box-shadow: 0 0 5px rgba(94, 234, 212, 0.2); margin-right: 10px;',
+      class: 'token drone-token',
+      style: hasHavokDesign ? 'border-color: rgba(239,68,68,.6);' : 'border-color: rgba(94,234,212,.35);',
       title: ''
     });
 
-    droneToken.append(
-      el('img', {src: droneItem.icon, alt: 'Drone'}),
-      el('span', {class: 'badge'}, isFlax ? 'FLAX' : (hasHavokDesign ? 'HAV' : 'IRIS'))
-    );
+    droneToken.append(dronePortrait(d, hasHavokDesign));
 
     // Click = lock tooltip
     droneToken.addEventListener('click', (e) => {
@@ -1939,13 +1982,13 @@ function renderDrones(tabName){
 
     bindDroneTokenDesignDnD(droneToken, tabName, idx, d, hasHavokDesign, designMeta);
 
-    // Header
-    const headerContent = el('div', {style: 'display:flex; align-items:center;'},
-      droneToken,
-      el('label', {style:'cursor:pointer'}, d.name || `DRONE ${idx+1}`)
-    );
-
-    const rowTitle = el('div',{class:'sectionHead'}, headerContent);
+    const level = droneItem.droneLevel;
+    const points = Math.max(0, droneItem.dronePoints);
+    const threshold = droneItem.droneThreshold || [100,200,400,800,1600,0][level-1];
+    const label = `${isFlax ? 'FLAX' : 'IRIS'} ${idx+1}`;
+    const identity = el('div', {class:'drone-identity'}, el('strong', {class:'drone-name'}, label), el('span', {class:'drone-level'}, `Level ${level}`));
+    if (hasHavokDesign) identity.append(el('span', {class:'drone-design-label'}, 'HAVOK'));
+    const rowTitle = el('div', {class:'drone-heading'}, droneToken, identity);
     const row = el('div',{class:'drone-row'});
 
     // ✅ Slots drone (1 pour Flax, 2 pour Iris)
@@ -1967,12 +2010,12 @@ function renderDrones(tabName){
     }
 
     const block = el('div',{class:'droneBlock' + (hasHavokDesign ? ' havokBlock' : '')});
-    const level = Math.max(1, Math.min(6, Number(d.level) || 1));
-    const points = Math.max(0, Number(d.progress_points) || 0);
-    const progress = level === 6 ? 'MAX LEVEL' : `Progress: ${points} / ${Number(d.next_threshold) || [100,200,400,800,1600][level-1]}`;
-    const levelInfo = el('div', {class:'drone-level',style:'padding:4px 10px;color:#a8c4d9;font-size:12px'},
-      `Level ${level} · ${progress} · Laser +${(level-1)*2}% · Shield +${(level-1)*4}%`);
-    block.append(rowTitle, levelInfo, row);
+    const progressText = level === 6 ? 'MAX LEVEL' : `${points} / ${threshold}`;
+    const progressPercent = level === 6 ? 100 : Math.max(0, Math.min(100, points * 100 / threshold));
+    const progressBar = el('div', {class:'drone-progress', role:'progressbar', 'aria-label':`${label} progress`, 'aria-valuemin':0,
+      'aria-valuemax':level === 6 ? 1 : threshold, 'aria-valuenow':level === 6 ? 1 : points, 'aria-valuetext':progressText},
+      el('div', {class:'drone-progress-fill',style:`width:${progressPercent}%`}));
+    block.append(rowTitle, progressBar, el('div', {class:'drone-progress-text'}, progressText), row);
     list.append(block);
   });
 }

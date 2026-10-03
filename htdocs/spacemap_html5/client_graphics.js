@@ -3729,15 +3729,7 @@ let dronesAtlasStatus = "idle";
 
 let dronesAtlasListenersBound = false;
 
-const HAVOK_DRONE_ATLAS_PATH = "graphics/havoks/havok_atlas.png";
-
-const HAVOK_DRONE_FRAME_WIDTH = 60;
-
-const HAVOK_DRONE_FRAME_HEIGHT = 60;
-
-const HAVOK_DRONE_ATLAS_CELL_WIDTH = 51;
-
-const HAVOK_DRONE_ATLAS_CELL_HEIGHT = 51;
+const HAVOK_DRONE_ATLAS_PATH = "graphics/havoks/havok_atlas.png?v=unknown-havok-levels";
 
 let havokDroneAtlasImage = null;
 
@@ -3748,7 +3740,7 @@ let havokDroneAtlasListenersBound = false;
 const droneSpriteFrameDefCache = {
     iris: new Array(6 * DRONE_DIRECTION_FRAME_COUNT),
     flax: new Array(6 * DRONE_DIRECTION_FRAME_COUNT),
-    havok: new Array(DRONE_DIRECTION_FRAME_COUNT)
+    havok: new Array(6 * DRONE_DIRECTION_FRAME_COUNT)
 };
 
 const pendingDroneSpriteFrameDefs = {
@@ -3760,8 +3752,8 @@ const pendingDroneSpriteFrameDefs = {
     },
     havok: {
         pendingAtlas: true,
-        width: HAVOK_DRONE_FRAME_WIDTH,
-        height: HAVOK_DRONE_FRAME_HEIGHT
+        width: DRONES_ATLAS_ROWS.iris[0].frameWidth,
+        height: DRONES_ATLAS_ROWS.iris[0].frameHeight
     }
 };
 
@@ -3795,19 +3787,20 @@ function getHavokDroneAtlasImage() {
     return havokDroneAtlasImage;
 }
 
-function getHavokDroneSpriteFrame(directionIndex) {
+function getHavokDroneSpriteFrame(directionIndex, levelIndex = 0) {
     const atlas = getHavokDroneAtlasImage();
-    if (!atlas) return null;
-    if (havokDroneAtlasStatus === "error") return null;
-    if (havokDroneAtlasStatus !== "ready") {
-        return pendingDroneSpriteFrameDefs.havok;
-    }
+    if (!atlas || havokDroneAtlasStatus === "error") return null;
+    if (havokDroneAtlasStatus !== "ready") return pendingDroneSpriteFrameDefs.havok;
+    const level = Number.isInteger(levelIndex) ? Math.max(0, Math.min(5, levelIndex)) : 0;
+    // Unknown drones2.swf: Havok L1..L6 have the exact Iris L1..L6 bounds/pivots.
+    const row = DRONES_ATLAS_ROWS.iris[level];
     const idx = (directionIndex % DRONE_DIRECTION_FRAME_COUNT + DRONE_DIRECTION_FRAME_COUNT) % DRONE_DIRECTION_FRAME_COUNT;
-    const cached = droneSpriteFrameDefCache.havok[idx];
+    const cacheIndex = level * DRONE_DIRECTION_FRAME_COUNT + idx;
+    const cached = droneSpriteFrameDefCache.havok[cacheIndex];
     if (cached) return cached;
-    const sx = idx * HAVOK_DRONE_ATLAS_CELL_WIDTH;
-    const sy = 0;
-    if (sx + HAVOK_DRONE_ATLAS_CELL_WIDTH > atlas.width || HAVOK_DRONE_ATLAS_CELL_HEIGHT > atlas.height) {
+    const sx = idx * DRONES_ATLAS_CELL_WIDTH + DRONES_ATLAS_PADDING;
+    const sy = level * DRONES_ATLAS_CELL_HEIGHT + DRONES_ATLAS_PADDING;
+    if (sx + row.frameWidth > atlas.width || sy + row.frameHeight > atlas.height) {
         havokDroneAtlasStatus = "error";
         return null;
     }
@@ -3815,12 +3808,14 @@ function getHavokDroneSpriteFrame(directionIndex) {
         atlas: atlas,
         sx: sx,
         sy: sy,
-        sw: HAVOK_DRONE_ATLAS_CELL_WIDTH,
-        sh: HAVOK_DRONE_ATLAS_CELL_HEIGHT,
-        width: HAVOK_DRONE_FRAME_WIDTH,
-        height: HAVOK_DRONE_FRAME_HEIGHT
+        sw: row.frameWidth,
+        sh: row.frameHeight,
+        width: row.frameWidth,
+        height: row.frameHeight,
+        pivotX: row.pivotX,
+        pivotY: row.pivotY
     };
-    droneSpriteFrameDefCache.havok[idx] = frameDef;
+    droneSpriteFrameDefCache.havok[cacheIndex] = frameDef;
     return frameDef;
 }
 
@@ -3857,7 +3852,7 @@ function getDronesAtlasImage() {
 function getDroneSpriteFrame(kind, directionIndex, levelIndex = 0) {
     const rowKey = kind === "flax" ? "flax" : kind === "havok" ? "havok" : "iris";
     if (rowKey === "havok") {
-        return getHavokDroneSpriteFrame(directionIndex);
+        return getHavokDroneSpriteFrame(directionIndex, levelIndex);
     }
     const level = Number.isInteger(levelIndex) ? Math.max(0, Math.min(5, levelIndex)) : 0;
     const row = DRONES_ATLAS_ROWS[rowKey][level];
