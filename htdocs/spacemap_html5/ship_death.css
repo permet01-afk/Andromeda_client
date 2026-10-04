@@ -1,5 +1,19 @@
-#ship-death-overlay{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:transparent;pointer-events:auto;font-family:Arial,Helvetica,sans-serif}
+/* Reconstruction of LOCAL Flash Window14 (window1.swf); no Unknown skin.
+ * Logical 300x150 + the native 20px resizer footprint = 320x170 outer bounds.
+ * Native border's scale9Grid: (40,35.95)-(145,106) on a 224x128 frame. */
+#ship-death-overlay{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:transparent;pointer-events:auto;font-family:"EurostileHeaFl",Arial,sans-serif}
 .ship-death-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;animation:shipDeathFlash 500ms ease-out}
-.ship-death-note{box-sizing:border-box;width:310px;max-width:calc(100vw - 24px);min-height:156px;max-height:calc(100dvh - 24px);overflow:auto;margin:12px;border:1px solid #738493;outline:3px solid #0a131c;background:linear-gradient(#293945 0,#111d29 28px,#0b1520 29px,#172534);box-shadow:0 0 0 4px #4d5c68,0 12px 40px #000c;color:#eef3f7;text-align:center;animation:shipDeathNote 500ms ease-out}
-.ship-death-note[hidden]{display:none}.ship-death-note h2{font-size:12px;line-height:25px;margin:0;padding:0 10px;text-align:left;font-weight:normal;border-bottom:1px solid #050a10;text-shadow:1px 1px #000}.ship-death-note p{font-size:12px;line-height:17px;margin:17px 14px 15px}.ship-death-note button{display:block;min-width:87px;min-height:28px;margin:0 auto 14px;border:1px solid #8497a7;outline:1px solid #060c12;border-radius:2px;background:linear-gradient(#566b7c,#23394e 48%,#15283b 51%,#304b61);color:#fff;font-size:12px;cursor:pointer;text-shadow:1px 1px #000}.ship-death-note button:focus-visible{outline:2px solid #d1eafa;outline-offset:2px}.ship-death-terminal canvas{animation:shipDeathShake 450ms linear}
-@keyframes shipDeathFlash{0%{opacity:.75}50%{opacity:.18}100%{opacity:0}}@keyframes shipDeathNote{from{opacity:0}to{opacity:1}}@keyframes shipDeathShake{0%,100%{transform:translate(0,0)}15%{transform:translate(3px,-2px)}30%{transform:translate(-3px,2px)}45%{transform:translate(2px,1px)}60%{transform:translate(-1px,-2px)}80%{transform:translate(1px,0)}}
+.ship-death-note{position:relative;box-sizing:border-box;width:320px;height:170px;max-width:calc(100vw - 12px);margin:0;border:0;outline:0;isolation:isolate;color:#fff;text-align:center;font-weight:normal;animation:shipDeathNote 500ms ease-out}
+.ship-death-note::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border-style:solid;border-width:36px 79px 22px 40px;border-image:url("graphics/ui/window1/images/w1_border_nonres.png") 36 79 22 40 fill stretch}
+.ship-death-note::after{content:"";position:absolute;inset:0;z-index:-2;background:url("graphics/ui/window1/images/w1_bg_tile.png") repeat;mask:url("graphics/ui/window1/images/w1_mask_nonres.png") 0 0/100% 100% no-repeat;pointer-events:none}
+.ship-death-note[hidden]{display:none}
+.ship-death-note .ship-death-info{position:absolute;left:2px;top:2px;width:24px;height:24px}
+.ship-death-note h2{position:absolute;left:39.3px;top:9px;margin:0;padding:0;font:14px/17px "EurostileHeaFl",Arial,sans-serif;color:#e9e2c0;text-align:left;text-shadow:0 0 5px #ff7a19}
+.ship-death-note p{box-sizing:border-box;position:absolute;left:10px;top:34px;width:calc(100% - 30px);height:90px;margin:0;padding:2px;font:14px/17px "EurostileHeaFl",Arial,sans-serif;text-align:center;color:#fff}
+.ship-death-buttons{position:absolute;left:0;top:129px;width:calc(100% - 30px);text-align:center}
+.ship-death-note button{display:inline-block;box-sizing:border-box;height:21px;min-width:28px;margin:0;padding:0 5px;border:0;border-radius:0;background:transparent url("graphics/ui/ui/sprites/DefineSprite_518_button1/1.png") center/100% 100% no-repeat;font:12px/21px "EurostileFl",Arial,sans-serif;color:#fff;cursor:pointer;text-shadow:1px 1px #000}
+.ship-death-note button:focus-visible{outline:1px solid #dfbd72;outline-offset:2px}
+.ship-death-terminal canvas{animation:shipDeathShake 450ms linear}
+@keyframes shipDeathFlash{0%{opacity:.75}50%{opacity:.18}100%{opacity:0}}
+@keyframes shipDeathNote{from{opacity:0}to{opacity:1}}
+@keyframes shipDeathShake{0%,100%{transform:translate(0,0)}15%{transform:translate(3px,-2px)}30%{transform:translate(-3px,2px)}45%{transform:translate(2px,1px)}60%{transform:translate(-1px,-2px)}80%{transform:translate(1px,0)}}

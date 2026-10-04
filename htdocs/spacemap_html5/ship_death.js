@@ -10,7 +10,8 @@
         if (typeof document === 'undefined') return true;
         const overlay = document.createElement('div');
         overlay.id = 'ship-death-overlay';
-        overlay.innerHTML = '<div class="ship-death-flash"></div><section class="ship-death-note" role="alertdialog" aria-modal="true" aria-labelledby="ship-death-title" aria-describedby="ship-death-message" hidden><h2 id="ship-death-title">Note</h2><p id="ship-death-message">Your ship has been destroyed. Repair your ship before you can continue playing.</p><button type="button">OK</button></section>';
+        // Local Flash Window14: window1.swf / windowContainer1, info icon and ui.swf button1.
+        overlay.innerHTML = '<div class="ship-death-flash"></div><section class="ship-death-note" role="alertdialog" aria-modal="true" aria-labelledby="ship-death-title" aria-describedby="ship-death-message" hidden><img class="ship-death-info" src="graphics/ui/window1/images/info_icon.png" alt=""><h2 id="ship-death-title">Note</h2><p id="ship-death-message">Your ship has just been destroyed. To continue playing, repair your spaceship or buy yourself a new one.</p><div class="ship-death-buttons"><button type="button">OK</button></div></section>';
         document.body.appendChild(overlay);
         document.body.classList.add('ship-death-terminal');
         const button = overlay.querySelector('button');

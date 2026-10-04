@@ -16,10 +16,10 @@ final class ShipRepairService
         } catch(Throwable $e) { throw new RuntimeException(self::MANUAL_SQL,0,$e); }
     }
 
-    public static function state(PDO $db,int $pid): array
+    public static function state(PDO $db,int $pid,bool $includeConfigurations=false): array
     {
         self::assertSchema($db);
-        $q=$db->prepare("SELECT u.shipid,u.current_hp,u.max_hp,u.booster_hp_time,u.uridium,COALESCE(s.status,'READY') AS status,COALESCE(s.ship_generation,1) AS ship_generation,s.ship_id,s.destruction_id,s.repair_cost,COALESCE(s.version,1) AS version,d.gameplay_token FROM users u LEFT JOIN player_ship_state s ON s.player_id=u.id LEFT JOIN player_drone_state d ON d.player_id=u.id WHERE u.id=?");
+        $q=$db->prepare("SELECT u.shipid,u.current_hp,u.max_hp,u.booster_hp_time,u.uridium,u.active_config,u.current_shield1,u.current_shield2,u.speed_lvl,u.booster_dmg_time,u.booster_shd_time,COALESCE(s.status,'READY') AS status,COALESCE(s.ship_generation,1) AS ship_generation,s.ship_id,s.destruction_id,s.repair_cost,COALESCE(s.version,1) AS version,d.gameplay_token FROM users u LEFT JOIN player_ship_state s ON s.player_id=u.id LEFT JOIN player_drone_state d ON d.player_id=u.id WHERE u.id=?");
         $q->execute([$pid]); $s=$q->fetch(PDO::FETCH_ASSOC);
         if(!$s) throw new RuntimeException('Player not found.');
         if($s['ship_id']!==null && (int)$s['ship_id']!==(int)$s['shipid']) throw new RuntimeException('Active ship identity changed. Please refresh the hangar.');
@@ -28,9 +28,54 @@ final class ShipRepairService
         unset($s['gameplay_token']); // Ownership tokens never leave the server.
         foreach(['shipid','current_hp','max_hp','uridium','ship_generation','version','repair_cost'] as $key) $s[$key]=(int)$s[$key];
         if((int)$s['booster_hp_time']>time()) $s['max_hp']+=(int)($s['max_hp']*0.10);
-        unset($s['booster_hp_time']);
+        $s['active_config']=(int)$s['active_config']===2?2:1;
         if($s['status']==='DESTROYED') $s['current_hp']=0;
+        if($includeConfigurations) $s['configurations']=self::configurationStats($db,$pid,$s);
+        unset($s['booster_hp_time'],$s['current_shield1'],$s['current_shield2'],$s['speed_lvl'],$s['booster_dmg_time'],$s['booster_shd_time']);
         return $s;
+    }
+
+    // Read-only presentation of the existing Infos A/B totals. Current values
+    // are the last saved state, not live combat telemetry. No equipment sync.
+    private static function configurationStats(PDO $db,int $pid,array $ship): array
+    {
+        $q=$db->prepare('SELECT base_speed_2010,bonus_damage_pct,bonus_shield_pct FROM ship_design WHERE ship_design_id=? LIMIT 1');
+        $q->execute([$ship['shipid']]);$design=$q->fetch(PDO::FETCH_ASSOC) ?: [];
+        $baseSpeed=(int)($design['base_speed_2010']??250);
+        if($baseSpeed<=0)$baseSpeed=250;
+        $speedLevel=(int)$ship['speed_lvl'];
+        if($speedLevel<0 || $speedLevel>5)$speedLevel=0;
+        $fallback=['damage'=>0,'max_shield'=>0,'speed'=>$baseSpeed+10*$speedLevel,'current_shield'=>null];
+        $configs=[1=>$fallback,2=>$fallback];
+        $shieldPercent=0;
+        try {
+            $q=$db->prepare("SELECT n.effect_values_json,COALESCE(l.level,0) AS level FROM pilot_bio_nodes n INNER JOIN player_pilot_bio_state s ON s.user_id=? LEFT JOIN player_pilot_bio_levels l ON l.user_id=s.user_id AND l.node_code=n.node_code WHERE n.node_code='shield_engineering'");
+            $q->execute([$pid]);$bio=$q->fetch(PDO::FETCH_ASSOC);
+            if($bio){
+                $level=max(0,min(5,(int)$bio['level']));
+                $values=json_decode((string)$bio['effect_values_json'],true);
+                $values=is_array($values)?array_values(array_map('intval',$values)):[4,8,12,18,25];
+                if($level>0 && count($values)>0)$shieldPercent=max(0,(int)$values[min($level,count($values))-1]);
+            }
+        } catch(PDOException $e) { /* Same optional Pilot Bio fallback as Infos. */ }
+        $q=$db->prepare("SELECT sc.name,scs.damage_total,scs.shield_total,scs.speed_total FROM ship_config sc LEFT JOIN ship_config_stats scs ON scs.ship_config_id=sc.id AND scs.config=sc.name WHERE sc.player_id=? AND sc.ship_design_id=? AND sc.name IN ('A','B')");
+        $q->execute([$pid,$ship['shipid']]);$now=time();
+        foreach($q->fetchAll(PDO::FETCH_ASSOC) as $row){
+            $config=$row['name']==='B'?2:1;
+            $damage=max(0,(int)$row['damage_total']);$shield=max(0,(int)$row['shield_total']);
+            $damageBonus=max(0,(int)($design['bonus_damage_pct']??0));$shieldBonus=max(0,(int)($design['bonus_shield_pct']??0));
+            $damage+=(int)($damage*$damageBonus/100);$shield+=(int)($shield*$shieldBonus/100);
+            if($shieldPercent>0)$shield=(int)round($shield*(1+$shieldPercent/100));
+            if((int)$ship['booster_dmg_time']>$now)$damage+=(int)($damage*.10);
+            if((int)$ship['booster_shd_time']>$now)$shield+=(int)($shield*.25);
+            $speed=(int)$row['speed_total'];
+            $configs[$config]=['damage'=>$damage,'max_shield'=>$shield,'speed'=>$speed>0?$speed:$fallback['speed'],'current_shield'=>null];
+        }
+        foreach([1,2] as $config){
+            $saved=$ship['current_shield'.$config];
+            $configs[$config]['current_shield']=$ship['status']==='DESTROYED'?0:($saved===null || (int)$saved<0?null:min($configs[$config]['max_shield'],(int)$saved));
+        }
+        return $configs;
     }
 
     public static function requireReady(PDO $db,int $pid): void
