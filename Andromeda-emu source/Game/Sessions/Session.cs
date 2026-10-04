@@ -1,4 +1,4 @@
-﻿
+
 
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
@@ -27,10 +27,11 @@ namespace OrbitReborn_Emulator.Game.Sessions
         internal bool HasPendingGameplayDeath
         {
             get { return CharacterInfo != null && !CharacterInfo.DroneWearPersistenceBlocked
-                && (CharacterInfo.PendingDroneDeath != null || CharacterInfo.DroneDeathPublishing || (DroneLifeEpoch > 0 && CharacterInfo.ShipHp <= 0)); }
+                && (CharacterInfo.DroneDeathPublishing || (!CharacterInfo.DeadCommitted && (CharacterInfo.PendingDroneDeath != null || (DroneLifeEpoch > 0 && CharacterInfo.ShipHp <= 0)))); }
         }
         public readonly string DroneGameplayToken = Guid.NewGuid().ToString("N");
         public long DroneLifeEpoch;
+        public ShipGameplayLease ShipLease;
 
         private const int RX_CHUNK_SIZE = 8192;
         private const int RX_BUFFER_MAX = 1024 * 1024;
@@ -265,7 +266,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                         object activeShip = client.ExecuteScalar("SELECT shipid FROM users WHERE id=@id LIMIT 1");
                         bool sameShip = activeShip != null && activeShip != DBNull.Value
                             && Convert.ToInt32(activeShip) == existingGameplaySession.CharacterInfo.ShipId;
-                        if (!existingGameplaySession.CharacterInfo.Disconnected && sameShip
+                        if (!existingGameplaySession.CharacterInfo.Destroy && !existingGameplaySession.CharacterInfo.DeadCommitted && !existingGameplaySession.CharacterInfo.Disconnected && sameShip
                             && existingGameplaySession.AttachSocketFromReconnect(this))
                         {
                             existingGameplaySession.CharacterInfo.AuthTicket = Ticket;
@@ -284,7 +285,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     CharacterInfo characterInfo;
                     try
                     {
-                        this.DroneLifeEpoch = DroneWearService.BeginGameplay(CharacterId, this.DroneGameplayToken);
+                        this.ShipLease = ShipLifecycleService.BeginGameplay(CharacterId, this.DroneGameplayToken);
+                        this.DroneLifeEpoch = this.ShipLease.Epoch;
                         characterInfo = CharacterInfoLoader.GetCharacterInfo(client, CharacterId, this.mId, Ticket, true);
                     }
                     catch
@@ -364,6 +366,41 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     }
                 }
             }
+        }
+
+        // Called only after the durable death. Keep web authentication untouched.
+        public void EndCommittedDeath(Action publishExplosion = null)
+        {
+            if (CharacterInfo == null || !CharacterInfo.DeadCommitted) throw new InvalidOperationException("Death is not committed.");
+            CharacterInfo.Disconnected = true;
+            CharacterInfo.CanMove = false;
+            CharacterInfo.SelectedPlayer = 0;
+            CharacterInfo.KillStrek = 0;
+            CharacterInfo.IsRepairing = false;
+            if (CharacterInfo.PathTime != null) { CharacterInfo.PathTime.Dispose(); CharacterInfo.PathTime = null; }
+            if (CharacterInfo.InvincibilityTimer != null) { CharacterInfo.InvincibilityTimer.Dispose(); CharacterInfo.InvincibilityTimer = null; }
+            if (CharacterInfo.SpeedDebuffTimer != null) { CharacterInfo.SpeedDebuffTimer.Dispose(); CharacterInfo.SpeedDebuffTimer = null; }
+            CharacterInfo.StopBoosterAutoRefresh();
+            CharacterInfo.DroneDeathPublishing = false;
+            CharacterInfo.PendingDroneDeath = null;
+            GroupManager.SuspendDestroyedMember(this);
+            if (CharacterInfo.UpdateGroupTimer != null) { CharacterInfo.UpdateGroupTimer.Dispose(); CharacterInfo.UpdateGroupTimer = null; }
+            using (var db = SqlDatabaseManager.GetClient()) CharacterInfo.SynchronizeShipSkillCooldowns(db);
+            Socket socket = mSocket;
+            DisposeCore(true, true); // Stop callbacks, flush ammo, then remove the actor.
+            try { if (publishExplosion != null) publishExplosion(); }
+            catch (Exception ex) { Output.WriteLine("[Ship death] explosion publication failed: " + ex, OutputLevel.Warning); }
+            DroneWearService.EndGameplay(CharacterId, DroneGameplayToken);
+            // Flash's original death dialogue. HTML5 also understands this terminal signal.
+            SendData(PacketComposer.Compose("ERR", "1"));
+            mStoppedTimestamp = UnixTimestamp.GetCurrent();
+            // SendData is asynchronous: allow the queued terminal packet to drain.
+            System.Threading.Tasks.Task.Delay(1000).ContinueWith(_ =>
+            {
+                try { if (socket != null) socket.Close(); } catch { }
+                if (ReferenceEquals(mSocket,socket)) mSocket = null;
+                SessionManager.ForgetSession(this);
+            });
         }
 
         private void BeginReceive()
@@ -578,6 +615,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     try
                     {
                         currentHeader = Message.Header;
+                        if (this.CharacterInfo != null && (this.CharacterInfo.Destroy || this.CharacterInfo.DeadCommitted)) return;
                         DataRouter.HandleData(this, Message);
                     }
                     catch (Exception ex)
@@ -645,9 +683,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 TechInventoryService.Suspend(this);
                 SessionManager.UnregisterAuthenticatedSession(this);
 
-                if (this.CurrentMapId > 0)
-                    MapManager.RemoveUserFromMap(this);
-
                 if (this.CharacterInfo != null)
                 {
                     ShipMovement.StopMovementTracking(this);
@@ -699,13 +734,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     {
                         this.CharacterInfo.FlushPendingPrimaryAmmoToDb();
                     }
-                    catch { }
+                    catch { if (this.CharacterInfo.DeadCommitted) throw; }
 
                     try
                     {
                         this.CharacterInfo.FlushPendingSecondaryAmmoToDb();
                     }
-                    catch { }
+                    catch { if (this.CharacterInfo.DeadCommitted) throw; }
 
                     if (this.CharacterInfo.AmmoSyncTimer != null)
                     {
@@ -719,6 +754,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     }
                 }
             }
+
+            if (this.Authenticated && this.CurrentMapId > 0)
+                MapManager.RemoveUserFromMap(this);
 
             this.StoppedPlayer = true;
             if (!deferDroneRelease && this.Authenticated && !this.IsChat)

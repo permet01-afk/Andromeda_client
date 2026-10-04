@@ -1,0 +1,24 @@
+{
+  "note": "Unmodified Unknown Universe portraits/background, visual reuse only. READY/DESTROYED/REPAIR flow is an Andromeda implementation. Existing shop thumbnails are only 63x63. No new playable ships.",
+  "sources": {
+    "1.png": "unknown-universe-web-master/wwwroot/resources/images/ship/phoenix_top.png",
+    "3.png": "unknown-universe-web-master/wwwroot/resources/images/ship/leonov_top.png",
+    "4.png": "unknown-universe-web-master/wwwroot/resources/images/ship/defcom_top.png",
+    "5.png": "unknown-universe-web-master/wwwroot/resources/images/ship/liberator_top.png",
+    "6.png": "unknown-universe-web-master/wwwroot/resources/images/ship/piranha_top.png",
+    "7.png": "unknown-universe-web-master/wwwroot/resources/images/ship/nostromo_top.png",
+    "8.png": "unknown-universe-web-master/wwwroot/resources/images/ship/vengeance_top.png",
+    "9.png": "unknown-universe-web-master/wwwroot/resources/images/ship/bigboy_top.png",
+    "10.png": "unknown-universe-web-master/wwwroot/resources/images/ship/goliath_top.png",
+    "17.png": "unknown-universe-web-master/wwwroot/resources/images/ship/vengeance/design/corsair_top.png",
+    "18.png": "unknown-universe-web-master/wwwroot/resources/images/ship/vengeance/design/lightning_top.png",
+    "56.png": "unknown-universe-web-master/wwwroot/resources/images/ship/goliath/design/enforcer_top.png",
+    "59.png": "unknown-universe-web-master/wwwroot/resources/images/ship/goliath/design/bastion_top.png",
+    "63.png": "unknown-universe-web-master/wwwroot/resources/images/ship/goliath/design/solace_top.png",
+    "64.png": "unknown-universe-web-master/wwwroot/resources/images/ship/goliath/design/diminisher_top.png",
+    "65.png": "unknown-universe-web-master/wwwroot/resources/images/ship/goliath/design/spectrum_top.png",
+    "66.png": "unknown-universe-web-master/wwwroot/resources/images/ship/goliath/design/sentinel_top.png",
+    "67.png": "unknown-universe-web-master/wwwroot/resources/images/ship/goliath/design/venom_top.png",
+    "hangar.png": "unknown-universe-web-master/wwwroot/resources/images/backgrounds/internalHangar_background.png"
+  }
+}

@@ -464,6 +464,7 @@ function closeChatConnectionForDisconnect(reason) {
 }
 
 function reconnectToCurrentMap() {
+    if (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal) return;
     if (wsReconnectTimer) {
         clearTimeout(wsReconnectTimer);
         wsReconnectTimer = null;
@@ -1026,6 +1027,7 @@ function __processChatRxText(raw) {
 }
 
 function sendRaw(line) {
+    if (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal) return;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         console.warn("[WS] Cannot send, WS is closed:", line);
         return;
@@ -1048,6 +1050,7 @@ function buildAndromedaWsUrl() {
 }
 
 function connectToServer(isReconnect = false) {
+    if (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal) return;
     hideFlashConnectionLostWindowSafe();
     const url = buildAndromedaWsUrl();
     if (!isReconnect) wsReconnectAttempts = 0;
@@ -1100,6 +1103,11 @@ function connectToServer(isReconnect = false) {
     };
     ws.onerror = err => console.error("[WS] ERROR:", err);
     ws.onclose = e => {
+        if (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal) {
+            clearWsConnectWatchdog(); stopPingTimer(); wsConnecting = false;
+            window.__ANDRO_WS_CONNECTED = false; ws = null;
+            return; // Preserve the death scene; never replace it with reconnect/map reset.
+        }
         clearWsConnectWatchdog();
         wsConnecting = false;
         window.__ANDRO_WS_CONNECTED = false;
@@ -1261,6 +1269,7 @@ window.startNetwork = () => {
 };
 
 const PACKET_HANDLERS = {
+    ERR: handlePacket_ERR,
     m: handlePacket_m,
     w: handlePacket_w,
     i: handlePacket_i,
@@ -1655,6 +1664,7 @@ function handleServerLine(line) {
     if (!opcode || opcode.trim() === "") {
         return;
     }
+    if (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal && opcode !== "K" && opcode !== "ERR") return;
     const handler = PACKET_HANDLERS[opcode];
     if (__PARITY_DEBUG_GAME_OPCODES.has(opcode)) {
         __parityDebug("opcode-game", {
@@ -6603,8 +6613,14 @@ function resolveExplosionType(entity, id, explicitType = null) {
     return 0;
 }
 
+function handlePacket_ERR(parts, i) {
+    if (String(parts[i]) === "1" && !(window.AndromedaShipDeath && window.AndromedaShipDeath.terminal))
+        handlePacket_K([String(heroId), "0"], 0);
+}
+
 function handlePacket_K(parts, i) {
     const id = parseInt(parts[i], 10);
+    if (id === heroId && window.AndromedaShipDeath && !window.AndromedaShipDeath.begin()) return;
     const e = entities[id];
     if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection(id);
     const explicitExplosionType = parts.length > i + 1 ? parts[i + 1] : null;
@@ -6619,16 +6635,16 @@ function handlePacket_K(parts, i) {
         const entityX = id === heroId ? shipX : e ? e.x : 0;
         const entityY = id === heroId ? shipY : e ? e.y : 0;
         const explosionType = resolveExplosionType(e, id, explicitExplosionType);
-        spawnExplosionAt(entityX, entityY, explosionType);
+        spawnExplosionAt(entityX, entityY, explosionType, id === heroId || !!(e && e.kind === "player"));
     }
     if (id === heroId) {
         addServerInfoLogMessage("SHIP DESTROYED!");
-        try {
-            if (window.AudioManager && typeof window.AudioManager.playSoundEffect === "function") {
-                window.AudioManager.playSoundEffect(18, false, false, -1, -1, true);
-                window.AudioManager.playSoundEffect(41, false, false, -1, -1, true);
-            }
-        } catch (_) {}
+        wsManualClose = true;
+        if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+        stopPingTimer();
+        if (typeof clearPendingCollectState === "function") clearPendingCollectState();
+        if (typeof clearAllCollectRequests === "function") clearAllCollectRequests();
+        forceUnlock(selectedTargetId, { suppressServerStop:true });
         clearEntityFlashStatusEffects(heroId);
         heroIdleFloating = null;
         heroHp = 0;
@@ -6649,6 +6665,7 @@ function handlePacket_K(parts, i) {
         if (typeof flashClearEntityShipSkillVisualEffects === "function") {
             flashClearEntityShipSkillVisualEffects(heroId);
         }
+        delete entities[heroId];
         if (typeof updateHtmlWindows === "function") updateHtmlWindows();
         return;
     }

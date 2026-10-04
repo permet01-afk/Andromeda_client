@@ -1,4 +1,4 @@
-﻿<?php 
+<?php
 session_start(); 
 
 
@@ -31,13 +31,13 @@ if(!empty($_GET['factionid'])) {
     $fid = (int)$_GET['factionid'];
     switch($fid) {
         case 1: 
-            $req = $db->prepare('UPDATE users SET factionid=1, locx=2000, locy=1100, mapid=1 WHERE id=:id');
+            $req = $db->prepare('UPDATE users SET factionid=1, locx=2000, locy=1100, mapid=1 WHERE id=:id AND factionid=0 AND NOT EXISTS(SELECT 1 FROM player_ship_state s WHERE s.player_id=users.id AND s.status=\'DESTROYED\') AND NOT EXISTS(SELECT 1 FROM player_drone_state d WHERE d.player_id=users.id AND d.gameplay_token IS NOT NULL)');
             break;
         case 2: 
-            $req = $db->prepare('UPDATE users SET factionid=2, locx=18500, locy=1100, mapid=5 WHERE id=:id');
+            $req = $db->prepare('UPDATE users SET factionid=2, locx=18500, locy=1100, mapid=5 WHERE id=:id AND factionid=0 AND NOT EXISTS(SELECT 1 FROM player_ship_state s WHERE s.player_id=users.id AND s.status=\'DESTROYED\') AND NOT EXISTS(SELECT 1 FROM player_drone_state d WHERE d.player_id=users.id AND d.gameplay_token IS NOT NULL)');
             break;
         case 3: 
-            $req = $db->prepare('UPDATE users SET factionid=3, locx=19200, locy=11300, mapid=9 WHERE id=:id');
+            $req = $db->prepare('UPDATE users SET factionid=3, locx=19200, locy=11300, mapid=9 WHERE id=:id AND factionid=0 AND NOT EXISTS(SELECT 1 FROM player_ship_state s WHERE s.player_id=users.id AND s.status=\'DESTROYED\') AND NOT EXISTS(SELECT 1 FROM player_drone_state d WHERE d.player_id=users.id AND d.gameplay_token IS NOT NULL)');
             break;
         default:
             die('Invalid Company Selection');

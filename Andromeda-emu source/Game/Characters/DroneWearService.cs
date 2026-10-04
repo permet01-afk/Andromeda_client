@@ -45,7 +45,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 }
                 using (var db = Open())
                 {
-                    AssertSchema(db);
+                    AssertSchema(db); ShipLifecycleService.AssertSchema(db);
                     db.Query("SELECT id FROM users ORDER BY id FOR UPDATE");
                     db.Execute("UPDATE player_drone_state SET gameplay_token=NULL WHERE gameplay_token IS NOT NULL");
                     db.Commit();
@@ -85,7 +85,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (rows.Rows.Count != 1) throw new InvalidOperationException("Player not found.");
             return rows.Rows[0];
         }
-        private static DataRow State(SqlDatabaseTransaction db, int playerId)
+        internal static DataRow LockState(SqlDatabaseTransaction db, int playerId)
         {
             db.Execute("INSERT IGNORE INTO player_drone_state(player_id) VALUES(@p)", "@p", playerId);
             return db.Query("SELECT life_epoch,equipment_version,gameplay_token FROM player_drone_state WHERE player_id=@p FOR UPDATE", "@p", playerId).Rows[0];
@@ -94,28 +94,15 @@ namespace OrbitReborn_Emulator.Game.Characters
         // Reserve BEFORE CharacterInfoLoader reads wallets/equipment. Repair takes
         // this same users lock, so login cannot race an offline repair.
         public static long BeginGameplay(int playerId, string token)
-        {
-            using (var db = Open())
-            {
-                AssertSchema(db); LockPlayer(db, playerId);
-                DataRow row = State(db, playerId);
-                string current = Convert.ToString(row["gameplay_token"]);
-                if (current.Length > 0 && current != token) throw new InvalidOperationException("Gameplay session is still active.");
-                long epoch = Convert.ToInt64(row["life_epoch"]);
-                if (current != token)
-                {
-                    epoch = checked(epoch + 1);
-                    db.Execute("UPDATE player_drone_state SET life_epoch=@e,gameplay_token=@t WHERE player_id=@p", "@e", epoch, "@t", token, "@p", playerId);
-                }
-                db.Commit(); return epoch;
-            }
-        }
+        { return ShipLifecycleService.BeginGameplay(playerId,token).Epoch; }
         public static void EndGameplay(int playerId, string token)
         {
             if (playerId <= 0 || string.IsNullOrEmpty(token)) return;
             using (var db = Open())
             {
                 LockPlayer(db, playerId);
+                // Online is a display flag, never the repair lock. Only the token owner releases.
+                db.Execute("UPDATE users u JOIN player_drone_state s ON s.player_id=u.id SET u.online=0 WHERE u.id=@p AND s.gameplay_token=@t", "@p",playerId,"@t",token);
                 db.Execute("UPDATE player_drone_state SET gameplay_token=NULL WHERE player_id=@p AND gameplay_token=@t", "@p", playerId, "@t", token);
                 db.Commit();
             }
@@ -184,56 +171,23 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        // The operation result also persists respawn coordinates and Gate lives in
-        // the wear transaction. Reconnection after commit needs no second death.
+        // Compatibility entry point: coordinates no longer request a respawn.
         public static DroneDeathResult AdmitDeath(int playerId, GameplayDeathContext context, int respawnMap, int x, int y)
+        { return ShipLifecycleService.AdmitDeath(playerId,context); }
+
+        // Participant only. The caller owns the connection, locks, journal and COMMIT.
+        internal static DroneEquipmentState ApplyDeath(SqlDatabaseTransaction db, int playerId, DataRow user, GameplayDeathContext context)
         {
-            if (context == null || context.LifeEpoch <= 0 || string.IsNullOrEmpty(context.SessionToken))
-                throw new InvalidOperationException("Gameplay lifecycle was not initialized.");
-            string key = "death:" + context.LifeEpoch;
-            try { return ChangeDeath(playerId, context, key, respawnMap, x, y, false); }
-            catch
+            var rows = db.Query("SELECT id,item_id,damage_units FROM drone WHERE player_id=@p AND item_id IN (3,5) ORDER BY id FOR UPDATE", "@p",playerId);
+            foreach (DataRow row in rows.Rows)
             {
-                // A COMMIT response may be lost. Read the unique result, never retry
-                // a mutation whose outcome is unknown. Absence/failure stays closed.
-                var recovered = ChangeDeath(playerId, context, key, respawnMap, x, y, true);
-                if (recovered != null) return recovered;
-                throw;
+                int units=DroneWearRules.AfterDeath(Int(row,"item_id"),Int(row,"damage_units"),context.InvasionExempt);
+                if (units >= DroneWearRules.MaxDamageUnits) DestroyDrone(db,playerId,Int(row,"id"),Int(row,"item_id"));
+                else if (!context.InvasionExempt) db.Execute("UPDATE drone SET damage_units=@u WHERE id=@d","@u",units,"@d",Int(row,"id"));
             }
-        }
-        private static DroneDeathResult ChangeDeath(int playerId, GameplayDeathContext context, string key, int map, int x, int y, bool recoverOnly)
-        {
-            using (var db = Open())
-            {
-                DataRow user = LockPlayer(db, playerId);
-                DataRow state = State(db, playerId);
-                var previous = db.Query("SELECT result_data FROM drone_operation_log WHERE player_id=@p AND operation_key=@k", "@p",playerId,"@k",key);
-                if (previous.Rows.Count > 0)
-                {
-                    var saved = Convert.ToString(previous.Rows[0]["result_data"]).Split('|');
-                    var result = new DroneDeathResult { NextEpoch=long.Parse(saved[0]), RespawnMap=int.Parse(saved[1]), RespawnX=int.Parse(saved[2]), RespawnY=int.Parse(saved[3]), GateLives=int.Parse(saved[4]), Equipment=Rebuild(db,playerId,user) };
-                    db.Commit(); return result;
-                }
-                if (recoverOnly) return null;
-                if (Convert.ToInt64(state["life_epoch"]) != context.LifeEpoch || Convert.ToString(state["gameplay_token"]) != context.SessionToken) return null;
-                var rows = db.Query("SELECT id,item_id,damage_units FROM drone WHERE player_id=@p AND item_id IN (3,5) ORDER BY id FOR UPDATE", "@p", playerId);
-                foreach (DataRow row in rows.Rows)
-                {
-                    int units=DroneWearRules.AfterDeath(Int(row,"item_id"), Int(row,"damage_units"), context.InvasionExempt);
-                    if (units >= DroneWearRules.MaxDamageUnits) DestroyDrone(db,playerId,Int(row,"id"),Int(row,"item_id"));
-                    else if (!context.InvasionExempt) db.Execute("UPDATE drone SET damage_units=@u WHERE id=@d", "@u",units,"@d",Int(row,"id"));
-                }
-                var equipment = Rebuild(db,playerId,user);
-                db.Execute("UPDATE users SET drones=@d,config_refresh_pending=1,mapid=@m,locx=@x,locy=@y,current_hp=1000,current_shield=LEAST(1000,max_shield),current_shield1=LEAST(1000,COALESCE((SELECT s.shield_total FROM ship_config c JOIN ship_config_stats s ON s.ship_config_id=c.id WHERE c.player_id=@p AND c.ship_design_id=users.shipid AND c.name='A' LIMIT 1),0)),current_shield2=LEAST(1000,COALESCE((SELECT s.shield_total FROM ship_config c JOIN ship_config_stats s ON s.ship_config_id=c.id WHERE c.player_id=@p AND c.ship_design_id=users.shipid AND c.name='B' LIMIT 1),0)) WHERE id=@p",
-                    "@d",DroneWearRules.LegacyProjection(equipment.Drones),"@m",map,"@x",x,"@y",y,"@p",playerId);
-                int gateLives = GalaxyGateWaveService.PersistDroneWearDeath(db,playerId,context.MapId);
-                long next = checked(context.LifeEpoch + 1);
-                db.Execute("UPDATE player_drone_state SET life_epoch=@e,equipment_version=equipment_version+1 WHERE player_id=@p", "@e",next,"@p",playerId);
-                string resultText = string.Join("|",new object[]{next,map,x,y,gateLives,context.Cause,context.InvasionExempt ? "INVASION" : "REAL_GAMEPLAY_DEATH"});
-                db.Execute("INSERT INTO drone_operation_log(player_id,operation_key,operation_type,life_epoch,result_data) VALUES(@p,@k,'death',@e,@r)", "@p",playerId,"@k",key,"@e",context.LifeEpoch,"@r",resultText);
-                db.Commit();
-                return new DroneDeathResult { NextEpoch=next,RespawnMap=map,RespawnX=x,RespawnY=y,GateLives=gateLives,Equipment=equipment };
-            }
+            var equipment = Rebuild(db,playerId,user);
+            db.Execute("UPDATE users SET drones=@d,config_refresh_pending=1 WHERE id=@p","@d",DroneWearRules.LegacyProjection(equipment.Drones),"@p",playerId);
+            return equipment;
         }
     }
 }

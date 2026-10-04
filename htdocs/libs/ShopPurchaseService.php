@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__.'/ShipRepairService.php';
 require_once __DIR__ . '/DroneLevelService.php';
 require_once __DIR__ . '/DroneWearService.php';
 
@@ -176,6 +177,7 @@ class ShopPurchaseService
                 throw new Exception('You are already flying this ship.');
             }
 
+            ShipRepairService::replaceHull($this->db,$this->playerId,$oldId,$shipId,(int)$data['hp'],$shipId===1 && $price===0);
             $this->assertBalance($currency, $price);
 
             $oldCfgQ = $this->db->prepare('SELECT id FROM ship_config WHERE player_id = :pid AND ship_design_id = :sid');

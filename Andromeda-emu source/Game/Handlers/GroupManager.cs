@@ -1,4 +1,4 @@
-﻿using OrbitReborn_Emulator.Communication;
+using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Maps;
@@ -18,6 +18,31 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private static readonly object groupChatRoomLock = new Object();
         private static readonly Dictionary<int, int> groupChatRoomByMemberId = new Dictionary<int, int>();
         private static readonly Dictionary<int, int> groupInvitationBehaviorByMemberId = new Dictionary<int, int>();
+        // Terminal gameplay sessions carry only group membership until the next Launch.
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, Session> destroyedMembers = new System.Collections.Concurrent.ConcurrentDictionary<int, Session>();
+        internal static void SuspendDestroyedMember(Session session)
+        {
+            if (session.CharacterInfo.Members.Count > 1)
+            {
+                destroyedMembers[session.CharacterId] = session;
+                BroadcastGroupMemberState(session);
+            }
+        }
+        internal static void RestoreDestroyedMember(Session session)
+        {
+            Session previous;
+            if (!destroyedMembers.TryRemove(session.CharacterId,out previous)) return;
+            foreach (int id in previous.CharacterInfo.Members.Keys)
+                if (!session.CharacterInfo.Members.ContainsKey(id)) session.CharacterInfo.Members.Add(id);
+            session.CharacterInfo.GroupLeader = previous.CharacterInfo.GroupLeader;
+            SendFullGroupStateToMembers(session);
+        }
+        private static Session GroupSession(int id)
+        {
+            var live = SessionManager.GetSessionByCharacterId(id);
+            Session dead;
+            return live ?? (destroyedMembers.TryGetValue(id,out dead) ? dead : null);
+        }
         private static int nextGroupChatRoomId = 600000;
 
         private const int GROUP_MAX_SIZE = 5;
@@ -115,6 +140,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             lock (thisLock)
             {
                 groupList.Remove(characterId);
+                Session ignored; destroyedMembers.TryRemove(characterId,out ignored);
                 groupInvitationBehaviorByMemberId.Remove(characterId);
             }
         }
@@ -174,7 +200,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             int behavior = GetGroupInvitationBehavior(memberIds);
             foreach (int memberId in memberIds)
             {
-                Session memberSession = SessionManager.GetSessionByCharacterId(memberId);
+                Session memberSession = GroupSession(memberId);
                 if (memberSession == null || memberSession.CharacterInfo == null)
                     continue;
 
@@ -274,7 +300,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
         {
             foreach (int memberId in memberIds)
             {
-                Session memberSession = SessionManager.GetSessionByCharacterId(memberId);
+                Session memberSession = GroupSession(memberId);
                 if (memberSession != null && memberSession.CharacterInfo != null && memberSession.CharacterInfo.GroupLeader)
                     return memberId;
             }
@@ -293,8 +319,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             sb.Append("|").Append(LOOT_MODE_RANDOM);
             foreach (int memberId in memberIds)
             {
-                Session memberSession = SessionManager.GetSessionByCharacterId(memberId);
-                bool isOffline = memberSession == null || memberSession.CharacterInfo == null || memberSession.Stopped;
+                Session memberSession = GroupSession(memberId);
+                bool isOffline = memberSession == null || memberSession.CharacterInfo == null || memberSession.Stopped || memberSession.StoppedPlayer || memberSession.CharacterInfo.DeadCommitted;
                 if (memberSession == null || memberSession.CharacterInfo == null)
                 {
                     sb.Append("|Member ").Append(memberId)
@@ -310,15 +336,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 sb.Append("|").Append(info.ShipMaxHp);
                 sb.Append("|").Append(info.ShipShield);
                 sb.Append("|").Append(info.ShipMaxShield);
-                sb.Append("|").Append(info.MapId);
-                sb.Append("|").Append(info.LocX);
-                sb.Append("|").Append(info.LocY);
+                sb.Append("|").Append(isOffline ? 0 : info.MapId);
+                sb.Append("|").Append(isOffline ? 0 : info.LocX);
+                sb.Append("|").Append(isOffline ? 0 : info.LocY);
                 sb.Append("|").Append(info.Level);
                 sb.Append("|1");
                 sb.Append("|").Append(info.Invisible);
                 sb.Append("|").Append(info.Attacking ? 1 : 0);
                 sb.Append("|").Append(info.FactionId);
-                sb.Append("|").Append(info.SelectedPlayer);
+                sb.Append("|").Append(isOffline ? 0 : info.SelectedPlayer);
                 sb.Append("|").Append(info.ClanTag ?? "");
                 sb.Append("|").Append(info.ShipId);
                 sb.Append("|").Append(isOffline ? 1 : 0);
@@ -330,6 +356,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private static string BuildGroupMemberUpdatePayload(Session memberSession)
         {
             var info = memberSession.CharacterInfo;
+            if (info.DeadCommitted) return "<1 hp=\"0\" hpM=\"" + info.ShipMaxHp + "\" sh=\"0\" shM=\"" + info.ShipMaxShield + "\" tgt=\"0\" fgt=\"0\" map=\"0\" pos=\"0,0\" lev=\"" + info.Level + "\" fra=\"" + info.FactionId + "\" shp=\"" + info.ShipId + "\" act=\"1\" clk=\"0\" lgo=\"1\"></1>";
             return "<1 hp=\"" + info.ShipHp + "\" hpM=\"" + info.ShipMaxHp + "\" sh=\"" + info.ShipShield + "\"  shM=\"" + info.ShipMaxShield + "\"  tgt=\"" + info.SelectedPlayer + "\"  fgt=\"" + GeneralFunctions.ToEnum(info.Attacking) + "\"  map=\"" + info.MapId + "\" pos=\"" + info.LocX + "," + info.LocY + "\" lev=\"" + info.Level + "\" fra=\"" + info.FactionId + "\" shp=\"" + info.ShipId + "\" act=\"" + GeneralFunctions.ToEnum(info.Destroy) + "\" clk=\"" + info.Invisible + "\" lgo=\"0\"></1>";
         }
 
@@ -609,7 +636,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
 
             int id = Message.GetNextInt(2);
-            Session sessiontwo = SessionManager.GetSessionByCharacterId(id);
+            Session sessiontwo = GroupSession(id);
             if (id == 0 || sessiontwo == null || sessiontwo.CharacterInfo == null)
             {
                 Session.SendData(PacketComposer.Compose("A", "STD| Error"));
@@ -622,7 +649,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             foreach (int memberId in memberIds)
             {
-                Session memberSession = SessionManager.GetSessionByCharacterId(memberId);
+                Session memberSession = GroupSession(memberId);
                 if (memberSession != null && memberSession.CharacterInfo != null)
                     memberSession.SendData(PacketComposer.Compose("ps", "lp|kick|" + id));
             }
@@ -637,7 +664,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 foreach (int memberId in memberIds)
                 {
-                    Session memberSession = SessionManager.GetSessionByCharacterId(memberId);
+                    Session memberSession = GroupSession(memberId);
                     if (memberSession != null && memberSession.CharacterInfo != null)
                     {
                         memberSession.SendData(PacketComposer.Compose("ps", "end|"));
@@ -666,7 +693,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
 
             int id = Message.GetNextInt(2);
-            Session sessiontwo = SessionManager.GetSessionByCharacterId(id);
+            Session sessiontwo = GroupSession(id);
             if (id == 0 || sessiontwo == null || sessiontwo.CharacterInfo == null)
             {
                 Session.SendData(PacketComposer.Compose("A", "STD| Error"));
@@ -679,7 +706,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             foreach (int memberId in memberIds)
             {
-                Session memberSession = SessionManager.GetSessionByCharacterId(memberId);
+                Session memberSession = GroupSession(memberId);
                 if (memberSession == null || memberSession.CharacterInfo == null)
                     continue;
 
@@ -707,7 +734,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             int leavingId = Session.CharacterInfo.Id;
             foreach (int memberId in memberIds)
             {
-                Session memberSession = SessionManager.GetSessionByCharacterId(memberId);
+                Session memberSession = GroupSession(memberId);
                 if (memberSession != null && memberSession.CharacterInfo != null)
                     memberSession.SendData(PacketComposer.Compose("ps", "lp|lv|" + leavingId));
             }
@@ -722,7 +749,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 foreach (int memberId in memberIds)
                 {
-                    Session memberSession = SessionManager.GetSessionByCharacterId(memberId);
+                    Session memberSession = GroupSession(memberId);
                     if (memberSession != null && memberSession.CharacterInfo != null)
                     {
                         memberSession.SendData(PacketComposer.Compose("ps", "end|"));
@@ -938,7 +965,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             List<int> formerMembers = GetGroupCharacterIds(session);
             foreach (int memberId in formerMembers)
             {
-                Session memberSession = SessionManager.GetSessionByCharacterId(memberId);
+                Session memberSession = GroupSession(memberId);
                 if (memberSession != null && memberSession.CharacterInfo != null)
                 {
                     memberSession.SendData(PacketComposer.Compose("ps", "end|"));
@@ -960,7 +987,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                     foreach (int key in Session.CharacterInfo.Members.Keys)
                     {
-                        Session sessiongroup = SessionManager.GetSessionByCharacterId(key);
+                        Session sessiongroup = GroupSession(key);
+                        if (sessiongroup != null && sessiongroup.CharacterInfo != null && sessiongroup.CharacterInfo.DeadCommitted)
+                        {
+                            Session.SendData(PacketComposer.Compose("ps", "upd|" + key + "|" + BuildGroupMemberUpdatePayload(sessiongroup)));
+                            continue;
+                        }
                         if (sessiongroup == null || sessiongroup.CharacterInfo == null)
                         {
                             Session.CharacterInfo.Members.Remove(key);

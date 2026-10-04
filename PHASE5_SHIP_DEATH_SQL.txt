@@ -1,0 +1,86 @@
+USE `andromeda`;
+-- PHASE 5: MANUAL OWNER EXECUTION ONLY. MariaDB 10.4 / XAMPP / phpMyAdmin.
+-- Stop the emulator and prevent site writes. Back up the database first.
+-- Paste the WHOLE file once. No DELIMITER, routine or runtime DDL is needed.
+-- DDL auto-commits; ALL preflight checks precede the first DDL in one block.
+-- Phase 3 and Phase 4 must already exist. No prerequisite is created here.
+-- Existing accounts start READY regardless of historical HP. Reruns preserve state.
+-- No resets, no wallet/vitals/equipment update and no legacy death reconstruction.
+-- No FK: keep the existing account-deletion policy. Retain journals for replay.
+SELECT DATABASE() AS target_database,COUNT(*) AS existing_players FROM `andromeda`.`users`;
+SET @phase5_preflight='not_run';
+SET @phase5_migration='BEGIN NOT ATOMIC
+    DECLARE n INT;
+    IF DATABASE() <> ''andromeda'' THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: target database must be andromeda.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''users'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite users.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''drone'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite drone.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''player_inventory'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite player_inventory.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''drone_slot'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite drone_slot.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''drone_slot_config'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite drone_slot_config.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''drone_design_equipped'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite drone_design_equipped.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''ship_config'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite ship_config.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''ship_slot'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite ship_slot.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''ship_config_stats'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite ship_config_stats.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''player_galaxy_gates'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite player_galaxy_gates.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''player_drone_state'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite player_drone_state.''; END IF;
+    IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''drone_operation_log'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing/non-InnoDB prerequisite drone_operation_log.''; END IF;
+    SELECT COUNT(*) INTO n FROM (SELECT id,shipid,factionid,active_config,current_hp,max_hp,current_shield,current_shield1,current_shield2,uridium,mapid,locx,locy,online,config_refresh_pending FROM `andromeda`.`users` LIMIT 0) AS checked_columns;
+    SELECT COUNT(*) INTO n FROM (SELECT id,player_id,item_id,level,progress_points,damage_units FROM `andromeda`.`drone` LIMIT 0) AS checked_columns;
+    SELECT COUNT(*) INTO n FROM (SELECT player_id,life_epoch,equipment_version,gameplay_token FROM `andromeda`.`player_drone_state` LIMIT 0) AS checked_columns;
+    SELECT COUNT(*) INTO n FROM (SELECT player_id,operation_key,operation_type,life_epoch,drone_id,result_data FROM `andromeda`.`drone_operation_log` LIMIT 0) AS checked_columns;
+    IF EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''player_ship_state'') THEN
+        IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''player_ship_state'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: incompatible existing player_ship_state.''; END IF;
+        SELECT COUNT(*) INTO n FROM (SELECT player_id,status,ship_id,ship_generation,destruction_id,death_life_epoch,destroyed_at,cause,destination_map,destination_x,destination_y,repair_cost,invasion_exempt,version FROM `andromeda`.`player_ship_state` LIMIT 0) AS checked_columns;
+        IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''player_ship_state'' AND INDEX_NAME=''PRIMARY''),'''') <> ''player_id'' THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: incompatible primary key player_ship_state.''; END IF;
+    END IF;
+    IF EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''ship_lifecycle_log'') THEN
+        IF NOT EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''ship_lifecycle_log'' AND TABLE_TYPE=''BASE TABLE'' AND ENGINE=''InnoDB'') THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: incompatible existing ship_lifecycle_log.''; END IF;
+        SELECT COUNT(*) INTO n FROM (SELECT player_id,operation_key,operation_type,destruction_id,life_epoch,ship_generation,result_data,created_at FROM `andromeda`.`ship_lifecycle_log` LIMIT 0) AS checked_columns;
+        IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''ship_lifecycle_log'' AND INDEX_NAME=''PRIMARY''),'''') <> ''player_id,operation_key'' THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: incompatible primary key ship_lifecycle_log.''; END IF;
+    END IF;
+    IF EXISTS(SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''ship_lifecycle_log'') THEN
+        IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''ship_lifecycle_log'' AND INDEX_NAME=''one_ship_operation_per_destruction'' AND NON_UNIQUE=0),'''') <> ''player_id,operation_type,destruction_id'' THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing unique destruction operation key.''; END IF;
+        IF COALESCE((SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=''andromeda'' AND TABLE_NAME=''ship_lifecycle_log'' AND INDEX_NAME=''one_ship_death_per_life'' AND NON_UNIQUE=0),'''') <> ''player_id,life_epoch'' THEN SIGNAL SQLSTATE ''45000'' SET MESSAGE_TEXT=''PHASE5 STOP: missing unique death epoch key.''; END IF;
+    END IF;
+    SET @phase5_preflight=''passed'';
+    CREATE TABLE IF NOT EXISTS `andromeda`.`player_ship_state` (
+        player_id INT NOT NULL,
+        status ENUM(''READY'',''DESTROYED'') NOT NULL DEFAULT ''READY'',
+        ship_id INT NOT NULL,
+        ship_generation BIGINT UNSIGNED NOT NULL DEFAULT 1,
+        destruction_id CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NULL,
+        death_life_epoch BIGINT UNSIGNED NULL,
+        destroyed_at DATETIME NULL,
+        cause VARCHAR(24) NULL,
+        destination_map INT NULL,
+        destination_x INT NULL,
+        destination_y INT NULL,
+        repair_cost INT UNSIGNED NULL,
+        invasion_exempt TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        version BIGINT UNSIGNED NOT NULL DEFAULT 1,
+        PRIMARY KEY(player_id)
+    ) ENGINE=InnoDB;
+    CREATE TABLE IF NOT EXISTS `andromeda`.`ship_lifecycle_log` (
+        player_id INT NOT NULL,
+        operation_key VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+        operation_type VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+        destruction_id CHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+        life_epoch BIGINT UNSIGNED NULL,
+        ship_generation BIGINT UNSIGNED NOT NULL,
+        result_data LONGTEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY(player_id,operation_key),
+        UNIQUE KEY one_ship_operation_per_destruction(player_id,operation_type,destruction_id),
+        UNIQUE KEY one_ship_death_per_life(player_id,life_epoch),
+        KEY ship_lifecycle_created(created_at)
+    ) ENGINE=InnoDB;
+    INSERT IGNORE INTO `andromeda`.`player_ship_state`(player_id,ship_id) SELECT id,shipid FROM `andromeda`.`users`;
+END';
+PREPARE phase5_migration_stmt FROM @phase5_migration;
+EXECUTE phase5_migration_stmt;
+DEALLOCATE PREPARE phase5_migration_stmt;
+SET @phase5_migration=NULL;
+SELECT @phase5_preflight AS preflight;
+SELECT status,COUNT(*) AS players FROM `andromeda`.`player_ship_state` GROUP BY status;
+SELECT COUNT(*) AS missing_states FROM `andromeda`.`users` u LEFT JOIN `andromeda`.`player_ship_state` s ON s.player_id=u.id WHERE s.player_id IS NULL;
+SELECT COUNT(*) AS ship_identity_mismatches FROM `andromeda`.`users` u JOIN `andromeda`.`player_ship_state` s ON s.player_id=u.id WHERE s.ship_id<>u.shipid;

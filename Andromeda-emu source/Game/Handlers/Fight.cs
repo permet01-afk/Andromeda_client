@@ -1,4 +1,4 @@
-﻿using OrbitReborn_Emulator.Communication;
+using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
@@ -4367,22 +4367,21 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 lock (player.CharacterInfo.DroneImpactSyncRoot)
                 {
                     if (!DroneWearService.IsPendingDeath(player, context)) return;
-                    int faction = player.CharacterInfo.RealFaction;
-                    bool x8 = context.MapId == 16 || context.MapId == 29 || (context.MapId >= 17 && context.MapId <= 28);
-                    int destination = MapAccessService.GetHomeMapX1(faction), required;
-                    if (x8 && MapAccessService.CanAccessMap(faction,player.CharacterInfo.Level,MapAccessService.GetHomeMapX8(faction),out required))
-                        destination = MapAccessService.GetHomeMapX8(faction);
-                    result = DroneWearService.AdmitDeath(player.CharacterId,context,destination,
-                        faction == 1 ? 2000 : faction == 2 ? 18500 : 19000, faction == 3 ? 11300 : 1100);
-                    if (result == null) return;
+                    result = ShipLifecycleService.AdmitDeath(player.CharacterId,context);
+                    if (result == null) throw new InvalidOperationException("Death owner or life no longer matches.");
                     player.CharacterInfo.Destroy = true;
+                    player.CharacterInfo.DeadCommitted = true;
                     player.CharacterInfo.DroneDeathPublishing = true;
                     Interlocked.Exchange(ref player.DroneLifeEpoch,result.NextEpoch);
-                    player.CharacterInfo.ApplyDroneProgression(result.Equipment);
+                    if (result.Equipment != null) player.CharacterInfo.ApplyDroneProgression(result.Equipment);
                 }
                 // Rewarding another player can acquire that player's lock. Never do
                 // this while holding the victim lifecycle lock (reciprocal PvP kills).
-                if (grantPvpReward) player.CharacterInfo.SendReward(player, true);
+                if (grantPvpReward)
+                {
+                    try { player.CharacterInfo.SendReward(player, true); }
+                    catch (Exception rewardError) { Output.WriteLine("[Ship death] reward publication failed: " + rewardError, OutputLevel.CriticalError); }
+                }
                 lock (TechInventoryService.SyncRoot(player.CharacterId))
                 using (TechInventoryService.BeginTransition(player))
                 {
@@ -4392,6 +4391,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
             catch (Exception ex)
             {
+                // A publication failure must not strand a durably destroyed player.
+                if (player.CharacterInfo.DeadCommitted && !player.StoppedPlayer)
+                {
+                    try { player.EndCommittedDeath(); }
+                    catch (Exception cleanupError) { Output.WriteLine("[Ship death] cleanup requires recovery: " + cleanupError, OutputLevel.CriticalError); }
+                }
                 // Fail closed: no respawn with uncertain wear, no old location/stat
                 // save over a committed result. A restart/relogin reads durable state.
                 player.CharacterInfo.DroneDeathPublishing = false;
@@ -4440,9 +4445,19 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.ClanId = Session.CharacterInfo.RealClan;
 
                 MapInstance instanceByMapId = MapManager.GetInstanceByMapId(Session.CurrentMapId);
+                var deathObservers = new List<Session>();
                 if (instanceByMapId != null)
                 {
-                    SendSessionScopedMessage(instanceByMapId, Session, PacketComposer.Compose("K", Session.CharacterId.ToString()));
+                    // Capture recipients before target/range cleanup; publish only after
+                    // callbacks/ammo are settled and the playable actor has been removed.
+                    if (durableDeath != null && !IsSessionInGalaxyGate(Session))
+                        foreach (var actor in instanceByMapId.GetUserActorSnapshot())
+                        {
+                            var observer = SessionManager.GetSessionById(actor.ReferenceSessionId);
+                            if (observer != null && observer.CharacterId != Session.CharacterId && ShouldReceiveSessionScopedMessage(observer,Session)) deathObservers.Add(observer);
+                        }
+                    if (durableDeath == null)
+                        SendSessionScopedMessage(instanceByMapId, Session, PacketComposer.Compose("K", Session.CharacterId.ToString()));
 
                     bool gateDeath = GalaxyGateWaveService.IsGateMap(Session.CharacterInfo.MapId);
                     if (!gateDeath)
@@ -4461,14 +4476,31 @@ namespace OrbitReborn_Emulator.Game.Handlers
                             Session sessionByCharacterId = SessionManager.GetSessionByCharacterId(key.ReferenceId);
                             if (sessionByCharacterId != null && sessionByCharacterId.CharacterInfo != null)
                             {
-                                if (sessionByCharacterId.CharacterInfo.IsAdmin)
-                                    sessionByCharacterId.CharacterInfo.PlayerInRange.Remove(Session.CharacterInfo.Id);
+                                sessionByCharacterId.CharacterInfo.PlayerInRange.Remove(Session.CharacterInfo.Id);
+                                if (sessionByCharacterId.CharacterInfo.SelectedPlayer == Session.CharacterId)
+                                {
+                                    Fight.StopLaser(sessionByCharacterId, null);
+                                    sessionByCharacterId.CharacterInfo.SelectedPlayer = 0;
+                                }
                             }
                         }
                     }
                 }
 
                 Session.CharacterInfo.Attacker = null;
+
+                if (durableDeath != null)
+                {
+                    Session.CharacterInfo.ShipHp = 0;
+                    Session.CharacterInfo.Config1.Shield = 0;
+                    Session.CharacterInfo.Config2.Shield = 0;
+                    Session.EndCommittedDeath(() => {
+                        var explosion = PacketComposer.Compose("K", Session.CharacterId + "|0");
+                        Session.SendData(explosion);
+                        foreach (var observer in deathObservers) observer.SendData(explosion);
+                    });
+                    return; // True death never enters the administrative relocation/respawn below.
+                }
 
                 Session.CharacterInfo.ShipHp = 1000;
                 Session.CharacterInfo.Config1.Shield = Math.Min(1000, Session.CharacterInfo.Config1.MaxShield);
@@ -4527,12 +4559,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.CharacterInfo.LocY = 11300;
                 }
 
-                if (durableDeath != null)
-                {
-                    targetMapId = durableDeath.RespawnMap;
-                    Session.CharacterInfo.LocX = durableDeath.RespawnX;
-                    Session.CharacterInfo.LocY = durableDeath.RespawnY;
-                }
                 Session.CharacterInfo.NewLocX = Session.CharacterInfo.LocX;
                 Session.CharacterInfo.NewLocY = Session.CharacterInfo.LocY;
                 Session.CharacterInfo.MapId = targetMapId;

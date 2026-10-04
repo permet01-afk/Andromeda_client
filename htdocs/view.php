@@ -32,6 +32,7 @@ if (empty($_SESSION['skylab_csrf_token'])) {
     $_SESSION['skylab_csrf_token'] = bin2hex(random_bytes(32));
 }
 $skylabCsrfToken = $_SESSION['skylab_csrf_token'];
+if (empty($_SESSION['ship_repair_csrf'])) $_SESSION['ship_repair_csrf'] = bin2hex(random_bytes(32));
 session_write_close();
 
 ob_start();
@@ -40,6 +41,11 @@ require_once __DIR__ . '/libs/Database.php';
 require_once __DIR__ . '/config/database.php';
 
 $db = new Database(DB_TYPE, DB_HOST, DB_NAME, DB_USER, DB_PASS);
+require_once __DIR__.'/libs/ShipRepairService.php';
+$shipCanLaunch = false;
+try { $shipCanLaunch = ShipRepairService::state($db,(int)$sessionPlayerId)['can_launch']; }
+catch(Throwable $e) { error_log('[Ship launch] '.$e->getMessage()); }
+
 
 $mobileEmbed = (isset($_GET['mobile_embed']) && (string)$_GET['mobile_embed'] === '1')
     || (isset($_POST['mobile_embed']) && (string)$_POST['mobile_embed'] === '1');
@@ -201,7 +207,7 @@ $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
             </li>
 
             <li class="nav-item cta">
-                <a class="nav-link" href="spacemap_html5/spacemap.php" target="_blank" rel="noopener" data-mobile-play="1">Play</a>
+                <?php if ($shipCanLaunch) { ?><a class="nav-link" data-ship-global-launch="1" href="spacemap_html5/spacemap.php" target="_blank" rel="noopener" data-mobile-play="1">Play</a><?php } else { ?><a class="nav-link" data-ship-global-launch="1" href="view.php?page=user&amp;tab=infos">Hangar / Repair</a><?php } ?>
             </li>
 
             <li class="nav-item<?php echo $navActiveClass(['skylab']); ?>">

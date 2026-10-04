@@ -2494,7 +2494,9 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("cdFOR", (object)this.GetShipSkillCooldown(4));
             MySqlClient.SetParameter("cdSIN", (object)this.GetShipSkillCooldown(5));
             MySqlClient.SetParameter("cdSB", (object)this.GetShipSkillCooldown(6));
-            MySqlClient.ExecuteNonQuery("UPDATE users SET cooldown_IH = @cdIH, cooldown_WS = @cdWS, cooldown_PS = @cdPS, cooldown_FOR = @cdFOR, cooldown_SIN = @cdSIN, cooldown_SB = @cdSB WHERE id = @id LIMIT 1");
+            MySqlClient.SetParameter("cdISH", this.CoolDownISH);
+            MySqlClient.SetParameter("cdSMB", this.CoolDownSMB);
+            MySqlClient.ExecuteNonQuery("UPDATE users SET cooldown_ISH=@cdISH, cooldown_SMB=@cdSMB, cooldown_IH = @cdIH, cooldown_WS = @cdWS, cooldown_PS = @cdPS, cooldown_FOR = @cdFOR, cooldown_SIN = @cdSIN, cooldown_SB = @cdSB WHERE id = @id" + ShipLifecycleService.OwnerFence(MySqlClient, GameplayLease) + " LIMIT 1");
         }
 
         public CharacterInfo(SqlDatabaseClient MySqlClient, int SessionId, int Id, string AuthTicket)
@@ -2508,6 +2510,8 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("id", (object)Id);
             DataRow dataRow = MySqlClient.ExecuteQueryRow("SELECT * FROM users WHERE id = @id LIMIT 1");
             this.mSessionId = SessionId;
+            var lifecycleSession = SessionManager.GetSessionById(SessionId);
+            this.GameplayLease = lifecycleSession == null ? null : lifecycleSession.ShipLease;
             this.mId = Id;
             this.mAuthTicket = AuthTicket;
             this.mLastMove = new Stopwatch();
@@ -2836,6 +2840,8 @@ namespace OrbitReborn_Emulator.Game.Characters
             return this.mFactionId != 0 && this.mFactionId == other.FactionId;
         }
 
+        public ShipGameplayLease GameplayLease;
+        public volatile bool DeadCommitted;
         public bool DroneWearPersistenceBlocked;
         public volatile bool DroneDeathPublishing;
         public volatile GameplayDeathContext PendingDroneDeath;
@@ -2852,7 +2858,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         private void SynchronizeStatisticsCore(SqlDatabaseClient MySqlClient, int online)
         {
-            if (DroneWearPersistenceBlocked || DroneDeathPublishing || PendingDroneDeath != null) return; // An uncertain death must not overwrite its durable respawn.
+            if (DeadCommitted || DroneWearPersistenceBlocked || DroneDeathPublishing || PendingDroneDeath != null) return; // An uncertain death must not overwrite its durable respawn.
             this.SynchronizeShipSkillCooldowns(MySqlClient);
             CharacterInfo.EnsureRuntimeStateColumns(MySqlClient);
             MySqlClient.ClearParameters();
@@ -2891,7 +2897,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("current_shield2", (object)ClampRuntimeValue(this.Config2.Shield, 0, this.Config2.MaxShield));
             MySqlClient.SetParameter("active_config", (object)(this.ActiveConfig == 2 ? 2 : 1));
             // A web purchase/design switch must not inherit runtime vitals/config from the retired ship.
-            MySqlClient.ExecuteNonQuery("UPDATE users SET lastlogin = @lastlogin, locx = @locx, locy = @locy, cooldown_ISH = @cdISH, cooldown_SMB = @cdSMB, mapid = @mapid, online = @online, current_hp = IF(shipid = @runtime_shipid, @current_hp, current_hp), current_shield1 = IF(shipid = @runtime_shipid, @current_shield1, current_shield1), current_shield2 = IF(shipid = @runtime_shipid, @current_shield2, current_shield2), active_config = IF(shipid = @runtime_shipid, @active_config, active_config) WHERE id = @id LIMIT 1");
+            MySqlClient.ExecuteNonQuery("UPDATE users SET lastlogin = @lastlogin, locx = @locx, locy = @locy, cooldown_ISH = @cdISH, cooldown_SMB = @cdSMB, mapid = @mapid, online = @online, current_hp = IF(shipid = @runtime_shipid, @current_hp, current_hp), current_shield1 = IF(shipid = @runtime_shipid, @current_shield1, current_shield1), current_shield2 = IF(shipid = @runtime_shipid, @current_shield2, current_shield2), active_config = IF(shipid = @runtime_shipid, @active_config, active_config) WHERE id = @id" + ShipLifecycleService.SaveFence(MySqlClient, GameplayLease) + " LIMIT 1");
         }
 
         public void addTdmVictory(SqlDatabaseClient MySqlClient, int amount = 1)
@@ -3199,7 +3205,9 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("cdFOR", (object)this.GetShipSkillCooldown(4));
             MySqlClient.SetParameter("cdSIN", (object)this.GetShipSkillCooldown(5));
             MySqlClient.SetParameter("cdSB", (object)this.GetShipSkillCooldown(6));
-            MySqlClient.ExecuteNonQuery("UPDATE users SET uridium = uridium + @uridium, credits = credits + @credits, npc_kill = npc_kill + @npcPoints, rankpoints = rankpoints + @rankpoints, experience = experience + @experience, level = @level, honor = honor + @honor, lastlogin = @lastlogin, locx = @locx, locy = @locy, cooldown_ISH = @cdISH, cooldown_SMB = @cdSMB, mapid = @mapid, online = @online, current_hp = @current_hp, current_shield1 = @current_shield1, current_shield2 = @current_shield2, active_config = @active_config, cooldown_IH = @cdIH, cooldown_WS = @cdWS, cooldown_PS = @cdPS, cooldown_FOR = @cdFOR, cooldown_SIN = @cdSIN, cooldown_SB = @cdSB WHERE id = @id LIMIT 1");
+            // Rewards remain deltas; runtime vitals/location use the separate life fence.
+            MySqlClient.ExecuteNonQuery("UPDATE users SET uridium=uridium+@uridium,credits=credits+@credits,npc_kill=npc_kill+@npcPoints,rankpoints=rankpoints+@rankpoints,experience=experience+@experience,level=@level,honor=honor+@honor WHERE id=@id LIMIT 1");
+            SynchronizeStatisticsCore(MySqlClient, this.Disconnected ? 0 : 1);
 
             this.Uridium += (long)uridium;
             this.Credits += (long)credits;
@@ -3583,19 +3591,18 @@ namespace OrbitReborn_Emulator.Game.Characters
             int currentHp = getInt32("current_hp", this.mShipMaxHp);
             int storedMaxHp = getInt32("max_hp", this.mShipMaxHp);
 
-            if (storedMaxHp != this.mShipMaxHp)
+            MySqlClient.ClearParameters();
+            MySqlClient.SetParameter("id", this.mId);
+            bool destroyed = Convert.ToString(MySqlClient.ExecuteScalar("SELECT status FROM player_ship_state WHERE player_id=@id")) == "DESTROYED";
+            // Max-HP recalculation is not a heal. In particular, Repair's 1000 survives loading.
+            currentHp = destroyed ? 0 : Math.Max(0, currentHp);
+            if (storedMaxHp != this.mShipMaxHp && !destroyed)
             {
-                currentHp = this.mShipMaxHp;
-
                 MySqlClient.ClearParameters();
-                MySqlClient.SetParameter("id", (object)this.mId);
-                MySqlClient.SetParameter("max_hp", (object)this.mShipMaxHp);
-                MySqlClient.SetParameter("current_hp", (object)currentHp);
-                MySqlClient.ExecuteNonQuery("UPDATE users SET max_hp=@max_hp, current_hp=@current_hp WHERE id=@id LIMIT 1");
+                MySqlClient.SetParameter("id", this.mId);
+                MySqlClient.SetParameter("max_hp", this.mShipMaxHp);
+                MySqlClient.ExecuteNonQuery("UPDATE users SET max_hp=@max_hp WHERE id=@id" + ShipLifecycleService.SaveFence(MySqlClient, GameplayLease) + " LIMIT 1");
             }
-
-            if (currentHp <= 0)
-                currentHp = this.mShipMaxHp;
 
             this.mShipHp = currentHp;
 
@@ -3733,8 +3740,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.mConfig2.Shield = this.mConfig2.MaxShield;
 
             this.mShipHp = ClampRuntimeValue(this.mShipHp, 0, this.ShipOverhealMaxHp);
-            if (this.mShipHp <= 0)
-                this.mShipHp = this.mShipMaxHp;
+            // A terminal hull stays at zero; BeginGameplay handles legacy READY rows.
 
 
             this.mSkillTree.Clear();

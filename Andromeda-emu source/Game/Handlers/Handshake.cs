@@ -240,6 +240,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             ShipMovement.CheckPlayerInRange((object)Session);
             if (Session.CharacterInfo.UpdateGroupTimer != null)
                 Session.CharacterInfo.UpdateGroupTimer.Dispose();
+            GroupManager.RestoreDestroyedMember(Session);
             Session.CharacterInfo.UpdateGroupTimer = new System.Threading.Timer(new TimerCallback(GroupManager.UpdateGroup), (object)Session, (int)0, 1000);
             if (Session.CharacterInfo.MapId == 83 || _1v1.IsOnMap(Session.CharacterInfo.MapId))
             {

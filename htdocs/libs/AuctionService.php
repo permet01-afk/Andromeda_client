@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__.'/ShipRepairService.php';
 require_once __DIR__ . '/DroneLevelService.php';
 require_once __DIR__ . '/DroneWearService.php';
 
@@ -849,6 +850,8 @@ class AuctionService
         if ($oldId === $shipId) {
             throw new Exception('Player is already flying this ship.');
         }
+
+        ShipRepairService::replaceHull($this->db,$playerId,$oldId,$shipId,(int)$data['hp']);
 
         $oldCfgQ = $this->db->prepare('SELECT id FROM ship_config WHERE player_id = :p AND ship_design_id = :s');
         $oldCfgQ->execute([':p' => $playerId, ':s' => $oldId]);

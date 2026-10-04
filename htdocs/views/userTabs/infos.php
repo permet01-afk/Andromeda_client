@@ -362,6 +362,7 @@ foreach ($rows as $r) {
     }
 </style>
 
+<?php include __DIR__.'/ship_panel.php'; ?>
 <div class="dashboard-grid">
     
     <div class="profile-card">
@@ -433,7 +434,7 @@ foreach ($rows as $r) {
         </div>
         
         <div class="ship-preview">
-            <div class="active-badge">Online</div>
+            <div class="active-badge">Loadout</div>
             <img src="img/ship/<?=$shipDesignId?>.png" alt="Current Ship">
         </div>
 
@@ -446,11 +447,11 @@ foreach ($rows as $r) {
             
             <div id="cfgPanelA" class="ship-stats-grid">
                 <div class="ship-stat-box">
-                    <span class="s-label">Hitpoints</span>
+                    <span class="s-label">Max hitpoints</span>
                     <span class="s-val val-hp"><?= number_format($shipHp) ?></span>
                 </div>
                 <div class="ship-stat-box">
-                    <span class="s-label">Shield</span>
+                    <span class="s-label">Max shield</span>
                     <span class="s-val val-shd"><?= number_format($statsA['shield']) ?></span>
                 </div>
                 <div class="ship-stat-box">
@@ -465,11 +466,11 @@ foreach ($rows as $r) {
 
             <div id="cfgPanelB" class="ship-stats-grid" style="display:none;">
                 <div class="ship-stat-box">
-                    <span class="s-label">Hitpoints</span>
+                    <span class="s-label">Max hitpoints</span>
                     <span class="s-val val-hp"><?= number_format($shipHp) ?></span>
                 </div>
                 <div class="ship-stat-box">
-                    <span class="s-label">Shield</span>
+                    <span class="s-label">Max shield</span>
                     <span class="s-val val-shd"><?= number_format($statsB['shield']) ?></span>
                 </div>
                 <div class="ship-stat-box">

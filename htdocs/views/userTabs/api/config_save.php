@@ -4,6 +4,7 @@
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../../../libs/DroneLevelService.php';
 require_once __DIR__ . '/../../../libs/DroneWearService.php';
+require_once __DIR__ . '/../../../libs/ShipRepairService.php';
 require_once __DIR__ . '/helpers_drones.php';
 header('Content-Type: application/json');
 
@@ -155,6 +156,7 @@ try {
             }
         }
 
+        ShipRepairService::changeDesign($db,$pid,$currentShipId,$requestedDesignId);
         $updShip = $db->prepare("UPDATE users SET shipid = :sid WHERE id = :pid");
         $updShip->execute([':sid' => $requestedDesignId, ':pid' => $pid]);
 

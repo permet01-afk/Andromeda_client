@@ -4138,11 +4138,12 @@ function drawPortalJumpEffects() {
     }
 }
 
-function spawnExplosionAt(x, y, explosionType = 2) {
+function spawnExplosionAt(x, y, explosionType = 2, shipDeath = false) {
     if (x == null || y == null) return;
     try {
         if (window.AudioManager && typeof window.AudioManager.playPyro === "function") {
-            window.AudioManager.playPyro(0, explosionType, x, y);
+            if (shipDeath) window.AudioManager.playSoundEffect(18, false, false, x, y, true);
+            else window.AudioManager.playPyro(0, explosionType, x, y);
         }
     } catch (_) {}
     const now = performance.now();
@@ -4150,6 +4151,9 @@ function spawnExplosionAt(x, y, explosionType = 2) {
         x: x,
         y: y,
         startedAt: now,
+        shipDeath: shipDeath,
+        rotation: shipDeath ? Math.random() * Math.PI * 2 : 0,
+        frameDuration: shipDeath ? 1000 / 37 : null,
         type: explosionType
     });
 }
@@ -4159,7 +4163,7 @@ function updateExplosions(now) {
     for (let i = 0; i < explosions.length; i++) {
         const ex = explosions[i];
         const anim = EXPLOSION_ANIMATIONS[ex.type] || EXPLOSION_ANIMATIONS[2];
-        const totalDuration = (anim.frameCount || 1) * (anim.frameDuration || 40);
+        const totalDuration = (anim.frameCount || 1) * (ex.frameDuration || anim.frameDuration || 40);
         if (now - ex.startedAt <= totalDuration) {
             explosions[keepCount++] = ex;
         }
@@ -4174,14 +4178,23 @@ function drawExplosions() {
     });
     for (const ex of explosions) {
         const anim = EXPLOSION_ANIMATIONS[ex.type] || EXPLOSION_ANIMATIONS[2];
-        const frameDuration = anim.frameDuration || 40;
+        const frameDuration = ex.frameDuration || anim.frameDuration || 40;
         const frame = Math.floor((now - ex.startedAt) / frameDuration);
         if (frame < 0 || frame >= (anim.frameCount || 0)) continue;
         const frameDef = getExplosionFrame(ex.type, frame);
         if (!frameDef || frameDef.pendingAtlas) continue;
         const explosionScreenX = mapToScreenX(ex.x);
         const explosionScreenY = mapToScreenY(ex.y);
+        drawOptions.rotation = ex.rotation || 0;
         drawFrameDefCentered(frameDef, explosionScreenX, explosionScreenY, drawOptions);
+        if (ex.shipDeath) {
+            const elapsed = (now - ex.startedAt) / 650;
+            const ring = typeof getEmpRingFrame === "function" ? getEmpRingFrame() : null;
+            if (ring && !ring.pendingAtlas && elapsed < 1) {
+                const size = 40 + Math.max(0, elapsed) * 340;
+                drawFrameDefCentered(ring, explosionScreenX, explosionScreenY, {alpha:.65 * (1 - elapsed),drawWidth:size,drawHeight:size,rotation:0,composite:"lighter"});
+            }
+        }
     }
 }
 

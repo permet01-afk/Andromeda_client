@@ -44,7 +44,7 @@ function handleCompanyChange($db, $factionid, $type)
         default: return "Invalid Company ID.";
     }
 
-    $req = $db->prepare('UPDATE users SET factionid=:fid, uridium=uridium-:cost, rankpoints=:rp, honor=:hn, locx=:x, locy=:y, mapid=:m WHERE id=:id AND uridium >= :cost_check');
+    $req = $db->prepare('UPDATE users SET factionid=:fid, uridium=uridium-:cost, rankpoints=:rp, honor=:hn, locx=:x, locy=:y, mapid=:m WHERE id=:id AND uridium >= :cost_check AND NOT EXISTS(SELECT 1 FROM player_ship_state s WHERE s.player_id=users.id AND s.status=\'DESTROYED\') AND NOT EXISTS(SELECT 1 FROM player_drone_state d WHERE d.player_id=users.id AND d.gameplay_token IS NOT NULL)');
     $req->execute([
         ':fid' => $factionid,
         ':cost' => $priceUri,
@@ -58,7 +58,7 @@ function handleCompanyChange($db, $factionid, $type)
     ]);
 
     if ($req->rowCount() <= 0) {
-        return "Error: Not enough Uridium (Need ".number_format($priceUri)." U).";
+        return "Transfer unavailable. Repair your ship and log out of the game before changing company.";
     }
     
     if ($datauser['clanid'] > 0) {

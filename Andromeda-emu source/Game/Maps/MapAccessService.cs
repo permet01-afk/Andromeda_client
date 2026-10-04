@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace OrbitReborn_Emulator.Game.Maps
 {
@@ -42,6 +42,9 @@ namespace OrbitReborn_Emulator.Game.Maps
             if (factionId < 1 || factionId > 3) return 1;
             return (factionId - 1) * 4 + 1;
         }
+
+        public static int GetHomeX(int factionId) { return factionId == 2 ? 18500 : factionId == 3 ? 19000 : 2000; }
+        public static int GetHomeY(int factionId) { return factionId == 3 ? 11300 : 1100; }
 
         public static int GetHomeMapX8(int factionId)
         {

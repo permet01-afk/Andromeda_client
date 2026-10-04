@@ -16,6 +16,8 @@ include 'libs/database.php';
 include 'config/database.php';
 
 $db = new Database(DB_TYPE, DB_HOST, DB_NAME, DB_USER, DB_PASS);
+require_once __DIR__ . '/libs/ShipLaunchGuard.php';
+requireReadyShipForLaunch($db, (int)($_SESSION['player_id'] ?? 0));
 
 $sth = $db->prepare("SELECT factionid
 	 FROM users WHERE id = :id LIMIT 1");
@@ -67,7 +69,11 @@ body {
 <meta charset="utf-8" /> 
 		<script type="text/javascript" src="spacemap/swfobject.js"></script>
 		<script type="text/javascript">
-			var flashvars = {};
+			// Flash calls showHangar when opening its Note; OK calls bpCloseWindow.
+            // Keep the Note visible until OK; never close/log out the website.
+            window.showHangar = function () { window.__shipHangarDestination = '/view.php?page=user&tab=infos'; };
+            window.bpCloseWindow = function () { window.location.replace(window.__shipHangarDestination || '/view.php?page=user&tab=infos'); };
+            var flashvars = {};
 			var params = {};
 			var attributes = {};
 					
