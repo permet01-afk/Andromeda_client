@@ -31,6 +31,42 @@ const paths=[];const draw={globalAlpha:1,save(){this.old=this.globalAlpha},resto
 const p={MAP_MIN_X:0,MAP_MIN_Y:0};vm.createContext(p);vm.runInContext(fn(graphics,'drawMinimapPoiZones'),p);
 p.drawMinimapPoiZones(draw,10,20,.01,.01,[{zoneType:'NOA',shape:'REC',points:[100,200,300,400]},{zoneType:'NOA',shape:'CIR',points:[500,500,100]},{zoneType:'HEA',shape:'REC',points:[0,0,500,500]}]);
 ok(paths[0].join(',')==='rect,11,22,2,2','POI uses existing world projection');ok(paths[1][0]==='ellipse'&&paths[1][1]===15&&paths[1][3]===1,'circle geometry');ok(Math.abs(paths[2][1]-.4)<1e-8&&draw.globalAlpha===1,'Flash Bitmap alpha .4, context restored');ok(paths.length===3,'non-filled types not invented');
+
+{ // Window10: real metadata parsing and size resolution, including old user geometry.
+const xml=fs.readFileSync(path.join(root,'..','spacemap/xml/game.xml'),'utf8');
+const attrs=Object.fromEntries([...xml.match(/<window\b[^>]*\bid="10"[^>]*\/>/)[0].matchAll(/(\w+)="([^"]*)"/g)].map(m=>[m[1],m[2]]));
+const geomStore=new Map([['andromeda_window_geometry_v1',JSON.stringify({quest:{w:580,h:450},log:{w:410,h:230}})]]);
+const g={window:{},localStorage:{getItem:k=>geomStore.get(k)},
+ _getFlashWindowDefById:id=>id===10?{getAttribute:n=>attrs[n]??null}:null};
+vm.createContext(g);
+for(const name of ['_flashParseBool','_flashParseInt','getFlashWindowMeta','getFlashWindowRuntimeConfig','resolveWindowContainerSymbol','resolveWindowOffsetProfile','shouldApplyResizerExtentForWindow','getPersistedWindowGeometry','readPersistedWindowGeometryStore','resolveFlashWindowOuterSize','enforceFlashWindowBaseSize'])vm.runInContext(fn(graphics,name),g);
+vm.runInContext('const FLASH_WINDOW_ID_BY_KEY={quest:10}; const WINDOW_GEOMETRY_STORAGE_KEY="andromeda_window_geometry_v1";'+graphics.slice(graphics.indexOf('const FLASH_WINDOW_OFFSET_PROFILES ='),graphics.indexOf('\nfunction resolveWindowContainerSymbol')),g);
+const fallbackText=graphics.slice(graphics.indexOf('    quest: {'),graphics.indexOf('    booster: {'));
+const fallback=vm.runInContext('({'+fallbackText+'})',g).quest;
+const cfg=g.getFlashWindowRuntimeConfig('quest',fallback);
+ok(cfg.w===200&&cfg.h===200&&fallback.w===200&&fallback.h===200,'XML and no-XML fallback 200x200 logical');
+ok(!cfg.resizable&&!cfg.closeable&&cfg.startMinimized&&cfg.hudToggle&&cfg.transparency,'Quest XML flags retained, no forced resize');
+ok(!cfg.flashUseRuntimeOuterSize,'old Quest runtime size override removed');
+ok(g.resolveWindowContainerSymbol(cfg)==='windowContainer1','same non-resizable container as local Flash');
+const el={style:{left:'123px',top:'234px'},dataset:{flashUserWidth:'580',flashUserHeight:'450'}};
+const storedBefore=geomStore.get('andromeda_window_geometry_v1');
+for(const old of [[560,430],[580,450],[940,780]]){
+ geomStore.set('andromeda_window_geometry_v1',JSON.stringify({quest:{w:old[0],h:old[1]},log:{w:410,h:230}}));
+ const before=geomStore.get('andromeda_window_geometry_v1');
+ g.enforceFlashWindowBaseSize('quest',el,cfg);
+ ok(el.style.width==='220px'&&el.style.height==='220px','old persisted/live Quest size ignored '+old.join('x'));
+ ok(el.style.left==='123px'&&el.style.top==='234px','Quest position preserved '+old.join('x'));
+ ok(geomStore.get('andromeda_window_geometry_v1')===before,'no window storage erased '+old.join('x'));
+}
+const reloaded={style:{},dataset:{}};g.enforceFlashWindowBaseSize('quest',reloaded,cfg);
+ok(reloaded.style.width==='220px'&&reloaded.dataset.flashResizable==='0','fresh DOM after reload also ignores old size');
+const log=g.resolveFlashWindowOuterSize('log',{w:300,h:200,resizable:true},{dataset:{}});
+ok(log.outerW===410&&log.outerH===230,'other resizable window restores its stored geometry');
+g._getFlashWindowDefById=()=>null;
+const offlineCfg=g.getFlashWindowRuntimeConfig('quest',fallback),offlineSize=g.resolveFlashWindowOuterSize('quest',offlineCfg,{dataset:{}});
+ok(offlineSize.outerW===220&&offlineSize.outerH===220&&!offlineCfg.resizable,'missing XML stays compact with same outer semantics');
+
+}
 let timers=[],calls=[],data,resolvePending=null;
 const rootEl={innerHTML:'',classList:{add(){}},style:{setProperty(){}},querySelector:()=>null,querySelectorAll:()=>[],contains:()=>false};
 const store=new Map(),win={style:{display:'block'},querySelector:()=>null,classList:{add(){}}};

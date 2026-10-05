@@ -5034,8 +5034,8 @@ const WINDOWS_CONFIG = {
     },
     quest: {
         title: "Quests",
-        w: 560,
-        h: 430,
+        w: 200,
+        h: 200,
         icon: "Q"
     },
     booster: {
@@ -5734,15 +5734,6 @@ function getFlashWindowRuntimeConfig(key, fallbackCfg) {
     cfg.bgHoverIcon = meta.bgHoverIcon || cfg.bgHoverIcon || "comb02_hover.png";
     cfg.flashIconName = meta.icon || cfg.flashIconName;
     cfg.titleKey = meta.titleKey || cfg.titleKey || "";
-    if (key === "quest") {
-        cfg.title = "Quests";
-        cfg.w = 560;
-        cfg.h = 430;
-        cfg.resizable = true;
-        cfg.closeable = true;
-        cfg.startMinimized = true;
-        cfg.flashUseRuntimeOuterSize = true;
-    }
     if (key === "spacemap") {
         cfg.w = FLASH_SPACEMAP_LAYOUT.outer.width;
         cfg.h = FLASH_SPACEMAP_LAYOUT.outer.height;
@@ -8965,7 +8956,9 @@ function createGameWindows() {
 
 function shouldApplyResizerExtentForWindow(key, runtimeCfg) {
     if (runtimeCfg && runtimeCfg.resizable) return true;
-    return key === "ship" || key === "user" || key === "refinement" || key === "booster" || key === "logout" || key === "spaceball";
+    // SimpleWindow.setWidth/setHeight retain the 20px resizer extent even when
+    // its handle is removed. Window10 is 200x200 logical, 220x220 outer.
+    return key === "quest" || key === "ship" || key === "user" || key === "refinement" || key === "booster" || key === "logout" || key === "spaceball";
 }
 
 const WINDOW_GEOMETRY_STORAGE_KEY = "andromeda_window_geometry_v1";
