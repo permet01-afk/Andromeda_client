@@ -154,6 +154,12 @@ function registerFlashWindowChrome(el, key) {
         hidden + " { --flash-window-background-opacity: 0; }\n" +
         parts.map(part => hidden + part).join(",") +
         " { opacity: 0 !important; }";
+    // Quest restores focus to its selected dot on content refresh. Pointer focus
+    // must not pin the chrome after mouseleave; keyboard focus still reveals it.
+    // Keep the existing focus-within behavior of every other window unchanged.
+    const questHidden = base + '[data-window-key="quest"].flashChromeAutoHide:not(:hover):not(:has(:focus-visible)):not(.flashChromePointerWithin)';
+    style.textContent += "\n" + questHidden + " { --flash-window-background-opacity: 0; }\n" +
+        parts.map(part => questHidden + part).join(",") + " { opacity: 0 !important; }";
     document.head.appendChild(style);
     // Minimap content intentionally lets events through to the canvas. Detect its
     // window area without creating an overlay or changing the existing hitboxes.

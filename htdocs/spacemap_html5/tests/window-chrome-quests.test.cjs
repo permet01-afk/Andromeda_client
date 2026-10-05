@@ -19,6 +19,9 @@ ok(map.dataset.flashTransparency==='1','metadata compatible');ok(!settings.datas
 c.setWindowBackgroundPreference(false);ok(map.classList.contains('flashChromeAutoHide'),'OFF hides eligible chrome');ok(!settings.classList.contains('flashChromeAutoHide'),'ineligible unaffected');
 ok(storage.get('andromeda_window_backgrounds_v1:14')==='0','account scoped persistence');
 ok(styles[0].textContent.includes('opacity 250ms'),'250ms contract');
+ok(styles[0].textContent.includes('[data-window-key="quest"].flashChromeAutoHide:not(:hover):not(:has(:focus-visible)):not(.flashChromePointerWithin)'), 'Quest pointer focus cannot pin OFF chrome');
+ok(styles[0].textContent.includes('.flashChromeAutoHide:not(:hover):not(:focus-within):not(.flashChromePointerWithin)'), 'other windows retain previous focus policy');
+ok(styles[0].textContent.includes(':not(:has(:focus-visible))'), 'Quest keyboard focus remains supported');
 ok(!styles[0].textContent.includes('pointer-events')&&!styles[0].textContent.includes('gwContent'),'no content/hitbox mutation');
 listeners.pointermove({clientX:60,clientY:60});ok(map.classList.contains('flashChromePointerWithin'),'canvas passthrough hover');
 listeners.pointermove({clientX:300,clientY:60});ok(!map.classList.contains('flashChromePointerWithin'),'leave');
@@ -69,7 +72,10 @@ ok(offlineSize.outerW===220&&offlineSize.outerH===220&&!offlineCfg.resizable,'mi
 }
 let timers=[],calls=[],data,resolvePending=null;
 const rootEl={innerHTML:'',classList:{add(){}},style:{setProperty(){}},querySelector:()=>null,querySelectorAll:()=>[],contains:()=>false};
-const store=new Map(),win={style:{display:'block'},querySelector:()=>null,classList:{add(){}}};
+const protectedShell=()=>new Proxy({style:new Proxy({}, {set(){throw Error('Quest wrote a shell style')}})}, {set(){throw Error('Quest replaced a shell property')}});
+const chromeNode=protectedShell(),patternNode=protectedShell(),interiorNode=protectedShell();
+const shellRefs={'.windowChrome':chromeNode,'.windowPattern':patternNode,'.windowInterior':interiorNode};
+const store=new Map(),win={style:{display:'block'},querySelector:s=>shellRefs[s]||null,classList:{add(){}}};
 const q={console,URLSearchParams,Number,Math,Date,localStorage:{getItem:k=>store.get(k),setItem:(k,v)=>store.set(k,v)},
  document:{getElementById:id=>id==='content_quest'?rootEl:id==='win_quest'?win:null,activeElement:null,createElement:()=>({}),head:{appendChild(){}}},
  window:{ANDROMEDA_CONFIG:{userID:14},setInterval:()=>1,setTimeout:f=>{timers.push(f);return timers.length},clearTimeout:id=>{timers[id-1]=null}},
@@ -77,6 +83,9 @@ const q={console,URLSearchParams,Number,Math,Date,localStorage:{getItem:k=>store
 vm.createContext(q);
 vm.runInContext(quests.replace(/\}\)\(\);\s*$/,'window.testQuest={state,render,loadQuests,performQuestAction,objectiveComplete};})();'),q);
 const t=q.window.testQuest;
+const originalContent=rootEl,originalWin=win;
+function stableShell(){ok(q.document.getElementById('win_quest')===originalWin&&q.document.getElementById('content_quest')===originalContent&&win.querySelector('.windowChrome')===chromeNode&&win.querySelector('.windowInterior')===interiorNode,'Quest render keeps shell and content root identities');}
+const originalRender=t.render;t.render=()=>{originalRender();stableShell()};
 const quest=(code,extra={})=>({code,title:code,group:'basic',status:'in_progress',objectives:[{label:'Kill',current:1,required:2}],...extra});
 const payload=list=>({ok:true,csrfToken:'csrf-fixture',maxActive:5,activeQuests:list,weekly:{meta:{},missions:[]}});
 async function tests(){
@@ -91,6 +100,11 @@ async function tests(){
  resolvePending=true;const pending=t.loadQuests(false);await new Promise(r=>setImmediate(r));ok(t.state.loading,'background GET holds in-flight lock');const count=calls.length;await t.performQuestAction('abort','a','basic');ok(calls.length===count,'no action racing older GET');await t.loadQuests(false);ok(calls.length===count&&t.state.needsRefresh,'overlapping GET queued');resolvePending();resolvePending=null;await pending;
  data=payload([quest('a',{title:'<img onerror=x>',objectives:Array.from({length:40},()=>({label:'<script>x</script>',current:0,required:10}))})]);await t.loadQuests(false);ok(!rootEl.innerHTML.includes('<script>')&&rootEl.innerHTML.includes('&lt;script&gt;'),'escaped API text');ok((rootEl.innerHTML.match(/html5QuestObjectiveLine/g)||[]).length===40,'all real objectives retained');
  data=payload([]);data.weekly.missions=[quest('w',{group:'weekly',status:'in_progress'})];await t.loadQuests(false);ok(!rootEl.innerHTML.includes('Abort Quest')&&rootEl.innerHTML.includes('Weekly'),'weekly no abort preserved');data.weekly.missions[0].is_complete=true;await t.loadQuests(false);ok(rootEl.innerHTML.includes('Claim Reward'),'weekly claim preserved');data.weekly.missions[0].status='claimed';await t.loadQuests(false);ok(!rootEl.innerHTML.includes('Claim Reward')&&rootEl.innerHTML.includes('Claimed'),'weekly claimed preserved');
+ stableShell();
+ const skin=quests.slice(quests.indexOf('#win_quest .windowInterior::after,'),quests.indexOf('#win_quest .gwHeader,'));
+ ok(skin.includes('clip-path: polygon(0 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%)'),'Quest decorative body uses native bottom bevel');
+ ok(skin.includes('var(--flash-window-background-opacity, 0.40)'),'decorative body still follows window chrome preference');
+ ok(!quests.includes('showWindowBackgrounds')&&!quests.includes('flashChromeAutoHide')&&!quests.includes('setWindowBackgroundPreference'),'Quest content never owns chrome preference');
  ok(!quests.includes('requestAnimationFrame'),'no RAF added');ok(!quests.includes('9|'),'no legacy9');ok(!quests.includes('is-upcoming'),'no invented sequence');
  console.log(JSON.stringify({pass:true,checks,scope:'production JS; simulated DOM/API; no DB'}));
 }

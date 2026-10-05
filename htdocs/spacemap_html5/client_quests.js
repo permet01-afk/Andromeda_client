@@ -88,6 +88,9 @@
                 bottom: 0 !important;
                 background-image: url('graphics/ui/window1/images/w1_bg_tile.png') !important;
                 background-repeat: repeat !important;
+                /* The body starts below the header: retain windowPattern's native
+                   13px lower-right bevel, without clipping the scrolling content. */
+                clip-path: polygon(0 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%);
                 opacity: var(--flash-window-background-opacity, 0.40) !important;
                 pointer-events: none !important;
                 z-index: 0 !important;
