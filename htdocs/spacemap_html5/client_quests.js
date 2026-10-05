@@ -6,8 +6,16 @@
     const QUEST_SERVER_DEBOUNCE_MS = 500;
     const STATUS_ICON_BASE = "graphics/ui/questSystem/images/";
 
+    const SELECTION_STORAGE_KEY = "andromeda_quest_selection_v1:" +
+        String((window.ANDROMEDA_CONFIG || {}).userID || "guest");
+    function readSelection() {
+        try { return localStorage.getItem(SELECTION_STORAGE_KEY) || ""; } catch (_) { return ""; }
+    }
     const state = {
         initialized: false,
+        selectedKey: readSelection(),
+        selectedIndex: 0,
+        detailsOpen: false,
         data: null,
         csrfToken: "",
         loading: false,
@@ -80,7 +88,7 @@
                 bottom: 0 !important;
                 background-image: url('graphics/ui/window1/images/w1_bg_tile.png') !important;
                 background-repeat: repeat !important;
-                opacity: 0.40 !important;
+                opacity: var(--flash-window-background-opacity, 0.40) !important;
                 pointer-events: none !important;
                 z-index: 0 !important;
             }
@@ -119,335 +127,50 @@
                 background-image: none !important;
             }
 
-            .html5QuestTracker {
-                background: transparent !important;
-                background-image: none !important;
-            }
-
-            .html5QuestTracker {
+            #win_quest .html5QuestTracker {
                 position: absolute;
-                inset: 5px;
+                inset: 5px 8px;
+                width: auto !important;
+                height: auto !important;
                 box-sizing: border-box;
-                color: #d8e7f8;
-                font-family: Tahoma, Arial, sans-serif;
-                font-size: 11px;
-                overflow: hidden;
-                text-shadow: 1px 1px 0 #000;
-            }
-
-            .html5QuestActiveList {
-                position: absolute;
-                left: 4px;
-                right: 4px;
-                top: 4px;
-                bottom: 4px;
-                overflow-y: auto;
-                overflow-x: hidden;
-                padding: 0 4px 2px 0;
-                box-sizing: border-box;
-                scrollbar-width: thin;
-            }
-
-            .html5QuestActiveList::-webkit-scrollbar {
-                width: 8px;
-            }
-
-            .html5QuestActiveList::-webkit-scrollbar-track {
-                background: rgba(0, 0, 0, 0.28);
-                border-left: 1px solid rgba(123, 92, 47, 0.25);
-            }
-
-            .html5QuestActiveList::-webkit-scrollbar-thumb {
-                background: linear-gradient(180deg, #875c2b, #3f2715);
-                border: 1px solid rgba(255, 205, 92, 0.28);
-                border-radius: 4px;
-            }
-
-            .html5QuestCase {
-                position: relative;
-                display: grid;
-                grid-template-columns: 22px minmax(0, 1fr) 116px;
-                gap: 7px;
-                margin: 0 0 6px 0;
-                padding: 7px 7px 7px 7px;
-                min-height: 68px;
-                box-sizing: border-box;
-                border: 1px solid rgba(129, 94, 44, 0.80);
-                background:
-                    linear-gradient(180deg, rgba(22, 17, 12, 0.46), rgba(3, 5, 8, 0.22));
-                box-shadow:
-                    inset 0 1px 0 rgba(255, 224, 135, 0.10),
-                    0 1px 1px rgba(0, 0, 0, 0.65);
-            }
-
-            .html5QuestCase.is-ready {
-                border-color: rgba(255, 213, 64, 0.96);
-                box-shadow:
-                    inset 0 1px 0 rgba(255, 235, 140, 0.20),
-                    0 0 8px rgba(255, 207, 38, 0.18);
-            }
-
-            .html5QuestStateIcon {
-                width: 16px;
-                height: 16px;
-                margin-top: 1px;
-                background-position: center;
-                background-repeat: no-repeat;
-                background-size: contain;
-                image-rendering: pixelated;
-                filter: drop-shadow(0 1px 1px #000);
-            }
-
-            .html5QuestStateIcon.is-running {
-                background-image: url('${STATUS_ICON_BASE}casecon_open_running.png');
-            }
-
-            .html5QuestStateIcon.is-ready {
-                background-image: url('${STATUS_ICON_BASE}casecon_open_completed.png');
-            }
-
-            .html5QuestCaseBody {
-                min-width: 0;
-            }
-
-            .html5QuestCaseTop {
-                display: flex;
-                align-items: baseline;
-                gap: 6px;
-                min-width: 0;
-                margin-bottom: 3px;
-            }
-
-            .html5QuestCaseTitle {
-                color: #ffe16b;
-                font-size: 12px;
-                font-weight: 700;
-                line-height: 14px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-
-            .html5QuestCaseGroup {
-                color: #78d9ff;
-                font-size: 10px;
-                font-weight: 700;
-                text-transform: uppercase;
-                opacity: 0.85;
-                flex: 0 0 auto;
-            }
-
-            .html5QuestDescription {
-                margin: 0 0 5px 0;
-                padding: 0;
-                color: #b7c7da;
-                line-height: 13px;
-                max-height: 28px;
-                overflow: hidden;
-            }
-
-            .html5QuestObjective {
-                margin-top: 3px;
-            }
-
-            .html5QuestObjectiveLine {
-                display: grid;
-                grid-template-columns: 14px minmax(0, 1fr) auto;
-                gap: 4px;
-                align-items: center;
-                min-height: 14px;
-            }
-
-            .html5QuestObjectiveIcon {
-                width: 12px;
-                height: 12px;
-                background-position: center;
-                background-repeat: no-repeat;
-                background-size: contain;
-                image-rendering: pixelated;
-            }
-
-            .html5QuestObjectiveIcon.is-running {
-                background-image: url('${STATUS_ICON_BASE}condition_running.png');
-            }
-
-            .html5QuestObjectiveIcon.is-completed {
-                background-image: url('${STATUS_ICON_BASE}condition_completed.png');
-            }
-
-            .html5QuestObjectiveLabel {
-                color: #dceeff;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-
-            .html5QuestObjective.is-complete .html5QuestObjectiveLabel {
-                color: #9dffd3;
-            }
-
-            .html5QuestObjectiveValue {
-                color: #ffdf56;
-                font-weight: 700;
-                white-space: nowrap;
-            }
-
-            .html5QuestTrack {
-                height: 5px;
-                margin: 2px 0 0 18px;
-                border: 1px solid rgba(26, 49, 75, 0.92);
-                background: rgba(5, 10, 19, 0.82);
-                box-shadow: inset 0 1px 2px rgba(0,0,0,0.82);
-                overflow: hidden;
-            }
-
-            .html5QuestFill {
-                height: 100%;
-                width: 0;
-                background: linear-gradient(90deg, #3694d7, #f1d339);
-                box-shadow: 0 0 4px rgba(255, 220, 60, 0.34);
-            }
-
-            .html5QuestFill.is-complete {
-                background: linear-gradient(90deg, #42eaa7, #f5dd48);
-            }
-
-            .html5QuestSide {
                 display: flex;
                 flex-direction: column;
-                gap: 5px;
-                min-width: 0;
-            }
-
-            .html5QuestRewards {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                min-height: 0;
-                max-height: 80px;
                 overflow: hidden;
+                color: #e9e2c0;
+                font: 12px/17px "EurostileFl", Tahoma, sans-serif;
+                text-shadow: 1px 1px #000;
             }
-
-            .html5QuestReward {
-                display: flex;
-                justify-content: space-between;
-                gap: 4px;
-                height: 15px;
-                line-height: 15px;
-                padding: 0 4px;
-                box-sizing: border-box;
-                border: 1px solid rgba(54, 89, 124, 0.42);
-                background: rgba(4, 9, 17, 0.45);
-                color: #aebed0;
-                font-size: 10px;
-                white-space: nowrap;
-            }
-
-            .html5QuestReward strong {
-                color: #ffffff;
-                font-size: 10px;
-                font-weight: 700;
-            }
-
-            .html5QuestButton {
-                width: 100%;
-                height: 22px;
-                border: 1px solid #7df9ff;
-                border-radius: 3px;
-                background: linear-gradient(180deg, #0f718d, #064355);
-                color: #ffffff;
-                font-family: Tahoma, Arial, sans-serif;
-                font-size: 11px;
-                font-weight: 700;
-                text-shadow: 1px 1px 0 #000;
-                cursor: pointer;
-                box-shadow:
-                    inset 0 1px 0 rgba(255,255,255,0.20),
-                    0 1px 2px rgba(0,0,0,0.70);
-            }
-
-            .html5QuestButton:hover {
-                background: linear-gradient(180deg, #18a7bf, #086074);
-            }
-
-            .html5QuestButton.is-abort {
-                border-color: rgba(255, 130, 130, 0.72);
-                background: linear-gradient(180deg, #7f2a2a, #4d1717);
-                color: #ffe5e5;
-            }
-
-            .html5QuestButton.is-abort:hover {
-                background: linear-gradient(180deg, #a63a3a, #681f1f);
-            }
-
-            .html5QuestButton:disabled,
-            .html5QuestButton.is-locked {
-                cursor: default;
-                color: #b8c0c8;
-                border-color: rgba(111, 136, 162, 0.45);
-                background: linear-gradient(180deg, rgba(48, 64, 84, 0.88), rgba(17, 24, 34, 0.88));
-                box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
-            }
-
-            .html5QuestStateText {
-                height: 22px;
-                line-height: 22px;
-                text-align: center;
-                border: 1px solid rgba(96, 125, 157, 0.44);
-                background: rgba(0, 0, 0, 0.22);
-                color: #cbd7e6;
-                font-weight: 700;
-            }
-
-            .html5QuestLoading,
-            .html5QuestEmpty,
-            .html5QuestFeedback {
-                position: absolute;
-                left: 16px;
-                right: 16px;
-                top: 18px;
-                padding: 9px 10px;
-                box-sizing: border-box;
-                border: 1px solid rgba(118, 91, 48, 0.80);
-                background: rgba(3, 6, 10, 0.28);
-                color: #d7e6f5;
-                line-height: 15px;
-            }
-
-            .html5QuestFeedback.is-error {
-                color: #ffb9b9;
-                border-color: rgba(212, 82, 82, 0.85);
-            }
-
-            .html5QuestFeedback.is-success {
-                color: #94ffd4;
-                border-color: rgba(91, 194, 137, 0.80);
-            }
-
-            .html5QuestSection {
-                margin: 0 0 7px 0;
-            }
-
-            .html5QuestSectionHeader {
-                display: flex;
-                align-items: baseline;
-                justify-content: space-between;
-                gap: 8px;
-                margin: 0 0 5px 0;
-                padding: 2px 2px 4px 2px;
-                color: #78d9ff;
-                font-weight: 700;
-                text-transform: uppercase;
-                letter-spacing: 0.04em;
-            }
-
-            .html5QuestSectionHeader span {
-                color: #b7c7da;
-                font-size: 10px;
-                font-weight: 400;
-                text-transform: none;
-                letter-spacing: 0;
-            }
+            .html5QuestDots { display: flex; flex-wrap: wrap; justify-content: flex-end; flex: 0 0 auto; }
+            .html5QuestDot { width: 24px; height: 24px; padding: 0; border: 0; cursor: pointer;
+                background: url('graphics/ui/questSystem/images/pagedot_idle.png') center no-repeat; }
+            .html5QuestDot[aria-pressed="true"] { background-image: url('graphics/ui/questSystem/images/pagedot_selected.png'); }
+            .html5QuestDot:focus-visible { outline: 1px solid #e9e2c0; }
+            .html5QuestActiveList { min-height: 0; overflow-y: auto; overflow-x: hidden; flex: 1; padding-right: 4px; }
+            .html5QuestCaseTitle { font-family: "EurostileHeaFl", "EurostileFl", Tahoma, sans-serif;
+                font-size: 13px; margin: 0 0 6px; overflow-wrap: anywhere; }
+            .html5QuestCaseGroup { color: #b9b390; margin: 0 0 6px; }
+            .html5QuestObjectives { margin: 0; padding: 0 0 0 4px; list-style: none; }
+            .html5QuestObjectiveLine { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto;
+                align-items: start; column-gap: 4px; padding: 2px 0; }
+            .html5QuestObjectiveIcon { width: 12px; height: 12px; margin-top: 2px;
+                background: url('${STATUS_ICON_BASE}condition_running.png') center no-repeat; }
+            .html5QuestObjectiveIcon.is-completed { background-image: url('${STATUS_ICON_BASE}condition_completed.png'); }
+            .html5QuestObjectiveLabel { overflow-wrap: anywhere; }
+            .html5QuestObjectiveValue { white-space: nowrap; padding-left: 8px; }
+            .html5QuestObjectiveLine.is-complete { color: #88dd88; }
+            .html5QuestDetails { margin-top: 10px; color: #b9b390; }
+            .html5QuestDetails summary { cursor: pointer; }
+            .html5QuestDescription { margin: 5px 0; overflow-wrap: anywhere; }
+            .html5QuestReward { display: flex; justify-content: space-between; gap: 8px; max-width: 260px; }
+            .html5QuestActions { padding: 6px 0 3px; }
+            .html5QuestButton { min-height: 24px; padding: 2px 12px; border: 0; color: #e9e2c0;
+                background: url('graphics/ui/ui/sprites/DefineSprite_518_button1/1.png') center / 100% 100% no-repeat;
+                font: inherit; cursor: pointer; text-shadow: 1px 1px #000; }
+            .html5QuestButton:disabled { opacity: .5; cursor: default; }
+            .html5QuestStateText { color: #b9b390; }
+            .html5QuestFeedback, .html5QuestEmpty, .html5QuestLoading { margin: 6px 0; overflow-wrap: anywhere; }
+            .html5QuestFeedback.is-error { color: #ffb9b9; }
+            .html5QuestFeedback.is-success { color: #88dd88; }
         `;
         document.head.appendChild(style);
     }
@@ -488,23 +211,21 @@
         return "Basic Quest";
     }
 
-    function objectiveIconClass(objective) {
-        return objective && objective.complete ? "is-completed" : "is-running";
+    function objectiveComplete(objective) {
+        const required = Number(objective.required);
+        const current = Number(objective.current);
+        return !!objective.complete || (Number.isFinite(required) && required > 0 &&
+            Number.isFinite(current) && current >= required);
     }
 
     function renderObjective(objective) {
-        const pct = Math.max(0, Math.min(100, Number(objective.percent || 0)));
-        const completeClass = objective && objective.complete ? " is-complete" : "";
-        return `
-            <div class="html5QuestObjective${completeClass}">
-                <div class="html5QuestObjectiveLine">
-                    <span class="html5QuestObjectiveIcon ${objectiveIconClass(objective)}"></span>
-                    <span class="html5QuestObjectiveLabel" title="${escapeHtml(objective.label || "")}">${escapeHtml(objective.label || "")}</span>
-                    <span class="html5QuestObjectiveValue">${formatNumber(objective.current)} / ${formatNumber(objective.required)}</span>
-                </div>
-                <div class="html5QuestTrack"><div class="html5QuestFill${objective && objective.complete ? " is-complete" : ""}" style="width:${pct}%;"></div></div>
-            </div>
-        `;
+        const complete = objectiveComplete(objective);
+        // The current API has no dependency/sequence information: unfinished means running.
+        return `<li class="html5QuestObjectiveLine${complete ? " is-complete" : ""}">
+            <span class="html5QuestObjectiveIcon ${complete ? "is-completed" : "is-running"}" role="img" aria-label="${complete ? "Completed" : "Running"}"></span>
+            <span class="html5QuestObjectiveLabel">${escapeHtml(objective.label || "")}</span>
+            <span class="html5QuestObjectiveValue">${formatNumber(objective.current)} / ${formatNumber(objective.required)}</span>
+        </li>`;
     }
 
     function renderAction(quest) {
@@ -523,29 +244,33 @@
         return `<button class="html5QuestButton is-abort" type="button" data-quest-action="abort" data-quest-group="${escapeHtml(group)}" data-quest-code="${escapeHtml(quest.code || "")}">Abort Quest</button>`;
     }
 
-    function renderQuestCase(quest) {
-        const isReady = !!quest.is_complete;
-        const isClaimed = String(quest.status || "") === "claimed";
+    function questKey(quest) {
+        return questGroup(quest) + ":" + String(quest.code || quest.id || "");
+    }
+
+    function selectQuest(quest, index) {
+        const key = quest ? questKey(quest) : "";
+        if (key !== state.selectedKey) state.detailsOpen = false;
+        state.selectedKey = key;
+        state.selectedIndex = index;
+        try { localStorage.setItem(SELECTION_STORAGE_KEY, key); } catch (_) {}
+    }
+
+    function renderQuestCase(quest, weeklyMeta) {
         const objectives = Array.isArray(quest.objectives) ? quest.objectives : [];
-        return `
-            <article class="html5QuestCase${isReady && !isClaimed ? " is-ready" : ""}">
-                <span class="html5QuestStateIcon ${isReady || isClaimed ? "is-ready" : "is-running"}"></span>
-                <div class="html5QuestCaseBody">
-                    <div class="html5QuestCaseTop">
-                        <div class="html5QuestCaseTitle" title="${escapeHtml(quest.title || "")}">${escapeHtml(quest.title || "")}</div>
-                        <div class="html5QuestCaseGroup">${escapeHtml(groupLabel(quest))}</div>
-                    </div>
-                    <p class="html5QuestDescription">${escapeHtml(quest.description || "")}</p>
-                    <div class="html5QuestObjectives">
-                        ${objectives.map(obj => renderObjective(obj)).join("")}
-                    </div>
-                </div>
-                <aside class="html5QuestSide">
-                    <div class="html5QuestRewards">${rewardRows(quest) || '<div class="html5QuestReward"><span>Reward</span><strong>None</strong></div>'}</div>
-                    ${renderAction(quest)}
-                </aside>
-            </article>
-        `;
+        const weeklyInfo = questGroup(quest) === "weekly" ?
+            ` | Week ${escapeHtml(weeklyMeta.rotation_group || "-")} | ${escapeHtml(weeklyMeta.time_remaining_text || "-")} remaining` : "";
+        return `<article>
+            <h3 class="html5QuestCaseTitle">${escapeHtml(quest.title || "")}</h3>
+            <div class="html5QuestCaseGroup">${escapeHtml(groupLabel(quest))}${weeklyInfo}</div>
+            <ul class="html5QuestObjectives" aria-label="Objectives">${objectives.map(renderObjective).join("")}</ul>
+            <details class="html5QuestDetails"${state.detailsOpen ? " open" : ""}>
+                <summary>Details / Rewards</summary>
+                <p class="html5QuestDescription">${escapeHtml(quest.description || "")}</p>
+                ${rewardRows(quest) || '<div class="html5QuestReward">No reward</div>'}
+            </details>
+            <div class="html5QuestActions">${renderAction(quest)}</div>
+        </article>`;
     }
 
     function readNumber(value) {
@@ -677,72 +402,63 @@
     function render() {
         const root = getRoot();
         if (!root) return;
-
         root.classList.add("html5QuestContent");
         const currentList = root.querySelector(".html5QuestActiveList");
         const previousScrollTop = currentList ? currentList.scrollTop : 0;
-        const activeQuests = getActiveQuests(state.data || {});
-        const weeklyState = getWeeklyState(state.data || {});
-        const weeklyMissions = weeklyState.missions;
-        const activeCount = state.data && state.data.activeCount != null ? Number(state.data.activeCount || 0) : activeQuests.length;
+        const focused = document.activeElement;
+        const focusedKey = focused && root.contains(focused) ? focused.getAttribute("data-quest-select") : null;
+        const weekly = getWeeklyState(state.data || {});
+        const quests = getActiveQuests(state.data || {}).concat(weekly.missions.map(q => Object.assign({}, q, { group: "weekly" })));
         const maxActive = state.data && state.data.maxActive != null ? Number(state.data.maxActive || 5) : 5;
-
         let bodyHtml = "";
-        if (state.error) {
-            bodyHtml = `<div class="html5QuestFeedback is-error">${escapeHtml(state.error)}</div>`;
-        } else if (state.loading && !state.data) {
+        let dotsHtml = "";
+        if (state.loading && !state.data) {
             bodyHtml = '<div class="html5QuestLoading">Loading active quests...</div>';
-        } else if (!activeQuests.length && !weeklyMissions.length) {
-            const doneMessage = state.message ? `${escapeHtml(state.message)}<br>` : "";
-            bodyHtml = `<div class="html5QuestEmpty">${doneMessage}No active quests.<br>Accept up to ${formatNumber(maxActive)} Basic, PVP or Havok quests from the Quest page.</div>`;
+        } else if (!quests.length) {
+            // Do not erase a persisted selection on the initial render before the API responds.
+            if (state.data) selectQuest(null, 0);
+            bodyHtml = `<div class="html5QuestEmpty">No active quests.<br>Accept up to ${formatNumber(maxActive)} Basic, PVP or Havok quests from the Quest page.</div>`;
         } else {
-            const weeklyMeta = weeklyState.meta || {};
-            const weeklyHeader = weeklyMissions.length ? `
-                <section class="html5QuestSection">
-                    <div class="html5QuestSectionHeader">
-                        Weekly Missions
-                        <span>Week ${escapeHtml(weeklyMeta.rotation_group || "-")} | Time remaining: ${escapeHtml(weeklyMeta.time_remaining_text || "-")}</span>
-                    </div>
-                    ${weeklyMissions.map(renderQuestCase).join("")}
-                </section>
-            ` : "";
-            const activeHeader = activeQuests.length ? `
-                <section class="html5QuestSection">
-                    <div class="html5QuestSectionHeader">
-                        Active Quests
-                        <span>${formatNumber(activeCount)} / ${formatNumber(maxActive)}</span>
-                    </div>
-                    ${activeQuests.slice(0, maxActive).map(renderQuestCase).join("")}
-                </section>
-            ` : "";
-            bodyHtml = `
-                <div class="html5QuestActiveList" aria-label="Active quests">
-                    ${weeklyHeader}${activeHeader}
-                </div>
-            `;
+            let index = quests.findIndex(q => questKey(q) === state.selectedKey);
+            if (index < 0) index = Math.min(state.selectedIndex, quests.length - 1);
+            selectQuest(quests[index], index);
+            dotsHtml = `<nav class="html5QuestDots" aria-label="Tracked quest">${quests.map((q, i) =>
+                `<button type="button" class="html5QuestDot" data-quest-select="${escapeHtml(questKey(q))}" aria-pressed="${i === index}" title="${escapeHtml(q.title || q.code)}" aria-label="Track ${escapeHtml(q.title || q.code)}"></button>`).join("")}</nav>`;
+            bodyHtml = renderQuestCase(quests[index], weekly.meta);
         }
-
-        root.innerHTML = `<div class="html5QuestTracker">${bodyHtml}</div>`;
-
+        const feedback = state.error ? `<div class="html5QuestFeedback is-error" role="alert">${escapeHtml(state.error)}</div>` :
+            state.message ? `<div class="html5QuestFeedback is-success" role="status">${escapeHtml(state.message)}</div>` : "";
+        root.innerHTML = `<div class="html5QuestTracker">${dotsHtml}<div class="html5QuestActiveList">${feedback}${bodyHtml}</div></div>`;
         const nextList = root.querySelector(".html5QuestActiveList");
-        if (nextList && previousScrollTop > 0) {
-            nextList.scrollTop = previousScrollTop;
-        }
-
+        if (nextList) nextList.scrollTop = previousScrollTop;
         bindEvents(root);
-
-        // The Quest window has strict Flash-like content geometry. Force it after render because
-        // the generic window synchronizer may run again when the user toggles/resizes windows.
+        if (focusedKey) {
+            const dot = Array.from(root.querySelectorAll("[data-quest-select]")).find(b => b.getAttribute("data-quest-select") === focusedKey);
+            if (dot) dot.focus({ preventScroll: true });
+        }
         applyQuestWindowBounds();
     }
 
     function bindEvents(root) {
-        root.querySelectorAll("[data-quest-action][data-quest-code]").forEach(btn => {
+        root.querySelectorAll("[data-quest-select]").forEach((btn, index) => {
             btn.addEventListener("click", () => {
-                const action = btn.getAttribute("data-quest-action");
-                const code = btn.getAttribute("data-quest-code");
-                const group = btn.getAttribute("data-quest-group") || "basic";
-                performQuestAction(action, code, group);
+                state.selectedKey = btn.getAttribute("data-quest-select");
+                state.selectedIndex = index;
+                state.detailsOpen = false;
+                const list = root.querySelector(".html5QuestActiveList");
+                if (list) list.scrollTop = 0;
+                render();
+            });
+        });
+        const details = root.querySelector(".html5QuestDetails");
+        if (details) details.addEventListener("toggle", () => {
+            if (root.contains(details)) state.detailsOpen = details.open;
+        });
+        root.querySelectorAll("[data-quest-action][data-quest-code]").forEach(btn => {
+            btn.disabled = state.actionPending || state.loading;
+            btn.addEventListener("click", () => {
+                performQuestAction(btn.getAttribute("data-quest-action"), btn.getAttribute("data-quest-code"),
+                    btn.getAttribute("data-quest-group") || "basic");
             });
         });
     }
@@ -780,12 +496,12 @@
     }
 
     async function loadQuests(showLoading) {
-        if (state.loading) {
+        if (state.loading || state.actionPending) {
             state.needsRefresh = true;
             return;
         }
         state.needsRefresh = false;
-        state.loading = !!showLoading;
+        state.loading = true;
         if (showLoading) {
             state.error = "";
             render();
@@ -808,7 +524,7 @@
     }
 
     async function performQuestAction(action, code, group) {
-        if (state.actionPending || !action || !code) return;
+        if (state.actionPending || state.loading || !action || !code) return;
         state.actionPending = true;
         state.error = "";
         state.message = "";

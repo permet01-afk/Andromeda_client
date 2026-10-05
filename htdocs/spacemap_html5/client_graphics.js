@@ -2025,6 +2025,34 @@ function formatMinimapMapId(mapId) {
     }
 }
 
+// Local Flash MiniMap.drawPOIZones: only NOA has a filled minimap shape.
+// Existing POI|CRE runtime data only; no new protocol or inferred map zones.
+function drawMinimapPoiZones(context, x, y, scaleX, scaleY, zones) {
+    if (!Array.isArray(zones) || !zones.length) return;
+    context.save();
+    context.fillStyle = "#ff0000";
+    // BitmapData.draw ignores the source Sprite's own color transform (alpha 0.7).
+    // The resulting poizonesBmp is displayed at alpha 0.4 in the local Flash.
+    context.globalAlpha *= 0.4;
+    context.beginPath();
+    for (const zone of zones) {
+        if (zone.zoneType !== "NOA" || !Array.isArray(zone.points)) continue;
+        const p = zone.points;
+        if (zone.shape === "REC" && p.length >= 4 && p.slice(0, 4).every(Number.isFinite)) {
+            context.rect(x + (Math.min(p[0], p[2]) - MAP_MIN_X) * scaleX,
+                y + (Math.min(p[1], p[3]) - MAP_MIN_Y) * scaleY,
+                Math.abs(p[2] - p[0]) * scaleX, Math.abs(p[3] - p[1]) * scaleY);
+        } else if (zone.shape === "CIR" && p.length >= 3 && p.slice(0, 3).every(Number.isFinite) && p[2] > 0) {
+            const cx = x + (p[0] - MAP_MIN_X) * scaleX;
+            const cy = y + (p[1] - MAP_MIN_Y) * scaleY;
+            context.moveTo(cx + p[2] * scaleX, cy);
+            context.ellipse(cx, cy, p[2] * scaleX, p[2] * scaleY, 0, 0, Math.PI * 2);
+        }
+    }
+    context.fill();
+    context.restore();
+}
+
 function drawMiniMap() {
     const layout = typeof getMinimapLayout === "function" ? getMinimapLayout() : null;
     if (!layout) {
@@ -2081,6 +2109,7 @@ function drawMiniMap() {
     ctx.beginPath();
     ctx.rect(x, mapY, MINIMAP_WIDTH, MINIMAP_HEIGHT);
     ctx.clip();
+    drawMinimapPoiZones(ctx, x, mapY, miniScaleX, miniScaleY, typeof flashPoiZones !== "undefined" ? flashPoiZones : []);
     const portalIcon = getUiImage(UI_SPRITES.minimapPortalIcon);
     if (portalIcon && portalIcon.complete && portalIcon.width > 0) {
         for (const pid in portals) {
@@ -9153,6 +9182,7 @@ function createGenericWindow(key, cfg) {
     div.id = "win_" + key;
     div.dataset.windowKey = key;
     div.className = "gameWindow flashWindow" + (runtimeCfg.resizable ? " resizable" : "");
+    if (typeof registerFlashWindowChrome === "function") registerFlashWindowChrome(div, key);
     const resolvedOffsets = resolveWindowOffsetProfile(runtimeCfg);
     div.dataset.windowContainerSymbol = resolvedOffsets.symbol;
     const o = resolvedOffsets.profile;

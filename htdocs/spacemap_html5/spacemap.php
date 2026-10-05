@@ -754,9 +754,9 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <script src="client_network.js?v=phase5-1"></script>
 <script src="client_entities.js?v=phase6-hidpi-1"></script>
 <script src="client_combat.js?v=phase6-hidpi-1"></script>
-<script src="client_graphics.js?v=phase6-hidpi-1"></script>
-<script src="client_ui.js?v=1015"></script>
-<script src="client_quests.js?v=1008"></script>
+<script src="client_graphics.js?v=phase7-minimap-quest-1"></script>
+<script src="client_ui.js?v=phase7-minimap-quest-1"></script>
+<script src="client_quests.js?v=phase7-minimap-quest-1"></script>
 <script src="client_bootstrap.js?v=phase6-hidpi-1"></script>
 
 

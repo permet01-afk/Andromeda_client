@@ -116,7 +116,70 @@ function getCustomAudioVolumeState() {
     };
 }
 
+// Flash SimpleWindow: fade the windowContainer/minimizeIcon, never the content.
+// The existing SHOW_BACKGROUND setting controls the space background, not this preference.
+const WINDOW_BACKGROUNDS_STORAGE_KEY = "andromeda_window_backgrounds_v1:" +
+    String((window.ANDROMEDA_CONFIG || {}).userID || "guest");
+let showWindowBackgrounds = (() => {
+    try { return localStorage.getItem(WINDOW_BACKGROUNDS_STORAGE_KEY) !== "0"; }
+    catch (_) { return true; }
+})();
+
+function setWindowBackgroundPreference(value, persist = true) {
+    showWindowBackgrounds = !!value;
+    document.querySelectorAll('.flashWindow[data-flash-transparency="1"]').forEach(el => {
+        el.classList.toggle("flashChromeAutoHide", !showWindowBackgrounds);
+    });
+    if (persist) {
+        try { localStorage.setItem(WINDOW_BACKGROUNDS_STORAGE_KEY, showWindowBackgrounds ? "1" : "0"); }
+        catch (_) {} // A blocked storage must not prevent using the setting this session.
+    }
+}
+
+function registerFlashWindowChrome(el, key) {
+    const meta = typeof getFlashWindowMeta === "function" ? getFlashWindowMeta(key) : null;
+    // Missing metadata is deliberately ineligible; no hardcoded window allowlist.
+    if (!meta || meta.transparency !== true) return;
+    el.dataset.flashTransparency = "1";
+    el.classList.toggle("flashChromeAutoHide", !showWindowBackgrounds);
+    if (document.getElementById("flashWindowBackgroundStyles")) return;
+    const style = document.createElement("style");
+    style.id = "flashWindowBackgroundStyles";
+    const parts = [" > .windowPattern", " > .windowChrome",
+        " > .windowInterior > .gwHeader", " > .windowInterior::after"];
+    const base = '.gameWindow.flashWindow[data-flash-transparency="1"]';
+    const hidden = base + ".flashChromeAutoHide:not(:hover):not(:focus-within):not(.flashChromePointerWithin)";
+    style.textContent = parts.map(part => base + part).join(",") +
+        " { transition: opacity 250ms ease; }\n" +
+        hidden + " { --flash-window-background-opacity: 0; }\n" +
+        parts.map(part => hidden + part).join(",") +
+        " { opacity: 0 !important; }";
+    document.head.appendChild(style);
+    // Minimap content intentionally lets events through to the canvas. Detect its
+    // window area without creating an overlay or changing the existing hitboxes.
+    const updatePointer = e => {
+        document.querySelectorAll('.flashWindow[data-flash-transparency="1"]').forEach(win => {
+            const r = win.getBoundingClientRect();
+            const inside = r.width > 0 && r.height > 0 && e.clientX >= r.left &&
+                e.clientX < r.right && e.clientY >= r.top && e.clientY < r.bottom;
+            win.classList.toggle("flashChromePointerWithin", inside);
+        });
+    };
+    document.addEventListener("pointermove", updatePointer, { passive: true });
+    // On touch the last touched window remains recoverable until the next tap elsewhere.
+    document.addEventListener("pointerdown", updatePointer, { passive: true });
+    window.addEventListener("blur", () => {
+        document.querySelectorAll(".flashChromePointerWithin").forEach(win => win.classList.remove("flashChromePointerWithin"));
+    });
+    document.addEventListener("pointerout", e => {
+        if (!e.relatedTarget) {
+            document.querySelectorAll(".flashChromePointerWithin").forEach(win => win.classList.remove("flashChromePointerWithin"));
+        }
+    });
+}
+
 const SETTINGS_DEFAULTS = {
+    SHOW_WINDOW_BACKGROUNDS: true,
     SHOW_BACKGROUND: true,
     SHOW_CARGO_BOXES: true,
     SHOW_DRONES: true,
@@ -133,12 +196,14 @@ const SETTINGS_DEFAULTS = {
 
 let appliedSettings = {
     ...SETTINGS_DEFAULTS,
-    ...getCustomAudioVolumeState()
+    ...getCustomAudioVolumeState(),
+    SHOW_WINDOW_BACKGROUNDS: showWindowBackgrounds
 };
 
 function getCurrentSettingsSnapshot() {
     const customAudioVolumeState = getCustomAudioVolumeState();
     return {
+        SHOW_WINDOW_BACKGROUNDS: showWindowBackgrounds,
         SHOW_BACKGROUND: typeof backgroundLayersEnabled === "boolean" ? backgroundLayersEnabled : SETTINGS_DEFAULTS.SHOW_BACKGROUND,
         SHOW_CARGO_BOXES: !!(VISIBILITY_SETTINGS.freeCargo && VISIBILITY_SETTINGS.notFreeCargo),
         SHOW_DRONES: typeof setting_show_drones !== "undefined" ? !!setting_show_drones : SETTINGS_DEFAULTS.SHOW_DRONES,
@@ -205,6 +270,7 @@ function applySettingsState(newState, options = {}) {
     };
     appliedSettings.MUSIC_VOLUME = sanitizeSettingsVolumeValue(appliedSettings.MUSIC_VOLUME, SETTINGS_DEFAULTS.MUSIC_VOLUME);
     appliedSettings.SFX_VOLUME = sanitizeSettingsVolumeValue(appliedSettings.SFX_VOLUME, SETTINGS_DEFAULTS.SFX_VOLUME);
+    setWindowBackgroundPreference(appliedSettings.SHOW_WINDOW_BACKGROUNDS, !opts.skipLocalPersist);
     backgroundLayersEnabled = !!appliedSettings.SHOW_BACKGROUND;
     const freeCargoVisible = typeof opts.freeCargo === "boolean" ? opts.freeCargo : !!appliedSettings.SHOW_CARGO_BOXES;
     const notFreeCargoVisible = typeof opts.notFreeCargo === "boolean" ? opts.notFreeCargo : !!appliedSettings.SHOW_CARGO_BOXES;
@@ -407,6 +473,7 @@ function initSettingsWindow() {
         <div class="settingsBody">
             <div class="settingsTabPage active" data-tab="interface">
                 <label class="settingsRow"><input type="checkbox" data-setting-key="SHOW_BACKGROUND"><span>Show background</span></label>
+                <label class="settingsRow"><input type="checkbox" data-setting-key="SHOW_WINDOW_BACKGROUNDS"><span>Show window backgrounds</span></label>
                 <label class="settingsRow"><input type="checkbox" data-setting-key="SHOW_CARGO_BOXES"><span>Show cargo boxes</span></label>
                 <label class="settingsRow"><input type="checkbox" data-setting-key="SHOW_DRONES"><span>Show drones</span></label>
                 <label class="settingsRow"><input type="checkbox" data-setting-key="SHOW_RESOURCES"><span>Show resources</span></label>
