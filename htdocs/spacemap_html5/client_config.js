@@ -13469,9 +13469,8 @@ function flashGetQuickbarDefaultPositionFromXml() {
             }
         }
     }
-    const cvs = document.getElementById("gameCanvas");
-    const width = cvs && cvs.width ? cvs.width : (typeof LOGICAL_WIDTH === "number" ? LOGICAL_WIDTH : 1920);
-    const height = cvs && cvs.height ? cvs.height : (typeof LOGICAL_HEIGHT === "number" ? LOGICAL_HEIGHT : 1080);
+    const width = LOGICAL_WIDTH;
+    const height = LOGICAL_HEIGHT;
     return {
         x: Math.max(0, Math.round((width - (FLASH_QUICKBAR_SLOT_WIDTH * 10 + FLASH_QUICKBAR_GAP * 9)) / 2)),
         y: Math.max(0, Math.round(height - 20 - FLASH_QUICKBAR_SLOT_HEIGHT - 20))
@@ -13559,9 +13558,8 @@ function flashGetQuickbarLayoutBounds(layoutMode) {
 }
 
 function flashQuickbarAnchorIsValid(x, y) {
-    const cvs = document.getElementById("gameCanvas");
-    const width = cvs && cvs.width ? cvs.width : (typeof LOGICAL_WIDTH === "number" ? LOGICAL_WIDTH : 1920);
-    const height = cvs && cvs.height ? cvs.height : (typeof LOGICAL_HEIGHT === "number" ? LOGICAL_HEIGHT : 1080);
+    const width = LOGICAL_WIDTH;
+    const height = LOGICAL_HEIGHT;
     return x >= 0 && x + FLASH_QUICKBAR_SLOT_WIDTH <= width && y >= 0 && y + 20 <= height;
 }
 

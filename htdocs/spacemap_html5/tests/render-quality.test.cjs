@@ -87,5 +87,42 @@ run('const NAMEPLATE_TEXT_CACHE_BYTES=8*1024*1024;');run(fn(graphics,'createName
 let cacheAssignments=0;c.document.createElement=()=>{let w=0,h=0;const b={get width(){return w},set width(v){w=v;cacheAssignments++},get height(){return h},set height(v){h=v;cacheAssignments++},getContext(){return{isContextLost:()=>w>1100,setTransform(){}}}};return b};
 const fallbackBitmap=c.createNameplateBitmap(1000,50,3);ok(fallbackBitmap.width===1000&&fallbackBitmap.logicalWidth===1000&&fallbackBitmap.logicalHeight===50,'text fallback retains logical geometry');
 const assignmentsBefore=cacheAssignments;ok(c.createNameplateBitmap(1000000,1000000,3)===null&&cacheAssignments===assignmentsBefore,'oversized text refused before canvas allocation');
+// Quickbar positions and the historical anchor margins are logical, including without XML.
+run(config.match(/^const FLASH_QUICKBAR_(SLOT_WIDTH|SLOT_HEIGHT|GAP) = .*;$/gm).join('\n'));
+for(const name of ['flashGetQuickbarResolutionId','flashGetQuickbarDefaultPositionFromXml','flashQuickbarAnchorIsValid','flashEnsureQuickbarPositionInitialized','flashApplyQuickbarPositionSettingValue','flashSendQuickbarPositionToServer','finishQuickbarInteraction'])run(fn(config,name));
+const settings=[];
+Object.assign(c,{quickbarPosition:{x:700,y:900},quickbarLastValidPosition:{x:700,y:900},quickbarInitialized:true,quickbarSlotDragState:null,isDraggingQuickbar:false,sendSetting:(key,value)=>settings.push({key,value})});
+c.window.ANDROMEDA_CONFIG={resolutionID:'0'};
+const getElementById=c.document.getElementById;
+c.document.getElementById=id=>id==='gameCanvas'?canvas:getElementById(id);
+const quickbarCases=[];
+for(const [w,h,dpr]of [[1280,720,1],[1280,720,2],[1920,1080,1],[1920,1080,2],[3840,2160,1]]){
+ c.window.innerWidth=w;c.window.innerHeight=h;c.window.devicePixelRatio=dpr;c.refreshCanvasScale();
+ ok(c.flashQuickbarAnchorIsValid(1000,800),'visible logical anchor accepted at every backing');
+ ok(c.flashQuickbarAnchorIsValid(1888,1060),'historical right/bottom anchor margins inclusive');
+ ok(!c.flashQuickbarAnchorIsValid(1889,1060)&&!c.flashQuickbarAnchorIsValid(1888,1061),'one logical pixel outside anchor margins rejected');
+ ok(!c.flashQuickbarAnchorIsValid(1900,1070)&&!c.flashQuickbarAnchorIsValid(-1,0),'overflow and negative anchors rejected');
+ c.window._gameXmlDoc=null;
+ const fallback=c.flashGetQuickbarDefaultPositionFromXml();
+ ok(fallback.x===787&&fallback.y===1005,'fallback retains historical 1920x1080 placement independent of DPR');
+ c.window._gameXmlDoc={querySelector:()=>({getAttribute:key=>key==='slotMenuXPos'?'812':'943'})};
+ const xmlPosition=c.flashGetQuickbarDefaultPositionFromXml();
+ ok(xmlPosition.x===812&&xmlPosition.y===943,'explicit XML placement unchanged');
+ c.window._gameXmlDoc=null;
+ c.quickbarPosition={x:1000,y:800};c.quickbarLastValidPosition={x:700,y:900};c.isDraggingQuickbar=true;
+ const sentBefore=settings.length;c.finishQuickbarInteraction(null);c.isDraggingQuickbar=false;
+ ok(settings.length===sentBefore+1&&settings.at(-1).key==='SLOTMENU_POSITION,0'&&settings.at(-1).value==='1000,800','release saves same logical SLOTMENU_POSITION');
+ c.quickbarPosition={x:1900,y:1070};c.isDraggingQuickbar=true;c.finishQuickbarInteraction(null);c.isDraggingQuickbar=false;
+ ok(settings.length===sentBefore+1&&c.quickbarPosition.x===1000&&c.quickbarPosition.y===800,'invalid release restores last valid position without saving');
+ // Resize/DPR changes the backing, never the initialized logical position or saved preference.
+ c.window.devicePixelRatio=dpr===1?2:1;c.window.innerWidth=w===1280?1920:1280;c.window.innerHeight=w===1280?1080:720;
+ c.scheduleRenderSurfaceRefresh();queued.shift()();for(const f of timers.values())f();timers.clear();
+ c.flashEnsureQuickbarPositionInitialized();
+ ok(c.quickbarPosition.x===1000&&c.quickbarPosition.y===800&&settings.length===sentBefore+1,'resize/DPR change leaves logical quickbar and preference stable');
+ c.quickbarPosition={x:0,y:0};c.quickbarInitialized=false;c.flashApplyQuickbarPositionSettingValue(settings.at(-1).value);
+ ok(c.quickbarPosition.x===1000&&c.quickbarPosition.y===800&&c.quickbarInitialized&&c.quickbarLastValidPosition.x===1000,'saved position reloads unchanged');
+ quickbarCases.push({css:[w,h],dpr,fallback:[fallback.x,fallback.y],saved:settings.at(-1).value});
+}
 const result={pass:true,checks,maxError,allocations,clears,surfaces};
+result.quickbarCases=quickbarCases;
 if(process.argv[2])fs.writeFileSync(process.argv[2],JSON.stringify(result,null,2));console.log(JSON.stringify({pass:true,checks,maxError}));
