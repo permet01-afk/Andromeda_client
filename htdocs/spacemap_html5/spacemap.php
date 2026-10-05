@@ -748,16 +748,16 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <script>window.__ANDROMEDA_SHIELD_EFFECT_ATLAS_MANIFESTS = <?php echo json_encode(loadShieldEffectAtlasManifests(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;</script>
 <script>window.__ANDRO_AUDIO_ASSET_MANIFEST = <?php echo json_encode($audioAssetManifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;</script>
 <script src="client_audio.js?v=1016"></script>
-<script src="client_config.js?v=1042"></script>
+<script src="client_config.js?v=phase6-hidpi-1"></script>
 <link rel="stylesheet" href="ship_death.css?v=phase5-window14-2">
 <script src="ship_death.js?v=phase5-window14-2"></script>
 <script src="client_network.js?v=phase5-1"></script>
-<script src="client_entities.js?v=1018"></script>
-<script src="client_combat.js?v=phase5-1"></script>
-<script src="client_graphics.js?v=phase5-1"></script>
+<script src="client_entities.js?v=phase6-hidpi-1"></script>
+<script src="client_combat.js?v=phase6-hidpi-1"></script>
+<script src="client_graphics.js?v=phase6-hidpi-1"></script>
 <script src="client_ui.js?v=1015"></script>
 <script src="client_quests.js?v=1008"></script>
-<script src="client_bootstrap.js?v=1019"></script>
+<script src="client_bootstrap.js?v=phase6-hidpi-1"></script>
 
 
 </body>

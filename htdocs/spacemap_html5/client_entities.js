@@ -1007,13 +1007,13 @@ function getWorldViewportScale() {
 
 function mapToViewportScreenX(x) {
     const dx = x - cameraX;
-    const centerX = canvas && canvas.width ? canvas.width / 2 : LOGICAL_WIDTH / 2;
+    const centerX = LOGICAL_WIDTH / 2;
     return centerX + dx * getWorldViewportScale();
 }
 
 function mapToViewportScreenY(y) {
     const dy = y - cameraY;
-    const centerY = canvas && canvas.height ? canvas.height / 2 : LOGICAL_HEIGHT / 2;
+    const centerY = LOGICAL_HEIGHT / 2;
     return centerY + dy * getWorldViewportScale();
 }
 
@@ -1160,7 +1160,7 @@ function isCachedHoverEntityValid(screenX, screenY, viewportScale) {
     if (!hoverEntityScanCache.valid || hoverEntityScanCache.entityId == null) return false;
     if (entities[hoverEntityScanCache.entityId] !== hoverEntityScanCache.entity) return false;
     if (!hoverEntityScanCache.entity || hoverEntityScanCache.entity.x !== hoverEntityScanCache.entityX || hoverEntityScanCache.entity.y !== hoverEntityScanCache.entityY) return false;
-    return hoverEntityScanCache.screenX === screenX && hoverEntityScanCache.screenY === screenY && hoverEntityScanCache.cameraX === cameraX && hoverEntityScanCache.cameraY === cameraY && hoverEntityScanCache.canvasWidth === (canvas && canvas.width || 0) && hoverEntityScanCache.canvasHeight === (canvas && canvas.height || 0) && hoverEntityScanCache.viewportScale === viewportScale;
+    return hoverEntityScanCache.screenX === screenX && hoverEntityScanCache.screenY === screenY && hoverEntityScanCache.cameraX === cameraX && hoverEntityScanCache.cameraY === cameraY && hoverEntityScanCache.canvasWidth === (canvas && LOGICAL_WIDTH || 0) && hoverEntityScanCache.canvasHeight === (canvas && LOGICAL_HEIGHT || 0) && hoverEntityScanCache.viewportScale === viewportScale;
 }
 
 function getHoverEntityAtScreenPos(screenX, screenY) {
@@ -1174,8 +1174,8 @@ function getHoverEntityAtScreenPos(screenX, screenY) {
     hoverEntityScanCache.screenY = screenY;
     hoverEntityScanCache.cameraX = cameraX;
     hoverEntityScanCache.cameraY = cameraY;
-    hoverEntityScanCache.canvasWidth = canvas && canvas.width || 0;
-    hoverEntityScanCache.canvasHeight = canvas && canvas.height || 0;
+    hoverEntityScanCache.canvasWidth = canvas && LOGICAL_WIDTH || 0;
+    hoverEntityScanCache.canvasHeight = canvas && LOGICAL_HEIGHT || 0;
     hoverEntityScanCache.viewportScale = viewportScale;
     hoverEntityScanCache.entityId = hoverEntity && hoverEntity.id != null ? hoverEntity.id : null;
     hoverEntityScanCache.entity = hoverEntity || null;
@@ -1250,8 +1250,8 @@ function rememberFlashMoveTargetCache(screenX, screenY, viewportScale, moveRadiu
     flashMoveTargetCache.shipY = shipY;
     flashMoveTargetCache.cameraX = cameraX;
     flashMoveTargetCache.cameraY = cameraY;
-    flashMoveTargetCache.canvasWidth = canvas && canvas.width || 0;
-    flashMoveTargetCache.canvasHeight = canvas && canvas.height || 0;
+    flashMoveTargetCache.canvasWidth = canvas && LOGICAL_WIDTH || 0;
+    flashMoveTargetCache.canvasHeight = canvas && LOGICAL_HEIGHT || 0;
     flashMoveTargetCache.viewportScale = viewportScale;
     flashMoveTargetCache.moveRadiusSq = moveRadiusSq;
     flashMoveTargetCache.mapMinX = MAP_MIN_X;
@@ -1266,15 +1266,15 @@ function rememberFlashMoveTargetCache(screenX, screenY, viewportScale, moveRadiu
 }
 
 function hasCachedFlashMoveTarget(screenX, screenY, viewportScale, moveRadiusSq, poiRevision) {
-    return flashMoveTargetCache.valid && flashMoveTargetCache.screenX === screenX && flashMoveTargetCache.screenY === screenY && flashMoveTargetCache.shipX === shipX && flashMoveTargetCache.shipY === shipY && flashMoveTargetCache.cameraX === cameraX && flashMoveTargetCache.cameraY === cameraY && flashMoveTargetCache.canvasWidth === (canvas && canvas.width || 0) && flashMoveTargetCache.canvasHeight === (canvas && canvas.height || 0) && flashMoveTargetCache.viewportScale === viewportScale && flashMoveTargetCache.moveRadiusSq === moveRadiusSq && flashMoveTargetCache.mapMinX === MAP_MIN_X && flashMoveTargetCache.mapMinY === MAP_MIN_Y && flashMoveTargetCache.mapWidth === MAP_WIDTH && flashMoveTargetCache.mapHeight === MAP_HEIGHT && flashMoveTargetCache.poiRevision === poiRevision;
+    return flashMoveTargetCache.valid && flashMoveTargetCache.screenX === screenX && flashMoveTargetCache.screenY === screenY && flashMoveTargetCache.shipX === shipX && flashMoveTargetCache.shipY === shipY && flashMoveTargetCache.cameraX === cameraX && flashMoveTargetCache.cameraY === cameraY && flashMoveTargetCache.canvasWidth === (canvas && LOGICAL_WIDTH || 0) && flashMoveTargetCache.canvasHeight === (canvas && LOGICAL_HEIGHT || 0) && flashMoveTargetCache.viewportScale === viewportScale && flashMoveTargetCache.moveRadiusSq === moveRadiusSq && flashMoveTargetCache.mapMinX === MAP_MIN_X && flashMoveTargetCache.mapMinY === MAP_MIN_Y && flashMoveTargetCache.mapWidth === MAP_WIDTH && flashMoveTargetCache.mapHeight === MAP_HEIGHT && flashMoveTargetCache.poiRevision === poiRevision;
 }
 
 function getFlashMoveTargetFromScreen(screenX, screenY, out = null) {
     if (!Number.isFinite(screenX) || !Number.isFinite(screenY)) return null;
     if (!canvas) return null;
     const viewportScale = getWorldViewportScale();
-    const centerX = canvas.width ? canvas.width / 2 : LOGICAL_WIDTH / 2;
-    const centerY = canvas.height ? canvas.height / 2 : LOGICAL_HEIGHT / 2;
+    const centerX = LOGICAL_WIDTH / 2;
+    const centerY = LOGICAL_HEIGHT / 2;
     const dx = screenX - centerX;
     const dy = screenY - centerY;
     const moveRadiusSq = getHeroFlashMoveRadiusSquared();
@@ -1324,8 +1324,8 @@ function heroFollowMouseTick() {
     const screenY = lastMouseScreenY;
     if (!canvas) return;
     const margin = 10;
-    const miniMapX = canvas.width - MINIMAP_WIDTH - margin;
-    const miniMapY = canvas.height - MINIMAP_HEIGHT - margin;
+    const miniMapX = LOGICAL_WIDTH - MINIMAP_WIDTH - margin;
+    const miniMapY = LOGICAL_HEIGHT - MINIMAP_HEIGHT - margin;
     const overMiniMap = screenX >= miniMapX && screenX <= miniMapX + MINIMAP_WIDTH && screenY >= miniMapY && screenY <= miniMapY + MINIMAP_HEIGHT;
     if (overMiniMap) return;
     sendHeroMoveFromScreenLikeFlash(screenX, screenY);
@@ -1440,8 +1440,8 @@ function isConnectionModalBlocking() {
 canvas.addEventListener("mousedown", e => {
     const pointer = typeof getLogicalPointerPosition === "function" ? getLogicalPointerPosition(e) : (() => {
         const rect = canvas.getBoundingClientRect();
-        const scaleMouseX = rect.width ? canvas.width / rect.width : 1;
-        const scaleMouseY = rect.height ? canvas.height / rect.height : 1;
+        const scaleMouseX = rect.width ? LOGICAL_WIDTH / rect.width : 1;
+        const scaleMouseY = rect.height ? LOGICAL_HEIGHT / rect.height : 1;
         return {
             x: (e.clientX - rect.left) * scaleMouseX,
             y: (e.clientY - rect.top) * scaleMouseY
@@ -1633,8 +1633,8 @@ canvas.addEventListener("mousedown", e => {
 canvas.addEventListener("mousemove", e => {
     const pointer = typeof getLogicalPointerPosition === "function" ? getLogicalPointerPosition(e) : (() => {
         const rect = canvas.getBoundingClientRect();
-        const scaleMouseX = rect.width ? canvas.width / rect.width : 1;
-        const scaleMouseY = rect.height ? canvas.height / rect.height : 1;
+        const scaleMouseX = rect.width ? LOGICAL_WIDTH / rect.width : 1;
+        const scaleMouseY = rect.height ? LOGICAL_HEIGHT / rect.height : 1;
         return {
             x: (e.clientX - rect.left) * scaleMouseX,
             y: (e.clientY - rect.top) * scaleMouseY
@@ -1753,8 +1753,8 @@ window.addEventListener("mousedown", e => {
     if (e.target === canvas) return;
     const pointer = typeof getLogicalPointerPosition === "function" ? getLogicalPointerPosition(e) : (() => {
         const rect = canvas.getBoundingClientRect();
-        const scaleMouseX = rect.width ? canvas.width / rect.width : 1;
-        const scaleMouseY = rect.height ? canvas.height / rect.height : 1;
+        const scaleMouseX = rect.width ? LOGICAL_WIDTH / rect.width : 1;
+        const scaleMouseY = rect.height ? LOGICAL_HEIGHT / rect.height : 1;
         return {
             x: (e.clientX - rect.left) * scaleMouseX,
             y: (e.clientY - rect.top) * scaleMouseY
@@ -2015,8 +2015,8 @@ function mapToScreenY(y) {
 }
 
 function screenToMapInto(screenX, screenY, out, scale = getWorldViewportScale()) {
-    const centerX = canvas && canvas.width ? canvas.width / 2 : LOGICAL_WIDTH / 2;
-    const centerY = canvas && canvas.height ? canvas.height / 2 : LOGICAL_HEIGHT / 2;
+    const centerX = LOGICAL_WIDTH / 2;
+    const centerY = LOGICAL_HEIGHT / 2;
     const dx = (screenX - centerX) / scale;
     const dy = (screenY - centerY) / scale;
     out.x = cameraX + dx;

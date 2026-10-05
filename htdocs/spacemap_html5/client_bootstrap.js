@@ -145,8 +145,8 @@ function render(now) {
         const worldScale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
         const mapScale = typeof getMapViewScaleValue === "function" ? getMapViewScaleValue() : 1;
         const totalScale = worldScale * mapScale;
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
+        const centerX = LOGICAL_WIDTH / 2;
+        const centerY = LOGICAL_HEIGHT / 2;
         const canClipStations = Number.isFinite(totalScale) && totalScale > 0;
         const stationViewport = render._stationViewport || (render._stationViewport = {
             left: 0,
@@ -158,6 +158,7 @@ function render(now) {
         stationViewport.top = canClipStations ? LOGICAL_HEIGHT / 2 - centerY / totalScale : 0;
         stationViewport.right = canClipStations ? LOGICAL_WIDTH / 2 + centerX / totalScale : LOGICAL_WIDTH;
         stationViewport.bottom = canClipStations ? LOGICAL_HEIGHT / 2 + centerY / totalScale : LOGICAL_HEIGHT;
+        setLogicalScreenTransform();
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.scale(totalScale, totalScale);

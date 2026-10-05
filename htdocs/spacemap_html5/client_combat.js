@@ -4338,7 +4338,7 @@ function drawRadiationOverlay() {
         ctx.save();
         ctx.globalAlpha = radiationFlashAlpha;
         ctx.fillStyle = "rgba(255, 64, 64, 0.8)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
         ctx.restore();
         radiationFlashAlpha = Math.max(0, radiationFlashAlpha - .05);
     }
@@ -4385,10 +4385,10 @@ function drawRadiationOverlay() {
     ctx.font = "bold 18px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    const textY = canvas.height / 2 - 150;
-    ctx.fillText("RADIATION ZONE", canvas.width / 2, textY);
+    const textY = LOGICAL_HEIGHT / 2 - 150;
+    ctx.fillText("RADIATION ZONE", LOGICAL_WIDTH / 2, textY);
     ctx.font = "14px Arial";
-    ctx.fillText("Return to the safe zone", canvas.width / 2, textY + 22);
+    ctx.fillText("Return to the safe zone", LOGICAL_WIDTH / 2, textY + 22);
     ctx.restore();
 }
 
@@ -4398,7 +4398,7 @@ function drawPvpOverlay() {
         ctx.save();
         ctx.globalAlpha = .12;
         ctx.fillStyle = "blue";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
         ctx.restore();
     }
     if (inDemilitarizedZone) {
@@ -4408,7 +4408,7 @@ function drawPvpOverlay() {
         ctx.font = "bold 16px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillText("PEACE ZONE", canvas.width / 2, 14);
+        ctx.fillText("PEACE ZONE", LOGICAL_WIDTH / 2, 14);
         ctx.restore();
     }
     if (inTradeZone) {
@@ -4418,14 +4418,14 @@ function drawPvpOverlay() {
         ctx.font = "bold 16px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillText("TRADE ZONE", canvas.width / 2, 34);
+        ctx.fillText("TRADE ZONE", LOGICAL_WIDTH / 2, 34);
         ctx.restore();
     }
     if (lastNoAttackZoneTime > 0 && now - lastNoAttackZoneTime < 5e3) {
         ctx.save();
         ctx.globalAlpha = .25;
         ctx.fillStyle = "green";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
         ctx.restore();
     }
 }

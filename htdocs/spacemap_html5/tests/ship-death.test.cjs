@@ -33,6 +33,6 @@ const before=c.explosions.length;c.handlePacket_ERR(['1'],0);c.handlePacket_K(['
 c.sendRaw('M|500|600');check(sends.length===0,'all gameplay sends fenced after death');
 c.drawShip();check(true,'terminal hero renderer returns before drawing ship/drones/HP bar');
 const old=c.explosions.length;c.spawnExplosionAt(1,2,2);check(c.explosions[old].frameDuration===null&&sounds.at(-1)[0]==='pyro','unrelated NPC/effect cadence and sound path unchanged');
-const css=fs.readFileSync(path.join(root,'ship_death.css'),'utf8');check(css.includes('shipDeathFlash')&&css.includes('shipDeathShake')&&css.includes('calc(100vw - 24px)'),'scoped white flash/shake and mobile bounds');
+const css=fs.readFileSync(path.join(root,'ship_death.css'),'utf8');check(css.includes('shipDeathFlash')&&css.includes('shipDeathShake')&&css.includes('calc(100vw - 12px)')&&css.includes('w1_border_nonres.png'),'scoped white flash/shake and current Window14 mobile bounds');
 check(network.includes('ERR: handlePacket_ERR')&&network.includes('never replace it with reconnect/map reset'),'ERR mapping and terminal socket-close path');
 console.log(JSON.stringify({pass:true,checks,scope:'production packet handlers/pyro/send fence with synthetic transport and canvas'},null,2));

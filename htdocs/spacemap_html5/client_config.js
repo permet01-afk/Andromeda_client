@@ -893,8 +893,8 @@ function getMinimapLayout(isOpenOverride = null) {
         return null;
     }
 
-    const sx = canvasRect.width ? canvas.width / canvasRect.width : 1;
-    const sy = canvasRect.height ? canvas.height / canvasRect.height : 1;
+    const sx = canvasRect.width ? LOGICAL_WIDTH / canvasRect.width : 1;
+    const sy = canvasRect.height ? LOGICAL_HEIGHT / canvasRect.height : 1;
     const winRect = mapWindowEl.getBoundingClientRect();
     const headerEl = mapWindowEl.querySelector(".gwHeader");
     const headerRect = headerEl ? headerEl.getBoundingClientRect() : null;
@@ -1366,23 +1366,142 @@ function parseClientResolution(raw) {
     };
 }
 
-function refreshCanvasScale() {
-    const logicalW = clientResolution.width || DEFAULT_LOGICAL_WIDTH;
-    const logicalH = clientResolution.height || DEFAULT_LOGICAL_HEIGHT;
-    if (canvas.width !== logicalW || canvas.height !== logicalH) {
-        canvas.width = logicalW;
-        canvas.height = logicalH;
+// Gameplay and HUD stay in 1920x1080 units. Only the raster surface changes.
+const MAX_RENDER_DENSITY = 2;
+const MAX_BACKING_PIXELS = 3840 * 2160;
+const MOBILE_MAX_BACKING_PIXELS = 1920 * 1080;
+const MAX_BACKING_DIMENSION = 8192;
+let renderSurface = { cssWidth: 1920, cssHeight: 1080, width: 1920, height: 1080,
+    scaleX: 1, scaleY: 1, density: 1, deviceDpr: 1, revision: 0 };
+let renderAllocationPixelLimit = MAX_BACKING_PIXELS;
+let renderResizeFrame = null;
+let renderResizeTimer = null;
+let renderDprMediaQuery = null;
+
+function isMobileRenderProfile() {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "") ||
+        !!(navigator.maxTouchPoints > 1 && window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+}
+
+function computeRenderSurface(cssWidth, cssHeight, deviceDpr, mobile = false, pixelLimit = MAX_BACKING_PIXELS) {
+    const w = Number.isFinite(cssWidth) && cssWidth > 0 ? cssWidth : LOGICAL_WIDTH;
+    const h = Number.isFinite(cssHeight) && cssHeight > 0 ? cssHeight : LOGICAL_HEIGHT;
+    const dpr = Number.isFinite(deviceDpr) && deviceDpr > 0 ? deviceDpr : 1;
+    const budget = Math.max(1, Math.min(MAX_BACKING_PIXELS, pixelLimit, mobile ? MOBILE_MAX_BACKING_PIXELS : MAX_BACKING_PIXELS));
+    // Below CSS density 1 only when the pixel/dimension safety budget requires it.
+    const density = Math.min(Math.max(1, dpr), mobile ? 1 : MAX_RENDER_DENSITY,
+        Math.sqrt(budget / (w * h)), MAX_BACKING_DIMENSION / w, MAX_BACKING_DIMENSION / h);
+    const width = Math.max(1, Math.min(Math.round(w * density), Math.floor(budget)));
+    const height = Math.max(1, Math.min(Math.round(h * density), Math.floor(budget / width)));
+    return { cssWidth: w, cssHeight: h, width, height, deviceDpr: dpr,
+        density: Math.min(width / w, height / h), scaleX: width / LOGICAL_WIDTH,
+        scaleY: height / LOGICAL_HEIGHT, mobile, budget };
+}
+
+function setPhysicalCanvasTransform(context = ctx) {
+    context.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+function setLogicalScreenTransform(context = ctx) {
+    context.setTransform(renderSurface.scaleX, 0, 0, renderSurface.scaleY, 0, 0);
+}
+
+function getRenderShadowBlur(logicalBlur) {
+    // Canvas shadowBlur uses backing pixels, unlike lineWidth and coordinates.
+    return logicalBlur * Math.sqrt(renderSurface.scaleX * renderSurface.scaleY);
+}
+
+function clientPointToLogical(clientX, clientY, rect) {
+    return { x: (clientX - rect.left) * (rect.width ? LOGICAL_WIDTH / rect.width : 1),
+        y: (clientY - rect.top) * (rect.height ? LOGICAL_HEIGHT / rect.height : 1) };
+}
+
+function allocateRenderBacking(width, height) {
+    if (canvas.width === width && canvas.height === height) return true;
+    try {
+        canvas.width = width;
+        canvas.height = height;
+        if (canvas.width !== width || canvas.height !== height || (ctx.isContextLost && ctx.isContextLost())) return false;
+        // Force lazy allocation once per resize, never per RAF; also detects unusable surfaces.
+        setPhysicalCanvasTransform();
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(width - 1, height - 1, 1, 1);
+        const valid = ctx.getImageData(width - 1, height - 1, 1, 1).data[3] === 255;
+        ctx.clearRect(0, 0, width, height);
+        return valid;
+    } catch (_) {
+        return false;
     }
-    const targetW = window.innerWidth || logicalW;
-    const targetH = window.innerHeight || logicalH;
-    displayScaleX = targetW / logicalW || 1;
-    displayScaleY = targetH / logicalH || 1;
-    canvas.style.width = `${logicalW * displayScaleX}px`;
-    canvas.style.height = `${logicalH * displayScaleY}px`;
-    worldScale = Math.min(logicalW / LOGICAL_WIDTH, logicalH / LOGICAL_HEIGHT) || 1;
-    ensureHudRoot(logicalW, logicalH);
+}
+
+function refreshCanvasScale() {
+    const mobile = isMobileRenderProfile();
+    let surface = computeRenderSurface(window.innerWidth, window.innerHeight, window.devicePixelRatio, mobile, renderAllocationPixelLimit);
+    if (!allocateRenderBacking(surface.width, surface.height)) {
+        // Remember the reduced budget so subsequent resize events cannot retry an oversized surface.
+        let allocated = false;
+        for (const factor of [0.5, 0.25, 0.125, 0.0625, 0.015625]) {
+            renderAllocationPixelLimit = Math.max(1, Math.floor(surface.width * surface.height * factor));
+            const fallback = computeRenderSurface(surface.cssWidth, surface.cssHeight, 1, mobile, renderAllocationPixelLimit);
+            if (allocateRenderBacking(fallback.width, fallback.height)) { surface = fallback; allocated = true; break; }
+        }
+        if (!allocated) return; // A lost context is retried by contextrestored, not a busy RAF loop.
+    }
+    const changed = surface.width !== renderSurface.width || surface.height !== renderSurface.height;
+    surface.revision = renderSurface.revision + (changed ? 1 : 0);
+    renderSurface = surface;
+    updateRenderDisplaySize();
+    worldScale = 1;
+    setLogicalScreenTransform();
+    if (changed && typeof window.clearNameplateTextFieldBitmapCache === "function") window.clearNameplateTextFieldBitmapCache();
+}
+
+function updateRenderDisplaySize() {
+    const width = Number.isFinite(window.innerWidth) && window.innerWidth > 0 ? window.innerWidth : LOGICAL_WIDTH;
+    const height = Number.isFinite(window.innerHeight) && window.innerHeight > 0 ? window.innerHeight : LOGICAL_HEIGHT;
+    displayScaleX = width / LOGICAL_WIDTH;
+    displayScaleY = height / LOGICAL_HEIGHT;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    ensureHudRoot(LOGICAL_WIDTH, LOGICAL_HEIGHT);
     invalidateMinimapLayoutCache();
 }
+
+function scheduleRenderSurfaceRefresh() {
+    // Keep CSS/input in sync during a live resize; allocate only after it settles.
+    // The previous backing stretches temporarily with exactly the same logical FOV.
+    if (renderResizeTimer !== null) clearTimeout(renderResizeTimer);
+    renderResizeTimer = setTimeout(() => {
+        renderResizeTimer = null;
+        refreshCanvasScale();
+    }, 100);
+    if (renderResizeFrame !== null) return;
+    renderResizeFrame = requestAnimationFrame(() => {
+        renderResizeFrame = null;
+        updateRenderDisplaySize();
+    });
+}
+
+function watchRenderDevicePixelRatio() {
+    if (!window.matchMedia) return;
+    if (renderDprMediaQuery) {
+        if (renderDprMediaQuery.removeEventListener) renderDprMediaQuery.removeEventListener("change", onRenderDevicePixelRatioChange);
+        else renderDprMediaQuery.removeListener(onRenderDevicePixelRatioChange);
+    }
+    renderDprMediaQuery = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+    if (renderDprMediaQuery.addEventListener) renderDprMediaQuery.addEventListener("change", onRenderDevicePixelRatioChange);
+    else renderDprMediaQuery.addListener(onRenderDevicePixelRatioChange);
+}
+
+function onRenderDevicePixelRatioChange() {
+    watchRenderDevicePixelRatio();
+    scheduleRenderSurfaceRefresh();
+}
+
+window.getRenderQualityDiagnostics = () => ({ ...renderSurface, logicalWidth: LOGICAL_WIDTH,
+    logicalHeight: LOGICAL_HEIGHT, pixels: canvas.width * canvas.height,
+    backingBytes: canvas.width * canvas.height * 4, allocationPixelLimit: renderAllocationPixelLimit });
+
 
 function getWorldScaleValue() {
     return typeof worldScale === "number" && isFinite(worldScale) && worldScale > 0 ? worldScale : 1;
@@ -1411,7 +1530,14 @@ function updateMapDimensions(scale = 1) {
 
 refreshCanvasScale();
 
-window.addEventListener("resize", refreshCanvasScale);
+window.addEventListener("resize", scheduleRenderSurfaceRefresh);
+document.addEventListener("fullscreenchange", scheduleRenderSurfaceRefresh);
+canvas.addEventListener("contextlost", event => event.preventDefault());
+canvas.addEventListener("contextrestored", () => {
+    renderAllocationPixelLimit = Math.min(renderAllocationPixelLimit, LOGICAL_WIDTH * LOGICAL_HEIGHT);
+    scheduleRenderSurfaceRefresh();
+});
+watchRenderDevicePixelRatio();
 
 function getMapScaleFactor(mapId) {
     return MAP_SCALE_FACTORS[mapId] || 1;

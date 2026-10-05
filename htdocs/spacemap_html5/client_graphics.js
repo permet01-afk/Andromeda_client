@@ -1,8 +1,8 @@
 function getStarfieldAnchor(cameraXValue, cameraYValue, out = null) {
     const camX = typeof cameraXValue === "number" ? cameraXValue : 0;
     const camY = typeof cameraYValue === "number" ? cameraYValue : 0;
-    const halfW = canvas ? canvas.width / 2 : 0;
-    const halfH = canvas ? canvas.height / 2 : 0;
+    const halfW = LOGICAL_WIDTH / 2;
+    const halfH = LOGICAL_HEIGHT / 2;
     const scale = typeof getWorldScaleValue === "function" ? getWorldScaleValue() : 1;
     const anchor = out || {
         x: 0,
@@ -30,8 +30,8 @@ function resetStarfieldStars(stars, width, height, count) {
 
 function ensureStarfieldInitialized(forceReset = false) {
     if (!starfieldEnabled) return;
-    const width = canvas ? canvas.width : 0;
-    const height = canvas ? canvas.height : 0;
+    const width = LOGICAL_WIDTH;
+    const height = LOGICAL_HEIGHT;
     if (!width || !height) return;
     const needsReinit = forceReset || !starfieldState || starfieldState.width !== width || starfieldState.height !== height || !Array.isArray(starfieldState.stars) || starfieldState.stars.length !== STARFIELD_DEFAULT_COUNT;
     if (!needsReinit) return;
@@ -110,7 +110,7 @@ function updateStarfield(cameraXValue, cameraYValue) {
 function drawStarfield() {
     if (!starfieldEnabled || !starfieldState || !starfieldState.stars.length) return;
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    setLogicalScreenTransform(ctx);
     ctx.globalCompositeOperation = "lighter";
     ctx.fillStyle = `#${(starfieldColor >>> 0).toString(16).padStart(6, "0")}`;
     const stars = starfieldState.stars;
@@ -161,8 +161,8 @@ function getCurrentLogicalViewportRect(out = null) {
         viewport.bottom = LOGICAL_HEIGHT;
         return viewport;
     }
-    const halfW = canvas.width / 2 / totalScale;
-    const halfH = canvas.height / 2 / totalScale;
+    const halfW = LOGICAL_WIDTH / 2 / totalScale;
+    const halfH = LOGICAL_HEIGHT / 2 / totalScale;
     viewport.left = LOGICAL_WIDTH / 2 - halfW;
     viewport.top = LOGICAL_HEIGHT / 2 - halfH;
     viewport.right = LOGICAL_WIDTH / 2 + halfW;
@@ -216,9 +216,9 @@ function getBackgroundLayerRenderMeta(layer, bg) {
 
 function drawMapBackground() {
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    setLogicalScreenTransform(ctx);
     ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, LOGICAL_WIDTH, LOGICAL_HEIGHT);
     ctx.restore();
     updateStarfield(cameraX, cameraY);
     if (backgroundLayersEnabled && currentBackgroundLayers && currentBackgroundLayers.length) {
@@ -1059,6 +1059,46 @@ const nameplateTextFieldBitmapCache = new Map();
 const NAMEPLATE_TEXT_FIELD_BITMAP_CACHE_LIMIT = 512;
 const nameplateCompositeBitmapCache = new Map();
 const NAMEPLATE_COMPOSITE_BITMAP_CACHE_LIMIT = 512;
+const NAMEPLATE_TEXT_CACHE_BYTES = 8 * 1024 * 1024;
+const NAMEPLATE_COMPOSITE_CACHE_BYTES = 16 * 1024 * 1024;
+let nameplateTextCacheBytes = 0;
+let nameplateCompositeCacheBytes = 0;
+let nameplateCacheEvictions = 0;
+
+function getNameplateRasterDensity() {
+    const surfaceScale = typeof renderSurface === "undefined" ? 1 : Math.max(renderSurface.scaleX, renderSurface.scaleY);
+    const zoom = typeof getMapViewScaleValue === "function" ? getMapViewScaleValue() : 1;
+    // Stable quarter-step buckets avoid rebuilding text at every interpolated zoom value.
+    return Math.min(3, Math.max(1, Math.ceil(surfaceScale * Math.max(1, zoom) * 4) / 4));
+}
+
+function createNameplateBitmap(logicalWidth, logicalHeight, density) {
+    const bitmap = document.createElement("canvas");
+    for (const scale of density > 1 ? [density, 1] : [1]) {
+        try {
+            const width = Math.ceil(logicalWidth * scale);
+            const height = Math.ceil(logicalHeight * scale);
+            // Bound a single allocation before assigning its canvas dimensions.
+            if (width * height * 4 > NAMEPLATE_TEXT_CACHE_BYTES) continue;
+            bitmap.width = width;
+            bitmap.height = height;
+            const context = bitmap.getContext("2d");
+            if (!context || (context.isContextLost && context.isContextLost())) continue;
+            context.setTransform(bitmap.width / logicalWidth, 0, 0, bitmap.height / logicalHeight, 0, 0);
+            bitmap.logicalWidth = logicalWidth;
+            bitmap.logicalHeight = logicalHeight;
+            return bitmap;
+        } catch (_) {}
+    }
+    return null;
+}
+
+window.getNameplateCacheDiagnostics = () => ({ textBytes: nameplateTextCacheBytes,
+    compositeBytes: nameplateCompositeCacheBytes, textEntries: nameplateTextFieldBitmapCache.size,
+    compositeEntries: nameplateCompositeBitmapCache.size, evictions: nameplateCacheEvictions,
+    textBudget: NAMEPLATE_TEXT_CACHE_BYTES, compositeBudget: NAMEPLATE_COMPOSITE_CACHE_BYTES,
+    rasterDensity: getNameplateRasterDensity() });
+
 const droneDisplayBitmapCache = Object.create(null);
 const _nameplateTextMeasureCanvas = document.createElement("canvas");
 const _nameplateTextMeasureCtx = _nameplateTextMeasureCanvas.getContext("2d", {
@@ -1080,6 +1120,7 @@ function clearNameplateTextFieldBitmapCache() {
         disposeNameplateTextFieldBitmap(canvas);
     }
     nameplateTextFieldBitmapCache.clear();
+    nameplateTextCacheBytes = 0;
     clearNameplateCompositeBitmapCache();
 }
 
@@ -1088,13 +1129,17 @@ function clearNameplateCompositeBitmapCache() {
         disposeNameplateTextFieldBitmap(canvas);
     }
     nameplateCompositeBitmapCache.clear();
+    nameplateCompositeCacheBytes = 0;
 }
 
 function pruneNameplateCompositeBitmapCache() {
-    while (nameplateCompositeBitmapCache.size > NAMEPLATE_COMPOSITE_BITMAP_CACHE_LIMIT) {
+    while (nameplateCompositeBitmapCache.size > NAMEPLATE_COMPOSITE_BITMAP_CACHE_LIMIT || nameplateCompositeCacheBytes > NAMEPLATE_COMPOSITE_CACHE_BYTES) {
         const oldKey = nameplateCompositeBitmapCache.keys().next().value;
         if (oldKey === undefined) break;
-        disposeNameplateTextFieldBitmap(nameplateCompositeBitmapCache.get(oldKey));
+        const old = nameplateCompositeBitmapCache.get(oldKey);
+        nameplateCompositeCacheBytes -= old.width * old.height * 4;
+        nameplateCacheEvictions++;
+        // Do not zero a bitmap still referenced by the current nameplate composition.
         nameplateCompositeBitmapCache.delete(oldKey);
     }
 }
@@ -1108,10 +1153,13 @@ function touchNameplateTextFieldBitmapCacheKey(cacheKey, canvas) {
 }
 
 function pruneNameplateTextFieldBitmapCache() {
-    while (nameplateTextFieldBitmapCache.size > NAMEPLATE_TEXT_FIELD_BITMAP_CACHE_LIMIT) {
+    while (nameplateTextFieldBitmapCache.size > NAMEPLATE_TEXT_FIELD_BITMAP_CACHE_LIMIT || nameplateTextCacheBytes > NAMEPLATE_TEXT_CACHE_BYTES) {
         const oldKey = nameplateTextFieldBitmapCache.keys().next().value;
         if (oldKey === undefined) break;
-        disposeNameplateTextFieldBitmap(nameplateTextFieldBitmapCache.get(oldKey));
+        const old = nameplateTextFieldBitmapCache.get(oldKey);
+        nameplateTextCacheBytes -= old.width * old.height * 4;
+        nameplateCacheEvictions++;
+        // Do not zero a bitmap still referenced by the current nameplate composition.
         nameplateTextFieldBitmapCache.delete(oldKey);
     }
 }
@@ -1152,7 +1200,8 @@ primeFlashNameplateFonts();
 function buildNameplateTextFieldBitmap(value, color, fontSpec, fontSizePx) {
     if (!value) return null;
     const safeValue = String(value);
-    const cacheKey = `flashTFv5|${flashNameplateFontCacheRevision}|${fontSpec}|${color}|${safeValue}`;
+    const density = getNameplateRasterDensity();
+    const cacheKey = `flashTFv6|${density}|${flashNameplateFontCacheRevision}|${fontSpec}|${color}|${safeValue}`;
     const cached = nameplateTextFieldBitmapCache.get(cacheKey);
     if (cached) {
         touchNameplateTextFieldBitmapCacheKey(cacheKey);
@@ -1172,9 +1221,8 @@ function buildNameplateTextFieldBitmap(value, color, fontSpec, fontSizePx) {
     const baselineY = flashTopInset + lineAscent;
     const fieldWidth = textWidth + drawX + 2;
     const fieldHeight = flashTopInset + lineAscent + lineDescent + flashBottomInset;
-    const canvas = document.createElement("canvas");
-    canvas.width = fieldWidth;
-    canvas.height = fieldHeight;
+    const canvas = createNameplateBitmap(fieldWidth, fieldHeight, density);
+    if (!canvas) return null;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, fieldWidth, fieldHeight);
     ctx.font = fontSpec;
@@ -1198,6 +1246,7 @@ function buildNameplateTextFieldBitmap(value, color, fontSpec, fontSizePx) {
     ctx.fillStyle = color;
     ctx.fillText(safeValue, drawX, baselineY);
     nameplateTextFieldBitmapCache.set(cacheKey, canvas);
+    nameplateTextCacheBytes += canvas.width * canvas.height * 4;
     touchNameplateTextFieldBitmapCacheKey(cacheKey, canvas);
     pruneNameplateTextFieldBitmapCache();
     return canvas;
@@ -1251,14 +1300,14 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
     const clanFieldBitmap = clanText ? buildNameplateTextFieldBitmap(clanText, clanTagColor || fillStyle, fontSpec, fontSizePx) : null;
     const nameFieldBitmap = buildNameplateTextFieldBitmap(safeName, fillStyle, fontSpec, fontSizePx);
     const titleFieldBitmap = titleText ? buildNameplateTextFieldBitmap(titleText, "#ffd76a", titleFontSpec, titleFontSizePx) : null;
-    const clanFieldWidth = clanFieldBitmap ? clanFieldBitmap.width : 0;
-    const nameFieldWidth = nameFieldBitmap ? nameFieldBitmap.width : 0;
-    const titleFieldWidth = titleFieldBitmap ? titleFieldBitmap.width : 0;
-    const titleFieldHeight = titleFieldBitmap ? titleFieldBitmap.height : 0;
+    const clanFieldWidth = clanFieldBitmap ? clanFieldBitmap.logicalWidth : 0;
+    const nameFieldWidth = nameFieldBitmap ? nameFieldBitmap.logicalWidth : 0;
+    const titleFieldWidth = titleFieldBitmap ? titleFieldBitmap.logicalWidth : 0;
+    const titleFieldHeight = titleFieldBitmap ? titleFieldBitmap.logicalHeight : 0;
     let totalWidth = rankLogicalW + clanFieldWidth + nameFieldWidth + factionW + factionSpacing;
     totalWidth = Math.max(1, totalWidth);
     const visualWidth = Math.max(1, totalWidth + rankVisualOverflowLeft + rankVisualOverflowRight + rank23LeftAlignShift);
-    const bitmapHeight = Math.max(1, rankReady ? rankY + rankH : 0, factionReady ? factionY + factionH : 0, clanFieldBitmap ? clanFieldBitmap.height + textFieldY + 1 : 0, nameFieldBitmap ? nameFieldBitmap.height + textFieldY + 1 : 0);
+    const bitmapHeight = Math.max(1, rankReady ? rankY + rankH : 0, factionReady ? factionY + factionH : 0, clanFieldBitmap ? clanFieldBitmap.logicalHeight + textFieldY + 1 : 0, nameFieldBitmap ? nameFieldBitmap.logicalHeight + textFieldY + 1 : 0);
     const titleGap = titleFieldBitmap ? 1 : 0;
     const compositeHeight = bitmapHeight + titleGap + titleFieldHeight;
     const visualStartX = Math.round(centerX - totalWidth / 2) + drawOffsetX - rankVisualOverflowLeft - rank23LeftAlignShift;
@@ -1271,17 +1320,17 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
     const startY = Math.round(baseY + drawOffsetY);
     const rankSignature = rankReady ? `${rankId}:${rankImg.width}x${rankImg.height}` : "none";
     const factionSignature = factionReady ? `${factionId}:${factionImg.width}x${factionImg.height}` : "none";
-    const compositeCacheKey = "flashNPv2|" + flashNameplateFontCacheRevision + "|" + safeName + "|" + clanText + "|" + titleText + "|" + fillStyle + "|" + (clanTagColor || fillStyle) + "|" + rankSignature + "|" + factionSignature + "|" + clanFieldWidth + "|" + nameFieldWidth + "|" + titleFieldWidth + "|" + totalWidth + "|" + visualWidth + "|" + compositeWidth + "|" + compositeHeight + "|" + bitmapHeight + "|" + rankVisualOverflowLeft + "|" + rankVisualOverflowRight + "|" + rank23LeftAlignShift;
+    const density = getNameplateRasterDensity();
+    const compositeCacheKey = "flashNPv3|" + density + "|" + flashNameplateFontCacheRevision + "|" + safeName + "|" + clanText + "|" + titleText + "|" + fillStyle + "|" + (clanTagColor || fillStyle) + "|" + rankSignature + "|" + factionSignature + "|" + clanFieldWidth + "|" + nameFieldWidth + "|" + titleFieldWidth + "|" + totalWidth + "|" + visualWidth + "|" + compositeWidth + "|" + compositeHeight + "|" + bitmapHeight + "|" + rankVisualOverflowLeft + "|" + rankVisualOverflowRight + "|" + rank23LeftAlignShift;
     let compositeCanvas = nameplateCompositeBitmapCache.get(compositeCacheKey);
     if (compositeCanvas) {
         touchNameplateCompositeBitmapCacheKey(compositeCacheKey, compositeCanvas);
     }
     if (!compositeCanvas) {
-        compositeCanvas = document.createElement("canvas");
-        compositeCanvas.width = compositeWidth;
-        compositeCanvas.height = compositeHeight;
+        compositeCanvas = createNameplateBitmap(compositeWidth, compositeHeight, density);
+        if (!compositeCanvas) return null;
         const sctx = compositeCanvas.getContext("2d");
-        sctx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+        sctx.clearRect(0, 0, compositeWidth, compositeHeight);
         sctx.imageSmoothingEnabled = true;
         if (rankReady) {
             sctx.drawImage(rankImg, nameLineX + rankDrawX, rankY);
@@ -1291,16 +1340,17 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
         }
         let cursorX = nameLineX + rankVisualOverflowLeft + rankLogicalW + rank23LeftAlignShift;
         if (clanFieldBitmap) {
-            sctx.drawImage(clanFieldBitmap, cursorX, textFieldY);
+            sctx.drawImage(clanFieldBitmap, cursorX, textFieldY, clanFieldBitmap.logicalWidth, clanFieldBitmap.logicalHeight);
             cursorX += clanFieldWidth;
         }
         if (nameFieldBitmap) {
-            sctx.drawImage(nameFieldBitmap, cursorX, textFieldY);
+            sctx.drawImage(nameFieldBitmap, cursorX, textFieldY, nameFieldBitmap.logicalWidth, nameFieldBitmap.logicalHeight);
         }
         if (titleFieldBitmap) {
-            sctx.drawImage(titleFieldBitmap, titleLineX, titleLineY);
+            sctx.drawImage(titleFieldBitmap, titleLineX, titleLineY, titleFieldBitmap.logicalWidth, titleFieldBitmap.logicalHeight);
         }
         nameplateCompositeBitmapCache.set(compositeCacheKey, compositeCanvas);
+        nameplateCompositeCacheBytes += compositeCanvas.width * compositeCanvas.height * 4;
         pruneNameplateCompositeBitmapCache();
     }
     ctx.save();
@@ -1311,7 +1361,7 @@ function drawNameplateWithIcons(ctx, name, clanTag, centerX, baseY, fillStyle, c
     if (achievementReady) {
         ctx.drawImage(achievementImg, startX + nameLineX + rank23LeftAlignShift - 2, startY - 14);
     }
-    ctx.drawImage(compositeCanvas, startX, startY);
+    ctx.drawImage(compositeCanvas, startX, startY, compositeWidth, compositeHeight);
     ctx.restore();
     return {
         startX: startX,
@@ -3024,7 +3074,7 @@ function flashDrawChainImpulseBolt(fromX, fromY, toX, toY, alpha, seed, reveal =
     ctx.strokeStyle = "rgba(222,240,255,0.98)";
     ctx.lineWidth = 2.7;
     ctx.lineCap = "round";
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = getRenderShadowBlur(10);
     ctx.shadowColor = "rgba(125,210,255,0.95)";
     ctx.beginPath();
     ctx.moveTo(fromX, fromY);
@@ -4476,7 +4526,7 @@ function drawPortals() {
             }
             if (!drawn) {
                 ctx.strokeStyle = "#00ffff";
-                ctx.shadowBlur = 15;
+                ctx.shadowBlur = getRenderShadowBlur(15);
                 ctx.shadowColor = "#00ffff";
                 const radius = 24 * entityScale;
                 ctx.beginPath();
@@ -4592,7 +4642,7 @@ function drawDebugInfo() {
     }
     if (!infoMessages.length && !globalNotifications.length) return;
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    setLogicalScreenTransform(ctx);
     ctx.font = '14px "EurostileHeaFl", Arial, sans-serif';
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
@@ -4600,11 +4650,11 @@ function drawDebugInfo() {
     ctx.lineWidth = 3;
     ctx.strokeStyle = "rgba(0,0,0,0.9)";
     ctx.shadowColor = "#000000";
-    ctx.shadowBlur = 4;
+    ctx.shadowBlur = getRenderShadowBlur(4);
     ctx.fillStyle = "#ffffff";
     const fontReady = !!(document.fonts && document.fonts.check('14px "EurostileHeaFl"'));
-    const width = Math.max(1, Math.min(300, canvas.width - 16));
-    const x = canvas.width / 2;
+    const width = Math.max(1, Math.min(300, LOGICAL_WIDTH - 16));
+    const x = LOGICAL_WIDTH / 2;
     // Persistent zone labels retain their existing y=14/y=34 and 16 px font.
     // Shift only the message stack; do not tween through a zone label.
     const top = inTradeZone ? 58 : inDemilitarizedZone ? 38 : 0;
@@ -4633,7 +4683,7 @@ function drawDebugInfo() {
         const m = globalNotifications[0];
         ctx.font = '28px "EurostileHeaFl", Arial, sans-serif';
         ctx.fillStyle = "#e9e2c0";
-        wrapFlashMessage(m, Math.max(1, Math.min(500, canvas.width - 16)), fontReady);
+        wrapFlashMessage(m, Math.max(1, Math.min(500, LOGICAL_WIDTH - 16)), fontReady);
         ctx.globalAlpha = flashMessageAlpha(m, now);
         const y = Math.max(16, bottom);
         for (let line = 0; line < m.lines.length; line++) {
@@ -10956,13 +11006,7 @@ function getLogicalPointerPosition(evt) {
             y: 0
         };
     }
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = rect.width ? canvas.width / rect.width : 1;
-    const scaleY = rect.height ? canvas.height / rect.height : 1;
-    return {
-        x: (evt.clientX - rect.left) * scaleX,
-        y: (evt.clientY - rect.top) * scaleY
-    };
+    return clientPointToLogical(evt.clientX, evt.clientY, canvas.getBoundingClientRect());
 }
 
 window.getLogicalPointerPosition = getLogicalPointerPosition;
@@ -11311,7 +11355,7 @@ window.getLogicalPointerPosition = getLogicalPointerPosition;
                     ctx.textAlign = "right";
                     ctx.textBaseline = "bottom";
                     ctx.shadowColor = "#000000";
-                    ctx.shadowBlur = 1;
+                    ctx.shadowBlur = getRenderShadowBlur(1);
                     ctx.fillText(String(qty), slotX + slotWidth - 3, slotY + slotHeight - 2);
                     ctx.restore();
                 }
