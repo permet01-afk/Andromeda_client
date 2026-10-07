@@ -1859,6 +1859,8 @@ function setBackgroundLayers(mapId, layers, options = {}) {
 }
 
 function getBackgroundLayersForMap(mapId) {
+    // Owner-approved visual alias: gameplay TDM stays 83, artwork is TDM II82.
+    if (Number(mapId) === 83) return [{ typeId: 82, layer: 0, parallax: 10, shiftX: 0, shiftY: 0 }];
     const fromXml = mapBackgroundLayersById[mapId];
     if (fromXml && fromXml.length) return fromXml;
     const fallbackType = getBackgroundTypeForMap(mapId);
@@ -1897,6 +1899,7 @@ function applyMapBackground(mapId, options = {}) {
     const layers = getBackgroundLayersForMap(mapId);
     setBackgroundLayers(mapId, layers, options);
     applyMapStarfield(mapId);
+    if (typeof setMapDecor === "function") setMapDecor(mapId);
     if (!options.skipLoadXml) {
         ensureMapsXmlLoaded();
     }

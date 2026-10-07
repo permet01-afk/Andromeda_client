@@ -163,7 +163,7 @@ function render(now) {
         ctx.translate(centerX, centerY);
         ctx.scale(totalScale, totalScale);
         ctx.translate(-LOGICAL_WIDTH / 2, -LOGICAL_HEIGHT / 2);
-        drawMapBackground();
+        drawMapBackground(now);
         if (typeof stations !== "undefined" && typeof stationImages !== "undefined") {
             for (let s of stations) {
                 let img = stationImages[s.type];
@@ -195,6 +195,7 @@ function render(now) {
         drawRocketAttacks();
         drawLaserBeams();
         drawSabShots();
+        if (typeof drawMapFlares === "function") drawMapFlares(now);
         ctx.restore();
         drawRadiationOverlay();
         drawPvpOverlay();

@@ -1,0 +1,672 @@
+{
+  "decisions": "Phase 8A/8B + owner common candidates 2-1,3-1,4-2,4-3 and Unknown planet12 pivot 490.4/246.95",
+  "assets": [
+    {
+      "asset": "graphics/map-decor/planet1.png",
+      "sha256": "4f5ef3c9c107ded3fe45da5e5fce85b4883a4bf2ad44c6dd5bc0631287187b59",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet1.swf",
+      "sourceSha256": "25bdd59bb65d91bf96e552758624c75ab3697c5011aa232a0ed483b02e993e85",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        266.55,
+        266.55
+      ],
+      "nativeSize": [
+        534,
+        534
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet2.png",
+      "sha256": "ac5ca01648f98e9f4e3fcaa79cb7f111b48997c32371d28ad405f81990b5f860",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet2.swf",
+      "sourceSha256": "10fc21d6e89b585d4c018b50612905ab91fd876dfce6d7a1a06907b4ab1f2dfb",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        89.0,
+        88.55
+      ],
+      "nativeSize": [
+        179,
+        178
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet3.png",
+      "sha256": "a41610abefb4a91f0fe5d4c8a419c050eefd7be1f6f220ef40031a5167cbc483",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet3.swf",
+      "sourceSha256": "9c0572e9613ff71a0850709d95c1916a03ae535795f1681d431a9fc6f3b15efc",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        114.5,
+        114.5
+      ],
+      "nativeSize": [
+        229,
+        229
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet4.png",
+      "sha256": "1440ead9b61924ea71a9d11e0a6c1016e68b9ef94a1aa99e7f29780e9ae5c1e3",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet4.swf",
+      "sourceSha256": "e9856baba81232cbfdf478c00d3c9570ac9aa7b2871ace3ffd25225025bae9ff",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        286.0,
+        286.0
+      ],
+      "nativeSize": [
+        572,
+        572
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet13.png",
+      "sha256": "1c7d3d00a596355252cf32246a8c1676aab1929ac04fc3885788153a29a92589",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet13.swf",
+      "sourceSha256": "0b08bd28f92f95400a1b69e702700f470380d3603c69827a31e4e2b530288402",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        424.4,
+        424.45
+      ],
+      "nativeSize": [
+        849,
+        849
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet15.png",
+      "sha256": "d29fa5780a1993b87a0fb584a869c293b22d40f52c6862498086254697306e90",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet15.swf",
+      "sourceSha256": "c4d750a0ed8c4b7a59364eeadc5721ab80447c03418a0638ebcf0c13709e8875",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        95.5,
+        95.0
+      ],
+      "nativeSize": [
+        192,
+        191
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet14.png",
+      "sha256": "a98c54cea4a44d540f7bb7fb492761cd2d111c6815bcf3cbb545f700784a11f3",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet14.swf",
+      "sourceSha256": "b643756589adae292d3d7bb4af2f3abc3b79af5637c7dd0b99de73236237277e",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        367.55,
+        363.05
+      ],
+      "nativeSize": [
+        736,
+        727
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet16.png",
+      "sha256": "4a953588d29b5652cbf8c0dd85814386942524cfdd6c2f646283d491df099ddb",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet16.swf",
+      "sourceSha256": "f7cfad1991b997a51ba06695eae94b1bd98fcea3507c275469bc6edf12c467c3",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        86.5,
+        82.0
+      ],
+      "nativeSize": [
+        173,
+        164
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet17.png",
+      "sha256": "0a8fee2e7d41e058730e64a6adc0b296606164991d22eaaacd2e8713accd34d0",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet17.swf",
+      "sourceSha256": "7b6cc4299d36229167b8acf01a6673147b2578b481be7e9a91c915d4eb86ddfe",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        178.0,
+        178.0
+      ],
+      "nativeSize": [
+        356,
+        356
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet18.png",
+      "sha256": "60d1032c1e6ab28724052175fb3d9d7bb985331177830329cf99e7d0176e13c0",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet18.swf",
+      "sourceSha256": "57aab8e7d7279d68999d0fcc9aa3471e7524f38e00bd472ae06d0a390174b332",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        92.5,
+        92.5
+      ],
+      "nativeSize": [
+        185,
+        185
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet19.png",
+      "sha256": "a8c50048a795d2e970d2b9162235f60a6ba27c8f61c51c4550be57d07ab81351",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet19.swf",
+      "sourceSha256": "92d37f223493b17f3e9ed2691d2a682483ea64752445845df28a010620e66c59",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        166.0,
+        165.5
+      ],
+      "nativeSize": [
+        332,
+        331
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet20.png",
+      "sha256": "5a37875f37bfd8c7a862fbdbcddc5f34bca59c50f0d808fe27372c806c2ba97e",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet20.swf",
+      "sourceSha256": "91548cc63f879ab43612862494006fff7e41475d30fda6070197b9297f2f3f5d",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        550.0,
+        493.5
+      ],
+      "nativeSize": [
+        1100,
+        987
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet21.png",
+      "sha256": "2e6e7943db5c8916ce9aa2981979a4f00fd0b2a137242901c037bf1dba3876ff",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet21.swf",
+      "sourceSha256": "5f1674169fa6cb5c6254f8aed0139c7ba33b242ddf7de477035ee4220420ac60",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        66.0,
+        66.0
+      ],
+      "nativeSize": [
+        132,
+        132
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet22.png",
+      "sha256": "ba4a4682c10490513128db1292727756aa76110e260f37b7b5ade67708542cbc",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet22.swf",
+      "sourceSha256": "ab40943b32b7dc7a96aa415f9c44734db638ee20060fbf6272326381014f49dd",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        25.0,
+        25.0
+      ],
+      "nativeSize": [
+        50,
+        50
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet23.png",
+      "sha256": "ab42492ac76f9db0081756444f620f7973bb214868e641848fc491f25d6f8b7b",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet23.swf",
+      "sourceSha256": "533e84368297026fd9cbb9322d2afe4d3583bc5846198171c66c9bf21ea6b0a7",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        296.05,
+        296.05
+      ],
+      "nativeSize": [
+        593,
+        593
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet24.png",
+      "sha256": "268c3dab09605333fb3f9db2b9fd8ed523c254197c277c0251abce7b09e27d20",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet24.swf",
+      "sourceSha256": "49a928f894fa1eade22bc17bae4d210ff2e35696bff2e9a78761552dffef8a3d",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        165.0,
+        165.0
+      ],
+      "nativeSize": [
+        330,
+        330
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet11.png",
+      "sha256": "4e5ffa6194a62fa8d20a0e706268387e03c9d9b18857878c14a112357ec57c5a",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet11.swf",
+      "sourceSha256": "93bc0202eca9ce95f68db543d988515a5fbbe1892fed2f4f15264555f0479c23",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        251.0,
+        251.0
+      ],
+      "nativeSize": [
+        502,
+        502
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet10.png",
+      "sha256": "1b034a9cf38bd4829ecfea27908cee6f78dbbd4314fcd48b4acced3312b0f3b6",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet10.swf",
+      "sourceSha256": "42274633b9b08d0c5077b648de089eeddd6cbf1f82bf6172d2f3764e52a4495e",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        62.5,
+        62.5
+      ],
+      "nativeSize": [
+        125,
+        125
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet12.png",
+      "sha256": "69b469b12bd58a5e649f166a744a240f901c31da456d4a038756457f753a8733",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet12.swf",
+      "sourceSha256": "f85d0517db30335607df770907f9e76ff756ffc93da83a6e3da732d2dfb038fa",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        490.4,
+        246.95
+      ],
+      "nativeSize": [
+        1035,
+        608
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet26.png",
+      "sha256": "de7cd697e99d27e43be8e897ce1492777610d316c7b6eb07d5dcd64bb6b68492",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet26.swf",
+      "sourceSha256": "d7c455fddfc3e5c4a51d873ad4414f036004b1ec4aa08cfa94c187032a9b685e",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        229.95,
+        100.45
+      ],
+      "nativeSize": [
+        460,
+        201
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet25.png",
+      "sha256": "3e04266065d221459f4d3e005ae255cea34b7c1eedfa5d3cee3ce5a1f4a4980e",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet25.swf",
+      "sourceSha256": "869efce3f8f769dc805265d00ec6149e8cc15a88ad639d6aa347fe5dd9c7fc48",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        255.5,
+        255.5
+      ],
+      "nativeSize": [
+        511,
+        511
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet27.png",
+      "sha256": "491aa138ee8f797351a9482334bc683476d76ab9c9324d9c35930b58175385ff",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet27.swf",
+      "sourceSha256": "c38807e62b0ab8a1911f9c8d61bc2a084dcc6fa529a3592bb98dd6dc58a7dd6a",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        66.5,
+        66.5
+      ],
+      "nativeSize": [
+        133,
+        133
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet29.png",
+      "sha256": "6f59e5e0e997bb18c0b61edf004a7e3d7a943c8faf6b8c1df8ddaa461e65e54f",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet29.swf",
+      "sourceSha256": "817afa7337d29e27b94a97093808bc9a5cdf985a62c17952ebdf23f800603dfe",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        63.5,
+        64.0
+      ],
+      "nativeSize": [
+        127,
+        128
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet28.png",
+      "sha256": "bba89bce3c79d462e4772f81f33bf0069150614be885637ba12bdab0a747788d",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet28.swf",
+      "sourceSha256": "4fe7829dae8ec18e54994acc09f83877733d1ae4a624872d35ada69f66768d42",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        159.5,
+        159.5
+      ],
+      "nativeSize": [
+        319,
+        319
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/pirateOneway.png",
+      "sha256": "bc68cc6bc44a51faacd7f799cc5b407c38eb57694c19ab86fc1b538c2e61cd04",
+      "family": "local",
+      "source": "htdocs/spacemap/graphics/planets/pirateOneway.swf",
+      "sourceSha256": "f2ae59947a2762922a1ced92416d534b6010ee988340d2800701bae2cbabecf1",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        75.0,
+        107.5
+      ],
+      "nativeSize": [
+        150,
+        215
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet5.png",
+      "sha256": "977318c031d7c5719fc2c391d2afba50587100508e51efde725d09065dfb4c24",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet5.swf",
+      "sourceSha256": "f1e81a04ab36cfa6f5c42b1da3ab20c419f1cc559544f8e8975306fe64b1db4d",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        286.0,
+        286.0
+      ],
+      "nativeSize": [
+        572,
+        572
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet6.png",
+      "sha256": "210331a04a7b2daee0d59f42a8975f31b06d0c023a37804ba6cc4ba3549fe86d",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet6.swf",
+      "sourceSha256": "daae0901320bf6a711bc7e06cb3a94771d16a0f3b9a93bdb476dfb7c84913a2a",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        175.0,
+        175.0
+      ],
+      "nativeSize": [
+        350,
+        350
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet7.png",
+      "sha256": "bd4fd22642306c2bff32a87276bf8b509f54d1db7cf3f00130db01f2de3549ff",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet7.swf",
+      "sourceSha256": "c181c9f75ef0459d35107f012a05bf472ef40706f6e13fb1969de6a5347dbf0c",
+      "symbolId": 5,
+      "frame": 1,
+      "pivot": [
+        1124.55,
+        1096.9
+      ],
+      "nativeSize": [
+        2250,
+        2194
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet8.png",
+      "sha256": "5286324d6836d04ea5713f3bd39d51060f63ca617ad43aa26ae469d2f4da3f55",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet8.swf",
+      "sourceSha256": "18364a15d45cddb91b16f01596464366a7673876ab490f0902d1098cd6d80937",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        113.0,
+        113.0
+      ],
+      "nativeSize": [
+        226,
+        226
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/planet9.png",
+      "sha256": "ac27e34ff229ead53782e3e5eea35b2f7511fbc066a313cd1ff4280010e6692c",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/planets/planet9.swf",
+      "sourceSha256": "0772670ac76811c77f85032e12c4171dbe6989b592492803dc093cbc402aeec8",
+      "symbolId": 3,
+      "frame": 1,
+      "pivot": [
+        51.5,
+        55.5
+      ],
+      "nativeSize": [
+        103,
+        111
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/lens0.png",
+      "sha256": "a48cf5e1e779c1c419532a79ae925646ebd01d3edb124b0612004e73bb77f540",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/lensflares/lensflare0.swf",
+      "sourceSha256": "8be96dc0fe460fa0fd343c7368c03f1e8b9aa37154ec706ebd84773a45f0083f",
+      "symbolId": 34,
+      "frame": 1,
+      "pivot": [
+        85.0,
+        89.0
+      ],
+      "nativeSize": [
+        171,
+        178
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/lens1.png",
+      "sha256": "933589e3efd08115a6c6333219e350acc8953aab105b3e93de68c3dde36ee5ca",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/lensflares/lensflare0.swf",
+      "sourceSha256": "8be96dc0fe460fa0fd343c7368c03f1e8b9aa37154ec706ebd84773a45f0083f",
+      "symbolId": 37,
+      "frame": 1,
+      "pivot": [
+        38.0,
+        38.0
+      ],
+      "nativeSize": [
+        76,
+        76
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/lens2.png",
+      "sha256": "65f19b03a46b459cb3a18deff5391b70e5bcb84196b04cfc5764c38c0bf6c781",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/lensflares/lensflare0.swf",
+      "sourceSha256": "8be96dc0fe460fa0fd343c7368c03f1e8b9aa37154ec706ebd84773a45f0083f",
+      "symbolId": 40,
+      "frame": 1,
+      "pivot": [
+        17.0,
+        16.0
+      ],
+      "nativeSize": [
+        34,
+        35
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/lens3.png",
+      "sha256": "792191b582a60b582b7eab1dd0b4b085201b021b33886feeab43536d0d5c7c93",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/lensflares/lensflare0.swf",
+      "sourceSha256": "8be96dc0fe460fa0fd343c7368c03f1e8b9aa37154ec706ebd84773a45f0083f",
+      "symbolId": 43,
+      "frame": 1,
+      "pivot": [
+        25.0,
+        24.0
+      ],
+      "nativeSize": [
+        50,
+        48
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/lens4.png",
+      "sha256": "c11bff446e60e5f27aac068309232e613e5aa090c2c3706ac3276cae931bd709",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/lensflares/lensflare0.swf",
+      "sourceSha256": "8be96dc0fe460fa0fd343c7368c03f1e8b9aa37154ec706ebd84773a45f0083f",
+      "symbolId": 46,
+      "frame": 1,
+      "pivot": [
+        68.0,
+        68.0
+      ],
+      "nativeSize": [
+        137,
+        136
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/lens5.png",
+      "sha256": "70fc26eb2fd7f1b3156c761fec80dcf35eea4186263b1204073cf4a55f8eb66b",
+      "family": "unknown",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/lensflares/lensflare0.swf",
+      "sourceSha256": "8be96dc0fe460fa0fd343c7368c03f1e8b9aa37154ec706ebd84773a45f0083f",
+      "symbolId": 49,
+      "frame": 1,
+      "pivot": [
+        126.0,
+        126.0
+      ],
+      "nativeSize": [
+        252,
+        251
+      ]
+    },
+    {
+      "asset": "graphics/map-decor/star.png",
+      "sha256": "2e6ae1e97803186cc3d2d3ac85890b4c44f5226be4e3b7a5a1de6488b8b2258a",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/lensflares/lensflare0.swf",
+      "sourceSha256": "8be96dc0fe460fa0fd343c7368c03f1e8b9aa37154ec706ebd84773a45f0083f",
+      "symbolId": 31,
+      "frames": 15,
+      "method": "Native 400x400 frames packed 4x4 without resampling",
+      "frameHashes": [
+        "00005920a8a12afa2da768fdef05adea215ac9df6485bcf1048efabc5d850acb",
+        "aac612f8e40b90f13a7848c75e022c347276713a26c346c89fc0539609f6fa9a",
+        "fa2a3dd930eeac8b40b9b653c4c04eab57554f57b484d16ca7ecde07c6315952",
+        "d1b9196a02ba5af5161e868d1871d6a2ae45ec49c3f09604519642728c3f02c4",
+        "8f3085486dd904e74fbba833e638e2656bf7ee87e37f321f09569187da63d5e4",
+        "ae69ccc05ff39e359d32d5890bac03fa046a25c767c87822d64b50fff555ea4d",
+        "cd5b16b3048e29add775d74c79a430e9886b80441a28ab480419441d34cb42c6",
+        "15a097866cb0e1cdd73b442ee4c1fa6616b787545961e4b6cc60e3b352ccfafb",
+        "a7db1954ba47b34ceff5eae636644a8603401d11d056d36baa249f3f07cc368a",
+        "85c56b73482ab88a69c41bf2db117bf0295137c5871682171efd03009554d292",
+        "1da4063fe2b5e738891404a17fff9adcab2aff82420d7fcb9dc8f8b56f98fbc6",
+        "7a00574b085c3185d631769e201e071d521f54a5c062b12b0435a2c2575317bf",
+        "8bea790024bdda8160f2d0ffb1dfd3dda7f9c8a14e044b309faf94d1d315c908",
+        "398231ad3f9b7caedd0445fa12683f9143d2cc30caf1432f5f1ce07e3fec2df1",
+        "35b6a71b7f017c81e9ba6c4a76d352eae36ff67a811245d1eeedb225e96dc31a"
+      ],
+      "fpsEvidence": "Unknown InitBaseClassesCommand.as:48 sets stage.frameRate=60; loaded MovieClip.play uses stage cadence, not SWF header 12 fps."
+    },
+    {
+      "asset": "graphics/map-decor/lensFlash.png",
+      "sha256": "543f0cbf18f1c7ed4a1ec873885c1ab3ff6783d31d563a000c94e69c361c2d11",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/lensflares/lensFlash.swf",
+      "sourceSha256": "d8b1a4f197f2a609dc447c2a38c798ebf21a9785bed3560075112d03aefd5045",
+      "symbol": "lensFlash",
+      "nativeSize": [
+        729,
+        729
+      ],
+      "pivot": [
+        364.5,
+        364.5
+      ]
+    },
+    {
+      "asset": "graphics/backgrounds/background82/1_background.png",
+      "sha256": "a154de1556b0c3f4a269eaaf727aa8e67fe3c9f6df3fb55fee14b40cceb79a9f",
+      "source": "unknown-universe-web-master/wwwroot/spacemap/graphics/backgrounds/background82.swf",
+      "sourceSha256": "d0fe17dcb12973e2f793f758eee150c29739ea63139752fdaddb3a519d3595ac",
+      "symbol": "background",
+      "nativeSize": [
+        2100,
+        1310
+      ],
+      "gameplayMapId": 83,
+      "visualType": 82
+    }
+  ]
+}

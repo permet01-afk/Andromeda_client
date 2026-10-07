@@ -214,7 +214,7 @@ function getBackgroundLayerRenderMeta(layer, bg) {
     return meta;
 }
 
-function drawMapBackground() {
+function drawMapBackground(now = performance.now()) {
     ctx.save();
     setLogicalScreenTransform(ctx);
     ctx.fillStyle = "black";
@@ -244,6 +244,7 @@ function drawMapBackground() {
             ctx.imageSmoothingEnabled = previousSmoothing;
         }
     }
+    if (typeof drawMapPlanets === "function") drawMapPlanets(now);
     drawStarfield();
 }
 
