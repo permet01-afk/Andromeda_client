@@ -225,10 +225,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             return false;
         }
 
-        public static void SendNpcDamageUpdate(MapInstance instance, Session attacker, Npc npc, int appliedDamage)
+        public static void SendNpcDamageUpdate(MapInstance instance, Session attacker, Npc npc, int appliedDamage, string damageType = "L")
         {
             if (npc == null) return;
-            ServerMessage damageMessage = PacketComposer.Compose("Y", "0|" + npc.Id + "|L|" + npc.ShipHp + "|" + npc.ShipShield + "|" + appliedDamage);
+            ServerMessage damageMessage = PacketComposer.Compose("Y", "0|" + npc.Id + "|" + damageType + "|" + npc.ShipHp + "|" + npc.ShipShield + "|" + appliedDamage);
 
             if (GalaxyGateWaveService.IsGateMap(npc.MapId))
             {
@@ -3109,7 +3109,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                     else
                     {
-                        ApplyDamageToNpc(session, npc, damage, instanceByMapId);
+                        ApplyDamageToNpc(session, npc, damage, instanceByMapId, "R");
                     }
 
                     return;
@@ -3156,7 +3156,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
 
                 if (context == null || context.TargetLife == null || !DroneWearService.IsCurrentLife(targetSession, context.TargetLife)) return;
-                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId, context.TargetLife);
+                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId, context.TargetLife, "R");
             }
             catch (Exception ex)
             {
@@ -4759,7 +4759,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        private static void ApplyDamageToNpc(Session session, Npc npc, int damage, MapInstance instance)
+        private static void ApplyDamageToNpc(Session session, Npc npc, int damage, MapInstance instance, string damageType = "L")
         {
             if (session == null || session.CharacterInfo == null || npc == null || instance == null)
                 return;
@@ -4790,7 +4790,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             int applied = shieldPart + hpPart;
 
-            SendNpcDamageUpdate(instance, session, npc, applied);
+            SendNpcDamageUpdate(instance, session, npc, applied, damageType);
 
             npc.UpdateAttackers(session.CharacterId, applied);
 
@@ -4823,7 +4823,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 npc.LockTarget(session.CharacterId);
         }
 
-        private static void ApplyDamageToPlayer(Session attacker, Session target, int damage, MapInstance instance, GameplayDeathContext launchedLife = null)
+        private static void ApplyDamageToPlayer(Session attacker, Session target, int damage, MapInstance instance, GameplayDeathContext launchedLife = null, string damageType = "L")
         {
             if (attacker == null || attacker.CharacterInfo == null || target == null || target.CharacterInfo == null || instance == null)
                 return;
@@ -4873,7 +4873,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     {
                         s.SendData(PacketComposer.Compose(
                             "Y",
-                            "0|" + target.CharacterId + "|L|" + target.CharacterInfo.ShipHp + "|" + target.CharacterInfo.ShipShield + "|" + damage
+                            "0|" + target.CharacterId + "|" + damageType + "|" + target.CharacterInfo.ShipHp + "|" + target.CharacterInfo.ShipShield + "|" + damage
                         ));
                     }
                 }

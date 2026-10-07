@@ -1774,10 +1774,9 @@ function handleLaserImpact(beam) {
     const targetSnap = snapshotEntityById(beam.targetId);
     const isPlayerOrNpc = targetSnap && (targetSnap.kind === "player" || targetSnap.kind === "npc");
     if (!isPlayerOrNpc) return;
-    if (!beam.showShieldDamage) {
-        spawnHullDamageEffect(targetSnap.id);
-        return;
-    }
+    // A projectile is not evidence of damage (MISS and secondary visual pulses).
+    // Ship damage is created only by a server result / HP update.
+    if (!beam.showShieldDamage) return;
     const radius = computeShieldImpactRadius(targetSnap);
     const angle = normalizeShieldImpactVisualAngle(beam.rotation ?? beam.angle);
     if (angle == null) return;
@@ -1866,10 +1865,12 @@ function getRocketWorldPositions(beam, now = performance.now()) {
         ax = entities[beam.attackerId].x;
         ay = entities[beam.attackerId].y;
     }
-    const targetBase = resolveRocketTargetPosition(beam);
+    const targetBase = beam.hit === false
+        ? { x: beam.targetStartX, y: beam.targetStartY }
+        : resolveRocketTargetPosition(beam);
     if (ax == null || ay == null || !targetBase) return null;
     const duration = getRocketLifetimeMs(beam);
-    const elapsed = Math.max(0, now - (Number(beam.createdAt) || now));
+    const elapsed = Math.max(0, now - (Number.isFinite(beam.createdAt) ? beam.createdAt : now));
     const linearProgress = Math.max(0, Math.min(1, elapsed / duration));
     let tx = targetBase.x;
     let ty = targetBase.y;
@@ -1877,9 +1878,9 @@ function getRocketWorldPositions(beam, now = performance.now()) {
         const gapScale = 1 - linearProgress;
         tx += (Number(beam.initialTargetGapX) || 0) * gapScale;
         ty += (Number(beam.initialTargetGapY) || 0) * gapScale;
-    } else if (beam.auto) {
+    } else if (beam.auto && beam.hit !== false) {
         ensureRocketPrecisionGuidance(beam);
-        const gapScale = 1 - linearProgress;
+        const gapScale = 1 - easeOutQuad(linearProgress);
         tx += (Number(beam.initialTargetGapX) || 0) * gapScale;
         ty += (Number(beam.initialTargetGapY) || 0) * gapScale;
     }
@@ -1902,6 +1903,25 @@ function getRocketWorldPositions(beam, now = performance.now()) {
     return positions;
 }
 
+function finishRocketVisual(beam, now) {
+    if (!beam || beam.impactHandled) return;
+    beam.impactHandled = true;
+    const positions = getRocketWorldPositions(beam, now);
+    if (!positions) return;
+    if (beam.airstrike) {
+        // Flash airstrike has its own world-space pyro, independent of normal rockets.
+        spawnRocketDamageEffect(positions.targetBaseX + (Number(beam.impactOffsetX) || 0),
+            positions.targetBaseY + (Number(beam.impactOffsetY) || 0), 1, { fps: 37 });
+    } else if (beam.hit === false) {
+        spawnRocketDamageEffect(positions.tx, positions.ty, 1, { laser: true, fps: 37 });
+        const live = typeof resolveLiveEntitySnapshotForVisual === "function"
+            ? resolveLiveEntitySnapshotForVisual(beam.targetId, beam.targetVisualLifeId) : snapshotEntityById(beam.targetId);
+        if (live && typeof pushMissBubble === "function") pushMissBubble(beam.targetId, 0);
+    }
+    // v|...|H is only a launch here: the local server decides HIT/MISS later.
+    // A normal rocket impact must wait for ATTACK_INFO, never infer a HIT at arrival.
+}
+
 function updateRocketAttacks(now) {
     updateRocketLauncherMissDisplays(now);
     let keepCount = 0;
@@ -1909,15 +1929,7 @@ function updateRocketAttacks(now) {
         const beam = rocketAttacks[i];
         const duration = getRocketLifetimeMs(beam);
         if (now - beam.createdAt > duration) {
-            if (!beam.impactHandled) {
-                const positions = getRocketWorldPositions(beam, now);
-                if (positions) {
-                    const impactX = beam.airstrike ? positions.targetBaseX + (Number(beam.impactOffsetX) || 0) : positions.tx;
-                    const impactY = beam.airstrike ? positions.targetBaseY + (Number(beam.impactOffsetY) || 0) : positions.ty;
-                    spawnRocketDamageEffect(impactX, impactY, resolveRocketDamageType(beam.rocketId));
-                }
-                beam.impactHandled = true;
-            }
+            finishRocketVisual(beam, now);
             continue;
         }
         rocketAttacks[keepCount++] = beam;
@@ -2207,8 +2219,8 @@ const ROCKET_LAUNCHER_TRACKING_GAP = 800;
 const ROCKET_LAUNCHER_IMPACT_SPREAD = 40;
 const ROCKET_PRECISION_TRACKING_GAP = 800;
 const ROCKET_PRECISION_PULSE_FRAME_COUNT = 11;
-const ROCKET_PRECISION_PULSE_FPS = 24;
-const ROCKET_PRECISION_PULSE_SCALE = 2;
+const ROCKET_PRECISION_PULSE_FPS = 15;
+const ROCKET_PRECISION_PULSE_SCALE = 1;
 const ROCKET_PRECISION_PULSE_LOCAL_X = -30;
 const rocketPrecisionPulseFrameCache = [];
 const rocketPrecisionPulseTintCache = [];
@@ -2247,16 +2259,27 @@ function getRocketPrecisionPulseSprite(frameIndex) {
     if (!pulseCtx) return img;
     pulseCtx.drawImage(img, 0, 0);
     pulseCtx.globalCompositeOperation = "source-in";
-    pulseCtx.fillStyle = "rgb(255, 35, 35)";
+    pulseCtx.fillStyle = "rgb(255, 0, 0)";
     pulseCtx.fillRect(0, 0, canvas.width, canvas.height);
     rocketPrecisionPulseTintCache[idx] = canvas;
     return canvas;
 }
 
-function drawRocketPrecisionPulse(projX, projY, angle, now) {
-    const frame = Math.floor((now || performance.now()) / (1e3 / ROCKET_PRECISION_PULSE_FPS));
+function drawRocketPrecisionPulse(beam, projX, projY, angle, now) {
+    const elapsed = Math.max(0, now - beam.createdAt);
+    const cycleMs = ROCKET_PRECISION_PULSE_FRAME_COUNT / ROCKET_PRECISION_PULSE_FPS * 1e3;
+    const cycle = Math.floor(elapsed / cycleMs);
+    // TweenLite animates frame 1 -> framesLoaded linearly over framesLoaded / 15.
+    const frame = Math.round((elapsed % cycleMs) / cycleMs * (ROCKET_PRECISION_PULSE_FRAME_COUNT - 1));
     const img = getRocketPrecisionPulseSprite(frame);
     if (!img || img.width <= 0 || img.height <= 0) return;
+    if (beam.precisionSoundCycle !== cycle) {
+        beam.precisionSoundCycle = cycle;
+        // One sound per visible cycle, no backlog after an inactive tab.
+        if (window.AudioManager && typeof window.AudioManager.playSoundEffect === "function") {
+            window.AudioManager.playSoundEffect(38, false, false, projX, projY, false);
+        }
+    }
     const scale = ROCKET_PRECISION_PULSE_SCALE;
     const drawW = img.width * scale;
     const drawH = img.height * scale;
@@ -2265,7 +2288,7 @@ function drawRocketPrecisionPulse(projX, projY, angle, now) {
     ctx.save();
     ctx.translate(mapToScreenX(projX), mapToScreenY(projY));
     ctx.rotate(angle);
-    ctx.globalAlpha = .85;
+    ctx.globalAlpha = 1;
     ctx.drawImage(img, drawX, drawY, drawW, drawH);
     ctx.restore();
 }
@@ -2443,12 +2466,10 @@ function drawRocketAttacks() {
         const {ax: ax, ay: ay, tx: tx, ty: ty, targetBaseX: targetBaseX, targetBaseY: targetBaseY, duration: duration} = positions;
         const elapsed = now - beam.createdAt;
         const linearProgress = Math.min(1, elapsed / duration);
-        const progress = beam.airstrike ? linearProgress : easeOutQuad(linearProgress);
-        if (linearProgress >= 1 && !beam.impactHandled) {
-            const impactX = beam.airstrike ? targetBaseX + (Number(beam.impactOffsetX) || 0) : tx;
-            const impactY = beam.airstrike ? targetBaseY + (Number(beam.impactOffsetY) || 0) : ty;
-            spawnRocketDamageEffect(impactX, impactY, resolveRocketDamageType(beam.rocketId));
-            beam.impactHandled = true;
+        const progress = beam.airstrike || beam.hit === false ? linearProgress : easeOutQuad(linearProgress);
+        if (linearProgress >= 1) {
+            finishRocketVisual(beam, now);
+            continue;
         }
         const projX = ax + (tx - ax) * progress;
         const projY = ay + (ty - ay) * progress;
@@ -2461,7 +2482,7 @@ function drawRocketAttacks() {
         emitRocketSmoke(beam, projX, projY, travelAngle, spriteWidth, now);
         const angle = travelAngle + Math.PI;
         if (beam.auto) {
-            drawRocketPrecisionPulse(projX, projY, angle, now);
+            drawRocketPrecisionPulse(beam, projX, projY, angle, now);
         }
         ctx.save();
         ctx.translate(mapToScreenX(projX), mapToScreenY(projY));
@@ -3021,11 +3042,11 @@ function drawHullDamageEffects() {
     });
     for (const eff of hullDamageEffects) {
         if (shouldSuppressImpactEffectForInvisibleTarget(eff.entityId)) continue;
-        const def = LASER_DAMAGE_SPRITES[eff.type];
+        const def = (eff.rocket ? ROCKET_DAMAGE_SPRITES : LASER_DAMAGE_SPRITES)[eff.type];
         if (!def) continue;
         const life = Math.min(1, Math.max(0, (now - eff.createdAt) / eff.duration));
-        const frame = Math.min(def.frameCount - 1, Math.floor(def.frameCount * life));
-        const frameDef = getLaserDamageFrame(eff.type, frame);
+        const frame = Math.min(def.frameCount - 1, Math.round((def.frameCount - 1) * easeOutQuad(life)));
+        const frameDef = eff.rocket ? getRocketDamageFrame(eff.type, frame) : getLaserDamageFrame(eff.type, frame);
         if (!frameDef || frameDef.pendingAtlas) continue;
         const pos = resolveHullDamagePosition(eff, position);
         if (!pos) continue;
@@ -3036,19 +3057,23 @@ function drawHullDamageEffects() {
     }
 }
 
-function spawnHullDamageEffect(targetId, typeId = null) {
+function spawnHullDamageEffect(targetId, typeId = null, rocket = false) {
     if (targetId == null) return;
     if (shouldSuppressImpactEffectForInvisibleTarget(targetId)) return;
-    const effectType = typeId != null && LASER_DAMAGE_SPRITES[typeId] ? typeId : Math.floor(Math.random() * 3);
-    const def = LASER_DAMAGE_SPRITES[effectType];
+    const sprites = rocket ? ROCKET_DAMAGE_SPRITES : LASER_DAMAGE_SPRITES;
+    const effectType = typeId != null && sprites[typeId] ? typeId : rocket ? 0 : Math.floor(Math.random() * 3);
+    const def = sprites[effectType];
     if (!def) return;
     const isHero = heroId !== null && targetId === heroId;
     const targetSnap = isHero ? snapshotEntityById(heroId) : snapshotEntityById(targetId);
     if (!isHero && (!targetSnap || targetSnap.kind !== "player" && targetSnap.kind !== "npc")) return;
-    const duration = def.frameCount / (def.fps || LASER_DAMAGE_ANIM_FPS) * 1e3;
+    const duration = 500; // Flash ShipDamage.playClip, default Quad.easeOut.
     const angleOffset = Math.random() * Math.PI * 2;
     const distance = Math.random() * computeHullImpactRadius(targetSnap);
-    const rotation = Math.random() * Math.PI * 2;
+    const rotation = rocket ? 0 : Math.random() * Math.PI * 2;
+    if (rocket && window.AudioManager && typeof window.AudioManager.playPyro === "function") {
+        window.AudioManager.playPyro(3, effectType, targetSnap.x, targetSnap.y);
+    }
     let writeIndex = 0;
     for (let i = 0; i < hullDamageEffects.length; i++) {
         const effect = hullDamageEffects[i];
@@ -3065,6 +3090,7 @@ function spawnHullDamageEffect(targetId, typeId = null) {
         snapshotShipId: targetSnap ? targetSnap.shipId ?? targetSnap.type ?? null : null,
         snapshotAngle: targetSnap && Number.isFinite(targetSnap.angle) ? targetSnap.angle : 0,
         type: effectType,
+        rocket: rocket,
         createdAt: performance.now(),
         duration: duration,
         angleOffset: angleOffset,
@@ -3073,40 +3099,39 @@ function spawnHullDamageEffect(targetId, typeId = null) {
     });
 }
 
-function resolveRocketDamageType(rocketId) {
-    switch (rocketId) {
-      case 1:
-        return 0;
-
-      case 2:
-        return 1;
-
-      case 3:
-      case 4:
-        return 2;
-
-      default:
-        return 1;
+function spawnAttackInfoImpact(targetId, attackType, delta) {
+    if (!Number.isFinite(delta) || delta === 0 || attackType === "H") return;
+    if (attackType === "R") {
+        const target = snapshotEntityById(targetId);
+        if (!target) return;
+        const shipId = target.shipId ?? target.type;
+        const type = SHIP_ROCKET_DAMAGE_TYPES_FROM_XML && SHIP_ROCKET_DAMAGE_TYPES_FROM_XML[shipId];
+        spawnHullDamageEffect(targetId, Number.isInteger(type) ? type : 0, true);
+    } else if (attackType === "L" || attackType === "ECI" || attackType === "SIN" || attackType === "I") {
+        spawnHullDamageEffect(targetId);
     }
 }
 
-function spawnRocketDamageEffect(x, y, typeId = 1) {
+function spawnRocketDamageEffect(x, y, typeId = 1, options = {}) {
     if (x == null || y == null) return;
+    const laser = options.laser === true;
+    const sprites = laser ? LASER_DAMAGE_SPRITES : ROCKET_DAMAGE_SPRITES;
+    const def = sprites[typeId];
+    if (!def) return;
     try {
         if (window.AudioManager && typeof window.AudioManager.playPyro === "function") {
-            window.AudioManager.playPyro(3, typeId, x, y);
+            window.AudioManager.playPyro(laser ? 2 : 3, typeId, x, y);
         }
     } catch (_) {}
-    const def = ROCKET_DAMAGE_SPRITES[typeId] || ROCKET_DAMAGE_SPRITES[1];
-    if (!def) return;
-    const fps = def.fps || ROCKET_DAMAGE_ANIM_FPS || 25;
-    const duration = def.frameCount / fps * 1e3;
+    const fps = options.fps || def.fps || ROCKET_DAMAGE_ANIM_FPS;
     rocketDamageEffects.push({
         x: x,
         y: y,
         type: typeId,
+        laser: laser,
+        fps: fps,
         createdAt: performance.now(),
-        duration: duration
+        duration: def.frameCount / fps * 1e3
     });
 }
 
@@ -3125,13 +3150,13 @@ function drawRocketDamageEffects() {
     if (rocketDamageEffects.length === 0) return;
     const now = performance.now();
     for (const fx of rocketDamageEffects) {
-        const def = ROCKET_DAMAGE_SPRITES[fx.type] || ROCKET_DAMAGE_SPRITES[1];
+        const def = (fx.laser ? LASER_DAMAGE_SPRITES : ROCKET_DAMAGE_SPRITES)[fx.type];
         if (!def) continue;
-        const fps = def.fps || ROCKET_DAMAGE_ANIM_FPS || 25;
+        const fps = fx.fps || def.fps || ROCKET_DAMAGE_ANIM_FPS;
         const frameDuration = 1e3 / fps;
         const frame = Math.floor((now - fx.createdAt) / frameDuration);
         if (frame < 0 || frame >= def.frameCount) continue;
-        const frameDef = getRocketDamageFrame(fx.type, frame);
+        const frameDef = fx.laser ? getLaserDamageFrame(fx.type, frame) : getRocketDamageFrame(fx.type, frame);
         if (!frameDef || frameDef.pendingAtlas) continue;
         const sx = mapToScreenX(fx.x);
         const sy = mapToScreenY(fx.y);

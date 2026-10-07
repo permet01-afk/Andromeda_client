@@ -5045,7 +5045,7 @@ function handlePacket_rocketAttack(parts, i) {
     if (parts.length < i + 6) return;
     const attackerId = parseInt(parts[i], 10);
     const targetId = parseInt(parts[i + 1], 10);
-    const heavyFlag = parts[i + 2] === "H";
+    const hitFlag = parts[i + 2] === "H";
     const rocketId = parseInt(parts[i + 3], 10);
     const patternId = parseInt(parts[i + 4], 10);
     const autoFlag = !!parseInt(parts[i + 5] || "0", 10);
@@ -5060,11 +5060,13 @@ function handlePacket_rocketAttack(parts, i) {
         targetId: targetId,
         rocketId: isNaN(rocketId) ? 0 : rocketId,
         patternId: isNaN(patternId) ? 0 : patternId,
-        heavy: heavyFlag,
+        hit: hitFlag,
         auto: autoFlag,
         angle: beamAngle,
         originX: attackerSnap.x,
         originY: attackerSnap.y,
+        targetStartX: targetSnap.x,
+        targetStartY: targetSnap.y,
         targetLastX: targetSnap.x,
         targetLastY: targetSnap.y,
         attackerVisualLifeId: attackerSnap.visualLifeId != null ? attackerSnap.visualLifeId : null,
@@ -6194,6 +6196,7 @@ function handlePacket_attackInfo(parts, i) {
         }
     }
 
+    spawnAttackInfoImpact(targetId, attackType, delta);
     if (!isNaN(delta) && delta !== 0) {
         const isHealType = attackType === "H";
         const isHeal = isHealType || delta > 0;

@@ -1124,7 +1124,7 @@ const LASER_MAX_RANGE = 700;
 
 const LASER_BEAM_DURATION = 150;
 
-const ROCKET_BEAM_DURATION = 700;
+const ROCKET_BEAM_DURATION = 750;
 
 const DAMAGE_BUBBLE_DURATION = 1500;
 
@@ -3246,6 +3246,8 @@ let SHIP_CLICK_OFFSET_Y_FROM_XML = null;
 
 let SHIP_MOVE_RADIUS_SQUARED_FROM_XML = null;
 
+let SHIP_ROCKET_DAMAGE_TYPES_FROM_XML = null;
+
 function parseShipOffsetsFromXml(xmlDoc) {
     if (!xmlDoc) return;
     const idleMap = {};
@@ -3268,6 +3270,7 @@ function parseShipOffsetsFromXml(xmlDoc) {
     const clickOffsetXMap = {};
     const clickOffsetYMap = {};
     const moveRadiusSquaredMap = {};
+    const rocketDamageTypes = {};
     const parseFlashBoolean = rawValue => {
         if (rawValue == null) return null;
         const normalized = String(rawValue).trim().toLowerCase();
@@ -3279,6 +3282,8 @@ function parseShipOffsetsFromXml(xmlDoc) {
         xmlDoc.querySelectorAll("ships > ship").forEach(shipNode => {
             const type = parseInt(shipNode.getAttribute("type") || "", 10);
             if (!Number.isFinite(type)) return;
+            const rocketDamageType = parseInt(shipNode.getAttribute("rocketDamageTypeID"), 10);
+            rocketDamageTypes[type] = Number.isInteger(rocketDamageType) && rocketDamageType >= 0 && rocketDamageType <= 2 ? rocketDamageType : 0;
             const engineClass = Number.parseInt(shipNode.getAttribute("enginePositionClassID"), 10);
             idleMap[type] = engineClass !== -1 && engineClasses.has(engineClass);
             const labelRaw = shipNode.getAttribute("labelYOffset");
@@ -3327,6 +3332,7 @@ function parseShipOffsetsFromXml(xmlDoc) {
         console.warn("[XML] parseShipOffsetsFromXml failed:", e);
     }
     SHIP_IDLE_ELIGIBLE_FROM_XML = idleMap;
+    SHIP_ROCKET_DAMAGE_TYPES_FROM_XML = rocketDamageTypes;
     if (Object.keys(labelMap).length > 0) {
         SHIP_LABEL_Y_OFFSETS_FROM_XML = labelMap;
         window._shipLabelYOffsetById = labelMap;
