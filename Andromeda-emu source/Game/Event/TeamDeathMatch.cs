@@ -1,562 +1,276 @@
-﻿
-
-using OrbitReborn_Emulator.Communication.Outgoing;
-using OrbitReborn_Emulator.Game.Maps;
-using OrbitReborn_Emulator.Game.Portal;
-using OrbitReborn_Emulator.Game.Sessions;
-using OrbitReborn_Emulator.Libs;
-using OrbitReborn_Emulator.Storage;
-using System.Collections.Generic;
+using System;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
+using System.Web.Script.Serialization;
+using OrbitReborn_Emulator.Communication;
+using OrbitReborn_Emulator.Communication.Incoming;
+using OrbitReborn_Emulator.Communication.Outgoing;
+using OrbitReborn_Emulator.Game.Characters;
+using OrbitReborn_Emulator.Game.Event.Tdm;
+using OrbitReborn_Emulator.Game.GalaxyGates;
+using OrbitReborn_Emulator.Game.Handlers;
+using OrbitReborn_Emulator.Game.Maps;
+using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Techs;
 
 namespace OrbitReborn_Emulator.Game.Event
 {
-    public class TdmTeam
-    {
-        private string name;
-        private int faction;
-        private CList<int> members;
-
-        public TdmTeam(Session creator, string name)
-        {
-            if (creator != null && creator.CharacterInfo != null)
-            {
-                this.faction = creator.CharacterInfo.FactionId;
-                this.members = new CList<int>();
-                this.members.Add(creator.CharacterId);
-                this.name = name;
-            }
-        }
-
-        public CList<int> getMembers()
-        {
-            return this.members;
-        }
-
-        public void addMember(int Member)
-        {
-            this.members.Add(Member);
-        }
-
-        public void removeMember(int member)
-        {
-            this.members.Remove(member);
-        }
-
-        public bool hasMember(int member)
-        {
-            return this.members.Contains(member);
-        }
-
-        public int countMembers()
-        {
-            return this.members.Count;
-        }
-
-        public string getName()
-        {
-            return this.name;
-        }
-
-        public int getFaction()
-        {
-            return this.faction;
-        }
-
-        public void displayChatMessage(string message)
-        {
-            foreach (int id in (IEnumerable<int>)this.members.Keys)
-            {
-                Session session = SessionManager.GetSessionByCharacterId(id);
-                if (session != null && session.CharacterInfo != null)
-                {
-                    Output.WriteLine(session.Id);
-                    session.SendData(PacketComposer.Compose("A", "STD|" + message));
-                }
-
-            }
-        }
-    }
-
-
+    // Runtime adapter. The core never calls back into gameplay locks.
+    // MOBILE TDM SUPPORT: DEFERRED TO FUTURE PHASE.
     public static class TeamDeathMatch
     {
-        public static int maxMember = 5;
-        private static CDictionnary<string, TdmTeam> teams;
-        private static bool mIsActive = false;
-        private static Timer performSearching;
-        private static Timer cooldown;
-        private static Timer performMatch;
-        private static TdmTeam Team1;
-        private static TdmTeam Team2;
-        private static double timeMatch;
-        private static bool mSafeBattle = false;
-        private static Timer performSearchingMsg;
-
-        public static bool SafeBattle()
+        private static readonly long StartedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        private static readonly System.Diagnostics.Stopwatch Elapsed = System.Diagnostics.Stopwatch.StartNew();
+        public static readonly TdmEventService State = new TdmEventService(() => StartedAt + Elapsed.ElapsedMilliseconds);
+        private static readonly ConcurrentDictionary<int, Session> Clients = new ConcurrentDictionary<int, Session>();
+        private static readonly ConcurrentDictionary<int, int[]> Vitals = new ConcurrentDictionary<int, int[]>();
+        private static Timer Pulse;
+        private static int Pumping;
+        private static long LastPublish;
+        public static void Initialize()
         {
-            return TeamDeathMatch.mSafeBattle;
+            DataRouter.RegisterHandler("TDM", Handle);
+            Pulse = new Timer(_ => Tick(), null, 250, 250);
         }
-        public static string DisplayTeam(string name)
+        public static bool IsActive() { return State.Active; }
+        public static bool SafeBattle() { return State.Safe; }
+        public static void Enable() { State.Enable(); PublishAll(); }
+        public static void Disable() { State.Disable(); Pump(); PublishAll(); }
+        public static bool IsParticipant(Session s) { return s != null && State.Contains(s.CharacterId); }
+        public static bool IsTdm(Session s) { return s != null && s.CharacterInfo != null && s.CharacterInfo.MapId == TdmRules.Map; }
+        private static TdmPresence Read(Session s)
         {
-            string msg = "Team name: " + name;
-            foreach (int id in (IEnumerable<int>)(TeamDeathMatch.teams[name].getMembers().Keys))
+            var c = s.CharacterInfo;
+            return new TdmPresence { Id = s.CharacterId, Company = c.FactionId, Level = c.Level, Map = c.MapId, X = c.LocX, Y = c.LocY,
+                Connected = !s.Stopped && !s.StoppedPlayer && !c.Disconnected,
+                Ready = !c.Destroy && !c.DeadCommitted && c.ShipHp > 0 && !c.IsJumping && !s.HasPendingGameplayDeath,
+                Compatible = !GalaxyGateWaveService.IsGateMap(c.MapId) && !_1v1.IsOnMap(c.MapId) && !_1v1.IsCharacterInMatch(s.CharacterId) && c.MapId != 80 && c.MapId != 81 };
+        }
+        private static void Handle(Session s, ClientMessage message)
+        {
+            if (s == null || s.IsChat || s.CharacterInfo == null || message.GetNextInt(1) != 1) return;
+            string action = message.GetNextString(2);
+            if (action == "HELLO")
             {
-                Session session = SessionManager.GetSessionByCharacterId(id);
-                if (session != null && session.CharacterInfo != null)
-                    msg = msg + ", " + session.CharacterInfo.Username;
+                Session previous;
+                bool changed = !Clients.TryGetValue(s.CharacterId, out previous) || !ReferenceEquals(previous, s);
+                Clients[s.CharacterId] = s; State.Observe(Read(s));
+                State.Reconnect(s.CharacterId, changed);
+                Pump(); Publish(s); return;
             }
-            msg = msg + ". Numbers: " + TeamDeathMatch.teams[name].countMembers();
-            return msg;
-
+            Session registered;
+            if (!Clients.TryGetValue(s.CharacterId, out registered) || !ReferenceEquals(registered, s))
+            { Notice(s, "Team Deathmatch requires the current desktop HTML5 client."); return; }
+            State.Observe(Read(s));
+            if (action == "OPEN") { TryOpenLobby(s, true); return; }
+            if (action == "SYNC") { Publish(s); return; }
+            long request;
+            if (!long.TryParse(message.GetNextString(4), out request)) return;
+            string error = State.Command(s.CharacterId, message.GetNextString(3), request, action, message.GetNextString(5));
+            Pump(); Publish(s, error);
         }
-
-        private static void displayMessageTdm(string msg)
+        public static bool TryOpenLobby(Session s, bool explicitOpen = false)
         {
-            foreach (MapInstance mapInstance in (IEnumerable<MapInstance>)MapManager.MapInstances.Values)
+            if (s == null || s.CharacterInfo == null) return false;
+            var c = s.CharacterInfo;
+            bool near = TdmRules.NearBeacon(c.MapId, c.FactionId, c.LocX, c.LocY);
+            if (!near) { if (explicitOpen) Publish(s, "Approach the TDM beacon and press J."); return explicitOpen; }
+            Session registered;
+            if (!Clients.TryGetValue(s.CharacterId, out registered) || !ReferenceEquals(registered, s))
+            { if (State.Active) Notice(s, "Team Deathmatch requires the current desktop HTML5 client."); return State.Active; }
+            State.Observe(Read(s)); bool opened = State.Open(s.CharacterId);
+            Publish(s, opened ? "" : !State.Active ? TdmRules.Unavailable : "A connected READY ship is required.", true);
+            return true; // BEFORE normal jump state/timers/position mutation
+        }
+        private static void Tick()
+        {
+            try
             {
-                if (!mapInstance.Unloaded)
+                foreach (var item in Clients.ToArray())
                 {
-                    mapInstance.BroadcastMessage(PacketComposer.Compose("A", "STD|" + msg), false);
+                    var s = item.Value; if (s.CharacterInfo == null) continue;
+                    State.Observe(Read(s));
+                    if (s.StoppedPlayer && !State.Contains(item.Key)) { Session ignored; Clients.TryRemove(item.Key, out ignored); }
                 }
+                State.Tick(); Pump();
+                long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                if (now - Interlocked.Read(ref LastPublish) >= 1000) { Interlocked.Exchange(ref LastPublish, now); PublishAll(); }
             }
+            catch (Exception ex) { Output.WriteLine("[TDM] pulse: " + ex, OutputLevel.CriticalError); }
         }
-        private static void SearchTeam(object state)
+        public static void Publish(Session s, string error = "", bool open = false)
         {
-            if (!TeamDeathMatch.mIsActive)
-            {
-                if (TeamDeathMatch.performSearching != null)
-                    TeamDeathMatch.performSearching.Dispose();
-                return;
-            }
-            if (TeamDeathMatch.Team1 == null)
-                TeamDeathMatch.Team1 = TeamDeathMatch.findTeam(TeamDeathMatch.Team2);
-            if (TeamDeathMatch.Team2 == null)
-                TeamDeathMatch.Team2 = TeamDeathMatch.findTeam(TeamDeathMatch.Team1);
-
-            TeamDeathMatch.CheckTeamValid();
-
-            if (TeamDeathMatch.Team1 != null && TeamDeathMatch.Team2 != null)
-            {
-                TeamDeathMatch.PrepareMatch();
-                if (TeamDeathMatch.performSearching != null)
-                    TeamDeathMatch.performSearching.Dispose();
-                if (TeamDeathMatch.performSearchingMsg != null)
-                    TeamDeathMatch.performSearchingMsg.Dispose();
-            }
+            if (s == null || s.CharacterInfo == null || s.Stopped || s.StoppedPlayer) return;
+            var json = new JavaScriptSerializer().Serialize(State.Snapshot(s.CharacterId, error, open));
+            s.SendData(PacketComposer.Compose("TDM", "1|" + Convert.ToBase64String(Encoding.UTF8.GetBytes(json))));
         }
-
-        private static void CheckTeamValid()
+        private static void PublishAll() { foreach (var s in Clients.Values.ToArray()) Publish(s); }
+        private static void Notice(Session s, string text) { s.SendData(PacketComposer.Compose("A", "STD|" + text)); }
+        public static bool CanDamage(Session a, Session v)
+        { return IsTdm(a) && IsTdm(v) && State.CanDamage(a.CharacterId, v.CharacterId); }
+        public static bool ValidAttack(Session a, Session v)
+        { return !IsTdm(a) && !IsTdm(v) || (IsTdm(a) && IsTdm(v) && State.Attack(a.CharacterId, v.CharacterId)); }
+        public static bool ValidProjectile(Session a, long life)
+        { return a != null && Interlocked.Read(ref a.TdmLifeGeneration) == life; }
+        public static bool AllowMove(Session s, int x, int y)
         {
-            if (TeamDeathMatch.Team1 != null)
-            {
-                CList<int> toRemoveT1 = new CList<int>();
-                foreach (int num in Team1.getMembers().Keys)
-                {
-                    Session sessionByCharId = SessionManager.GetSessionByCharacterId(num);
-                    if (sessionByCharId == null || sessionByCharId.CharacterInfo == null)
-                    {
-                        toRemoveT1.Add(num);
-                    }
-                }
-                foreach (int num in toRemoveT1.Keys)
-                    TeamDeathMatch.Team1.removeMember(num);
-                toRemoveT1.Clear();
-            }
-            if (TeamDeathMatch.Team2 != null)
-            {
-                CList<int> toRemoveT2 = new CList<int>();
-                foreach (int num in Team2.getMembers().Keys)
-                {
-                    Session sessionByCharId = SessionManager.GetSessionByCharacterId(num);
-                    if (sessionByCharId == null || sessionByCharId.CharacterInfo == null)
-                    {
-                        toRemoveT2.Add(num);
-                    }
-                }
-                foreach (int num in toRemoveT2.Keys)
-                    TeamDeathMatch.Team2.removeMember(num);
-                toRemoveT2.Clear();
-            }
-
-            if (TeamDeathMatch.Team1 != null && TeamDeathMatch.Team1.countMembers() != TeamDeathMatch.maxMember)
-                TeamDeathMatch.Team1 = null;
-            if (TeamDeathMatch.Team2 != null && TeamDeathMatch.Team2.countMembers() != TeamDeathMatch.maxMember)
-                TeamDeathMatch.Team2 = null;
+            if (!IsTdm(s) || State.Move(s.CharacterId, x, y)) return true;
+            s.SendData(UserDataComposer.Compose(s)); return false;
         }
-
-        private static void SearchTeamMsg(object state)
+        // Under existing victim lifecycle/impact locks, BEFORE Phase4/5 and rewards.
+        public static bool TryDeath(Session victim, GameplayDeathContext context)
         {
-            TeamDeathMatch.displayMessageTdm("Searching teams for next match...");
-        }
-
-        private static TdmTeam findTeam(TdmTeam oponnent)
-        {
-            foreach (KeyValuePair<string, TdmTeam> entry in TeamDeathMatch.teams)
-            {
-                if (entry.Value.countMembers() == TeamDeathMatch.maxMember)
-                {
-                    if (oponnent == null)
-                    {
-                        return entry.Value;
-                    }
-                    else if (oponnent.getName() != entry.Value.getName())
-                    {
-                        return entry.Value;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private static void PrepareMatch()
-        {
-            foreach (MapInstance mapInstance in (IEnumerable<MapInstance>)MapManager.MapInstances.Values)
-            {
-                if (!mapInstance.Unloaded)
-                {
-                    string str = "Match: " + TeamDeathMatch.Team1.getName() + " VS " + TeamDeathMatch.Team2.getName() + " will start in 10 sec !";
-                    mapInstance.BroadcastMessage(PacketComposer.Compose("A", "STD|" + str), false);
-                }
-            }
-            TeamDeathMatch.cooldown = new Timer(new TimerCallback(TeamDeathMatch.StartCoolDown), (object)10, 5000, 0);
-        }
-
-        private static void StartCoolDown(object state)
-        {
-            int num = (int)state;
-            if (num == 0)
-            {
-                TeamDeathMatch.BeginMatch();
-            }
-            else
-            {
-                foreach (MapInstance mapInstance in (IEnumerable<MapInstance>)MapManager.MapInstances.Values)
-                {
-                    if (mapInstance != null && !mapInstance.Unloaded)
-                    {
-                        string str = (object)num + " seconds left ...";
-                        mapInstance.BroadcastMessage(PacketComposer.Compose("A", "STD|" + str), false);
-                    }
-                }
-                TeamDeathMatch.cooldown = new Timer(new TimerCallback(TeamDeathMatch.StartCoolDown), (object)(num - 1), 1000, 0);
-            }
-        }
-
-        private static void BeginMatch()
-        {
-            foreach (int id in (IEnumerable<int>)(TeamDeathMatch.Team1.getMembers().Keys))
-            {
-                Session session = SessionManager.GetSessionByCharacterId(id);
-                if (session != null && session.CharacterInfo != null)
-                {
-                    Session sessionByCharId = SessionManager.GetSessionByCharacterId(session.CharacterId);
-                    sessionByCharId.CharacterInfo.LocX = 8600;
-                    sessionByCharId.CharacterInfo.LocY = 6600;
-                    sessionByCharId.CharacterInfo.NewLocX = sessionByCharId.CharacterInfo.LocX;
-                    sessionByCharId.CharacterInfo.NewLocY = sessionByCharId.CharacterInfo.LocY;
-                    sessionByCharId.CharacterInfo.PlayerInRange.Clear();
-                    sessionByCharId.CharacterInfo.FactionId = 1;
-                    sessionByCharId.CharacterInfo.ClanId = 0;
-                    MapHandler.OpenPublicConnection(sessionByCharId, 83, (PortalInfo)null);
-                }
-            }
-
-            foreach (int id in (IEnumerable<int>)TeamDeathMatch.Team2.getMembers().Keys)
-            {
-                Session session = SessionManager.GetSessionByCharacterId(id);
-                if (session != null && session.CharacterInfo != null)
-                {
-                    Session sessionByCharId = SessionManager.GetSessionByCharacterId(session.CharacterId);
-                    sessionByCharId.CharacterInfo.LocX = 12000;
-                    sessionByCharId.CharacterInfo.LocY = 6600;
-                    sessionByCharId.CharacterInfo.NewLocX = sessionByCharId.CharacterInfo.LocX;
-                    sessionByCharId.CharacterInfo.NewLocY = sessionByCharId.CharacterInfo.LocY;
-                    sessionByCharId.CharacterInfo.PlayerInRange.Clear();
-                    sessionByCharId.CharacterInfo.FactionId = 2;
-                    sessionByCharId.CharacterInfo.ClanId = 0;
-                    MapHandler.OpenPublicConnection(sessionByCharId, 83, (PortalInfo)null);
-                }
-            }
-            TeamDeathMatch.cooldown = new Timer(new TimerCallback(TeamDeathMatch.StartCoolDownSafe), (object)20, 5000, 0);
-            TeamDeathMatch.mSafeBattle = true;
-        }
-
-        private static void StartCoolDownSafe(object state)
-        {
-            int num = (int)state;
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(83);
-            if (instanceByMapId == null)
-            {
-                TeamDeathMatch.Disable();
-                return;
-            }
-            if (num == 0)
-            {
-                TeamDeathMatch.mSafeBattle = false;
-                instanceByMapId.BroadcastMessage(PacketComposer.Compose("A", "STD|FIGHT !"), false);
-                TeamDeathMatch.timeMatch = UnixTimestamp.GetCurrent();
-                TeamDeathMatch.performMatch = new Timer(new TimerCallback(TeamDeathMatch.Match), (object)null, 0, 5000);
-            }
-            else
-            {
-                instanceByMapId.BroadcastMessage(PacketComposer.Compose("A", "STD|Fight begin in " + num + " seconds ..."), false);
-                TeamDeathMatch.cooldown = new Timer(new TimerCallback(TeamDeathMatch.StartCoolDownSafe), (object)(num - 1), 1000, 0);
-            }
-        }
-        private static void Match(object state)
-        {
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(83);
-            if (instanceByMapId == null)
-            {
-                TeamDeathMatch.Disable();
-            }
-            int nbLeftT1 = 0;
-            int nbLeftT2 = 0;
-            foreach (MapActor actor in (IEnumerable<MapActor>)instanceByMapId.Actors.Keys)
-            {
-                Session sessionById = SessionManager.GetSessionById(actor.ReferenceSessionId);
-                if (sessionById == null || sessionById.CharacterInfo == null)
-                    continue;
-                if (TeamDeathMatch.Team1.hasMember(sessionById.CharacterId))
-                    nbLeftT1 = nbLeftT1 + 1;
-                else if (TeamDeathMatch.Team2.hasMember(sessionById.CharacterId))
-                    nbLeftT2 = nbLeftT2 + 1;
-            }
-            bool finish = TeamDeathMatch.checkWinner(nbLeftT1, nbLeftT2);
-            if (finish)
-            {
-                if (TeamDeathMatch.performMatch != null)
-                    TeamDeathMatch.performMatch.Dispose();
-                TeamDeathMatch.timeMatch = 0;
-            }
-
-        }
-
-        private static bool checkWinner(int nbLeftT1, int nbLeftT2)
-        {
-            if (nbLeftT1 == 0 && nbLeftT2 > 0)
-            {
-                TeamDeathMatch.sendVictory(TeamDeathMatch.Team2, TeamDeathMatch.Team1);
-                return true;
-            }
-            else if (nbLeftT1 > 0 && nbLeftT2 == 0)
-            {
-                TeamDeathMatch.sendVictory(TeamDeathMatch.Team1, TeamDeathMatch.Team2);
-                return true;
-            }
-            else if (nbLeftT1 == 0 && nbLeftT2 == 0)
-            {
-                TeamDeathMatch.sendEquality();
-                return true;
-            }
-            else if (UnixTimestamp.GetCurrent() - TeamDeathMatch.timeMatch >= 180.0)
-            {
-                if (nbLeftT1 > nbLeftT2)
-                {
-                    TeamDeathMatch.sendVictory(TeamDeathMatch.Team1, TeamDeathMatch.Team2);
-                    return true;
-                }
-                else if (nbLeftT1 < nbLeftT2)
-                {
-                    TeamDeathMatch.sendVictory(TeamDeathMatch.Team2, TeamDeathMatch.Team1);
-                    return true;
-                }
-                else
-                {
-                    TeamDeathMatch.sendEquality();
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private static void sendEquality()
-        {
-            TeamDeathMatch.BackAll();
-            string msg = "Equality between " + TeamDeathMatch.Team1.getName() + " and " + TeamDeathMatch.Team2.getName();
-            TeamDeathMatch.displayMessageTdm(msg);
-            TeamDeathMatch.finishMatch();
-        }
-
-        private static void sendVictory(TdmTeam teamWon, TdmTeam teamLose)
-        {
-            foreach (int id in (IEnumerable<int>)teamWon.getMembers().Keys)
-            {
-                Session session = SessionManager.GetSessionByCharacterId(id);
-                if (session != null && session.CharacterInfo != null)
-                {
-                    Session sessionById = SessionManager.GetSessionByCharacterId(session.CharacterId);
-                    sessionById.SendData(PacketComposer.Compose("A", "STD|You won the match !"));
-                    sessionById.SendData(PacketComposer.Compose("A", "STD|You receive 800 Rankpoints\n You receive 400 PvP Points !"));
-
-                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-                    {
-                        sessionById.CharacterInfo.AddTdmMatch(client, 1, 1);
-                        sessionById.CharacterInfo.AddPvpPoints(client, 400);
-                        sessionById.CharacterInfo.AddRankpoints(client, 800);
-                    }
-                }
-            }
-            foreach (int id in (IEnumerable<int>)teamLose.getMembers().Keys)
-            {
-                Session session = SessionManager.GetSessionByCharacterId(id);
-                if (session != null && session.CharacterInfo != null)
-                {
-                    Session sessionById = SessionManager.GetSessionByCharacterId(session.CharacterId);
-                    sessionById.SendData(PacketComposer.Compose("A", "STD|You losed the match ..."));
-                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-                    {
-                        sessionById.CharacterInfo.AddTdmMatch(client, 0, 1);
-                    }
-                }
-            }
-            TeamDeathMatch.BackAll();
-            TeamDeathMatch.displayMessageTdm(teamWon.getName() + " won against " + teamLose.getName() + " !");
-            TeamDeathMatch.finishMatch();
-        }
-
-        private static void BackAll()
-        {
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(83);
-            foreach (MapActor actor in (IEnumerable<MapActor>)instanceByMapId.Actors.Keys)
-            {
-                Session sessionByCharacterId = SessionManager.GetSessionById(actor.ReferenceSessionId);
-                if (sessionByCharacterId == null || sessionByCharacterId.CharacterInfo == null)
-                    continue;
-                sessionByCharacterId.CharacterInfo.FactionId = sessionByCharacterId.CharacterInfo.RealFaction;
-                sessionByCharacterId.CharacterInfo.ClanId = sessionByCharacterId.CharacterInfo.RealClan;
-                sessionByCharacterId.CharacterInfo.PlayerInRange.Clear();
-                if (sessionByCharacterId.CharacterInfo.FactionId == 1)
-                {
-                    sessionByCharacterId.CharacterInfo.LocX = 2000;
-                    sessionByCharacterId.CharacterInfo.LocY = 1100;
-                    sessionByCharacterId.CharacterInfo.NewLocX = sessionByCharacterId.CharacterInfo.LocX;
-                    sessionByCharacterId.CharacterInfo.NewLocY = sessionByCharacterId.CharacterInfo.LocY;
-                    sessionByCharacterId.CharacterInfo.MapId = 1;
-                }
-                else if (sessionByCharacterId.CharacterInfo.FactionId == 2)
-                {
-                    sessionByCharacterId.CharacterInfo.LocX = 18500;
-                    sessionByCharacterId.CharacterInfo.LocY = 1100;
-                    sessionByCharacterId.CharacterInfo.NewLocX = sessionByCharacterId.CharacterInfo.LocX;
-                    sessionByCharacterId.CharacterInfo.NewLocY = sessionByCharacterId.CharacterInfo.LocY;
-                    sessionByCharacterId.CharacterInfo.MapId = 5;
-                }
-                else if (sessionByCharacterId.CharacterInfo.FactionId == 3)
-                {
-                    sessionByCharacterId.CharacterInfo.LocX = 19000;
-                    sessionByCharacterId.CharacterInfo.LocY = 11300;
-                    sessionByCharacterId.CharacterInfo.NewLocX = sessionByCharacterId.CharacterInfo.LocX;
-                    sessionByCharacterId.CharacterInfo.NewLocY = sessionByCharacterId.CharacterInfo.LocY;
-                    sessionByCharacterId.CharacterInfo.MapId = 9;
-                }
-                MapHandler.OpenPublicConnection(sessionByCharacterId, sessionByCharacterId.CharacterInfo.MapId, (PortalInfo)null);
-            }
-        }
-
-        private static void finishMatch()
-        {
-            TeamDeathMatch.teams.Remove(TeamDeathMatch.Team1.getName());
-            TeamDeathMatch.teams.Remove(TeamDeathMatch.Team2.getName());
-            TeamDeathMatch.Team1 = null;
-            TeamDeathMatch.Team2 = null;
-            if (TeamDeathMatch.IsActive())
-            {
-                TeamDeathMatch.performSearching = new System.Threading.Timer(new TimerCallback(TeamDeathMatch.SearchTeam), (object)null, (int)0, 5000);
-                TeamDeathMatch.performSearchingMsg = new System.Threading.Timer(new TimerCallback(TeamDeathMatch.SearchTeamMsg), (object)null, (int)0, 15000);
-            }
-        }
-
-        public static bool IsActive()
-        {
-            return TeamDeathMatch.mIsActive;
-        }
-
-        public static bool CreateNewTeam(string name, Session creator)
-        {
-            if (TeamDeathMatch.teams.ContainsKey(name))
-                return false;
-            if (TeamDeathMatch.userTeam(creator) != null)
-                return false;
-            TeamDeathMatch.teams.Add(name, new TdmTeam(creator, name));
+            if (!IsTdm(victim)) return false;
+            var c = victim.CharacterInfo;
+            if (!DroneWearService.IsPendingDeath(victim, context)) return true;
+            var killer = context.Cause == GameplayDeathCause.Pvp ? c.Attacker : null;
+            bool admitted = State.Die(victim.CharacterId, killer == null ? 0 : killer.CharacterId, context.TdmLife);
+            // ANDROMEDA CUSTOM: no wear, hull debt, cargo loss or kill payout.
+            c.TdmDead = true; c.PendingDroneDeath = null; c.Destroy = true;
+            c.CanMove = false; c.CanLaserAttack = false;
+            if (!admitted && !State.IsDead(victim.CharacterId)) State.AbortParticipant(victim.CharacterId);
             return true;
         }
-
-        public static string userTeam(Session user)
+        public static void BeforeLogin(Session s, bool supportsTdm)
         {
-            foreach (KeyValuePair<string, TdmTeam> entry in TeamDeathMatch.teams)
+            // A supported reconnect resumes after HELLO. Restart has no membership.
+            // Never resurrect a runtime match merely from persisted map83.
+            if (!supportsTdm)
             {
-                if (entry.Value.getMembers().Contains(user.CharacterId))
+                Session ignored; Clients.TryRemove(s.CharacterId, out ignored);
+                if (IsParticipant(s)) { State.Disconnect(s.CharacterId, true); ReturnHome(s, false); }
+            }
+            if (IsTdm(s) && !IsParticipant(s)) ReturnHome(s, false);
+        }
+        public static void BeforeDisconnect(Session s, bool explicitLeave)
+        {
+            if (s == null || s.CharacterInfo == null || s.IsChat) return;
+            Session owner;
+            if (Clients.TryGetValue(s.CharacterId, out owner) && !ReferenceEquals(owner, s)) return;
+            bool tdm = IsTdm(s) || s.CharacterInfo.TdmDead;
+            if (tdm) Vitals[s.CharacterId] = new[] { s.CharacterInfo.ShipHp, s.CharacterInfo.ShipShield };
+            State.Disconnect(s.CharacterId, explicitLeave);
+            if (tdm) ReturnHome(s, false);
+        }
+        public static void removeUserFromTdm(Session s) { BeforeDisconnect(s, true); }
+        private static void StopCombat(Session s)
+        {
+            Fight.StopLaser(s, null); Fight.StopCurrentShipSkill(s, true); TechInventoryService.StopBattleRepairOnDeath(s);
+            ShipMovement.StopMovementTracking(s);
+            var c = s.CharacterInfo; c.SelectedPlayer = 0; c.Attacker = null; c.Attacking = false;
+            c.NoFightTimer = 0; c.IsRepairing = false; c.OutOfRange = false;
+            var map = MapManager.GetInstanceByMapId(s.CurrentMapId);
+            if (map != null) foreach (var actor in map.GetUserActorSnapshot())
+            {
+                var other = SessionManager.GetSessionById(actor.ReferenceSessionId);
+                if (other == null || other.CharacterInfo == null || other.CharacterId == s.CharacterId) continue;
+                other.CharacterInfo.PlayerInRange.Remove(s.CharacterId);
+                if (other.CharacterInfo.SelectedPlayer == s.CharacterId) { Fight.StopLaser(other, s); other.CharacterInfo.SelectedPlayer = 0; }
+            }
+        }
+        private static void Restore(Session s)
+        {
+            var c = s.CharacterInfo; c.TdmDead = false; c.PendingDroneDeath = null; c.Destroy = false;
+            c.ShipHp = c.ShipMaxHp; c.ShipShield = c.ShipMaxShield;
+            c.CanMove = true; c.CanLaserAttack = true; c.PeaceZone = false; c.TradeZone = false;
+        }
+        private static void ReturnHome(Session s, bool transfer)
+        {
+            try { StopCombat(s); }
+            catch (Exception ex) { Output.WriteLine("[TDM] combat cleanup: " + ex, OutputLevel.CriticalError); }
+            Restore(s); Interlocked.Increment(ref s.TdmLifeGeneration);
+            var c = s.CharacterInfo;
+            int home = TdmRules.Home(c.FactionId);
+            c.LocX = c.FactionId == 1 ? 2000 : c.FactionId == 2 ? 18500 : 19000; c.LocY = c.FactionId == 3 ? 11300 : 1100;
+            c.NewLocX = c.LocX; c.NewLocY = c.LocY;
+            try
+            {
+                if (transfer && !s.Stopped && !s.StoppedPlayer && !c.Disconnected) MapHandler.OpenPublicConnection(s, home);
+            }
+            finally
+            {
+                // Even a missing home map cannot leave map83 in the normal save path.
+                // The next login can rebuild the home scene once map loading recovers.
+                if (!transfer || c.MapId != home || !s.MapJoined)
                 {
-                    return entry.Value.getName();
+                    try { MapManager.RemoveUserFromMap(s); }
+                    finally { c.MapId = home; s.AbsoluteMapId = home; s.MapJoined = false; s.MapAuthed = false; }
+                    if (transfer) Notice(s, "You have been returned home. Please reconnect to reload the map.");
                 }
             }
-            return null;
         }
-
-        public static bool JoinTeam(string name, Session joiner)
+        private static void Pump()
         {
-            if (!TeamDeathMatch.teams.ContainsKey(name))
-                return false;
-            if (TeamDeathMatch.teams[name].countMembers() >= TeamDeathMatch.maxMember)
-                return false;
-            if (TeamDeathMatch.userTeam(joiner) != null)
-                return false;
-            TeamDeathMatch.teams[name].addMember(joiner.CharacterId);
-            TeamDeathMatch.teams[name].displayChatMessage(joiner.CharacterInfo.Username + " joined the team. Number : " + TeamDeathMatch.teams[name].countMembers());
-            return true;
-        }
-
-        public static bool LeaveTeam(string name, Session leaver)
-        {
-            if (!TeamDeathMatch.teams.ContainsKey(name))
-                return false;
-            if (!TeamDeathMatch.teams[name].hasMember(leaver.CharacterId))
-                return false;
-            TeamDeathMatch.teams[name].removeMember(leaver.CharacterId);
-            if (TeamDeathMatch.teams[name].countMembers() <= 0)
-                TeamDeathMatch.teams.Remove(name);
-            else
-                TeamDeathMatch.teams[name].displayChatMessage(leaver.CharacterInfo.Username + " left the team. Number : " + TeamDeathMatch.teams[name].countMembers());
-            return true;
-        }
-
-        public static void Enable()
-        {
-            TeamDeathMatch.mIsActive = true;
-            TeamDeathMatch.teams = new CDictionnary<string, TdmTeam>();
-            if (TeamDeathMatch.performMatch == null)
+            if (Interlocked.CompareExchange(ref Pumping, 1, 0) != 0) return;
+            try
             {
-                TeamDeathMatch.Team1 = null;
-                TeamDeathMatch.Team2 = null;
-                TeamDeathMatch.performSearching = new System.Threading.Timer(new TimerCallback(TeamDeathMatch.SearchTeam), (object)null, (int)0, 5000);
-                TeamDeathMatch.performSearchingMsg = new System.Threading.Timer(new TimerCallback(TeamDeathMatch.SearchTeamMsg), (object)null, (int)0, 15000);
+                TdmEffect[] work;
+                while ((work = State.DrainEffects()).Length > 0) foreach (var e in work)
+                {
+                    Session s;
+                    if (!Clients.TryGetValue(e.Player, out s) || s.CharacterInfo == null || !State.IsCurrent(e)) continue;
+                    try
+                    {
+                        lock (TechInventoryService.SyncRoot(s.CharacterId))
+                        lock (s.CharacterInfo.DroneImpactSyncRoot)
+                        {
+                            if (!State.IsCurrent(e)) continue;
+                            if (e.Kind == "HOME")
+                            {
+                                // Result expiry / repeated LEAVE must never heal, teleport
+                                // or undo a normal Phase5 death after the pilot is home.
+                                if (IsTdm(s) || s.CharacterInfo.TdmDead)
+                                {
+                                    if (s.CharacterInfo.TdmDead && s.MapJoined) PublishDeath(s);
+                                    ReturnHome(s, !s.StoppedPlayer);
+                                }
+                                int[] ignored; Vitals.TryRemove(s.CharacterId, out ignored); Publish(s); continue;
+                            }
+                            if (s.Stopped || s.StoppedPlayer || s.CharacterInfo.Disconnected) { State.Disconnect(s.CharacterId, false); continue; }
+                            if (e.Kind == "ENTER" && !Read(s).Eligible) { State.TransferFailed(e.MatchId); continue; }
+                            StopCombat(s); Interlocked.Exchange(ref s.TdmLifeGeneration, e.Generation);
+                            var info = MapInfoLoader.GetMapInfo(TdmRules.Map);
+                            if (info == null || info.MaxUsers < TdmRules.Max) { State.TransferFailed(e.MatchId); continue; }
+                            if (e.Kind != "DEATH" || !IsTdm(s))
+                            {
+                                Restore(s);
+                                int[] vitals;
+                                if (e.Kind == "RECONNECT" && Vitals.TryRemove(s.CharacterId, out vitals))
+                                { s.CharacterInfo.ShipHp = Math.Max(1, Math.Min(vitals[0], s.CharacterInfo.ShipMaxHp)); s.CharacterInfo.ShipShield = Math.Min(vitals[1], s.CharacterInfo.ShipMaxShield); }
+                                double angle = e.Seat * Math.PI / 4;
+                                s.CharacterInfo.LocX = TdmRules.SpawnX(e.Side) + (int)Math.Round(Math.Cos(angle) * 360);
+                                s.CharacterInfo.LocY = 6550 + (int)Math.Round(Math.Sin(angle) * 360);
+                                s.CharacterInfo.NewLocX = s.CharacterInfo.LocX; s.CharacterInfo.NewLocY = s.CharacterInfo.LocY;
+                                MapHandler.OpenPublicConnection(s, TdmRules.Map);
+                                if (s.CharacterInfo.MapId != TdmRules.Map || !s.MapJoined) { State.TransferFailed(e.MatchId); continue; }
+                                if (!State.MarkEntered(e)) { ReturnHome(s, true); continue; }
+                            }
+                            if (e.Kind == "DEATH")
+                            {
+                                s.CharacterInfo.TdmDead = true; s.CharacterInfo.Destroy = true; s.CharacterInfo.ShipHp = 0;
+                                s.CharacterInfo.CanMove = s.CharacterInfo.CanLaserAttack = false; Publish(s);
+                                PublishDeath(s);
+                                MapManager.RemoveUserFromMap(s);
+                            }
+                            Publish(s);
+                        }
+                    }
+                    catch (Exception ex) { State.TransferFailed(e.MatchId); Output.WriteLine("[TDM] transfer/cleanup: " + ex, OutputLevel.CriticalError); }
+                }
+            }
+            finally { Interlocked.Exchange(ref Pumping, 0); }
+        }
+        private static void PublishDeath(Session s)
+        {
+            var map = MapManager.GetInstanceByMapId(s.CurrentMapId);
+            if (map == null) return;
+            foreach (var actor in map.GetUserActorSnapshot())
+            {
+                var observer = SessionManager.GetSessionById(actor.ReferenceSessionId);
+                if (observer != null) observer.SendData(PacketComposer.Compose("K", s.CharacterId + "|TDM"));
             }
         }
-
-        public static void Disable()
-        {
-            if (TeamDeathMatch.performSearching != null)
-                TeamDeathMatch.performSearching.Dispose();
-            if (TeamDeathMatch.performSearchingMsg != null)
-                TeamDeathMatch.performSearchingMsg.Dispose();
-            TeamDeathMatch.mIsActive = false;
-            TeamDeathMatch.teams.Clear();
-        }
-
-        public static void removeUserFromTdm(Session Session)
-        {
-            if (Session == null || Session.CharacterInfo == null)
-                return;
-            string team = TeamDeathMatch.userTeam(Session);
-            if (team == null)
-                return;
-            TeamDeathMatch.LeaveTeam(team, Session);
-        }
-
-
     }
 }

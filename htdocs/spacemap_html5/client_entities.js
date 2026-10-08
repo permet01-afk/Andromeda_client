@@ -1904,6 +1904,9 @@ window.addEventListener("keydown", e => {
         return;
     }
     if (e.key === "j" || e.key === "J") {
+        if (window.AndromedaTdm && window.AndromedaTdm.nearBeacon()) {
+            e.preventDefault(); sendPortalJump(); return; // same j; server opens lobby without jump
+        }
         let nearest = null;
         let bestDistSq = PORTAL_JUMP_DISTANCE * PORTAL_JUMP_DISTANCE;
         for (const id in portals) {

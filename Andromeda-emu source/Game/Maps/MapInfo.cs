@@ -76,7 +76,7 @@ namespace OrbitReborn_Emulator.Game.Maps
             this.Collectables = new CDictionnary<int, Collectable>();
             bool isGateMap = this.mId == 51 || this.mId == 52 || this.mId == 53 || this.mId == 55;
             bool isDuelMap = this.mId == 85 || this.mId == 86 || this.mId == 87;
-            if (!isGateMap && !isDuelMap)
+            if (!isGateMap && !isDuelMap && this.mId != 83)
             {
                 Random random = RandomProvider.Current;
                 int num = 0;

@@ -1,0 +1,236 @@
+{
+  "gate": {
+    "source": "LOCAL spacemap/graphics/portals/TDMGate1.swf",
+    "frames": 90,
+    "fps": 60,
+    "pivot": [
+      185,
+      200
+    ],
+    "frameSize": [
+      410,
+      400
+    ],
+    "columns": 10,
+    "hashes": [
+      "58da7fab88b8a08d8955beb9ce32a64e9705d25daa5557c5f577432212cceeae",
+      "6d5f107a5a4e1b4efcc97496f25c7b3cb03c6da71f84fd06a743f892ff3eaa91",
+      "4d965eb6e7a803f78459e3c6c9ed572907741aaab63520243ffbd3dfdf590d80",
+      "0403bcfd990b6e69c9961fbaadf9d8dbd573f2b762d3cc2e23d3f9ba8dc7c1fa",
+      "8d855e5a3fe081844b9e1c0f56783cb53ce0c7adbf53032b0e752fd58a1c0219",
+      "a4af4af48959493f90153865bacde315e8d39e687d017a8333b9b56723a93bae",
+      "83ee91ecc1a86af281ac5d66b000b235c61be92012d63113440b7bd21a6a09ef",
+      "c3281b99c458989c8ecb728b49137e9a4755f45d10cc8f39d108a037f8f62f1b",
+      "12f1fa67536cd8fd17225c1d991456bf5b42427bc32b25997e7be2e9cfd3f84e",
+      "8ece022e9117a5d4b6ee5e06f1d028a823dfd7da61060d3029ab4a83b6539d99",
+      "6e7f16aa2dceb6c74eb3ba1dc08f71eaf6239e5c4af1290aedfb82a2a47f7e44",
+      "0f9ea38d45d7739aa45a86a3de984175df842bc1fc8a966458267a8630b7463c",
+      "575834268d111f6f7c9aae57ed7252880d6d00f1bbee4592561b51cf2ecd4735",
+      "ab2b249ff44adb13945a89fdbf4098c739d6fab7507a2fe00d9b5c1e59245609",
+      "84d9a539faa118d4627c7681ecf7e86016a9874b7e94a3eb532ad9040d41d1eb",
+      "d712c3eab2e62f7a99ed2578b81eff2a95877d3201dd9ab5f0cd1db4df121436",
+      "0af278bfedc449ecaf46cf01887099694456f17ebdb0b07a0cccb83e4de67149",
+      "3cf6e50d72c4d29678978af3beb8d28bfaed5bd22a751fcef192161e1c0315cf",
+      "7759d1005581044a5f34a27caded0a15529b93fd59c1165aeca77beb2069f0e7",
+      "d352505d11748d9b4499cf2e947110dc4b17c4cf7c0ca263c041796e192ea936",
+      "43179de8ce025c516592e8995b68ff68a63afc9f04e3e9ea8970a70fdf10f74f",
+      "be90d577896f222dc31ec5d4db77468a20b89fbd7a2195c5dda977a399cce78d",
+      "b2a36144e461654c3a96811530f3d0588b177a0e583b4696fc3eb23198a04291",
+      "6e9f2475fbbc3cbf379e9650726a7beb2a96681cbabf0d18f8b8af6e787f162e",
+      "93264ea7914f531bf57d4ad47c32c43af04dc743337d7f93cdbe38ad944aa84c",
+      "8c1bf83979db28dcf0cf12e895c5835717910b4b10fdb38d71247c667ed36e3a",
+      "b9ff9bd6b7c37064578160eda130eb0ff08cd11d42716a363fdffe9b9138e268",
+      "41a4cf705f306748f402c0076c5a1f6f80696e0fdac32474dc228a7d3ffae30c",
+      "546567d2c282539dc3567f14474617aa39ff8ae75a9090e087f739987d2982fa",
+      "e937b29ac0918212f1764029e6a4d2ccf5edbe3f0db73f5c4903762eb61cf155",
+      "f8df8488ef79bb8c1aad8cf220610150a91edd7b5442db3d51ec9156e8feffd2",
+      "546567d2c282539dc3567f14474617aa39ff8ae75a9090e087f739987d2982fa",
+      "61aadb26d0f5c9deafb557ff85f2dc96e2130513d7dc6be47c5b9acf14ceafd1",
+      "e96f896ba823c18a4c236972749c0f1ba9305a19515a93bd3f5e75a70bd7c5e5",
+      "af7874581220be6f2cd0cb6ddaa82b76b7db09bca577f31c7cd2213919b1008c",
+      "b9ff9bd6b7c37064578160eda130eb0ff08cd11d42716a363fdffe9b9138e268",
+      "fe5d5f2e573d42b671b7451c1c29bdab7cc2780bcd0f3b97d4e6f24a873ffabe",
+      "16891d1056b50304b79fe76e57c03127fb46e2e24ed120bf36be767f55e15c9a",
+      "0e3f8acea696e493dc9bb6e2a752219feefffe76b802d52a58149a5996c37991",
+      "9b91fe63d52ca82405b8f689009349c497cff3e3041a708549aef0dac9cc6342",
+      "4805b6cf3d2c097a5357244ad5dba33e08bf56526e79a9c83c8152d536110dae",
+      "c4a8c1c308ec6f7b90c2ecf822b4ab01173a87d7aaee4a538d0892582cda5788",
+      "b12c3b54944c392389d64da7d52e22b388f0e2feaa19c3f3e195920f99e0bcaa",
+      "d3176a47e609096dfe3ac8befae361e300beed0688ac9635e2121cf365516190",
+      "d79729705fcc8ab65c75d9a649993141811b5144bac0352df293ff5c67dd7905",
+      "127a43702826f5d4b1449ee1f074ca97f14be4a933c3f3143dacc189e69b2120",
+      "520f067a88ff7478eb9a84a0f66c89596844bcdf7f4d102cd8734fa858c9bd51",
+      "bac7eb99dc8ae02850504532b2e8f2ef48a57e792ceb4c6b5e1d8983bbb496e6",
+      "b33b1473e06049f085bfa7a385a520550764b77425100229f284b1e0accee938",
+      "54aa6ca4359725ad65ee1bc64589cf27e58d3284d26d1300edab6ded17379f1c",
+      "e689cab1b641b0a6ad2c9f730cd34eaf61bb98c6e9795f8c5b3ba066cf8d9779",
+      "2f764b5c94a59ecc09085a56dd4c0a28620402071d9ca4b5d773f8fb6ef3a186",
+      "b8ee3c7450b2ff406330afe2d5116c66f4b2243d5e4fdd7810bf76a8e1abd3e5",
+      "cf676f8a57f1120312c91305b426d787669fe543eb655e955bb4f594f803d178",
+      "c7b84e5e6e5585b40aaad333fa42befe4aead3d7cf8117257216e87e93c42525",
+      "5768b4fdf80119882f8e49055e0739683dec57263ae415a1e48de895f8a10c51",
+      "0af278bfedc449ecaf46cf01887099694456f17ebdb0b07a0cccb83e4de67149",
+      "df5511090250adf76a1b881e609dc1019daf1d2dfa21259dd6c6214fb469fdde",
+      "d712c3eab2e62f7a99ed2578b81eff2a95877d3201dd9ab5f0cd1db4df121436",
+      "c9823811d20d6a25342a0b537419a7fc7ea9422d7e5028a0128d8a649e307d54",
+      "84d9a539faa118d4627c7681ecf7e86016a9874b7e94a3eb532ad9040d41d1eb",
+      "7574b0090c0a363858830a52047ef578db245b0f0779ae05585e18e386328239",
+      "ab2b249ff44adb13945a89fdbf4098c739d6fab7507a2fe00d9b5c1e59245609",
+      "ef0731750662857dbe5dfeb23d1b2d68fb861df08925fc98347688f27cbe5b8f",
+      "a8796e5038dfb7efb7fb5c5a530989989e898f56823be13087acc5c388706523",
+      "17e514c82b538f36a02470389741cef4c9756c890770e979a73de42e5a8da7b6",
+      "1ffd94052aaaee5dab9ba13af619c0ea0047769a920a7eaf2324139c65c2d364",
+      "60a8d95d1a780dab714050f339befe9c46cc97978f048e22df3d4d54035f4886",
+      "d228cf759ac5230ecd6c06e0fee3a16eb1e89deb2c292a9cff7b0be54a6709de",
+      "78c29644e68815caa6d3f5af49248d7d52f2d8d78e7a2a6614da3840ee027e0b",
+      "80047b52e36214663caf5df78275269f414812e152a298b1de78f5a23c402e04",
+      "abde144942a1ac81ae3c6011625c9d99439eb2af690e004a4f6feb570100394d",
+      "597b4c4e4d3864ed92a0af9c6b45a73c0d22eddf82f4f7e1b7d7afece873f261",
+      "6349f42a2ada8029d6502c9c43b4d9189d82891f2d7a96655a5cfce544a8f757",
+      "a161c6555eaa8e2da987655b4361edb59b5fe4f268a20f68bbd23077a6e8e44c",
+      "25d332e312ce5b9788c9961aa0b7ea5ff0750e8dcab5e932f1fa13ba0d53a0eb",
+      "28142b373056296ff5a061f39962e8e006f3c839dc60311ee7b1677e397df3d8",
+      "0ea45bedd064b6bdc70c758b74a5a98bde1b84c8c0760f90c1ad53c2e5ef7edf",
+      "cc78039e35acfcfb3f317ea1c4c6840771457dae458c556b568066917d15ca06",
+      "686647aefbf1a7cac0084cd9c9badf789122835df5147363f48ebc7692ed6a60",
+      "2685a2f2aad720b8cce4145b9d95573025f2b3b5de72e94cf0ab86aca7430bc2",
+      "9b8d2b7e202cd9a9fb7801b29207e43ff58301e944798aa7965f01a393df2bd5",
+      "109b502b6150b44f365dfc44a4f3b9ae86c82c5d0bea861c1aed25afb6dd8e09",
+      "0403bcfd990b6e69c9961fbaadf9d8dbd573f2b762d3cc2e23d3f9ba8dc7c1fa",
+      "b5b176b0bed8f1ac1fc98dcb86d23b8082330df51762ec252b432e845f56ac8b",
+      "ec07f6edc887da894b262b5c3af0c94ea58e4bad0c20f8bedf2eabea87268247",
+      "6e2cf311527bd9dcc77ee43a0c52d3841e637fd1fa3b8eab8ffae1c8f6137b6f",
+      "6d5f107a5a4e1b4efcc97496f25c7b3cb03c6da71f84fd06a743f892ff3eaa91",
+      "00d31c8380dc7fd757b2d18ed22a726a7ce39619886c7692f61ce07c4cb0407a",
+      "58da7fab88b8a08d8955beb9ce32a64e9705d25daa5557c5f577432212cceeae"
+    ]
+  },
+  "assets": [
+    {
+      "file": "spawnMMO.png",
+      "sha256": "4be9f7bb97b87b674eb769d9c39fd1385e141454962206140b59ac163ddcbd84",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        180,
+        355
+      ]
+    },
+    {
+      "file": "spawnEIC.png",
+      "sha256": "4ea6ab30cca58484cd639506d35dd5231a74d85146e1e90aef82b0675adf5790",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        180,
+        355
+      ]
+    },
+    {
+      "file": "spawnVRU.png",
+      "sha256": "8614c0845fb130da42a0ccb8c42e8f61586330562ad2237a43fc71a615cbb6a1",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        180,
+        355
+      ]
+    },
+    {
+      "file": "logoMMO.png",
+      "sha256": "fc27d1bf5567ab5e54f5d9f4d759636d1e565568286ee42ded0a1bb502d78f93",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        16,
+        16
+      ]
+    },
+    {
+      "file": "logoEIC.png",
+      "sha256": "1f1598e93a77a0189ad1181a4ca8163be09874dd36446f1f82051fac919fb8cd",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        16,
+        16
+      ]
+    },
+    {
+      "file": "logoVRU.png",
+      "sha256": "73e4b71beb7c65d2445c7c8806cc9fa038b5d11b97599451f33334beea5a8bb8",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        16,
+        16
+      ]
+    },
+    {
+      "file": "logoLobbyMMO.png",
+      "sha256": "51a0ff8bb3fb60bbb315e3afaa909316f1d5070a8a3ce6e66a7c6f6a18739bfb",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        48,
+        55
+      ]
+    },
+    {
+      "file": "logoLobbyEIC.png",
+      "sha256": "0e950d1164c22cbc510d61b0d03259dbfaca48762ea5d507e4482ea2995e6151",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        48,
+        55
+      ]
+    },
+    {
+      "file": "logoLobbyVRU.png",
+      "sha256": "38febe4e30012a19a7581e673859b3d5a954ced0e48cdb664408b55a15b0748d",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        48,
+        55
+      ]
+    },
+    {
+      "file": "panel_133x55.png",
+      "sha256": "0bf61e1a879d1d67d357c44430297145e5fa467a05f8f8c9f72a58202d4f1168",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        131,
+        55
+      ]
+    },
+    {
+      "file": "repairBG.png",
+      "sha256": "ce1949a8eec589216cec8cc04f9d86a1cf84320526958853685152c9077c8ea2",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        524,
+        470
+      ]
+    },
+    {
+      "file": "repairOptions.png",
+      "sha256": "0b777be8b4f23c4785eb80b4bf06227f054f1f7da834e8671d7d2e0e3ace5911",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        116,
+        150
+      ]
+    },
+    {
+      "file": "icon_spawnPoint.png",
+      "sha256": "821ee299804ab549d5556a44e7323bb501af6d8e59421012b6006ca1d660d430",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        100,
+        100
+      ]
+    },
+    {
+      "file": "repairButtons.png",
+      "sha256": "4700523f309b513b02cdd8edbcab8daeae94c114a38dacb946140f2c4051b8ba",
+      "source": "Phase10A.3 validated Unknown export",
+      "nativeSize": [
+        229,
+        32
+      ]
+    }
+  ]
+}

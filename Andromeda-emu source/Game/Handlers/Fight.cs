@@ -501,6 +501,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private sealed class ShipSkillTimerContext
         {
             public int SourceId;
+            public long TdmLife;
             public int SkillType;
             public int[] TargetIds;
             public GameplayDeathContext TargetLife;
@@ -529,6 +530,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private sealed class RocketLauncherAttackContext
         {
             public Session Attacker;
+            public long TdmLife;
             public int MapId;
             public int TargetId;
             public bool TargetIsNpc;
@@ -542,6 +544,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private sealed class RocketAttackContext
         {
             public Session Attacker;
+            public long TdmLife;
             public int MapId;
             public int TargetId;
             public bool TargetIsNpc;
@@ -1129,6 +1132,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 state.LoadedCount = 0;
             }
 
+            if (!targetIsNpc && !TeamDeathMatch.ValidAttack(Session, SessionManager.GetSessionByCharacterId(targetId))) return;
             ServerMessage launcherMessage = PacketComposer.Compose("RL", "A|" + Session.CharacterId + "|" + targetId + "|" + loadedCount + "|" + rocketId);
             if (targetIsNpc && launcherTargetNpc != null)
                 SendNpcScopedMessage(instanceByMapId, launcherTargetNpc, launcherMessage, Session);
@@ -1145,6 +1149,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 RocketLauncherAttackContext context = new RocketLauncherAttackContext();
                 context.Attacker = Session;
+                context.TdmLife = Interlocked.Read(ref Session.TdmLifeGeneration);
                 context.MapId = Session.CurrentMapId;
                 context.TargetId = targetId;
                 context.TargetIsNpc = targetIsNpc;
@@ -1185,6 +1190,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
 
                 Session session = context.Attacker;
+                if (!TeamDeathMatch.ValidProjectile(session, context.TdmLife)) return;
                 if (session == null || session.CharacterInfo == null || !session.Authenticated || session.CurrentMapId != context.MapId)
                     return;
 
@@ -1880,7 +1886,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        private static void StopCurrentShipSkill(Session session, bool broadcastRemovalPackets)
+        internal static void StopCurrentShipSkill(Session session, bool broadcastRemovalPackets)
         {
             if (session == null || session.CharacterInfo == null)
                 return;
@@ -1914,6 +1920,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Action<Session, double> healAction = delegate (Session target, double ratio)
             {
                 if (target == null || target.CharacterInfo == null)
+                    return;
+                if (TeamDeathMatch.IsTdm(session) && (target.CharacterInfo.TdmDead
+                    || !TeamDeathMatch.IsParticipant(target) || target.CharacterInfo.FactionId != session.CharacterInfo.FactionId))
                     return;
                 if (affectedSet.Contains(target.CharacterId))
                     return;
@@ -1968,6 +1977,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (session == null || session.CharacterInfo == null || instance == null || skillType <= 0)
                 return;
 
+            if ((skillType == 2 || skillType == 5) && TeamDeathMatch.IsTdm(session)
+                && !TeamDeathMatch.ValidAttack(session, SessionManager.GetSessionByCharacterId(targetId))) return;
             int durationSeconds = session.CharacterInfo.GetShipSkillDurationSeconds(skillType);
             session.CharacterInfo.ActiveShipSkillType = skillType;
             session.CharacterInfo.ActiveShipSkillTargetId = targetId;
@@ -1996,6 +2007,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             ShipSkillTimerContext timerContext = new ShipSkillTimerContext()
             {
                 SourceId = session.CharacterId,
+                TdmLife = Interlocked.Read(ref session.TdmLifeGeneration),
                 SkillType = skillType,
                 TargetIds = targetIds.ToArray(),
                 TargetLife = DroneWearService.Capture(SessionManager.GetSessionByCharacterId(targetId), GameplayDeathCause.Pvp)
@@ -2037,6 +2049,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session session = SessionManager.GetSessionByCharacterId(timerContext.SourceId);
                 if (session == null || session.CharacterInfo == null)
                     return;
+                if (!TeamDeathMatch.ValidProjectile(session, timerContext.TdmLife)) return;
 
                 if (session.CharacterInfo.ActiveShipSkillType != timerContext.SkillType)
                     return;
@@ -2083,6 +2096,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
 
                 Session attacker = SessionManager.GetSessionByCharacterId(timerContext.SourceId);
+                if (!TeamDeathMatch.ValidProjectile(attacker, timerContext.TdmLife)) return;
                 if (attacker == null || attacker.CharacterInfo == null || attacker.CharacterInfo.ActiveShipSkillType != 5)
                     return;
 
@@ -2116,6 +2130,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     lock (target.CharacterInfo.DroneImpactSyncRoot)
                     {
                     if (!DroneWearService.IsCurrentLife(target, deathContext) || !DroneWearService.IsCurrentLife(target, timerContext.TargetLife) || target.CharacterInfo.ShipHp <= 0) return;
+                    if (TeamDeathMatch.IsTdm(attacker) && !TeamDeathMatch.CanDamage(attacker, target)) return;
                     target.CharacterInfo.UpdateAttacker(attacker);
 
                     if (target.CharacterInfo.ShipHp - damagePerTick > 0)
@@ -2270,6 +2285,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
 
+            if ((skillType == 2 || skillType == 5) && TeamDeathMatch.IsTdm(Session)
+                && !TeamDeathMatch.ValidAttack(Session, SessionManager.GetSessionByCharacterId(targetId))) return;
             Fight.StopCurrentShipSkill(Session, false);
 
             Session.CharacterInfo.SetShipSkillLastActivation(skillType, UnixTimestamp.GetCurrent());
@@ -2596,6 +2613,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (Player.CharacterInfo.Id == Ennemy.CharacterInfo.Id)
                 return PvpRefusalReason.InvalidTarget;
 
+            // TDM relation precedes ordinary group/clan/faction policy.
+            if (TeamDeathMatch.IsTdm(Player) || TeamDeathMatch.IsTdm(Ennemy))
+                return TeamDeathMatch.CanDamage(Player, Ennemy) ? PvpRefusalReason.None : PvpRefusalReason.TeamDeathMatchSafe;
+
             if (_1v1.IsOnMap(Player.CharacterInfo.MapId) || _1v1.IsOnMap(Ennemy.CharacterInfo.MapId))
             {
                 if (Player.CharacterInfo.MapId != Ennemy.CharacterInfo.MapId)
@@ -2614,8 +2635,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (IsSessionInGalaxyGate(Player) || IsSessionInGalaxyGate(Ennemy))
                 return PvpRefusalReason.GalaxyGate;
 
-            if (Player.CharacterInfo.MapId == 83)
-                return TeamDeathMatch.SafeBattle() ? PvpRefusalReason.TeamDeathMatchSafe : PvpRefusalReason.None;
 
             if (Ennemy.CharacterInfo.PeaceZone)
                 return PvpRefusalReason.PeaceZone;
@@ -2923,6 +2942,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 RocketAttackContext context = new RocketAttackContext();
                 context.Attacker = Session;
+                context.TdmLife = Interlocked.Read(ref Session.TdmLifeGeneration);
                 context.MapId = Session.CurrentMapId;
                 context.TargetId = referenceObject.Id;
                 context.TargetIsNpc = true;
@@ -2947,6 +2967,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
 
                 if (!CheckInitialPvpAttack(Session, sessionByCharacterId)
+                    || (TeamDeathMatch.IsTdm(Session) && sessionByCharacterId.CharacterInfo.ActiveISH)
                     || sessionByCharacterId.CharacterInfo.PeaceZone
                     || Fight.GetDistance(Session, sessionByCharacterId) >= RANGE_ROCKET)
                 {
@@ -2973,6 +2994,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 Session.CharacterInfo.SelectedPlayerRocket = Session.CharacterInfo.SelectedPlayer;
                 Session.CharacterInfo.SelectedPlayerRocketSpawnSeq = 0;
+                if (!TeamDeathMatch.ValidAttack(Session, sessionByCharacterId)) return;
 
                 SendPlayerScopedCombatMessage(instanceByMapId, Session, sessionByCharacterId, PacketComposer.Compose(
                     "v",
@@ -2994,6 +3016,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 RocketAttackContext context = new RocketAttackContext();
                 context.Attacker = Session;
+                context.TdmLife = Interlocked.Read(ref Session.TdmLifeGeneration);
                 context.MapId = Session.CurrentMapId;
                 context.TargetId = sessionByCharacterId.CharacterId;
                 context.TargetIsNpc = false;
@@ -3039,6 +3062,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                 }
 
+                if (context != null && !TeamDeathMatch.ValidProjectile(session, context.TdmLife)) return;
                 int mapId = context != null ? context.MapId : session.CurrentMapId;
                 if (session.CurrentMapId != mapId)
                     return;
@@ -3768,7 +3792,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void AttackPlayerCore(MapInstance Instance, Session Session, Session Ennemy, int Ammo, bool damage = true)
         {
-            if (!PlayerCanAttack(Session, Ennemy))
+            if (!PlayerCanAttack(Session, Ennemy) || (TeamDeathMatch.IsTdm(Session) && Ennemy.CharacterInfo.ActiveISH))
                 return;
 
             LaserVolleySnapshot volley = Session.CharacterInfo.CaptureLaserVolley(Ammo);
@@ -3809,6 +3833,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.SendData(PacketComposer.Compose("B", Session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                 }
 
+                if (damage && !TeamDeathMatch.ValidAttack(Session, Ennemy)) return;
                 double now = DateTime.Now.TimeOfDay.TotalMilliseconds;
                 double num = now - Session.CharacterInfo.LastRSB75;
                 bool missed = damage && !Fight.RollPlayerLaserHit(Session, Ennemy);
@@ -3915,6 +3940,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 lock (Ennemy.CharacterInfo.DroneImpactSyncRoot)
                 {
                 if (!DroneWearService.IsCurrentLife(Ennemy, deathContext) || Ennemy.CharacterInfo.ShipHp <= 0) return;
+                if (TeamDeathMatch.IsTdm(Session) && !TeamDeathMatch.CanDamage(Session, Ennemy)) return;
                 Ennemy.CharacterInfo.UpdateAttacker(Session);
                 if (Ammo == 5)
                 {
@@ -4367,6 +4393,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 lock (player.CharacterInfo.DroneImpactSyncRoot)
                 {
                     if (!DroneWearService.IsPendingDeath(player, context)) return;
+                    if (TeamDeathMatch.TryDeath(player, context)) return;
                     result = ShipLifecycleService.AdmitDeath(player.CharacterId,context);
                     if (result == null) throw new InvalidOperationException("Death owner or life no longer matches.");
                     player.CharacterInfo.Destroy = true;
@@ -4838,6 +4865,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             lock (target.CharacterInfo.DroneImpactSyncRoot)
             {
             if (!DroneWearService.IsCurrentLife(target, deathContext) || (launchedLife != null && !DroneWearService.IsCurrentLife(target, launchedLife)) || target.CharacterInfo.ShipHp <= 0) return;
+            if (TeamDeathMatch.IsTdm(attacker) && !TeamDeathMatch.CanDamage(attacker, target)) return;
             int baseShieldPart = Convert.ToInt32(damage * target.CharacterInfo.ShieldAbsorption);
             shieldPart = baseShieldPart;
             shieldPart = Fight.ApplySentinelShieldReduction(target, shieldPart);
@@ -4895,13 +4923,18 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             target.CharacterInfo.UpdateAttacker(attacker);
 
+            int applied;
+            lock (target.CharacterInfo.DroneImpactSyncRoot)
+            {
+            if (target.CharacterInfo.TdmDead || !TeamDeathMatch.ValidAttack(attacker, target)) return;
             int shieldDamage = Math.Max(0, damage);
             shieldDamage = Fight.ApplySentinelShieldReduction(target, shieldDamage);
-            int applied = Math.Min(Math.Max(0, target.CharacterInfo.ShipShield), shieldDamage);
+            applied = Math.Min(Math.Max(0, target.CharacterInfo.ShipShield), shieldDamage);
             if (applied > 0)
             {
                 target.CharacterInfo.ShipShield -= applied;
                 target.CharacterInfo.RegisterShieldDamageReceived();
+            }
             }
 
             foreach (MapActor key in instance.GetActorSnapshot())

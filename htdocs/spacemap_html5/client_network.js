@@ -1092,7 +1092,7 @@ function connectToServer(isReconnect = false) {
             console.warn("[WS] LOGIN already pending, suppressing duplicate startup LOGIN");
         } else {
             wsLoginAttemptPending = true;
-            const loginCmd = `LOGIN|${cfg.userID}|${cfg.sessionID}|${version}`;
+            const loginCmd = `LOGIN|${cfg.userID}|${cfg.sessionID}|${version}|TDM1`;
             sendRaw(loginCmd);
         }
         startPingTimer();
@@ -1333,6 +1333,7 @@ const PACKET_HANDLERS = {
     TX: handlePacket_TX,
     RL: handlePacket_RL,
     k: handlePacket_k,
+    TDM: (parts, i) => { if (window.AndromedaTdm) window.AndromedaTdm.receive(parts, i); },
     TW: handlePacket_TW
 };
 
@@ -6623,6 +6624,7 @@ function handlePacket_ERR(parts, i) {
 
 function handlePacket_K(parts, i) {
     const id = parseInt(parts[i], 10);
+    if (id === heroId && parts[i + 1] === "TDM" && window.AndromedaTdm) { window.AndromedaTdm.heroDeath(); return; }
     if (id === heroId && window.AndromedaShipDeath && !window.AndromedaShipDeath.begin()) return;
     const e = entities[id];
     if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection(id);
@@ -7251,6 +7253,7 @@ function handlePacket_TX(parts, i) {
 }
 
 function handlePacket_7(parts, i) {
+    if (parts[i] === "HS" && window.AndromedaTdm) window.AndromedaTdm.hello();
     let settingKey = parts[i];
     let settingValue = parts[i + 1];
     if (settingKey && settingValue === undefined && String(settingKey).indexOf(",") !== -1) {

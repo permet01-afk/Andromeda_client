@@ -35,7 +35,8 @@ namespace OrbitReborn_Emulator.Game.Characters
         public readonly int MapId;
         public readonly GameplayDeathCause Cause;
         public readonly bool InvasionExempt;
-        public GameplayDeathContext(long epoch, string token, int map, GameplayDeathCause cause, bool invasion)
-        { LifeEpoch = epoch; SessionToken = token; MapId = map; Cause = cause; InvasionExempt = invasion; }
+        public readonly long TdmLife; // Runtime-only projectile fence; durable Phase4 epoch unchanged.
+        public GameplayDeathContext(long epoch, string token, int map, GameplayDeathCause cause, bool invasion, long tdmLife = 0)
+        { LifeEpoch = epoch; SessionToken = token; MapId = map; Cause = cause; InvasionExempt = invasion; TdmLife = tdmLife; }
     }
 }

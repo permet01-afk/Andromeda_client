@@ -364,6 +364,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                             && Math.Sqrt(Math.Pow((double)(sessionByCharacterId.CharacterInfo.LocX - Session.CharacterInfo.LocX), 2.0)
                             + Math.Pow((double)(sessionByCharacterId.CharacterInfo.LocY - Session.CharacterInfo.LocY), 2.0)) < 600.0))
                     {
+                        lock (sessionByCharacterId.CharacterInfo.DroneImpactSyncRoot)
+                        {
+                        if ((TeamDeathMatch.IsTdm(Session) || TeamDeathMatch.IsTdm(sessionByCharacterId))
+                            && !TeamDeathMatch.ValidAttack(Session, sessionByCharacterId)) continue;
                         int smbDamages = Session.CharacterInfo.SmbDamages;
 
                         if (sessionByCharacterId.CharacterInfo.ShipHp - smbDamages > 0)
@@ -395,6 +399,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                                     s.SendData(msg);
                                 }
                             }
+                        }
                         }
                     }
                 }

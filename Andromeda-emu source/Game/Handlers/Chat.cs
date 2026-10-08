@@ -219,62 +219,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     TeamDeathMatch.Disable();
                     return;
                 case "/join_team":
-                    if (!TeamDeathMatch.IsActive())
-                        return;
-                    if (nextString.Split(' ').Length < 2)
-                    {
-                        Session.SendData(PacketComposer.ComposeChat("dq%- use /join_team nameOfTeam .#"));
-                        return;
-                    }
-                    string msg = "Team doesnt exist or is full, or you are already on a team.";
-                    string name = nextString.Split(' ')[1];
-                    bool done = TeamDeathMatch.JoinTeam(name, Session);
-                    if (done)
-                        msg = "You succesfully joined the team.";
-                    Session.SendData(PacketComposer.ComposeChat("dq%- " + msg + "#"));
-                    return;
                 case "/create_team":
-                    if (!TeamDeathMatch.IsActive())
-                        return;
-                    if (nextString.Split(' ').Length < 2)
-                    {
-                        Session.SendData(PacketComposer.ComposeChat("dq%- use /create_team nameOfTeam .#"));
-                        return;
-                    }
-                    string msg1 = "Team already exist, or you are already on a team.";
-                    string name1 = nextString.Split(' ')[1];
-                    bool created = TeamDeathMatch.CreateNewTeam(name1, Session);
-                    if (created)
-                        msg1 = "You succesfully created the team.";
-                    Session.SendData(PacketComposer.ComposeChat("dq%- " + msg1 + "#"));
-                    return;
                 case "/members_team":
-                    if (!TeamDeathMatch.IsActive())
-                        return;
-                    string teamName = TeamDeathMatch.userTeam(Session);
-                    if (teamName == null)
-                    {
-                        Session.SendData(PacketComposer.ComposeChat("dq%- You are not on a team.#"));
-                        return;
-                    }
-                    Session.SendData(PacketComposer.ComposeChat("dq%- " + TeamDeathMatch.DisplayTeam(teamName) + ".#"));
-                    return;
                 case "/leave_team":
-                    if (!TeamDeathMatch.IsActive())
-                        return;
-                    string teamName1 = TeamDeathMatch.userTeam(Session);
-                    if (teamName1 == null)
-                    {
-                        Session.SendData(PacketComposer.ComposeChat("dq%- You are not on a team.#"));
-                        return;
-                    }
-                    bool leave = TeamDeathMatch.LeaveTeam(teamName1, Session);
-                    if (!leave)
-                    {
-                        Session.SendData(PacketComposer.ComposeChat("dq%- Problemn while leaving team, contact admin.#"));
-                        return;
-                    }
-                    Session.SendData(PacketComposer.ComposeChat("dq%- You succesfully left your team.#"));
+                    Session.SendData(PacketComposer.ComposeChat("dq%- TDM registration is now individual. Approach TDMGate1 on your home map and press J.#"));
                     return;
                 case "/setmap_maxusers":
                     if (!Session.CharacterInfo.IsAdmin)

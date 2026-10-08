@@ -1,4 +1,4 @@
-﻿
+
 
 using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Communication;
@@ -364,6 +364,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (nextInt1 == 0 || nextInt2 == 0 || nextInt3 == 0 || nextInt4 == 0)
                 return;
 
+            if (!TeamDeathMatch.AllowMove(Session, nextInt1, nextInt2)) return;
             ShipMovement.AdvanceMovingPlayerToCurrentPosition(Session);
 
             double TimeTaken = ShipMovement.getTimeTaken(Session, nextInt1, nextInt2);

@@ -3578,6 +3578,7 @@ function drawRageGlow(effect, img, x, y, scale, now) {
 }
 
 function drawShip() {
+    if (window.AndromedaTdm && window.AndromedaTdm.dead) return;
     if (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal) return;
     const shipScreenX = mapToScreenX(shipX);
     const baseY = mapToScreenY(shipY);

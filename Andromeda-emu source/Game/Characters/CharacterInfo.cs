@@ -264,6 +264,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         private int mPathTimeTaken;
         private Settings mSettings;
         private int mShipHp;
+        public bool TdmDead; // Transient match death, never a Phase5 DESTROYED hull.
         private int mShipMaxHp;
         private CharacterConfig mConfig1;
         private CharacterConfig mConfig2;
@@ -2892,7 +2893,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
             MySqlClient.SetParameter("online", (object)online);
             MySqlClient.SetParameter("runtime_shipid", this.mShipId);
-            MySqlClient.SetParameter("current_hp", (object)this.ShipHp);
+            MySqlClient.SetParameter("current_hp", (object)(this.TdmDead ? this.ShipMaxHp : this.ShipHp));
             MySqlClient.SetParameter("current_shield1", (object)ClampRuntimeValue(this.Config1.Shield, 0, this.Config1.MaxShield));
             MySqlClient.SetParameter("current_shield2", (object)ClampRuntimeValue(this.Config2.Shield, 0, this.Config2.MaxShield));
             MySqlClient.SetParameter("active_config", (object)(this.ActiveConfig == 2 ? 2 : 1));
@@ -3193,7 +3194,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("locy", (object)saveLocY);
             MySqlClient.SetParameter("mapid", (object)saveMapId);
             MySqlClient.SetParameter("online", (object)online);
-            MySqlClient.SetParameter("current_hp", (object)this.ShipHp);
+            MySqlClient.SetParameter("current_hp", (object)(this.TdmDead ? this.ShipMaxHp : this.ShipHp));
             MySqlClient.SetParameter("current_shield1", (object)ClampRuntimeValue(this.Config1.Shield, 0, this.Config1.MaxShield));
             MySqlClient.SetParameter("current_shield2", (object)ClampRuntimeValue(this.Config2.Shield, 0, this.Config2.MaxShield));
             MySqlClient.SetParameter("active_config", (object)(this.ActiveConfig == 2 ? 2 : 1));

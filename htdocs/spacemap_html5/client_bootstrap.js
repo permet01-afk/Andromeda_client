@@ -181,6 +181,7 @@ function render(now) {
             }
         }
         drawPortals();
+        if (window.AndromedaTdm) window.AndromedaTdm.draw(ctx);
         drawEntities();
         drawSmartbombEffects(DRAW_SMARTBOMB_ONLY_HERO_OPTIONS);
         drawShip();

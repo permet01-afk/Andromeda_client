@@ -1,4 +1,4 @@
-﻿using OrbitReborn_Emulator.Communication;
+using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
@@ -107,6 +107,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         public static void Initialize()
         {
+            TeamDeathMatch.Initialize();
             Others.invasionPortal.Add(204);
             Others.invasionPortal.Add(205);
             Others.invasionPortal.Add(206);
@@ -557,6 +558,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void PortalJump(Session Session, ClientMessage Message)
         {
+            if (TeamDeathMatch.TryOpenLobby(Session)) return;
             bool canJump = true;
             bool internalGatePortal = false;
 

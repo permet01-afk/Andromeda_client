@@ -26,11 +26,12 @@ namespace OrbitReborn_Emulator.Game.Sessions
         public readonly TechRuntimeState TechState = new TechRuntimeState();
         internal bool HasPendingGameplayDeath
         {
-            get { return CharacterInfo != null && !CharacterInfo.DroneWearPersistenceBlocked
+            get { return CharacterInfo != null && !CharacterInfo.TdmDead && !CharacterInfo.DroneWearPersistenceBlocked
                 && (CharacterInfo.DroneDeathPublishing || (!CharacterInfo.DeadCommitted && (CharacterInfo.PendingDroneDeath != null || (DroneLifeEpoch > 0 && CharacterInfo.ShipHp <= 0)))); }
         }
         public readonly string DroneGameplayToken = Guid.NewGuid().ToString("N");
         public long DroneLifeEpoch;
+        public long TdmLifeGeneration; // Never persisted as a drone/ship life epoch.
         public ShipGameplayLease ShipLease;
 
         private const int RX_CHUNK_SIZE = 8192;
@@ -344,7 +345,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                         other.SendData(MapUserLeaveComposer.Compose(this.CharacterId));
                     }
                     MapManager.RemoveUserFromMap(this);
-                    if (TeamDeathMatch.IsActive()) TeamDeathMatch.removeUserFromTdm(this);
+                    TeamDeathMatch.BeforeDisconnect(this, confirmLogout);
                     DisposeCore(true, true); // Stop callbacks and flush pending ammo before acknowledging logout.
                     this.CharacterInfo.SynchronizeStatistics(client, 0);
                     DroneWearService.EndGameplay(this.CharacterId, this.DroneGameplayToken);
@@ -648,6 +649,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 && UnixTimestamp.GetCurrent() - this.mLastReconnectHandoffTimestamp < 2.0)
                 return;
 
+            TeamDeathMatch.BeforeDisconnect(this, false);
             TechInventoryService.Suspend(this);
             SessionManager.UnregisterAuthenticatedSession(this);
 

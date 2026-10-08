@@ -1,4 +1,4 @@
-﻿
+
 
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Config;
@@ -189,6 +189,7 @@ namespace OrbitReborn_Emulator
         public static void Stop()
         {
             Output.WriteLine((object)Localization.GetValue("core.uninit", (string[])null));
+            OrbitReborn_Emulator.Game.Event.TeamDeathMatch.Disable();
             Program.mAlive = false;
             PerformanceProfiler.Uninitialize();
             SqlDatabaseManager.Uninitialize();

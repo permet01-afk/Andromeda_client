@@ -50,6 +50,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="WindowsBase" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -115,6 +116,8 @@
     <Compile Include="Game\Event\Survivor.cs" />
     <Compile Include="Game\Event\Spaceball.cs" />
     <Compile Include="Game\Event\TeamDeathMatch.cs" />
+    <Compile Include="Game\Event\Tdm\TdmRules.cs" />
+    <Compile Include="Game\Event\Tdm\TdmEventService.cs" />
     <Compile Include="Game\Handlers\Chat.cs" />
     <Compile Include="Game\Handlers\Fight.cs" />
     <Compile Include="Storage\SqlDatabaseTransaction.cs" />

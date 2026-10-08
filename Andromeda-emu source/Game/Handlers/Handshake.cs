@@ -140,6 +140,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Session.SendData(PacketComposer.Compose("7", "SLOTMENU_POSITION," + Session.CharacterInfo.Settings.SlotmenuPosition));
             Session.SendData(PacketComposer.Compose("7", "SLOTMENU_ORDER," + Session.CharacterInfo.Settings.SlotmenuOrder));
             Session.SendData(PacketComposer.Compose("7", "MAINMENU_POSITION," + Session.CharacterInfo.Settings.MainmenuPosition));
+            TeamDeathMatch.BeforeLogin(Session, Message.GetNextString(4) == "TDM1");
             int startMapId = Session.CharacterInfo.MapId;
             if (!Session.CharacterInfo.IsAdmin && !Session.CharacterInfo.IsMod)
             {
@@ -242,7 +243,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.UpdateGroupTimer.Dispose();
             GroupManager.RestoreDestroyedMember(Session);
             Session.CharacterInfo.UpdateGroupTimer = new System.Threading.Timer(new TimerCallback(GroupManager.UpdateGroup), (object)Session, (int)0, 1000);
-            if (Session.CharacterInfo.MapId == 83 || _1v1.IsOnMap(Session.CharacterInfo.MapId))
+            if (_1v1.IsOnMap(Session.CharacterInfo.MapId))
             {
                 Fight.EvacuatePlayer(Session, true);
             }

@@ -100,6 +100,12 @@ namespace OrbitReborn_Emulator.Game.Maps
             if (Session == null || Session.CharacterInfo == null)
                 return;
 
+            if (MapId == 83 && !OrbitReborn_Emulator.Game.Event.TeamDeathMatch.IsParticipant(Session))
+            {
+                Session.SendData(PacketComposer.Compose("A", "STD|Join Team Deathmatch through its lobby first."));
+                return;
+            }
+
             MapInfo mapInfo = MapInfoLoader.GetMapInfo(MapId);
             if (mapInfo == null)
             {
@@ -116,7 +122,8 @@ namespace OrbitReborn_Emulator.Game.Maps
                 Session.SendData(PacketComposer.Compose("A", "STD|This map is not available."));
                 return;
             }
-            if (mapInfo.CurrentCompanyUsers(Session.CharacterInfo.FactionId) >= mapInfo.MaxUsers && !Session.CharacterInfo.IsAdmin && !Session.CharacterInfo.IsMod)
+            bool tdmReturnHome = Session.CharacterInfo.MapId == 83 && MapId == MapAccessService.GetHomeMapX1(Session.CharacterInfo.FactionId);
+            if (!tdmReturnHome && mapInfo.CurrentCompanyUsers(Session.CharacterInfo.FactionId) >= mapInfo.MaxUsers && !Session.CharacterInfo.IsAdmin && !Session.CharacterInfo.IsMod)
             {
                 Session.SendData(PacketComposer.Compose("A", "STD|The map is full for your company !"));
                 if (Session.CharacterInfo.MapId != MapId)

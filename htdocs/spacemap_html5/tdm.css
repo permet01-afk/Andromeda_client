@@ -1,0 +1,25 @@
+/* Same LOCAL window1 scale9 chrome used by current Andromeda windows.
+ * Inner company panels and the dedicated 2014 killscreen retain their native art. */
+.tdm-window{position:absolute;isolation:isolate;width:524px;height:352px;z-index:2100;box-sizing:border-box;color:#eee;font:14px "EurostileFl",Tahoma,sans-serif;pointer-events:auto}
+.tdm-window::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;border:solid;border-width:36px 79px 22px 40px;border-image:url("graphics/ui/window1/images/w1_border_nonres.png") 36 79 22 40 fill stretch}
+.tdm-window::after{content:"";position:absolute;inset:0;z-index:-2;background:url("graphics/ui/window1/images/w1_bg_tile.png") repeat;mask:url("graphics/ui/window1/images/w1_mask_nonres.png") 0 0/100% 100% no-repeat;pointer-events:none}
+.tdm-window header{position:absolute;top:0;left:0;right:28px;height:29px;display:flex;align-items:center;gap:8px;cursor:move;font:14px "EurostileHeaFl",Tahoma,sans-serif;color:#e9e2c0;text-shadow:0 0 5px #ff7a19}
+.tdm-window header img{width:24px;height:24px;margin-left:2px}.tdm-window header button{margin-left:auto;min-width:24px}
+.tdm-body{position:absolute;inset:36px 28px 28px 12px;text-align:center;overflow:auto}
+.tdm-body h2{font:18px "EurostileHeaFl",Tahoma,sans-serif;margin:3px 0 12px;color:#e9e2c0}.tdm-body p{margin:9px 0}.tdm-body footer{display:flex;justify-content:center;gap:10px;margin-top:16px}
+.tdm-window button{border:0;border-radius:0;padding:0 14px;min-width:80px;height:25px;background:transparent url("graphics/ui/ui/sprites/DefineSprite_518_button1/1.png") center/100% 100% no-repeat;color:#fff;font:13px "EurostileFl",Tahoma,sans-serif;text-shadow:1px 1px #000;cursor:pointer}
+.tdm-window button:disabled{opacity:.45;cursor:default}.tdm-window button:focus-visible,.tdm-killscreen button:focus-visible{outline:1px solid #dfbd72;outline-offset:2px}
+.tdm-companies{display:flex;justify-content:center;gap:13px;margin:16px 0}.tdm-company{width:131px;height:82px;box-sizing:border-box;background:url("graphics/tdm/panel_133x55.png") bottom/131px 55px no-repeat;display:grid;grid-template-columns:55px 1fr;grid-template-rows:50px 28px;align-items:center;justify-items:center;padding:0 5px}
+.tdm-company img{max-width:48px;max-height:55px;grid-row:1/3}.tdm-company strong{align-self:end}.tdm-company span{font-size:12px}
+.tdm-versus{display:flex;align-items:center;justify-content:center;gap:20px;height:65px;margin:14px 0}.tdm-versus img{max-width:48px;max-height:55px}.tdm-versus strong{font-size:20px}
+.tdm-error{color:#ffad92;font-size:12px;min-height:14px}.tdm-status{color:#d5cba9}
+.tdm-hud{position:absolute;left:36px;top:70px;width:194px;box-sizing:border-box;background:rgba(9,17,22,.86);border:1px solid #536671;color:#edf3f5;padding:10px;z-index:1100;font:14px "EurostileFl",Tahoma,sans-serif;pointer-events:none;text-shadow:1px 1px #000}
+.tdm-hud-title{font-size:12px;letter-spacing:1px;border-bottom:1px solid #536671;padding-bottom:7px;margin-bottom:5px}.tdm-hud>div:not(:first-child){display:flex;align-items:center;gap:7px;min-height:26px}.tdm-hud img{width:16px;height:16px}.tdm-hud b{margin-left:auto;font-size:17px}.tdm-hud .tdm-countdown{justify-content:center;color:#a7e7e4;font-size:21px;min-height:24px}
+.tdm-death-overlay{position:fixed;inset:0;z-index:2200;display:grid;place-items:center;background:rgba(0,0,0,.22);pointer-events:auto}
+.tdm-killscreen{position:relative;width:524px;height:470px;background:url("graphics/tdm/repairBG.png") no-repeat;color:#eee;text-align:center;font:16px "EurostileFl",Tahoma,sans-serif}
+.tdm-killscreen h2{position:absolute;top:42px;left:0;right:0;font-size:23px;margin:0}.tdm-destroyed{position:absolute;top:84px;left:40px;right:40px;line-height:24px}
+.tdm-repair-option{position:absolute;left:204px;top:150px;width:116px;height:150px;background:url("graphics/tdm/repairOptions.png")}.tdm-repair-option img{position:absolute;left:8px;top:8px;width:100px;height:100px}.tdm-repair-option strong{position:absolute;top:124px;left:0;right:0;color:#a4eaac}
+.tdm-respawn-label{position:absolute;top:303px;left:0;right:0}.tdm-repair-clock{position:absolute;top:339px;left:0;right:0}
+.tdm-killscreen button[data-tdm-action="REPAIR"]{position:absolute;left:147px;top:410px;width:229px;height:32px;border:0;background:url("graphics/tdm/repairButtons.png") no-repeat;color:#efffec;font:17px "EurostileHeaFl",Tahoma,sans-serif;cursor:pointer}
+.tdm-killscreen button[data-tdm-action="LEAVE"]{position:absolute;right:35px;bottom:28px;background:none;border:0;color:#ccc;font:12px Tahoma,sans-serif;cursor:pointer}
+.tdm-window[hidden],.tdm-hud[hidden],.tdm-death-overlay[hidden]{display:none!important}

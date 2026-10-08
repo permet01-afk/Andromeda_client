@@ -111,7 +111,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         {
             if (player == null || player.CharacterInfo == null) return null;
             return new GameplayDeathContext(Interlocked.Read(ref player.DroneLifeEpoch), player.DroneGameplayToken,
-                player.CharacterInfo.MapId, cause, Invasion.IsDroneWearExemptParticipant(player));
+                player.CharacterInfo.MapId, cause, Invasion.IsDroneWearExemptParticipant(player), Interlocked.Read(ref player.TdmLifeGeneration));
         }
         public static bool IsCurrentLife(Session player, GameplayDeathContext context)
         {
@@ -119,7 +119,8 @@ namespace OrbitReborn_Emulator.Game.Characters
                 && !player.StoppedPlayer && !player.CharacterInfo.Disconnected && !player.CharacterInfo.Destroy
                 && context.LifeEpoch == Interlocked.Read(ref player.DroneLifeEpoch)
                 && context.SessionToken == player.DroneGameplayToken
-                && context.MapId == player.CharacterInfo.MapId;
+                && context.MapId == player.CharacterInfo.MapId
+                && context.TdmLife == Interlocked.Read(ref player.TdmLifeGeneration);
         }
 
         // Called inside the impact lock, immediately at HP=0. Freeze this life
