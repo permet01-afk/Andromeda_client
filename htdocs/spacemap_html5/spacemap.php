@@ -759,8 +759,8 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <script src="client_quests.js?v=phase7-quest-visual-3"></script>
 <script src="client_map_decor_data.js?v=phase8c-decor-1"></script>
 <script src="client_map_decor.js?v=phase8c-decor-1"></script>
-<link rel="stylesheet" href="tdm.css?v=phase10b-1">
-<script src="client_tdm.js?v=phase10b-1"></script>
+<link rel="stylesheet" href="tdm.css?v=phase10b-window-3">
+<script src="client_tdm.js?v=phase10b-window-2"></script>
 <script src="client_bootstrap.js?v=phase10b-1"></script>
 
 

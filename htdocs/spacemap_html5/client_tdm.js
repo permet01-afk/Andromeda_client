@@ -5,6 +5,7 @@
     "use strict";
     const root = "graphics/tdm/", names = ["", "MMO", "EIC", "VRU"];
     let state = null, clockOffset = 0, dialog, body, hud, death, lobbyOpen = false;
+    let dismissedDialogKey = null;
     let request = 0, errorText = "", lastUiKey = "", lastMatch = "", previousSeconds = null;
     const images = new Map(), heard = new Set();
     const now = () => Date.now() + clockOffset;
@@ -23,14 +24,29 @@
         errorText = "";
         sendRaw(`TDM|1|${action}|${state.eventId}|${request}|${reference}`);
     }
+    const dialogKey = s => s.offer ? "offer:" + s.offer.id : s.result ? "result:" + s.result.id : "lobby";
     function initialize() {
         if (dialog) return;
         dialog = document.createElement("section"); dialog.className = "tdm-window"; dialog.id = "tdm-window";
         dialog.setAttribute("aria-label", "Team Deathmatch"); dialog.setAttribute("role", "dialog");
-        dialog.innerHTML = '<header><img src="graphics/ui/window1/images/info_icon.png" alt=""><span>Team Deathmatch</span><button type="button" data-tdm-close aria-label="Close">×</button></header><div class="tdm-body"></div>';
+        dialog.innerHTML = '<header><button type="button" class="gwIcon tdm-close-icon" aria-label="Close Team Deathmatch" title="Close Team Deathmatch"><img src="graphics/ui/window1/images/info_icon.png" alt="" draggable="false"></button><span>Team Deathmatch</span></header><div class="tdm-body"></div>';
         body = dialog.querySelector(".tdm-body");
-        dialog.style.left = Math.max(8, (innerWidth - 524) / 2) + "px"; dialog.style.top = Math.max(40, (innerHeight - 352) / 2) + "px";
-        document.body.appendChild(dialog);
+        // The shared drag helper uses HUD coordinates, so the window must live
+        // under that same scaled root (like the other Andromeda windows).
+        const root = typeof window.getHudRoot === "function" ? window.getHudRoot() : document.body;
+        root.appendChild(dialog);
+        const width = root === document.body ? innerWidth : root.clientWidth;
+        const height = root === document.body ? innerHeight : root.clientHeight;
+        dialog.style.left = Math.max(8, Math.round((width - 524) / 2)) + "px";
+        dialog.style.top = Math.max(40, Math.round((height - 352) / 2)) + "px";
+        const closeIcon = dialog.querySelector(".tdm-close-icon");
+        const stopControlEvent = e => { e.preventDefault(); e.stopPropagation(); };
+        closeIcon.addEventListener("pointerdown", stopControlEvent);
+        closeIcon.addEventListener("mousedown", stopControlEvent);
+        closeIcon.addEventListener("click", e => {
+            stopControlEvent(e);
+            lobbyOpen = false; dismissedDialogKey = dialogKey(state); render();
+        });
         if (typeof makeElementDraggable === "function") makeElementDraggable(dialog, dialog.querySelector("header"));
         hud = document.createElement("aside"); hud.className = "tdm-hud"; hud.setAttribute("aria-label", "Team Deathmatch score"); document.body.appendChild(hud);
         death = document.createElement("div"); death.className = "tdm-death-overlay";
@@ -40,7 +56,6 @@
             node.addEventListener("keydown", e => e.stopPropagation());
             node.addEventListener("click", e => {
                 e.stopPropagation();
-                if (e.target.closest("[data-tdm-close]")) { lobbyOpen = false; render(); return; }
                 const b = e.target.closest("[data-tdm-action]");
                 if (b && !b.disabled) command(b.dataset.tdmAction, b.dataset.ref || "");
             });
@@ -55,7 +70,7 @@
         // Revision is monotonic across event start/stop in this server process.
         if (state && incoming.revision < state.revision) return;
         clockOffset = incoming.serverNow - Date.now(); state = incoming;
-        if (incoming.open) lobbyOpen = true;
+        if (incoming.open) { lobbyOpen = true; dismissedDialogKey = null; }
         if (incoming.error) errorText = incoming.error;
         if (incoming.match) lobbyOpen = false;
         initialize(); render(); tick();
@@ -63,7 +78,7 @@
     function render() {
         if (!state || !dialog) return;
         const s = state, m = s.match, o = s.offer, r = s.result;
-        dialog.hidden = !(o || r || lobbyOpen);
+        dialog.hidden = !(o || r || lobbyOpen) || dismissedDialogKey === dialogKey(s);
         death.hidden = !(m && m.dead && m.lives > 0);
         hud.hidden = !m;
         const uiKey = JSON.stringify([s.eventId, s.enabled, s.company, s.bracket, s.waiting, s.running, s.queued, s.queuePosition, o, r, m && [m.dead, m.deathId, m.lives], errorText]);
@@ -149,7 +164,7 @@
     window.AndromedaTdm = { receive, draw, nearBeacon, heroDeath, command,
         get dead() { return !!(state && state.match && state.match.dead); },
         hello() { if (typeof sendRaw === "function") sendRaw("TDM|1|HELLO"); },
-        reset() { state=null;lastUiKey="";lastMatch="";previousSeconds=null;lobbyOpen=false;if(dialog){dialog.hidden=true;hud.hidden=true;death.hidden=true;} }
+        reset() { state=null;lastUiKey="";lastMatch="";previousSeconds=null;lobbyOpen=false;dismissedDialogKey=null;if(dialog){dialog.hidden=true;hud.hidden=true;death.hidden=true;} }
     };
     window.addEventListener("andromeda:ws-open", () => window.AndromedaTdm.reset());
     setInterval(tick, 100);
