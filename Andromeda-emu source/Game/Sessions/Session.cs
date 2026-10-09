@@ -616,7 +616,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     try
                     {
                         currentHeader = Message.Header;
-                        if (this.CharacterInfo != null && (this.CharacterInfo.Destroy || this.CharacterInfo.DeadCommitted)) return;
+                        if (this.CharacterInfo != null && (this.CharacterInfo.Destroy || this.CharacterInfo.DeadCommitted))
+                        {
+                            if (!this.CharacterInfo.TdmDead || this.CharacterInfo.DeadCommitted) return;
+                            // TDM death keeps its transport alive for FREE REPAIR/LEAVE.
+                            // Ignore combat without discarding a later TDM packet in the same TCP read.
+                            if (currentHeader != "TDM" && currentHeader != "PNG") continue;
+                        }
                         DataRouter.HandleData(this, Message);
                     }
                     catch (Exception ex)

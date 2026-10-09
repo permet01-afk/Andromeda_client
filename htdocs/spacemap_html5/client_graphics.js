@@ -2021,6 +2021,9 @@ function formatMinimapMapId(mapId) {
       case 81:
         return "Inva";
 
+      case 83:
+        return "TDM";
+
       default:
         return "1-1";
     }

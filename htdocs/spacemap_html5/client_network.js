@@ -463,8 +463,11 @@ function closeChatConnectionForDisconnect(reason) {
     chatUsesNullDelimiter = false;
 }
 
-function reconnectToCurrentMap() {
-    if (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal) return;
+let wsReconnectTicketPending = false;
+
+async function reconnectToCurrentMap() {
+    if (wsReconnectTicketPending || wsPageUnloading || (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal)) return;
+    wsReconnectTicketPending = true;
     if (wsReconnectTimer) {
         clearTimeout(wsReconnectTimer);
         wsReconnectTimer = null;
@@ -480,10 +483,33 @@ function reconnectToCurrentMap() {
     netBuffer = "";
     wsUsesNullDelimiter = false;
     window.__ANDRO_WS_CONNECTED = false;
-    wsManualClose = false;
-    hideFlashConnectionLostWindowSafe();
-    connectToServer(true);
-    if (heroId && heroId > 0) connectToChat(); else startChatInitMonitor();
+    const abort = new AbortController();
+    const timeout = setTimeout(() => abort.abort(), 8000);
+    try {
+        // Game LOGIN consumes the SSO ticket. Reuse the authenticated START
+        // endpoint before opening a new transport, including TDM reconnects.
+        const response = await fetch('spacemap.php?issue_ticket=1', {
+            method: 'GET', credentials: 'same-origin', cache: 'no-store',
+            headers: { 'Accept': 'application/json' }, signal: abort.signal
+        });
+        if (!response.ok) throw new Error('Ticket endpoint failed: HTTP ' + response.status);
+        const ticket = await response.json();
+        if (!ticket || !ticket.ok || typeof ticket.sessionID !== 'string' || !ticket.sessionID) throw new Error('Invalid reconnect ticket');
+        if (wsPageUnloading || (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal)) return;
+        cfg.sessionID = ticket.sessionID;
+        window.ANDROMEDA_CONFIG.sessionID = ticket.sessionID;
+        wsManualClose = false;
+        hideFlashConnectionLostWindowSafe();
+        connectToServer(true);
+        if (heroId && heroId > 0) connectToChat(); else startChatInitMonitor();
+    } catch (err) {
+        console.error('[WS] Unable to obtain reconnect ticket:', err.message);
+        showFlashConnectionLostWindowSafe();
+    } finally {
+        clearTimeout(timeout);
+        wsReconnectTicketPending = false;
+        wsManualClose = false;
+    }
 }
 
 window.reconnectToCurrentMap = reconnectToCurrentMap;

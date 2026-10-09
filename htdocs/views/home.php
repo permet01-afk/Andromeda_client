@@ -103,6 +103,17 @@ if (!function_exists('homeGetNextInvasionStart')) {
     }
 }
 
+if (!function_exists('homeGetNextTdmStart')) {
+    function homeGetNextTdmStart(DateTimeImmutable $now)
+    {
+        // Calendar follows Config/tdm_schedule.json, like the other event panels.
+        return homeGetNextScheduledStart($now, [
+            ['day' => 1, 'time' => '20:00:00'],
+            ['day' => 4, 'time' => '20:00:00'],
+        ]);
+    }
+}
+
 if (!function_exists('homeFormatCountdown')) {
     function homeFormatCountdown($seconds)
     {
@@ -193,6 +204,10 @@ $registeredPlayers = number_format(HomeLeaderboardService::getRegisteredPlayerCo
 $serverStats = HomeLeaderboardService::getServerStats($db);
 
 $eventTimezone = new DateTimeZone('Europe/Zurich');
+$tdmNow = new DateTimeImmutable('now', $eventTimezone);
+$tdmNextStart = homeGetNextTdmStart($tdmNow);
+$tdmNextLabel = $tdmNextStart->format('l, d M H:i T');
+$tdmCountdown = homeFormatCountdown($tdmNextStart->getTimestamp() - $tdmNow->getTimestamp());
 $spaceballNow = new DateTimeImmutable('now', $eventTimezone);
 $spaceballNextStart = homeGetNextSpaceballStart($spaceballNow);
 $spaceballCountdownSeconds = $spaceballNextStart !== null ? $spaceballNextStart->getTimestamp() - $spaceballNow->getTimestamp() : 0;
@@ -451,6 +466,35 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                         <div>
                             <dt>Countdown</dt>
                             <dd><?php echo htmlspecialchars($invasionCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="event-panel is-scheduled">
+                    <div class="event-title-row">
+                        <span class="event-name">Team Deathmatch</span>
+                        <span class="event-status">Scheduled</span>
+                    </div>
+                    <dl class="event-details">
+                        <div>
+                            <dt>Status</dt>
+                            <dd>Join from TDMGate1 on your x-1 map</dd>
+                        </div>
+                        <div>
+                            <dt>Schedule</dt>
+                            <dd>Monday 20:00 / Thursday 20:00</dd>
+                        </div>
+                        <div>
+                            <dt>Duration</dt>
+                            <dd>60 minutes · 20:00–21:00 Europe/Zurich</dd>
+                        </div>
+                        <div>
+                            <dt>Next start</dt>
+                            <dd><?php echo htmlspecialchars($tdmNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+                        </div>
+                        <div>
+                            <dt>Countdown</dt>
+                            <dd><?php echo htmlspecialchars($tdmCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
                         </div>
                     </dl>
                 </div>

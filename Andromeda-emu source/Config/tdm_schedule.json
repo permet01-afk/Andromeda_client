@@ -1,5 +1,8 @@
 {
   "enabled": true,
   "timezone": "Europe/Zurich",
-  "weeklySlots": []
+  "weeklySlots": [
+    { "id": "tdm-monday-2000", "day": "Monday", "start": "20:00", "end": "21:00" },
+    { "id": "tdm-thursday-2000", "day": "Thursday", "start": "20:00", "end": "21:00" }
+  ]
 }
