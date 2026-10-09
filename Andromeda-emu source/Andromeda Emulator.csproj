@@ -118,6 +118,11 @@
     <Compile Include="Game\Event\TeamDeathMatch.cs" />
     <Compile Include="Game\Event\Tdm\TdmRules.cs" />
     <Compile Include="Game\Event\Tdm\TdmEventService.cs" />
+    <Compile Include="Game\Event\Tdm\TdmRewards.cs" />
+    <Compile Include="Game\Event\Tdm\TdmRewardStore.cs" />
+    <Compile Include="Game\Event\Tdm\TdmRewardRuntime.cs" />
+    <Compile Include="Game\Event\Tdm\TdmScheduleService.cs" />
+    <Compile Include="Game\Event\Tdm\TdmScheduleRuntime.cs" />
     <Compile Include="Game\Handlers\Chat.cs" />
     <Compile Include="Game\Handlers\Fight.cs" />
     <Compile Include="Storage\SqlDatabaseTransaction.cs" />
@@ -187,6 +192,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <Content Include="Config\tdm_schedule.json">
+      <Link>data\tdm_schedule.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

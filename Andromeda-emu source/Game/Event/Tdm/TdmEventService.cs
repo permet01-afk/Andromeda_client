@@ -17,15 +17,18 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
         private readonly Dictionary<int, long> Requests = new Dictionary<int, long>();
         private readonly List<TdmEffect> Effects = new List<TdmEffect>();
         private readonly Dictionary<int, EndState> Results = new Dictionary<int, EndState>();
+        private readonly Dictionary<string, TdmRewardClaim> RewardClaims = new Dictionary<string, TdmRewardClaim>();
         private long Sequence, Generation, Revision, EventSequence, Round;
         private readonly string Boot = Guid.NewGuid().ToString("N");
         private bool On;
         private string EventId = "";
+        private string OccurrenceId = "";
         private Offer Pending;
         private Match Current;
         private readonly int[] Wins = new int[4];
         private int PreferCompany, AvoidCompany;
         public readonly TdmRewardPolicy Rewards;
+        private string RewardStatus;
 
         private sealed class Ticket { public int Id, Company, Bracket; public long Order; }
         private sealed class Offer
@@ -41,6 +44,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
             public long Life, Naz, RepairEnd, MissingSince;
             public bool Dead, Gone, Spent, Arrived, Connected = true;
             public string Death = "";
+            public TdmParticipation Participation;
         }
         private sealed class Match
         {
@@ -53,6 +57,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
         {
             public string MatchId, Outcome, Reason; public long Round, End, WaitEnd;
             public int A, B, ScoreA, ScoreB, Winner; public bool Stay;
+            public TdmRewardReceipt Reward;
         }
 
         public TdmEventService(Func<long> clock, TdmRewardPolicy rewards = null)
@@ -61,12 +66,12 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
         public string Id { get { lock (Sync) return EventId; } }
         private long Now { get { return Clock(); } }
         private void Changed() { ++Revision; }
-        public void Enable()
+        public void Enable(string occurrenceId = null)
         {
             lock (Sync)
             {
                 if (On) return;
-                On = true; EventId = Boot + "-" + (++EventSequence); Array.Clear(Wins, 0, Wins.Length);
+                On = true; EventId = Boot + "-" + (++EventSequence); OccurrenceId = occurrenceId ?? EventId; Array.Clear(Wins, 0, Wins.Length);
                 Requests.Clear(); Lobby.Clear(); Results.Clear(); PreferCompany = AvoidCompany = 0; Changed();
             }
         }
@@ -95,7 +100,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                 { LeaveMember(p, false); return; }
                 if (value.Company != p.Company || TdmRules.Bracket(value.Level) != Current.Bracket)
                 { LeaveMember(p, false); return; }
-                if (!value.Connected && p.Connected) { p.Connected = false; p.MissingSince = Now; Changed(); }
+                if (!value.Connected && p.Connected) { p.Participation.Pause(Now, Current.End, false); p.Connected = false; p.MissingSince = Now; Changed(); }
             }
         }
         public bool Open(int id)
@@ -191,6 +196,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
         private void LeaveMember(Member p, bool spent)
         {
             if (p.Gone) return;
+            p.Participation.Pause(Now, Current.End, true, spent);
             p.Gone = true; p.Spent = spent; p.Naz = 0; Home(p.Id); Changed();
         }
         public TdmEffect[] DrainEffects() { lock (Sync) { var result = Effects.ToArray(); Effects.Clear(); return result; } }
@@ -201,6 +207,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
             {
                 var p = MemberFor(e.Player);
                 if (p == null || p.Gone || p.Life != e.Generation || Current.Id != e.MatchId) return false;
+                if (!p.Arrived) p.Participation.Arrive(Now, Current.SafeEnd);
                 p.Arrived = true; return true;
             }
         }
@@ -217,6 +224,8 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
             return a != null && v != null && !a.Gone && !v.Gone && !a.Dead && !v.Dead && a.Connected && v.Connected
                 && a.Company != v.Company && v.Naz <= Now && (launchedLife == 0 || a.Life == launchedLife);
         }
+        public void RecordDamage(int attacker, int victim, long amount)
+        { lock (Sync) { if (amount > 0 && CanDamageCore(attacker, victim, 0)) MemberFor(attacker).Participation.Hit(amount); } }
         public bool Attack(int attacker, int victim)
         {
             lock (Sync)
@@ -242,7 +251,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                 int side = t.Company == Current.A ? 0 : 1;
                 var occupied = new HashSet<int>(Current.Members.Values.Where(m => m.Side == side && (!m.Gone || m.Spent)).Select(m => m.Seat));
                 int seat = Enumerable.Range(0, Current.Size).First(i => !occupied.Contains(i));
-                var p = new Member { Id = t.Id, Company = t.Company, Side = side, Seat = seat, Naz = refill ? Now + TdmRules.NazMs : 0 };
+                var p = new Member { Id = t.Id, Company = t.Company, Side = side, Seat = seat, Naz = refill ? Now + TdmRules.NazMs : 0, Participation = new TdmParticipation(!refill) };
                 Current.Members[t.Id] = p; Current.Entered.Add(t.Id); Queue.Remove(t.Id); Results.Remove(t.Id); Effect("ENTER", p);
             }
             Changed();
@@ -339,7 +348,8 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                 var v = MemberFor(victim);
                 if (v == null || v.Gone || v.Dead || v.Life != life || !v.Connected || Now < Current.SafeEnd || Now >= Current.End) return false;
                 var a = MemberFor(killer);
-                if (a != null && !a.Gone && a.Company != v.Company && a.Connected) ++Current.Score[a.Side];
+                if (a != null && !a.Gone && a.Company != v.Company && a.Connected)
+                { ++Current.Score[a.Side]; a.Participation.Kill(victim); }
                 v.Dead = true; --v.Lives; v.Naz = 0; v.Death = Current.Id + "-death-" + (++Sequence); v.RepairEnd = Now + TdmRules.RepairMs;
                 if (v.Lives == 0) LeaveMember(v, true); else Effect("DEATH", v);
                 Changed(); return true;
@@ -355,6 +365,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                 TdmPresence presence;
                 if (!Presence.TryGetValue(id, out presence) || !presence.Connected || presence.Company != p.Company || TdmRules.Bracket(presence.Level) != Current.Bracket) return false;
                 if (p.Connected && !newTransport) return true; // HELLO replay must not heal or teleport.
+                p.Participation.Pause(Now, Current.End, false);
                 p.Connected = true; p.Arrived = false; p.MissingSince = 0; Effect(p.Dead ? "DEATH" : "RECONNECT", p); Changed(); return true;
             }
         }
@@ -365,7 +376,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                 LeaveQueue(id); var p = MemberFor(id);
                 if (p == null || p.Gone) return;
                 if (explicitLeave) LeaveMember(p, false);
-                else if (p.Connected) { p.Connected = false; p.MissingSince = Now; Changed(); }
+                else if (p.Connected) { p.Participation.Pause(Now, Current.End, false); p.Connected = false; p.MissingSince = Now; Changed(); }
             }
         }
         public void TransferFailed(string match)
@@ -386,14 +397,37 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
             if (Current == null) return;
             var match = Current; Pending = null;
             if (winner > 0) ++Wins[winner];
-            foreach (var p in match.Members.Values.Where(p => !p.Gone))
+            foreach (var p in match.Members.Values)
             {
+                string outcome = winner < 0 ? "CANCELLED" : winner == 0 ? "DRAW" : p.Company == winner ? "WIN" : "LOSS";
+                var claim = p.Participation.Finish(p.Id, match.Id, OccurrenceId, outcome, reason, Now, match.SafeEnd, match.End,
+                    winner >= 0 && match.Score.Any(s => s >= TdmRules.Target));
+                RewardClaims[claim.Key] = claim;
+                if (p.Gone && !p.Spent) continue;
                 Results[p.Id] = new EndState { MatchId = match.Id, Round = match.Round, A = match.A, B = match.B,
                     ScoreA = match.Score[0], ScoreB = match.Score[1], Winner = winner, Reason = reason,
-                    Outcome = winner < 0 ? "CANCELLED" : winner == 0 ? "DRAW" : p.Company == winner ? "WIN" : "LOSS", End = Now + TdmRules.ResultMs };
-                Home(p.Id);
+                    Outcome = outcome, End = Now + TdmRules.ResultMs, Reward = new TdmRewardReceipt { status = claim.Eligible ? "PENDING" : "INELIGIBLE" } };
+                if (!p.Gone) Home(p.Id);
             }
             Current = null; Changed();
+        }
+        public void SetRewardAvailability(bool ready)
+        {
+            lock (Sync)
+            {
+                string status = ready ? "ENABLED / TDM_REWARD_V1" : "DISABLED / PERSISTENCE UNAVAILABLE";
+                if (RewardStatus != status) { RewardStatus = status; Changed(); }
+            }
+        }
+        public TdmRewardClaim[] PendingRewards() { lock (Sync) return RewardClaims.Values.ToArray(); }
+        public void AcknowledgeRewards(IEnumerable<string> keys) { lock (Sync) foreach (var key in keys) RewardClaims.Remove(key); }
+        public void SetRewardReceipt(int id, string match, TdmRewardReceipt receipt)
+        {
+            lock (Sync)
+            {
+                EndState result;
+                if (Results.TryGetValue(id, out result) && result.MatchId == match) { result.Reward = receipt; Changed(); }
+            }
         }
         public object Snapshot(int id, string error = "", bool open = false)
         {
@@ -412,7 +446,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                     beaconX = TdmRules.BeaconX, beaconY = TdmRules.BeaconY,
                     queued = ticket != null, queuePosition = ticket == null ? 0 : Queue.Values.Count(t => t.Company == ticket.Company && t.Bracket == ticket.Bracket && t.Order <= ticket.Order),
                     waiting = Enumerable.Range(1, 3).Select(c => Queue.Values.Count(t => t.Company == c && t.Bracket == bracket)).ToArray(),
-                    running = Current == null ? 0 : 1, rewards = Rewards.Status,
+                    running = Current == null ? 0 : 1, rewards = RewardStatus ?? Rewards.Status,
                     offer = offer == null ? null : new { id = offer.Id, companyA = offer.A, companyB = offer.B, size = offer.Size, deadline = offer.End, accepted = offer.Accepted.Contains(id), refill = offer.Refill },
                     match = p == null ? null : new { id = Current.Id, roundId = Current.Round, safeEnd = Current.SafeEnd, endsAt = Current.End,
                         companyA = Current.A, companyB = Current.B, scoreA = Current.Score[0], scoreB = Current.Score[1], target = TdmRules.Target,
@@ -420,7 +454,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                         wins = new[] { Wins[Current.A], Wins[Current.B] },
                         protectedPlayers = Current.Members.Values.Where(m => !m.Gone && !m.Dead && m.Naz > Now).Select(m => new { id = m.Id, until = m.Naz }).ToArray() },
                     result = result == null ? null : new { id = result.MatchId, roundId = result.Round, companyA = result.A, companyB = result.B,
-                        scoreA = result.ScoreA, scoreB = result.ScoreB, outcome = result.Outcome, reason = result.Reason, deadline = result.End, stayed = result.Stay }
+                        scoreA = result.ScoreA, scoreB = result.ScoreB, outcome = result.Outcome, reason = result.Reason, deadline = result.End, stayed = result.Stay, reward = result.Reward }
                 };
             }
         }

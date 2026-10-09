@@ -1988,7 +1988,7 @@ document.addEventListener("visibilitychange", () => {
     if (document.hidden) resetFlashGameplayKeys();
 });
 
-function addInfoMessage(text, durationMs, highPriority = false) {
+function addInfoMessage(text, durationMs, highPriority = false, replaceKey = null) {
     if (!text) return;
     const now = performance.now();
     const profileMs = Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 4000;
@@ -1998,7 +1998,14 @@ function addInfoMessage(text, durationMs, highPriority = false) {
         const m = infoMessages[i];
         if (now - m.createdAt >= m.duration) infoMessages.splice(i, 1);
     }
-    infoMessages.push({ text: String(text), createdAt: now, holdMs: holdMs,
+    if (replaceKey) {
+        const previous = infoMessages.find(m => m.replaceKey === replaceKey);
+        if (previous) {
+            Object.assign(previous, { text: String(text), createdAt: now - 100, holdMs, duration: holdMs + 300, lines: null });
+            return; // Same stack position and native STD appearance, no extra entry.
+        }
+    }
+    infoMessages.push({ text: String(text), replaceKey, createdAt: now, holdMs: holdMs,
         duration: holdMs + 300, highPriority: highPriority, lines: null,
         y: null, fromY: 0, targetY: null, layoutAt: now });
     let standardCount = 0;

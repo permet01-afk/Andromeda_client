@@ -1399,7 +1399,14 @@ function addInstantLogMessage(text, sourceOpcode) {
     const msg = String(text == null ? "" : text);
     if (!msg) return;
     if (typeof addInfoMessage === "function") {
-        addInfoMessage(msg, getInstantLogDurationMs(sourceOpcode), sourceOpcode === "HP");
+        // Exact server TDM countdown only; all other STD/HP messages keep their stack.
+        const tdmCountdown = sourceOpcode === "STD" && /^Team Deathmatch begins in (?:10|[1-9])\.\.\.$/.test(msg);
+        if (sourceOpcode === "STD" && /^Team Deathmatch has (?:started!|ended\.)$/.test(msg)) {
+            for (let n = infoMessages.length - 1; n >= 0; n--) {
+                if (infoMessages[n].replaceKey === "tdm-countdown") infoMessages.splice(n, 1);
+            }
+        }
+        addInfoMessage(msg, getInstantLogDurationMs(sourceOpcode), sourceOpcode === "HP", tdmCountdown ? "tdm-countdown" : null);
     }
 }
 

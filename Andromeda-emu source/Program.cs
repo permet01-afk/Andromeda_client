@@ -114,6 +114,8 @@ namespace OrbitReborn_Emulator
                     CrossdomainPolicy.Initialize("Data\\crossdomain.xml");
                     StatisticsSyncUtil.Initialize();
                     _1v1.initialize();
+                    OrbitReborn_Emulator.Game.Event.Tdm.TdmRewardRuntime.Initialize();
+                    OrbitReborn_Emulator.Game.Event.Tdm.TdmScheduleRuntime.Initialize();
                 }
             }
             catch (Exception ex)
@@ -189,7 +191,9 @@ namespace OrbitReborn_Emulator
         public static void Stop()
         {
             Output.WriteLine((object)Localization.GetValue("core.uninit", (string[])null));
+            OrbitReborn_Emulator.Game.Event.Tdm.TdmScheduleRuntime.Shutdown();
             OrbitReborn_Emulator.Game.Event.TeamDeathMatch.Disable();
+            OrbitReborn_Emulator.Game.Event.Tdm.TdmRewardRuntime.Shutdown();
             Program.mAlive = false;
             PerformanceProfiler.Uninitialize();
             SqlDatabaseManager.Uninitialize();

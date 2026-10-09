@@ -75,6 +75,15 @@
         if (incoming.match) lobbyOpen = false;
         initialize(); render(); tick();
     }
+    function rewardSummary(reward) {
+        if (!reward) return "";
+        if (reward.status === "CAP") return '<p class="tdm-reward">Reward limit reached for this event.</p>';
+        if (reward.status !== "PAID") return "";
+        const values = [reward.experience, reward.uridium, reward.honor];
+        if (!values.every(n => Number.isSafeInteger(n) && n >= 0)) return "";
+        const [xp, uri, honor] = values.map(n => n.toLocaleString("en-US"));
+        return `<div class="tdm-reward"><strong>TDM REWARD</strong><span>Experience: ${xp}</span><span>Uridium: ${uri}</span><span>Honor: ${honor}</span></div>`;
+    }
     function render() {
         if (!state || !dialog) return;
         const s = state, m = s.match, o = s.offer, r = s.result;
@@ -88,7 +97,7 @@
         if (o) {
             html = `<h2>MATCH FOUND</h2><p>${escape(category)}</p><div class="tdm-versus">${logo(o.companyA, true)}<strong>${names[o.companyA]} ${o.size} vs ${o.size} ${names[o.companyB]}</strong>${logo(o.companyB, true)}</div><p>${o.accepted ? "Accepted. Waiting for the other pilots." : "Confirm your place in this match."}</p><p>Offer expires in <b data-tdm-clock="${o.deadline}"></b> s</p><footer>${button("ACCEPT", o.accepted ? "ACCEPTED" : "ACCEPT", o.id, o.accepted)}${button("DECLINE", "DECLINE", o.id)}</footer>`;
         } else if (r) {
-            html = `<h2>${({WIN:"VICTORY",LOSS:"DEFEAT",DRAW:"DRAW",CANCELLED:"MATCH ENDED"})[r.outcome] || "MATCH ENDED"}</h2><div class="tdm-versus">${logo(r.companyA, true)}<strong>${names[r.companyA]} ${r.scoreA} : ${r.scoreB} ${names[r.companyB]}</strong>${logo(r.companyB, true)}</div><p>${escape(r.reason || (r.stayed ? "Waiting for the next opponent company." : "Match complete."))}</p>${r.outcome === "WIN" && !r.stayed ? `<p>Choose within <b data-tdm-clock="${r.deadline}"></b> s</p>` : ""}<footer>${r.outcome === "WIN" ? button("STAY", r.stayed ? "WAITING FOR NEXT MATCH" : "STAY FOR NEXT MATCH", r.id, r.stayed) : ""}${button("LEAVE", "LEAVE")}</footer>`;
+            html = `<h2>${({WIN:"VICTORY",LOSS:"DEFEAT",DRAW:"DRAW",CANCELLED:"MATCH ENDED"})[r.outcome] || "MATCH ENDED"}</h2><div class="tdm-versus">${logo(r.companyA, true)}<strong>${names[r.companyA]} ${r.scoreA} : ${r.scoreB} ${names[r.companyB]}</strong>${logo(r.companyB, true)}</div><p>${escape(r.reason || (r.stayed ? "Waiting for the next opponent company." : "Match complete."))}</p>${r.outcome === "WIN" && !r.stayed ? `<p>Choose within <b data-tdm-clock="${r.deadline}"></b> s</p>` : ""}${rewardSummary(r.reward)}<footer>${r.outcome === "WIN" ? button("STAY", r.stayed ? "WAITING FOR NEXT MATCH" : "STAY FOR NEXT MATCH", r.id, r.stayed) : ""}${button("LEAVE", "LEAVE")}</footer>`;
         } else {
             html = `<h2>TEAM DEATHMATCH</h2><p>Category: ${escape(category)} · Your company: ${names[s.company] || "—"}</p><div class="tdm-companies">${[1,2,3].map(c => `<div class="tdm-company">${logo(c,true)}<strong>${names[c]}</strong><span>Waiting: ${s.waiting[c-1] || 0}</span></div>`).join("")}</div><p>Matches running: ${s.running || 0}</p><p class="tdm-status">${!s.enabled ? "Team Deathmatch is currently unavailable." : s.queued ? `Waiting for opponent company · Queue position: ${s.queuePosition}` : s.bracket === 0 ? "Reach level 8 to join Team Deathmatch." : "3–8 pilots per company · 3 lives · 30 kills"}</p><footer>${button(s.queued ? "LEAVE" : "JOIN", s.queued ? "LEAVE" : "JOIN", "", !s.enabled || !s.bracket)}</footer>`;
         }
@@ -147,6 +156,11 @@
         }
         context.restore();
     }
+    function minimapBeacon() {
+        if (!state || !state.enabled || !state.beacon || currentMapId !== [0,1,5,9][state.company]
+            || !Number.isFinite(state.beaconX) || !Number.isFinite(state.beaconY)) return null;
+        return { x: state.beaconX, y: state.beaconY };
+    }
     function nearBeacon() {
         return !!(state && state.beacon && state.enabled && currentMapId === [0,1,5,9][state.company]
             && (shipX-state.beaconX)**2+(shipY-state.beaconY)**2 < 400**2);
@@ -161,7 +175,7 @@
         heroHp=0;heroShield=0;moveTargetX=null;moveTargetY=null;isChasingTarget=false;
         attackIntentTargetId=null;currentLaserTargetId=null;
     }
-    window.AndromedaTdm = { receive, draw, nearBeacon, heroDeath, command,
+    window.AndromedaTdm = { receive, draw, nearBeacon, minimapBeacon, heroDeath, command,
         get dead() { return !!(state && state.match && state.match.dead); },
         hello() { if (typeof sendRaw === "function") sendRaw("TDM|1|HELLO"); },
         reset() { state=null;lastUiKey="";lastMatch="";previousSeconds=null;lobbyOpen=false;dismissedDialogKey=null;if(dialog){dialog.hidden=true;hud.hidden=true;death.hidden=true;} }

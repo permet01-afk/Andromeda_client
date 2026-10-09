@@ -6170,6 +6170,20 @@ namespace OrbitReborn_Emulator.Game.Characters
         }
 
 
+        // TDM refresh reads only economic totals. It cannot restore dirty ammo or equipment.
+        public void RefreshTdmRewardData()
+        {
+            lock (this.mPrimaryAmmoFlushLock)
+            using (var db = new SqlDatabaseTransaction(SqlDatabaseManager.GenerateConnectionString()))
+            {
+                var rows = db.Query("SELECT experience,uridium,honor FROM users WHERE id=@id", "@id", this.mId);
+                if (rows.Rows.Count != 1) throw new InvalidOperationException("TDM reward player missing.");
+                var row = rows.Rows[0];
+                this.mExperience = Convert.ToInt64(row["experience"]); this.mUridium = Convert.ToInt64(row["uridium"]);
+                this.mHonor = Convert.ToInt64(row["honor"]); this.mLevel = ExperienceSystem.GetLevelFromExperience(this.mExperience);
+                db.Commit();
+            }
+        }
         public bool RefreshQuestRewardData()
         {
             lock (this.mPrimaryAmmoFlushLock)

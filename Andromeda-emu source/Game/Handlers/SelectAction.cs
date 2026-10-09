@@ -373,6 +373,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         if (sessionByCharacterId.CharacterInfo.ShipHp - smbDamages > 0)
                         {
                             sessionByCharacterId.CharacterInfo.ShipHp -= smbDamages;
+                            TeamDeathMatch.RecordDamage(Session, sessionByCharacterId, smbDamages);
 
                             var msg = PacketComposer.Compose(
                                 "Y",

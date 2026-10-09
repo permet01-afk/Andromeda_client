@@ -211,12 +211,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 case "/start_tdm":
                     if (!Session.CharacterInfo.IsAdmin || TeamDeathMatch.IsActive())
                         return;
-                    TeamDeathMatch.Enable();
+                    OrbitReborn_Emulator.Game.Event.Tdm.TdmScheduleRuntime.ManualStart();
                     return;
                 case "/stop_tdm":
                     if (!Session.CharacterInfo.IsAdmin)
                         return;
-                    TeamDeathMatch.Disable();
+                    OrbitReborn_Emulator.Game.Event.Tdm.TdmScheduleRuntime.ManualStop();
                     return;
                 case "/join_team":
                 case "/create_team":

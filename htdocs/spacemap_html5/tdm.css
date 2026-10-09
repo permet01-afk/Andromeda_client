@@ -26,3 +26,7 @@
 .tdm-killscreen button[data-tdm-action="REPAIR"]{position:absolute;left:147px;top:410px;width:229px;height:32px;border:0;background:url("graphics/tdm/repairButtons.png") no-repeat;color:#efffec;font:17px "EurostileHeaFl",Tahoma,sans-serif;cursor:pointer}
 .tdm-killscreen button[data-tdm-action="LEAVE"]{position:absolute;right:35px;bottom:28px;background:none;border:0;color:#ccc;font:12px Tahoma,sans-serif;cursor:pointer}
 .tdm-window[hidden],.tdm-hud[hidden],.tdm-death-overlay[hidden]{display:none!important}
+
+.tdm-reward { margin: 9px auto; padding: 8px 12px; border-top: 1px solid #715244; border-bottom: 1px solid #715244; color: #dfd7c1; }
+.tdm-reward strong { display: block; margin-bottom: 5px; color: #e5bd79; }
+.tdm-reward span { display: inline-block; margin: 0 8px; white-space: nowrap; }

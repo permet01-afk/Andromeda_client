@@ -2141,6 +2141,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         target.CharacterInfo.ShipHp = 0;
                     }
 
+                    TeamDeathMatch.RecordDamage(attacker, target, damagePerTick);
                     DroneWearService.MarkLethalImpact(target, deathContext);
                     }
                     if (damagePerTick > 0)
@@ -3996,6 +3997,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     num2 = num3 + num4;
                 }
 
+                TeamDeathMatch.RecordDamage(Session, Ennemy, num2);
                 DroneWearService.MarkLethalImpact(Ennemy, deathContext);
                 }
                 Fight.ApplyEnergyLeech(Session, num2, Ammo, Instance);
@@ -4866,6 +4868,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
             if (!DroneWearService.IsCurrentLife(target, deathContext) || (launchedLife != null && !DroneWearService.IsCurrentLife(target, launchedLife)) || target.CharacterInfo.ShipHp <= 0) return;
             if (TeamDeathMatch.IsTdm(attacker) && !TeamDeathMatch.CanDamage(attacker, target)) return;
+            long beforeVitals = (long)target.CharacterInfo.ShipHp + target.CharacterInfo.ShipShield;
             int baseShieldPart = Convert.ToInt32(damage * target.CharacterInfo.ShieldAbsorption);
             shieldPart = baseShieldPart;
             shieldPart = Fight.ApplySentinelShieldReduction(target, shieldPart);
@@ -4884,6 +4887,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             else
                 target.CharacterInfo.ShipHp = 0;
 
+            TeamDeathMatch.RecordDamage(attacker, target, beforeVitals - target.CharacterInfo.ShipHp - target.CharacterInfo.ShipShield);
             DroneWearService.MarkLethalImpact(target, deathContext);
             }
             if (shieldPart + hpPart > 0)
@@ -4933,6 +4937,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (applied > 0)
             {
                 target.CharacterInfo.ShipShield -= applied;
+                TeamDeathMatch.RecordDamage(attacker, target, applied);
                 target.CharacterInfo.RegisterShieldDamageReceived();
             }
             }

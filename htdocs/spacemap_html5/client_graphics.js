@@ -2054,6 +2054,14 @@ function drawMinimapPoiZones(context, x, y, scaleX, scaleY, zones) {
     context.restore();
 }
 
+function drawMinimapPortalPoint(context, icon, point, x, y, scaleX, scaleY) {
+    const mx = x + (point.x - MAP_MIN_X) * scaleX;
+    const my = y + (point.y - MAP_MIN_Y) * scaleY;
+    if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= y && my <= y + MINIMAP_HEIGHT) {
+        context.drawImage(icon, mx - icon.width / 2, my - icon.height / 2, icon.width, icon.height);
+    }
+}
+
 function drawMiniMap() {
     const layout = typeof getMinimapLayout === "function" ? getMinimapLayout() : null;
     if (!layout) {
@@ -2117,12 +2125,10 @@ function drawMiniMap() {
             const p = portals[pid];
             if (!p) continue;
             if (p.visibleOnMiniMap === false) continue;
-            const mx = x + (p.x - MAP_MIN_X) * miniScaleX;
-            const my = mapY + (p.y - MAP_MIN_Y) * miniScaleY;
-            if (mx >= x && mx <= x + MINIMAP_WIDTH && my >= mapY && my <= mapY + MINIMAP_HEIGHT) {
-                ctx.drawImage(portalIcon, mx - portalIcon.width / 2, my - portalIcon.height / 2, portalIcon.width, portalIcon.height);
-            }
+            drawMinimapPortalPoint(ctx, portalIcon, p, x, mapY, miniScaleX, miniScaleY);
         }
+        const beacon = window.AndromedaTdm && typeof window.AndromedaTdm.minimapBeacon === "function" && window.AndromedaTdm.minimapBeacon();
+        if (beacon) drawMinimapPortalPoint(ctx, portalIcon, beacon, x, mapY, miniScaleX, miniScaleY);
     }
     const scaleFactor = typeof minimapScaleFactor === "number" && Number.isFinite(minimapScaleFactor) ? minimapScaleFactor : 1;
     const mapScale = typeof mapScaleFactor === "number" && Number.isFinite(mapScaleFactor) && mapScaleFactor > 0 ? mapScaleFactor : 1;

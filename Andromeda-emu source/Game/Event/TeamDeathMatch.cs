@@ -36,8 +36,8 @@ namespace OrbitReborn_Emulator.Game.Event
         }
         public static bool IsActive() { return State.Active; }
         public static bool SafeBattle() { return State.Safe; }
-        public static void Enable() { State.Enable(); PublishAll(); }
-        public static void Disable() { State.Disable(); Pump(); PublishAll(); }
+        public static void Enable(string occurrenceId = null) { State.Enable(occurrenceId); PublishAll(); }
+        public static void Disable() { State.Disable(); TdmRewardRuntime.Capture(State); Pump(); PublishAll(); }
         public static bool IsParticipant(Session s) { return s != null && State.Contains(s.CharacterId); }
         public static bool IsTdm(Session s) { return s != null && s.CharacterInfo != null && s.CharacterInfo.MapId == TdmRules.Map; }
         private static TdmPresence Read(Session s)
@@ -94,7 +94,7 @@ namespace OrbitReborn_Emulator.Game.Event
                     State.Observe(Read(s));
                     if (s.StoppedPlayer && !State.Contains(item.Key)) { Session ignored; Clients.TryRemove(item.Key, out ignored); }
                 }
-                State.Tick(); Pump();
+                State.Tick(); TdmRewardRuntime.Capture(State); Pump();
                 long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 if (now - Interlocked.Read(ref LastPublish) >= 1000) { Interlocked.Exchange(ref LastPublish, now); PublishAll(); }
             }
@@ -108,6 +108,26 @@ namespace OrbitReborn_Emulator.Game.Event
         }
         private static void PublishAll() { foreach (var s in Clients.Values.ToArray()) Publish(s); }
         private static void Notice(Session s, string text) { s.SendData(PacketComposer.Compose("A", "STD|" + text)); }
+        public static void RecordDamage(Session a, Session v, long amount)
+        { if (IsTdm(a) && IsTdm(v)) State.RecordDamage(a.CharacterId, v.CharacterId, amount); }
+        public static void RewardCompleted(TdmRewardClaim claim, TdmRewardReceipt receipt)
+        {
+            State.SetRewardReceipt(claim.PlayerId, claim.MatchId, receipt);
+            Session s;
+            if (!Clients.TryGetValue(claim.PlayerId, out s) || s.CharacterInfo == null || s.Stopped || s.StoppedPlayer) return;
+            try
+            {
+                if (receipt.status == "PAID")
+                {
+                    // Absolute DB read, never an in-memory reward delta on replay.
+                    s.CharacterInfo.RefreshTdmRewardData();
+                    s.SendData(UserDataComposer.Compose(s));
+                    Notice(s, "TDM REWARD: " + receipt.experience + " Experience, " + receipt.uridium + " Uridium, " + receipt.honor + " Honor.");
+                }
+                Publish(s);
+            }
+            catch (Exception ex) { Output.WriteLine("[TDM] paid reward UI refresh: " + ex.Message, OutputLevel.Warning); }
+        }
         public static bool CanDamage(Session a, Session v)
         { return IsTdm(a) && IsTdm(v) && State.CanDamage(a.CharacterId, v.CharacterId); }
         public static bool ValidAttack(Session a, Session v)
