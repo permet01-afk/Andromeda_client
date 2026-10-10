@@ -753,14 +753,14 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <script src="ship_death.js?v=phase5-window14-2"></script>
 <script src="client_network.js?v=phase10c-owner-1"></script>
 <script src="client_entities.js?v=phase10c-1"></script>
-<script src="client_combat.js?v=phase6-hidpi-1"></script>
-<script src="client_graphics.js?v=phase10c-owner-1"></script>
+<script src="client_combat.js?v=phase10c-hud-d-1"></script>
+<script src="client_graphics.js?v=phase10c-hud-d-1"></script>
 <script src="client_ui.js?v=phase7-quest-visual-3"></script>
 <script src="client_quests.js?v=phase7-quest-visual-3"></script>
 <script src="client_map_decor_data.js?v=phase8c-decor-1"></script>
 <script src="client_map_decor.js?v=phase8c-decor-1"></script>
-<link rel="stylesheet" href="tdm.css?v=phase10c-1">
-<script src="client_tdm.js?v=phase10c-1"></script>
+<link rel="stylesheet" href="tdm.css?v=phase10c-hud-d-1">
+<script src="client_tdm.js?v=phase10c-hud-d-1"></script>
 <script src="client_bootstrap.js?v=phase10b-1"></script>
 
 

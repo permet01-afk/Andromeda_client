@@ -1,10 +1,13 @@
-/* ANDROMEDA V1 — based on observed 2014 HUD.
+/* ANDROMEDA ADAPTATION — compact horizontal match HUD (owner-approved D).
  * Desktop only. MOBILE TDM SUPPORT: DEFERRED TO FUTURE PHASE.
  * Timers are presentation only. All actions/deaths/scores are server-owned. */
 (function () {
     "use strict";
     const root = "graphics/tdm/", names = ["", "MMO", "EIC", "VRU"];
-    let state = null, clockOffset = 0, dialog, body, hud, death, lobbyOpen = false;
+    let state = null, clockOffset = 0, dialog, body, hud, protectionLabel, death, lobbyOpen = false;
+    const hudLayout = { x: 730, y: 8, width: 460, height: 40,
+        labelWidth: 116, labelHeight: 18, labelGap: 6, messageGap: 12 };
+    let reservedTop = 0, hudFrame = null;
     let dismissedDialogKey = null;
     let request = 0, errorText = "", lastUiKey = "", lastMatch = "", previousSeconds = null;
     const images = new Map(), heard = new Set();
@@ -48,7 +51,14 @@
             lobbyOpen = false; dismissedDialogKey = dialogKey(state); render();
         });
         if (typeof makeElementDraggable === "function") makeElementDraggable(dialog, dialog.querySelector("header"));
-        hud = document.createElement("aside"); hud.className = "tdm-hud"; hud.setAttribute("aria-label", "Team Deathmatch score"); document.body.appendChild(hud);
+        hud = document.createElement("aside"); hud.className = "tdm-hud"; hud.setAttribute("aria-label", "Team Deathmatch score"); hud.hidden = true;
+        Object.assign(hud.style, { left: hudLayout.x + "px", top: hudLayout.y + "px",
+            width: hudLayout.width + "px", height: hudLayout.height + "px" });
+        protectionLabel = document.createElement("div"); protectionLabel.className = "tdm-protection-label"; protectionLabel.hidden = true;
+        Object.assign(protectionLabel.style, { left: (hudLayout.x + (hudLayout.width - hudLayout.labelWidth) / 2) + "px",
+            top: (hudLayout.y + hudLayout.height + hudLayout.labelGap) + "px",
+            width: hudLayout.labelWidth + "px", height: hudLayout.labelHeight + "px" });
+        window.getHudRoot().append(hud, protectionLabel);
         death = document.createElement("div"); death.className = "tdm-death-overlay";
         death.innerHTML = '<section class="tdm-killscreen" role="dialog" aria-label="Team Deathmatch repair"></section>'; document.body.appendChild(death);
         for (const node of [dialog, death, hud]) {
@@ -89,7 +99,7 @@
         const s = state, m = s.match, o = s.offer, r = s.result;
         dialog.hidden = !(o || r || lobbyOpen) || dismissedDialogKey === dialogKey(s);
         death.hidden = !(m && m.dead && m.lives > 0);
-        hud.hidden = !m;
+        if (!m) hideHud();
         const uiKey = JSON.stringify([s.eventId, s.enabled, s.company, s.bracket, s.waiting, s.running, s.queued, s.queuePosition, o, r, m && [m.dead, m.deathId, m.lives], errorText]);
         if (uiKey === lastUiKey) return; lastUiKey = uiKey;
         const category = s.bracket === 1 ? "Level 8–13" : s.bracket === 2 ? "Level 14+" : "Level 8 required";
@@ -130,7 +140,31 @@
         }
         const own = m.side === 0 ? m.companyA : m.companyB, other = m.side === 0 ? m.companyB : m.companyA;
         const ownScore = m.side === 0 ? m.scoreA : m.scoreB, otherScore = m.side === 0 ? m.scoreB : m.scoreA;
-        hud.innerHTML = `<div class="tdm-hud-title">TEAM DEATHMATCH</div><div>${logo(own)}<strong>${names[own]}</strong><b>${ownScore} / 30</b></div><div>${logo(other)}<strong>${names[other]}</strong><b>${otherScore} / 30</b></div><div>Lives <b>${m.lives}</b></div><div>Time <b>${sec > 0 ? "15:00" : time(remaining(m.endsAt))}</b></div><div class="tdm-countdown">${sec > 0 ? `SAFE ${sec}` : m.nazEnd > now() ? `PROTECTED ${remaining(m.nazEnd)}` : now() - m.safeEnd < 1000 ? "START" : ""}</div>`;
+        hud.innerHTML = `<div class="tdm-hud-team">${logo(own)}<span class="tdm-hud-company">${names[own]}</span><strong>${ownScore}<span class="tdm-hud-limit"> /30</span></strong></div><div class="tdm-hud-lives"><span>LIVES</span><strong>${m.lives}</strong></div><div class="tdm-hud-time" aria-label="Time"><strong>${sec > 0 ? "15:00" : time(remaining(m.endsAt))}</strong></div><div class="tdm-hud-team tdm-hud-opponent"><strong>${otherScore}<span class="tdm-hud-limit"> /30</span></strong><span class="tdm-hud-company">${names[other]}</span>${logo(other)}</div>`;
+    }
+    function hideHud() {
+        if (hud) hud.hidden = true;
+        if (protectionLabel) protectionLabel.hidden = true;
+        hudFrame = null;
+        reservedTop = 0;
+    }
+    // Called by the canvas render pass, before zone labels and message stacks.
+    // The DOM is revealed only after that same pass has redrawn the canvas below it.
+    function prepareHudFrame() {
+        const m = state && state.match;
+        if (!m || !hud) { hideHud(); return; }
+        const safe = remaining(m.safeEnd), protectedSeconds = remaining(m.nazEnd);
+        const label = safe > 0 ? `SAFE ${safe}` : protectedSeconds > 0 ? `PROTECTED ${protectedSeconds}` : "";
+        if (!label) protectionLabel.hidden = true;
+        reservedTop = hudLayout.y + hudLayout.height + hudLayout.messageGap
+            + (label ? hudLayout.labelGap + hudLayout.labelHeight : 0);
+        hudFrame = { label };
+    }
+    function commitHudFrame() {
+        if (!hudFrame || !hud) return;
+        protectionLabel.textContent = hudFrame.label;
+        protectionLabel.hidden = !hudFrame.label;
+        hud.hidden = false;
     }
     function draw(context) {
         if (!state || typeof currentMapId === "undefined") return;
@@ -176,9 +210,11 @@
         attackIntentTargetId=null;currentLaserTargetId=null;
     }
     window.AndromedaTdm = { receive, draw, nearBeacon, minimapBeacon, heroDeath, command,
+        prepareHudFrame, commitHudFrame,
+        getMessageTopOffset() { return reservedTop; },
         get dead() { return !!(state && state.match && state.match.dead); },
         hello() { if (typeof sendRaw === "function") sendRaw("TDM|1|HELLO"); },
-        reset() { state=null;lastUiKey="";lastMatch="";previousSeconds=null;lobbyOpen=false;dismissedDialogKey=null;if(dialog){dialog.hidden=true;hud.hidden=true;death.hidden=true;} }
+        reset() { hideHud();state=null;lastUiKey="";lastMatch="";previousSeconds=null;lobbyOpen=false;dismissedDialogKey=null;if(dialog){dialog.hidden=true;death.hidden=true;} }
     };
     window.addEventListener("andromeda:ws-open", () => window.AndromedaTdm.reset());
     setInterval(tick, 100);

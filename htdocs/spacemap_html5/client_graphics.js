@@ -4680,7 +4680,10 @@ function drawDebugInfo() {
         if (active.createdAt !== null && now - active.createdAt >= active.duration) globalNotifications.shift();
         if (globalNotifications.length && globalNotifications[0].createdAt === null) globalNotifications[0].createdAt = now;
     }
-    if (!infoMessages.length && !globalNotifications.length) return;
+    if (!infoMessages.length && !globalNotifications.length) {
+        if (window.AndromedaTdm) window.AndromedaTdm.commitHudFrame();
+        return;
+    }
     ctx.save();
     setLogicalScreenTransform(ctx);
     ctx.font = '14px "EurostileHeaFl", Arial, sans-serif';
@@ -4695,9 +4698,9 @@ function drawDebugInfo() {
     const fontReady = !!(document.fonts && document.fonts.check('14px "EurostileHeaFl"'));
     const width = Math.max(1, Math.min(300, LOGICAL_WIDTH - 16));
     const x = LOGICAL_WIDTH / 2;
-    // Persistent zone labels retain their existing y=14/y=34 and 16 px font.
-    // Shift only the message stack; do not tween through a zone label.
-    const top = inTradeZone ? 58 : inDemilitarizedZone ? 38 : 0;
+    // Share the TDM origin with zone labels; only the stack's internal layout tweens.
+    const messageTop = window.AndromedaTdm ? window.AndromedaTdm.getMessageTopOffset() : 0;
+    const top = messageTop + (inTradeZone ? 58 : inDemilitarizedZone ? 38 : 0);
     let targetY = 0;
     let bottom = top;
     for (const m of infoMessages) {
@@ -4725,13 +4728,14 @@ function drawDebugInfo() {
         ctx.fillStyle = "#e9e2c0";
         wrapFlashMessage(m, Math.max(1, Math.min(500, LOGICAL_WIDTH - 16)), fontReady);
         ctx.globalAlpha = flashMessageAlpha(m, now);
-        const y = Math.max(16, bottom);
+        const y = Math.max(messageTop + 16, bottom);
         for (let line = 0; line < m.lines.length; line++) {
             ctx.strokeText(m.lines[line], x, y + line * 32);
             ctx.fillText(m.lines[line], x, y + line * 32);
         }
     }
     ctx.restore();
+    if (window.AndromedaTdm) window.AndromedaTdm.commitHudFrame();
 }
 
 

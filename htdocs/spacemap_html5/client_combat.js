@@ -4418,6 +4418,8 @@ function drawRadiationOverlay() {
 }
 
 function drawPvpOverlay() {
+    if (window.AndromedaTdm) window.AndromedaTdm.prepareHudFrame();
+    const messageTop = window.AndromedaTdm ? window.AndromedaTdm.getMessageTopOffset() : 0;
     const now = performance.now();
     if (mapPvpAllowed === 0) {
         ctx.save();
@@ -4433,7 +4435,7 @@ function drawPvpOverlay() {
         ctx.font = "bold 16px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillText("PEACE ZONE", LOGICAL_WIDTH / 2, 14);
+        ctx.fillText("PEACE ZONE", LOGICAL_WIDTH / 2, messageTop + 14);
         ctx.restore();
     }
     if (inTradeZone) {
@@ -4443,7 +4445,7 @@ function drawPvpOverlay() {
         ctx.font = "bold 16px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillText("TRADE ZONE", LOGICAL_WIDTH / 2, 34);
+        ctx.fillText("TRADE ZONE", LOGICAL_WIDTH / 2, messageTop + 34);
         ctx.restore();
     }
     if (lastNoAttackZoneTime > 0 && now - lastNoAttackZoneTime < 5e3) {
