@@ -10,6 +10,16 @@ if (!function_exists('homeDecodeLegacyHtmlEntitiesForDisplay')) {
     }
 }
 
+if (!function_exists('homeRenderLogMessage')) {
+    function homeRenderLogMessage($message)
+    {
+        // Legacy logs store line breaks as <br/>; all other markup stays plain text.
+        $text = preg_replace('/<br\s*\/?>/i', "\n", (string)$message);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return nl2br(htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false);
+    }
+}
+
 if (!function_exists('homeRenderPilotLeaderboardRows')) {
     function homeRenderPilotLeaderboardRows(array $rows, $scoreKey, $emptyMessage)
     {
@@ -275,7 +285,7 @@ $dailyLoginCsrfToken = isset($dailyLoginCsrfToken) ? (string)$dailyLoginCsrfToke
 $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?>
 
-<link rel="stylesheet" type="text/css" href="styles/home.css?v=7" />
+<link rel="stylesheet" type="text/css" href="styles/home.css?v=8" />
 
 <section class="dashboard">
     <header class="dashboard-hero">
@@ -300,103 +310,149 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
     </header>
 
     <div class="dashboard-grid">
-        <section class="dashboard-card user-card">
-            <header class="card-header">
-                <h2>Your pilot</h2>
-            </header>
+        <div class="dashboard-column dashboard-column-pilot">
+            <section class="dashboard-card user-card">
+                <header class="card-header">
+                    <h2>Your pilot</h2>
+                </header>
 
-            <div class="pilot-card-layout">
-                <dl class="stat-list">
-                    <div class="stat-row">
-                        <dt>Username</dt>
-                        <dd>
-                            <?php if ($clanLabel !== '') { ?>
-                                <span class="stat-badge"><?php echo $clanLabel; ?></span>
-                            <?php } ?>
-                            <span><?php echo $username; ?></span>
-                        </dd>
+                <div class="pilot-card-layout">
+                    <dl class="stat-list">
+                        <div class="stat-row">
+                            <dt>Username</dt>
+                            <dd>
+                                <?php if ($clanLabel !== '') { ?>
+                                    <span class="stat-badge"><?php echo $clanLabel; ?></span>
+                                <?php } ?>
+                                <span><?php echo $username; ?></span>
+                            </dd>
+                        </div>
+
+                        <div class="stat-row">
+                            <dt>Company</dt>
+                            <dd class="stat-media">
+                                <img src="img/ranks/company/<?php echo (int)($currentUser['factionid'] ?? 0); ?>.png" alt="Company" />
+                            </dd>
+                        </div>
+
+                        <div class="stat-row">
+                            <dt>Grade</dt>
+                            <dd class="stat-media">
+                                <img src="img/ranks/<?php echo (int)($currentUser['grade'] ?? 0); ?>.png" alt="Grade <?php echo (int)($currentUser['grade'] ?? 0); ?>" />
+                                <span><?php echo (int)($currentUser['grade'] ?? 0); ?></span>
+                            </dd>
+                        </div>
+
+                        <div class="stat-row">
+                            <dt>Experience</dt>
+                            <dd><?php echo $experience; ?></dd>
+                        </div>
+
+                        <div class="stat-row">
+                            <dt>Honor</dt>
+                            <dd><?php echo $honor; ?></dd>
+                        </div>
+
+                        <div class="stat-row">
+                            <dt>Rank points</dt>
+                            <dd><?php echo $rankpoints; ?></dd>
+                        </div>
+
+                        <div class="stat-row">
+                            <dt>Credits</dt>
+                            <dd><?php echo $credits; ?></dd>
+                        </div>
+
+                        <div class="stat-row">
+                            <dt>Uridium</dt>
+                            <dd><?php echo $uridium; ?></dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
+
+            <section class="dashboard-card hof-card">
+                <header class="card-header">
+                    <h2>Hall of fame</h2>
+                    <a class="card-link" id="open-top100" href="#">View top 100</a>
+                </header>
+
+                <div class="tab-group" data-tabs>
+                    <div class="tab-controls" role="tablist" aria-label="Hall of fame leaderboards">
+                        <button class="tab-control is-active" type="button" role="tab" id="tab-rankpoints" aria-controls="panel-rankpoints" aria-selected="true">Rankpoints</button>
+                        <button class="tab-control" type="button" role="tab" id="tab-experience" aria-controls="panel-experience" aria-selected="false">Experience</button>
+                        <button class="tab-control" type="button" role="tab" id="tab-honor" aria-controls="panel-honor" aria-selected="false">Honor</button>
+                        <button class="tab-control" type="button" role="tab" id="tab-clan" aria-controls="panel-clan" aria-selected="false">Clan</button>
                     </div>
 
-                    <div class="stat-row">
-                        <dt>Company</dt>
-                        <dd class="stat-media">
-                            <img src="img/ranks/company/<?php echo (int)($currentUser['factionid'] ?? 0); ?>.png" alt="Company" />
-                        </dd>
+                    <div class="tab-panels">
+                        <div class="tab-panel is-active" id="panel-rankpoints" role="tabpanel" aria-labelledby="tab-rankpoints">
+                            <ol class="leaderboard">
+                                <?php homeRenderPilotLeaderboardRows($top10, 'rankpoints', 'No pilots ranked yet.'); ?>
+                            </ol>
+                        </div>
+
+                        <div class="tab-panel" id="panel-experience" role="tabpanel" aria-labelledby="tab-experience">
+                            <ol class="leaderboard">
+                                <?php homeRenderPilotLeaderboardRows($top10Experience, 'experience', 'No pilots ranked yet.'); ?>
+                            </ol>
+                        </div>
+
+                        <div class="tab-panel" id="panel-honor" role="tabpanel" aria-labelledby="tab-honor">
+                            <ol class="leaderboard">
+                                <?php homeRenderPilotLeaderboardRows($top10Honor, 'honor', 'No pilots ranked yet.'); ?>
+                            </ol>
+                        </div>
+
+                        <div class="tab-panel" id="panel-clan" role="tabpanel" aria-labelledby="tab-clan">
+                            <ol class="leaderboard">
+                                <?php homeRenderClanLeaderboardRows($top10Clans, 'No clans ranked yet.'); ?>
+                            </ol>
+                        </div>
                     </div>
+                </div>
+            </section>
+        </div>
 
-                    <div class="stat-row">
-                        <dt>Grade</dt>
-                        <dd class="stat-media">
-                            <img src="img/ranks/<?php echo (int)($currentUser['grade'] ?? 0); ?>.png" alt="Grade <?php echo (int)($currentUser['grade'] ?? 0); ?>" />
-                            <span><?php echo (int)($currentUser['grade'] ?? 0); ?></span>
-                        </dd>
-                    </div>
+        <div class="dashboard-column dashboard-column-status">
+            <section class="dashboard-card system-card">
+                <header class="card-header">
+                    <h2>Andromeda status</h2>
+                </header>
 
-                    <div class="stat-row">
-                        <dt>Experience</dt>
-                        <dd><?php echo $experience; ?></dd>
-                    </div>
+                <ul class="stat-summary">
+                    <li>
+                        <span class="summary-label">Server time</span>
+                        <span class="summary-value" data-label="Online">
+                            <img src="img/Tick.png" alt="Online" width="20" height="20" />
+                            <?php echo date('H:i:s T'); ?>
+                        </span>
+                    </li>
 
-                    <div class="stat-row">
-                        <dt>Honor</dt>
-                        <dd><?php echo $honor; ?></dd>
-                    </div>
+                    <li>
+                        <span class="summary-label">Active pilots</span>
+                        <span class="summary-value company-breakdown">
+                            <span><img src="img/ranks/company/1.png" alt="MMO" /> <?php echo $companyCounts['mmo']; ?></span>
+                            <span><img src="img/ranks/company/2.png" alt="EIC" /> <?php echo $companyCounts['eic']; ?></span>
+                            <span><img src="img/ranks/company/3.png" alt="VRU" /> <?php echo $companyCounts['vru']; ?></span>
+                        </span>
+                    </li>
 
-                    <div class="stat-row">
-                        <dt>Rank points</dt>
-                        <dd><?php echo $rankpoints; ?></dd>
-                    </div>
+                    <li>
+                        <span class="summary-label">Pilots connected</span>
+                        <span class="summary-value"><?php echo $onlinePlayers; ?></span>
+                    </li>
 
-                    <div class="stat-row">
-                        <dt>Credits</dt>
-                        <dd><?php echo $credits; ?></dd>
-                    </div>
+                    <li>
+                        <span class="summary-label">Registered accounts</span>
+                        <span class="summary-value"><?php echo $registeredPlayers; ?></span>
+                    </li>
+                </ul>
+            </section>
 
-                    <div class="stat-row">
-                        <dt>Uridium</dt>
-                        <dd><?php echo $uridium; ?></dd>
-                    </div>
-                </dl>
-            </div>
-        </section>
-
-        <section class="dashboard-card system-card">
-            <header class="card-header">
-                <h2>Andromeda status</h2>
-            </header>
-
-            <ul class="stat-summary">
-                <li>
-                    <span class="summary-label">Server time</span>
-                    <span class="summary-value" data-label="Online">
-                        <img src="img/Tick.png" alt="Online" width="20" height="20" />
-                        <?php echo date('H:i:s T'); ?>
-                    </span>
-                </li>
-
-                <li>
-                    <span class="summary-label">Active pilots</span>
-                    <span class="summary-value company-breakdown">
-                        <span><img src="img/ranks/company/1.png" alt="MMO" /> <?php echo $companyCounts['mmo']; ?></span>
-                        <span><img src="img/ranks/company/2.png" alt="EIC" /> <?php echo $companyCounts['eic']; ?></span>
-                        <span><img src="img/ranks/company/3.png" alt="VRU" /> <?php echo $companyCounts['vru']; ?></span>
-                    </span>
-                </li>
-
-                <li>
-                    <span class="summary-label">Pilots connected</span>
-                    <span class="summary-value"><?php echo $onlinePlayers; ?></span>
-                </li>
-
-                <li>
-                    <span class="summary-label">Registered accounts</span>
-                    <span class="summary-value"><?php echo $registeredPlayers; ?></span>
-                </li>
-            </ul>
-
-            <section class="news-feed">
-                <header class="card-subheader">
-                    <h3>News</h3>
+            <section class="dashboard-card news-card">
+                <header class="card-header">
+                    <h2>News</h2>
                 </header>
 
                 <div class="news-stream">
@@ -406,159 +462,122 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                     </article>
                 </div>
             </section>
-        </section>
 
-        <section class="dashboard-card events-card">
-            <header class="card-header">
-                <h2>Events</h2>
-            </header>
+            <section class="dashboard-card log-card">
+                <header class="card-header">
+                    <h2>Activity log</h2>
+                </header>
 
-            <div class="events-stack">
-                <div class="event-panel <?php echo $spaceballActive ? 'is-active' : 'is-scheduled'; ?>">
-                    <div class="event-title-row">
-                        <span class="event-name">Spaceball</span>
-                        <span class="event-status"><?php echo $spaceballActive ? 'Active' : 'Scheduled'; ?></span>
+                <ul class="log-list">
+                    <?php if (empty($userlog)) { ?>
+                        <li class="leaderboard-empty">No recent activity.</li>
+                    <?php } ?>
+                    <?php foreach ($userlog as $log) { ?>
+                        <li class="log-entry">
+                            <time class="log-time" datetime="<?php echo htmlspecialchars($log['timestamp'], ENT_QUOTES, 'UTF-8'); ?>">
+                                <?php echo htmlspecialchars($log['timestamp'], ENT_QUOTES, 'UTF-8'); ?>
+                            </time>
+                            <div class="log-message"><?php echo homeRenderLogMessage($log['message']); ?></div>
+                        </li>
+                    <?php } ?>
+                </ul>
+            </section>
+        </div>
+
+        <div class="dashboard-column dashboard-column-events">
+            <section class="dashboard-card events-card">
+                <header class="card-header">
+                    <h2>Events</h2>
+                </header>
+
+                <div class="events-stack">
+                    <div class="event-panel <?php echo $spaceballActive ? 'is-active' : 'is-scheduled'; ?>">
+                        <div class="event-title-row">
+                            <span class="event-name">Spaceball</span>
+                            <span class="event-status"><?php echo $spaceballActive ? 'Active' : 'Scheduled'; ?></span>
+                        </div>
+
+                        <dl class="event-details">
+                            <div>
+                                <dt>Status</dt>
+                                <dd><?php echo $spaceballActive ? 'Active now on 4-4' : 'Next battle on 4-4'; ?></dd>
+                            </div>
+                            <div>
+                                <dt>Schedule</dt>
+                                <dd>Wednesday 19:00 / Sunday 17:00</dd>
+                            </div>
+                            <div>
+                                <dt>Next start</dt>
+                                <dd><?php echo htmlspecialchars($spaceballNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+                            </div>
+                            <div>
+                                <dt>Countdown</dt>
+                                <dd><?php echo htmlspecialchars($spaceballCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
+                            </div>
+                        </dl>
                     </div>
 
-                    <dl class="event-details">
-                        <div>
-                            <dt>Status</dt>
-                            <dd><?php echo $spaceballActive ? 'Active now on 4-4' : 'Next battle on 4-4'; ?></dd>
+                    <div class="event-panel <?php echo $invasionActive ? 'is-active' : 'is-scheduled'; ?>">
+                        <div class="event-title-row">
+                            <span class="event-name">Invasion</span>
+                            <span class="event-status"><?php echo $invasionActive ? 'Active' : 'Scheduled'; ?></span>
                         </div>
-                        <div>
-                            <dt>Schedule</dt>
-                            <dd>Wednesday 19:00 / Sunday 17:00</dd>
-                        </div>
-                        <div>
-                            <dt>Next start</dt>
-                            <dd><?php echo htmlspecialchars($spaceballNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
-                        </div>
-                        <div>
-                            <dt>Countdown</dt>
-                            <dd><?php echo htmlspecialchars($spaceballCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
-                        </div>
-                    </dl>
-                </div>
 
-                <div class="event-panel <?php echo $invasionActive ? 'is-active' : 'is-scheduled'; ?>">
-                    <div class="event-title-row">
-                        <span class="event-name">Invasion</span>
-                        <span class="event-status"><?php echo $invasionActive ? 'Active' : 'Scheduled'; ?></span>
+                        <dl class="event-details">
+                            <div>
+                                <dt>Status</dt>
+                                <dd><?php echo $invasionActive ? 'Active or starting soon' : 'Defend your x-5 map'; ?></dd>
+                            </div>
+                            <div>
+                                <dt>Schedule</dt>
+                                <dd>Saturday 17:00</dd>
+                            </div>
+                            <div>
+                                <dt>Maps</dt>
+                                <dd>1-5 / 2-5 / 3-5</dd>
+                            </div>
+                            <div>
+                                <dt>Next start</dt>
+                                <dd><?php echo htmlspecialchars($invasionNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+                            </div>
+                            <div>
+                                <dt>Countdown</dt>
+                                <dd><?php echo htmlspecialchars($invasionCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
+                            </div>
+                        </dl>
                     </div>
 
-                    <dl class="event-details">
-                        <div>
-                            <dt>Status</dt>
-                            <dd><?php echo $invasionActive ? 'Active or starting soon' : 'Defend your x-5 map'; ?></dd>
+                    <div class="event-panel is-scheduled">
+                        <div class="event-title-row">
+                            <span class="event-name">Team Deathmatch</span>
+                            <span class="event-status">Scheduled</span>
                         </div>
-                        <div>
-                            <dt>Schedule</dt>
-                            <dd>Saturday 17:00</dd>
-                        </div>
-                        <div>
-                            <dt>Maps</dt>
-                            <dd>1-5 / 2-5 / 3-5</dd>
-                        </div>
-                        <div>
-                            <dt>Next start</dt>
-                            <dd><?php echo htmlspecialchars($invasionNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
-                        </div>
-                        <div>
-                            <dt>Countdown</dt>
-                            <dd><?php echo htmlspecialchars($invasionCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
-                        </div>
-                    </dl>
-                </div>
-
-                <div class="event-panel is-scheduled">
-                    <div class="event-title-row">
-                        <span class="event-name">Team Deathmatch</span>
-                        <span class="event-status">Scheduled</span>
-                    </div>
-                    <dl class="event-details">
-                        <div>
-                            <dt>Status</dt>
-                            <dd>Join from TDMGate1 on your x-1 map</dd>
-                        </div>
-                        <div>
-                            <dt>Schedule</dt>
-                            <dd>Monday 20:00 / Thursday 20:00</dd>
-                        </div>
-                        <div>
-                            <dt>Duration</dt>
-                            <dd>60 minutes · 20:00–21:00 Europe/Zurich</dd>
-                        </div>
-                        <div>
-                            <dt>Next start</dt>
-                            <dd><?php echo htmlspecialchars($tdmNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
-                        </div>
-                        <div>
-                            <dt>Countdown</dt>
-                            <dd><?php echo htmlspecialchars($tdmCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
-                        </div>
-                    </dl>
-                </div>
-            </div>
-        </section>
-
-        <section class="dashboard-card hof-card">
-            <header class="card-header">
-                <h2>Hall of fame</h2>
-                <a class="card-link" id="open-top100" href="#">View top 100</a>
-            </header>
-
-            <div class="tab-group" data-tabs>
-                <div class="tab-controls" role="tablist" aria-label="Hall of fame leaderboards">
-                    <button class="tab-control is-active" type="button" role="tab" id="tab-rankpoints" aria-controls="panel-rankpoints" aria-selected="true">Rankpoints</button>
-                    <button class="tab-control" type="button" role="tab" id="tab-experience" aria-controls="panel-experience" aria-selected="false">Experience</button>
-                    <button class="tab-control" type="button" role="tab" id="tab-honor" aria-controls="panel-honor" aria-selected="false">Honor</button>
-                    <button class="tab-control" type="button" role="tab" id="tab-clan" aria-controls="panel-clan" aria-selected="false">Clan</button>
-                </div>
-
-                <div class="tab-panels">
-                    <div class="tab-panel is-active" id="panel-rankpoints" role="tabpanel" aria-labelledby="tab-rankpoints">
-                        <ol class="leaderboard">
-                            <?php homeRenderPilotLeaderboardRows($top10, 'rankpoints', 'No pilots ranked yet.'); ?>
-                        </ol>
-                    </div>
-
-                    <div class="tab-panel" id="panel-experience" role="tabpanel" aria-labelledby="tab-experience">
-                        <ol class="leaderboard">
-                            <?php homeRenderPilotLeaderboardRows($top10Experience, 'experience', 'No pilots ranked yet.'); ?>
-                        </ol>
-                    </div>
-
-                    <div class="tab-panel" id="panel-honor" role="tabpanel" aria-labelledby="tab-honor">
-                        <ol class="leaderboard">
-                            <?php homeRenderPilotLeaderboardRows($top10Honor, 'honor', 'No pilots ranked yet.'); ?>
-                        </ol>
-                    </div>
-
-                    <div class="tab-panel" id="panel-clan" role="tabpanel" aria-labelledby="tab-clan">
-                        <ol class="leaderboard">
-                            <?php homeRenderClanLeaderboardRows($top10Clans, 'No clans ranked yet.'); ?>
-                        </ol>
+                        <dl class="event-details">
+                            <div>
+                                <dt>Status</dt>
+                                <dd>Join from TDMGate1 on your x-1 map</dd>
+                            </div>
+                            <div>
+                                <dt>Schedule</dt>
+                                <dd>Monday 20:00 / Thursday 20:00</dd>
+                            </div>
+                            <div>
+                                <dt>Duration</dt>
+                                <dd>60 minutes · 20:00–21:00 Europe/Zurich</dd>
+                            </div>
+                            <div>
+                                <dt>Next start</dt>
+                                <dd><?php echo htmlspecialchars($tdmNextLabel, ENT_QUOTES, 'UTF-8'); ?></dd>
+                            </div>
+                            <div>
+                                <dt>Countdown</dt>
+                                <dd><?php echo htmlspecialchars($tdmCountdown, ENT_QUOTES, 'UTF-8'); ?></dd>
+                            </div>
+                        </dl>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <section class="dashboard-card log-card">
-            <header class="card-header">
-                <h2>Activity log</h2>
-            </header>
-
-            <ul class="log-list">
-                <?php foreach ($userlog as $log) { ?>
-                    <li class="log-entry">
-                        <time class="log-time" datetime="<?php echo htmlspecialchars($log['timestamp'], ENT_QUOTES, 'UTF-8'); ?>">
-                            <?php echo htmlspecialchars($log['timestamp'], ENT_QUOTES, 'UTF-8'); ?>
-                        </time>
-                        <div class="log-message"><?php echo $log['message']; ?></div>
-                    </li>
-                <?php } ?>
-            </ul>
-        </section>
+            </section>
+        </div>
     </div>
 </section>
 

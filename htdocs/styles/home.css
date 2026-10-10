@@ -135,9 +135,16 @@
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
-    align-items: stretch;
+    align-items: start;
+}
+
+.dashboard-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
 }
 
 
@@ -151,24 +158,7 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    min-height: 100%;
-}
-
-.user-card,
-.system-card,
-.events-card {
-    grid-column: span 4 / span 4;
-}
-
-.hof-card {
-    grid-column: span 6 / span 6;
-    align-self: start;
-}
-
-.log-card {
-    grid-column: span 6 / span 6;
-    align-self: start;
-    height: 320px;
+    min-width: 0;
 }
 
 @media (max-width: 1280px) {
@@ -176,11 +166,11 @@
         grid-template-columns: 1fr;
     }
 
-    .dashboard-card {
-        grid-column: span 6 / span 6;
+    .dashboard-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .events-card {
+    .dashboard-column-events {
         grid-column: 1 / -1;
     }
 }
@@ -195,9 +185,6 @@
         width: max-content;
     }
 
-    .dashboard-card {
-        grid-column: span 6 / span 6;
-    }
 }
 
 @media (max-width: 760px) {
@@ -238,33 +225,18 @@
     }
 
     .dashboard-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.85rem;
+    }
+
+    .dashboard-column {
         gap: 0.85rem;
     }
 
     .dashboard-card {
-        grid-column: 1 / -1;
         padding: 1.1rem;
     }
 
-    .events-card {
-        order: 1;
-    }
-
-    .user-card {
-        order: 2;
-    }
-
-    .system-card {
-        order: 3;
-    }
-
-    .hof-card {
-        order: 4;
-    }
-
-    .log-card {
-        order: 5;
-    }
 }
 
 
@@ -273,6 +245,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    flex-wrap: wrap;
     min-height: 32px;
 }
 
@@ -323,6 +296,13 @@
         gap: 0.5rem;
         font-weight: 600;
         min-width: 0;
+        flex-wrap: wrap;
+        overflow-wrap: anywhere;
+    }
+
+    .stat-row dd > span {
+        min-width: 0;
+        max-width: 100%;
     }
 
 .stat-badge {
@@ -623,8 +603,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
-    flex: 1;
-    min-height: 0;
+    max-height: 14rem;
     overflow-y: auto;
     padding-right: 0.35rem;
 }
@@ -634,8 +613,8 @@
     border-top: 1px solid rgba(148, 163, 184, 0.12);
     padding: 0.62rem 0.75rem;
     display: grid;
-    grid-template-columns: 170px minmax(0, 1fr);
-    gap: 0.8rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.3rem;
 }
 
 .log-time {
@@ -647,7 +626,9 @@
 
 .log-message {
     line-height: 1.5;
+    font-size: 0.9rem;
     min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 
@@ -764,6 +745,76 @@
 }
 
 
+
+/* Independent Home cards: bounded feeds can shrink down to an empty state. */
+.hof-card .tab-panels {
+    max-height: 20rem;
+    overflow-y: auto;
+}
+
+.hof-card .tab-control {
+    padding: 0.45rem 0.65rem;
+}
+
+.hof-card .leaderboard-row {
+    grid-template-columns: 34px 20px 26px minmax(0, 1fr) minmax(0, 0.85fr);
+    grid-template-areas: none;
+    gap: 0.4rem;
+}
+
+.hof-card .leaderboard-name {
+    grid-column: auto;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.hof-card .leaderboard-score {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.hof-card #panel-clan .leaderboard-row {
+    grid-template-columns: 34px minmax(0, 1fr) minmax(0, 0.85fr);
+}
+
+.dashboard-column .summary-value {
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    overflow-wrap: anywhere;
+}
+
+.dashboard-column .event-details dd,
+.dashboard-column .news-item {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+    .hof-card .leaderboard-row {
+        grid-template-columns: 34px 20px 26px minmax(0, 1fr);
+        grid-template-areas:
+            "rank company grade score"
+            "name name name name";
+    }
+
+    .hof-card .leaderboard-rank { grid-area: rank; }
+    .hof-card .leaderboard-company { grid-area: company; }
+    .hof-card .leaderboard-grade { grid-area: grade; }
+    .hof-card .leaderboard-name { grid-area: name; }
+    .hof-card .leaderboard-score { grid-area: score; }
+
+    .hof-card #panel-clan .leaderboard-row {
+        grid-template-columns: 34px minmax(0, 1fr);
+        grid-template-areas:
+            "rank score"
+            "name name";
+    }
+}
 
 body.modal-open {
     overflow: hidden;
