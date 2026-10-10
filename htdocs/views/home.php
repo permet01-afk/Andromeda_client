@@ -494,7 +494,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                     <div class="event-panel <?php echo $spaceballActive ? 'is-active' : 'is-scheduled'; ?>">
                         <div class="event-title-row">
                             <span class="event-name">Spaceball</span>
-                            <span class="event-status"><?php echo $spaceballActive ? 'Active' : 'Scheduled'; ?></span>
+                            <?php if ($spaceballActive) { ?><span class="event-status">Active</span><?php } ?>
                         </div>
 
                         <dl class="event-details">
@@ -520,7 +520,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                     <div class="event-panel <?php echo $invasionActive ? 'is-active' : 'is-scheduled'; ?>">
                         <div class="event-title-row">
                             <span class="event-name">Invasion</span>
-                            <span class="event-status"><?php echo $invasionActive ? 'Active' : 'Scheduled'; ?></span>
+                            <?php if ($invasionActive) { ?><span class="event-status">Active</span><?php } ?>
                         </div>
 
                         <dl class="event-details">
@@ -550,12 +550,11 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                     <div class="event-panel is-scheduled">
                         <div class="event-title-row">
                             <span class="event-name">Team Deathmatch</span>
-                            <span class="event-status">Scheduled</span>
                         </div>
                         <dl class="event-details">
                             <div>
                                 <dt>Status</dt>
-                                <dd>Join from TDMGate1 on your x-1 map</dd>
+                                <dd>Join from Gate on your x-1 map</dd>
                             </div>
                             <div>
                                 <dt>Schedule</dt>
@@ -563,7 +562,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                             </div>
                             <div>
                                 <dt>Duration</dt>
-                                <dd>60 minutes · 20:00–21:00 Europe/Zurich</dd>
+                                <dd>60 minutes</dd>
                             </div>
                             <div>
                                 <dt>Next start</dt>

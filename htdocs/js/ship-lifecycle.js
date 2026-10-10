@@ -20,6 +20,7 @@
         const stats = state.configurations && state.configurations[selectedConfig] || {};
         panel.classList.toggle('is-destroyed', destroyed);
         byId('status').textContent = state.status;
+        byId('status').hidden = state.status === 'READY';
         for (const config of [1, 2]) {
             const tab = byId('tab-' + config);
             tab.setAttribute('aria-selected', String(config === selectedConfig));

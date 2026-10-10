@@ -12,7 +12,7 @@ $shipPanelNumber=static fn($value)=>$value===null?'—':number_format((int)$valu
 ?>
 <link rel="stylesheet" href="styles/ship-lifecycle.css?v=phase5-window14-2">
 <section id="ship-lifecycle-panel" class="ship-lifecycle-panel<?= $shipPanelDestroyed?' is-destroyed':'' ?>" aria-labelledby="ship-panel-title" data-csrf="<?= htmlspecialchars((string)($_SESSION['ship_repair_csrf']??''),ENT_QUOTES,'UTF-8') ?>">
-    <header class="ship-lifecycle-heading"><h2 id="ship-panel-title">ACTIVE SHIP</h2><span id="ship-panel-status" class="ship-lifecycle-badge"><?= $shipPanelState?htmlspecialchars($shipPanelState['status']):'UNAVAILABLE' ?></span></header>
+    <header class="ship-lifecycle-heading"><h2 id="ship-panel-title">ACTIVE SHIP</h2><span id="ship-panel-status" class="ship-lifecycle-badge" <?= ($shipPanelState['status']??'')==='READY'?'hidden':'' ?>><?= $shipPanelState?htmlspecialchars($shipPanelState['status']):'UNAVAILABLE' ?></span></header>
     <div class="ship-lifecycle-body">
         <div class="ship-lifecycle-portrait">
             <img id="ship-panel-portrait" src="img/ship-lifecycle/<?= isset($shipNames[$shipPanelId])?$shipPanelId:1 ?>.png" alt="<?= htmlspecialchars($shipPanelName,ENT_QUOTES,'UTF-8') ?>">
@@ -40,4 +40,4 @@ $shipPanelNumber=static fn($value)=>$value===null?'—':number_format((int)$valu
     </div>
 </section>
 <script id="ship-panel-initial" type="application/json"><?= json_encode($shipPanelState,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT) ?></script>
-<script src="js/ship-lifecycle.js?v=phase5-window14-2" defer></script>
+<script src="js/ship-lifecycle.js?v=site-cleanup-20261010" defer></script>
