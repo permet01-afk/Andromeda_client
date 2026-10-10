@@ -3039,6 +3039,9 @@ function handlePacket_n(parts, i) {
             } else if (effect === "ISH") {
                 if (!targetIsHero && targetEnt.kind === "npc" && parts[i + 4] === "GG") {
                     // Escort-bound protection persists until the authoritative OFF packet.
+                    // Repeated snapshots must not restart the visual cycle.
+                    if (activate && !targetEnt.ggIshProtected) targetEnt.ggIshSince = performance.now();
+                    if (!activate) targetEnt.ggIshSince = null;
                     targetEnt.ggIshProtected = activate;
                 } else if (targetIsHero) setHeroShieldEffect("ISH", activate, ISH_DURATION_MS);
                 else setEntityShieldEffect(targetEnt, "ISH", activate, ISH_DURATION_MS);

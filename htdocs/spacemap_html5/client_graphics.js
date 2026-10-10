@@ -2328,7 +2328,7 @@ function drawMiniMap() {
 
 
 
-function drawShieldAura(sx, sy, currentShield, maxShield, ish, invincible, ishSince, ishUntil, invSince, invUntil, techShieldBackupUntil = 0) {
+function drawShieldAura(sx, sy, currentShield, maxShield, ish, invincible, ishSince, ishUntil, invSince, invUntil, techShieldBackupUntil = 0, loopIsh = false) {
     const now = performance.now();
     const entityScale = typeof getEntityDrawScale === "function" ? getEntityDrawScale() : 1;
     const isRegenerating = typeof heroShieldRegenUntil !== "undefined" && heroShieldRegenUntil > now;
@@ -2347,12 +2347,15 @@ function drawShieldAura(sx, sy, currentShield, maxShield, ish, invincible, ishSi
         frame = Math.floor(shieldAnimTime * (def.fps || SHIELD_ANIM_FPS)) % def.frameCount;
     } else if (spriteKey === "insta") {
         const start = ishSince;
-        if (!start) return;
+        if (loopIsh ? !Number.isFinite(start) : !start) return;
         const elapsed = now - start;
         const frameDuration = 1e3 / (def.fps || SHIELD_ANIM_FPS);
         const visualDuration = Number.isFinite(def.durationMs) ? def.durationMs : frameDuration * (def.frameCount || 1);
-        if (elapsed < 0 || elapsed >= visualDuration) return;
-        frame = Math.min(def.frameCount - 1, Math.floor(elapsed / frameDuration));
+        if (elapsed < 0 || (!loopIsh && elapsed >= visualDuration)) return;
+        // GG protection repeats the local ship ISH sequence at its existing cadence.
+        // Its lifetime is controlled by the server flag, not by visualDuration.
+        frame = loopIsh ? Math.floor(elapsed / frameDuration) % def.frameCount
+            : Math.min(def.frameCount - 1, Math.floor(elapsed / frameDuration));
     } else {
         const start = invSince;
         const end = invUntil;
@@ -4304,8 +4307,8 @@ function drawEntities() {
             ctx.restore();
         }
         if (e.kind === "npc" && e.ggIshProtected) {
-            // Hold an existing local insta-shield frame; no new effect asset or timed expiry.
-            drawShieldAura(entityScreenX, baseY, e.shield, e.maxShield, true, false, performance.now() - 700, Infinity, 0, 0);
+            // Only the authoritative GG ISH state enables this continuous visual loop.
+            drawShieldAura(entityScreenX, baseY, e.shield, e.maxShield, true, false, e.ggIshSince, Infinity, 0, 0, 0, true);
         }
         if (e.kind === "player") {
             drawShieldAura(entityScreenX, baseY, e.shield, e.maxShield, e.ishActive, e.invincible, e.ishSince, e.ishUntil, e.invSince, e.invUntil, e.techShieldBackupUntil || 0);
