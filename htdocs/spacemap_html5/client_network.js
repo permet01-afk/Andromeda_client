@@ -3037,7 +3037,11 @@ function handlePacket_n(parts, i) {
                         targetIsHero ? shipX : targetEnt.x, targetIsHero ? shipY : targetEnt.y, true);
                 }
             } else if (effect === "ISH") {
-                if (targetIsHero) setHeroShieldEffect("ISH", activate, ISH_DURATION_MS); else setEntityShieldEffect(targetEnt, "ISH", activate, ISH_DURATION_MS);
+                if (!targetIsHero && targetEnt.kind === "npc" && parts[i + 4] === "GG") {
+                    // Escort-bound protection persists until the authoritative OFF packet.
+                    targetEnt.ggIshProtected = activate;
+                } else if (targetIsHero) setHeroShieldEffect("ISH", activate, ISH_DURATION_MS);
+                else setEntityShieldEffect(targetEnt, "ISH", activate, ISH_DURATION_MS);
             } else if (effect === "BATTLE_REP_BOT" || effect === "TECH_BATTLE_REP_BOT_EFFECT" || parseInt(effect, 10) === 12) {
                 if (targetIsHero && typeof setHeroBattleRepairing === "function") {
                     const durationSeconds = parseInt(parts[i + 4], 10);

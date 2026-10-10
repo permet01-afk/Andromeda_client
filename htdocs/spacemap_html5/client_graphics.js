@@ -2839,6 +2839,8 @@ function getShipVisualRadiusCached(shipId, frameIndex = 0) {
 const shipVisualShiftCache = Object.create(null);
 
 const FLASH_SHIP_REGISTRATION_OFFSETS = Object.freeze({
+    // ship11 local SWF: bitmap origin (-97, -86), native canvas 200 x 200.
+    11: Object.freeze({ x: -3, y: -14 }),
     10: Object.freeze({
         x: -1,
         y: 22
@@ -4300,6 +4302,10 @@ function drawEntities() {
             ctx.arc(entityScreenX, baseY, TARGET_FADE_OVERLAY_RADIUS, 0, Math.PI * 2, false);
             ctx.fill();
             ctx.restore();
+        }
+        if (e.kind === "npc" && e.ggIshProtected) {
+            // Hold an existing local insta-shield frame; no new effect asset or timed expiry.
+            drawShieldAura(entityScreenX, baseY, e.shield, e.maxShield, true, false, performance.now() - 700, Infinity, 0, 0);
         }
         if (e.kind === "player") {
             drawShieldAura(entityScreenX, baseY, e.shield, e.maxShield, e.ishActive, e.invincible, e.ishSince, e.ishUntil, e.invSince, e.invUntil, e.techShieldBackupUntil || 0);

@@ -71,7 +71,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
         public static bool CanSessionAttackNpc(Session session, Npc npc)
         {
             if (session == null || session.CharacterInfo == null || npc == null) return false;
-            return GalaxyGateWaveService.CanSessionInteractWithNpc(session, npc);
+            return !npc.IsGalaxyGateProtected && GalaxyGateWaveService.CanSessionInteractWithNpc(session, npc);
         }
 
         public static void SendNpcScopedMessage(MapInstance instance, Npc npc, ServerMessage message, Session fallbackOwner = null)
@@ -2184,6 +2184,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 }
 
+                if (!CanSessionAttackNpc(attacker, npcTarget)) return;
                 npcTarget.UpdateAttackers(attacker.CharacterId, damagePerTick);
 
                 if (npcTarget.ShipHp - damagePerTick > 0)

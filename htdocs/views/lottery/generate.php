@@ -152,22 +152,9 @@ function gg_extra_life_price($purchaseCount) {
     return 10000 * (2 ** $purchaseCount);
 }
 
-function gg_reset_inactive_life_purchases($db, $userId) {
-    if (!gg_has_column($db, 'player_galaxy_gates', 'life_purchases')) return;
-
-    $stmt = $db->prepare("
-        UPDATE player_galaxy_gates
-        SET life_purchases = 0
-        WHERE user_id = :uid
-          AND on_map = 0
-          AND life_purchases <> 0
-    ");
-    $stmt->execute([':uid' => $userId]);
-}
-
 function gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves) {
     $lifePurchaseAvailable = gg_has_column($db, 'player_galaxy_gates', 'life_purchases');
-    if ($lifePurchaseAvailable) gg_reset_inactive_life_purchases($db, $userId);
+    // Status reads do not mutate the Gate. Prepare resets purchases explicitly.
 
     $columns = "gate_id, parts, on_map, completed, lives, current_wave";
     if ($lifePurchaseAvailable) $columns .= ", life_purchases";
@@ -206,7 +193,7 @@ function gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves) {
         $current = count($parts);
         $onMap = ((int)($row['on_map'] ?? 0) === 1);
         $completed = ((int)($row['completed'] ?? 0) === 1);
-        $lifePurchases = $lifePurchaseAvailable ? (int)($row['life_purchases'] ?? 0) : 0;
+        $lifePurchases = $lifePurchaseAvailable && $onMap ? (int)($row['life_purchases'] ?? 0) : 0;
 
         $gatesStatus[$gateId]['current'] = $current;
         $gatesStatus[$gateId]['parts'] = $parts;
@@ -245,7 +232,26 @@ try {
     $db->exec('SET NAMES utf8');
 
     $userId = (int)$_SESSION['player_id'];
-    $action = $_REQUEST['action'] ?? 'spin';
+    $action = $_POST['action'] ?? $_GET['action'] ?? 'init';
+    if (empty($_SESSION['gg_csrf'])) $_SESSION['gg_csrf'] = bin2hex(random_bytes(32));
+    if ($action !== 'init') {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            header('Allow: GET, POST');
+            echo json_encode(['status'=>'error','message'=>'POST required']);
+            exit();
+        }
+        if (!is_string($_POST['csrf'] ?? null) || !hash_equals($_SESSION['gg_csrf'], $_POST['csrf'])) {
+            http_response_code(403);
+            echo json_encode(['status'=>'error','message'=>'Session expired. Reload the page.']);
+            exit();
+        }
+        if (!in_array($action, ['spin','prepare','buy_life'], true)) {
+            http_response_code(400);
+            echo json_encode(['status'=>'error','message'=>'Unknown action']);
+            exit();
+        }
+    }
 
     $gatesConfig = [
         1 => ['total' => 34,  'name' => 'Alpha'],
@@ -266,7 +272,9 @@ try {
         echo json_encode([
             'status' => 'success',
             'gates' => gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves),
-            'multiplier_next' => $multiplierLevel + 1
+            'multiplier_next' => $multiplierLevel + 1,
+            'csrf' => $_SESSION['gg_csrf'],
+            'pilot' => gg_build_pilot_bar($db, $userId)
         ]);
         exit();
     }

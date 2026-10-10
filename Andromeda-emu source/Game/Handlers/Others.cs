@@ -807,9 +807,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (session.CharacterInfo.PendingGalaxyGateRewardGateId > 0)
             {
                 int gateId = session.CharacterInfo.PendingGalaxyGateRewardGateId;
+                if (!GalaxyGateRewardService.GiveCompletionReward(session, gateId))
+                {
+                    // Keep the durable claim and exit pending after a failed/uncertain commit.
+                    session.CharacterInfo.IsJumping = false;
+                    session.CharacterInfo.CanMove = true;
+                    DisposePortalJumpTimer(session);
+                    return;
+                }
                 session.CharacterInfo.PendingGalaxyGateRewardGateId = 0;
-
-                GalaxyGateRewardService.GiveCompletionReward(session, gateId);
             }
 
             if (Others.invasionPortal.Contains(session.CharacterInfo.CurrentPortal))

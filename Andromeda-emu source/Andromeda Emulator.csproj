@@ -65,7 +65,9 @@
     <Compile Include="Game\Event\1v1.cs" />
     <Compile Include="Game\GalaxyGates\GalaxyGatePortalService.cs" />
     <Compile Include="Game\GalaxyGates\GalaxyGateRewardService.cs" />
+    <Compile Include="Game\GalaxyGates\GalaxyGateRewardStore.cs" />
     <Compile Include="Game\GalaxyGates\GalaxyGateWaveService.cs" />
+    <Compile Include="Game\GalaxyGates\GalaxyGateProtection.cs" />
     <Compile Include="Game\Handlers\AutoEvent.cs" />
     <Compile Include="Game\Handlers\GroupManager.cs" />
     <Compile Include="Game\Handlers\Groupsystem.cs" />

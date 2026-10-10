@@ -1,4 +1,4 @@
-﻿using OrbitReborn_Emulator.Communication;
+using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Game.Quests;
@@ -11,7 +11,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 {
     public static class GalaxyGateRewardService
     {
-        private struct GateReward
+        internal struct GateReward
         {
             public int Uridium;
             public int Experience;
@@ -65,103 +65,28 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             }},
         };
 
-        public static void GiveCompletionReward(Session session, int gateId)
+        internal static bool TryGetReward(int gateId, out GateReward reward) { return Rewards.TryGetValue(gateId, out reward); }
+
+        public static bool GiveCompletionReward(Session session, int gateId)
         {
-            if (session == null || session.CharacterInfo == null)
-                return;
-
-            if (!Rewards.TryGetValue(gateId, out GateReward reward))
-                reward = new GateReward();
-
-            int completed = 0;
-
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            if (session == null || session.CharacterInfo == null) return false;
+            GateReward reward;
+            if (!Rewards.TryGetValue(gateId, out reward)) return false;
+            GalaxyGateRewardReceipt receipt;
+            try { receipt = session.CharacterInfo.ClaimGalaxyGateReward(gateId); }
+            catch (Exception ex)
             {
-                client.ClearParameters();
-                client.SetParameter("uid", (object)session.CharacterInfo.Id);
-                client.SetParameter("gid", (object)gateId);
-
-                DataTable dt = client.ExecuteQueryTable(
-                    "SELECT completed FROM player_galaxy_gates WHERE user_id=@uid AND gate_id=@gid LIMIT 1"
-                );
-
-                if (dt == null || dt.Rows.Count == 0)
-                    return;
-
-                completed = Convert.ToInt32(dt.Rows[0]["completed"]);
-                if (completed != 1)
-                    return;
-
-                if (reward.Credits != 0 || reward.Uridium != 0)
-                    session.CharacterInfo.AddReward(client, reward.Credits, reward.Uridium);
-
-                if (reward.Experience != 0)
-                    session.CharacterInfo.AddExperience(client, reward.Experience);
-
-                if (reward.Honor != 0)
-                    session.CharacterInfo.AddHonor(client, reward.Honor);
-
-                if (reward.Ucb100 != 0)
-                {
-                    client.ClearParameters();
-                    client.SetParameter("id", (object)session.CharacterInfo.Id);
-                    client.ExecuteNonQuery("UPDATE users SET ammo_ucb100 = ammo_ucb100 + " + reward.Ucb100 + " WHERE id=@id LIMIT 1");
-                    session.CharacterInfo.AmmoUcb100 += (long)reward.Ucb100;
-                }
-
-                client.ClearParameters();
-                client.SetParameter("uid", (object)session.CharacterInfo.Id);
-                client.SetParameter("gid", (object)gateId);
-
-                client.ExecuteNonQuery(
-                    "UPDATE player_galaxy_gates " +
-                    "SET on_map=0, completed=0, current_wave=0, lives=0, parts='[]' " +
-                    "WHERE user_id=@uid AND gate_id=@gid"
-                );
-
-                const int MAX_GG_RINGS = 4;
-
-                int current = session.CharacterInfo.GGRings;
-                int newRings = current;
-
-                switch (gateId)
-                {
-                    case 1:
-                        newRings = Math.Max(newRings, 1);
-                        break;
-
-                    case 2:
-                        if (newRings >= 1)
-                            newRings = Math.Max(newRings, 2);
-                        break;
-
-                    case 3:
-                        if (newRings >= 2)
-                            newRings = Math.Max(newRings, 3);
-                        break;
-
-                    case 4:
-                        if (newRings >= 3)
-                            newRings = Math.Max(newRings, 4);
-                        break;
-                }
-
-                newRings = Math.Max(0, Math.Min(MAX_GG_RINGS, newRings));
-
-                if (newRings != current)
-                {
-                    session.CharacterInfo.GGRings = newRings;
-
-                    client.ClearParameters();
-                    client.SetParameter("id", (object)session.CharacterInfo.Id);
-                    client.SetParameter("rings", (object)newRings);
-                    client.ExecuteNonQuery("UPDATE users SET gg_rings=@rings WHERE id=@id LIMIT 1");
-                }
+                Console.Error.WriteLine("[GG reward] Claim deferred for player " + session.CharacterInfo.Id + ": " + ex.Message);
+                session.SendData(PacketComposer.Compose("A", "STD|Reward could not be confirmed. Please retry the exit portal."));
+                return false;
             }
-
-            if (reward.Seprom > 0)
-                session.CharacterInfo.AddCargo(14L, reward.Seprom);
-
+            if (!receipt.Paid)
+            {
+                session.SendData(UserDataComposer.Compose(session));
+                session.SendData(PacketComposer.Compose("B", session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
+                session.SendData(session.CharacterInfo.GetCargoMessage());
+                return true;
+            }
 
             if (reward.Credits != 0)
                 session.SendData(PacketComposer.Compose("y", "CRE|" + reward.Credits + "|" + session.CharacterInfo.Credits));
@@ -205,6 +130,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 session.SendData(PacketComposer.Compose("QST", "UPD"));
 
             session.SendData(PacketComposer.Compose("A", msg));
+            return true;
         }
     }
 }

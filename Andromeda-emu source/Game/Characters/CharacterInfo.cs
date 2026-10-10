@@ -6170,6 +6170,31 @@ namespace OrbitReborn_Emulator.Game.Characters
         }
 
 
+        // Serialize with ammo flushes; DB rewards never acknowledge unflushed shots.
+        public GalaxyGateRewardReceipt ClaimGalaxyGateReward(int gateId)
+        {
+            lock (this.mPrimaryAmmoFlushLock)
+            {
+                var receipt = new GalaxyGateRewardStore().Claim(this.mId, gateId);
+                var row = receipt.Balance;
+                this.mCredits = Convert.ToInt64(row["credits"]);
+                this.mUridium = Convert.ToInt64(row["uridium"]);
+                this.mExperience = Convert.ToInt64(row["experience"]);
+                this.mHonor = Convert.ToInt64(row["honor"]);
+                this.mLevel = Convert.ToInt32(row["level"]);
+                this.GGRings = Convert.ToInt32(row["gg_rings"]);
+                lock (this.mPrimaryAmmoSyncLock)
+                {
+                    long pending = GetAmmoConsumeDelta(this.mDbAmmoUcb100, this.AmmoUcb100);
+                    this.mDbAmmoUcb100 = Convert.ToInt64(row["ammo_ucb100"]);
+                    this.AmmoUcb100 = Math.Max(0L, this.mDbAmmoUcb100 - pending);
+                }
+                this.mLabInfos.Seprom = receipt.Seprom;
+                this.mShipCargo = this.GetCurrentCargoTotal();
+                return receipt;
+            }
+        }
+
         // TDM refresh reads only economic totals. It cannot restore dirty ammo or equipment.
         public void RefreshTdmRewardData()
         {

@@ -29,6 +29,14 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         public int ParentNpcId = 0;
 
+        public GalaxyGateProtection GalaxyGateProtection;
+        public bool IsGalaxyGateProtected { get { return GalaxyGateProtection != null && GalaxyGateProtection.IsProtected; } }
+        public void SendGalaxyGateProtection(Session session)
+        {
+            if (session != null && GalaxyGateProtection != null)
+                session.SendData(PacketComposer.Compose("n", "fx|" + (IsGalaxyGateProtected ? "start" : "end") + "|ISH|" + Id + "|GG"));
+        }
+
         public double DespawnAt = 0.0;
 
         public double MinionLastRetargetTick = 0.0;
@@ -2038,7 +2046,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         public void Destroy(MapInstance map)
         {
-            if (!TryAdmitDeathReward()) return;
+            if (IsGalaxyGateProtected || !TryAdmitDeathReward()) return;
 
             this.IsDestroying = true;
 

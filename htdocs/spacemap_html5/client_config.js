@@ -2467,6 +2467,8 @@ if (typeof window !== "undefined") {
 restorePersistedCooldowns();
 
 const SHIP_SPRITE_DEFS = {
+    // Local Flash ship11.swf, mc timeline: 32 original DemaNeR orientations.
+    11: { frameCount: 32, basePath: "graphics/ships/11/" },
     1: {
         frameCount: 32,
         basePath: "graphics/ships/1/"
@@ -2650,6 +2652,11 @@ const SHIP_SPRITE_DEFS = {
 };
 
 const SHIP_ATLAS_DEFS = Object.freeze({
+    "graphics/ships/11/": Object.freeze({
+        atlasPath: "graphics/ships/11/ship_atlas_v1.png?v=gg-delta-1",
+        atlasColumns: 8, atlasCellWidth: 202, atlasCellHeight: 202,
+        atlasPadding: 1, frameWidth: 200, frameHeight: 200
+    }),
     "graphics/ships/1/": Object.freeze({
         atlasPath: "graphics/ships/1/ship_atlas_v1.png?v=unknown-phase2b",
         atlasColumns: 8,

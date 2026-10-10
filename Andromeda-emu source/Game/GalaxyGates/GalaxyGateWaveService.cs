@@ -1,4 +1,4 @@
-﻿using OrbitReborn_Emulator.Communication.Outgoing;
+using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Portal;
@@ -54,18 +54,47 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             public HashSet<int> AliveNpcIds = new HashSet<int>();
 
-            public Queue<string> PendingNpcSpawns = new Queue<string>();
+            public Queue<WaveSpawn> PendingNpcSpawns = new Queue<WaveSpawn>();
             public int SpawnBatchSize;
             public Timer SpawnBatchTimer;
 
             public bool Completed;
+            public bool Retired;
+            public bool WaveFinished;
+            public Dictionary<int, GalaxyGateProtection> Escorts = new Dictionary<int, GalaxyGateProtection>();
         }
 
         private class WaveNpc
         {
             public string Name;
-            public int Count;
-            public WaveNpc(string name, int count) { Name = name; Count = count; }
+            public int Count, HpMultiplier, ShieldMultiplier, DamageMultiplier, Group;
+            public readonly int RewardMultiplier = 1;
+            public bool Protected;
+            public WaveNpc(string name, int count, int force = 1, int group = 0, bool protect = false)
+            {
+                Name = name; Count = count; HpMultiplier = ShieldMultiplier = DamageMultiplier = force;
+                Group = group; Protected = protect;
+            }
+        }
+
+        private class WaveSpawn
+        {
+            public WaveNpc Entry;
+            public GalaxyGateProtection Group;
+        }
+
+        private static List<WaveSpawn> BuildSpawnList(List<WaveNpc> wave)
+        {
+            var counts = new Dictionary<int, int>();
+            foreach (var entry in wave)
+                if (entry.Group > 0 && !entry.Protected)
+                    counts[entry.Group] = (counts.ContainsKey(entry.Group) ? counts[entry.Group] : 0) + entry.Count;
+            var groups = new Dictionary<int, GalaxyGateProtection>();
+            foreach (var count in counts) groups[count.Key] = new GalaxyGateProtection(count.Value);
+            var result = new List<WaveSpawn>();
+            foreach (var entry in wave)
+                for (int i = 0; i < entry.Count; i++) result.Add(new WaveSpawn { Entry = entry, Group = entry.Group > 0 ? groups[entry.Group] : null });
+            return result;
         }
 
         public static bool IsGateMap(int mapId)
@@ -256,6 +285,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     session.CharacterInfo.NpcInRange.Add(npc.Id);
 
                 session.SendData(PacketComposer.Compose("C", npc.Id.ToString() + "|" + (object)npc.ShipId + "|0|" + npc.ClanTag + "|" + npc.Name + "|" + (object)npc.LocX + "|" + (object)npc.LocY + "|" + (object)npc.FactionId + "|" + (object)npc.IsClanMember + "|" + (object)npc.Rank + "|" + (object)npc.IsBoss + "|" + (object)npc.IsClanMember + "|" + (object)npc.GalaxyGatesRings));
+                npc.SendGalaxyGateProtection(session);
                 session.SendData(MapUserMovementListComposer.ComposeIA(new CList<MapActor>() { actor }));
 
                 if (npc.Drones == 1)
@@ -357,6 +387,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 else
                 {
                     run = Runs[session.CharacterId];
+                    run.Retired = false;
                     run.GateId = gateId;
                     run.MapId = mapId;
                     run.Lives = lives;
@@ -442,17 +473,12 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 client.ExecuteNonQuery("UPDATE player_galaxy_gates SET current_wave=@w, completed=0 WHERE user_id=@uid AND gate_id=@gid");
             }
 
-            List<string> spawnList = new List<string>();
-            foreach (WaveNpc w in wave)
-            {
-                for (int i = 0; i < w.Count; i++)
-                    spawnList.Add(w.Name);
-            }
+            List<WaveSpawn> spawnList = BuildSpawnList(wave);
 
             for (int i = spawnList.Count - 1; i > 0; i--)
             {
                 int j = NpcAI.RandomPos.Next(0, i + 1);
-                string tmp = spawnList[i];
+                WaveSpawn tmp = spawnList[i];
                 spawnList[i] = spawnList[j];
                 spawnList[j] = tmp;
             }
@@ -468,12 +494,14 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             {
                 run.CurrentWave = waveNumber;
                 run.Completed = false;
+                run.WaveFinished = false;
+                run.Escorts.Clear();
 
                 run.AliveNpcIds.Clear();
 
                 run.PendingNpcSpawns.Clear();
-                foreach (string name in spawnList)
-                    run.PendingNpcSpawns.Enqueue(name);
+                foreach (WaveSpawn spawn in spawnList)
+                    run.PendingNpcSpawns.Enqueue(spawn);
 
                 run.SpawnBatchSize = batchSize;
 
@@ -553,88 +581,113 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             MapInstance instance = MapManager.GetInstanceByMapId(session.CharacterInfo.MapId);
             if (instance == null) return;
 
-            List<string> toSpawn = new List<string>();
+            List<WaveSpawn> toSpawn = new List<WaveSpawn>();
 
             lock (SyncRoot)
             {
+                if (run.Retired || run.WaveFinished || session.CharacterId != run.CharacterId
+                    || session.CharacterInfo.MapId != run.MapId) return;
+
                 if (run.PendingNpcSpawns == null) return;
-
                 while (toSpawn.Count < maxToSpawn && run.PendingNpcSpawns.Count > 0)
-                {
                     toSpawn.Add(run.PendingNpcSpawns.Dequeue());
-                }
-            }
 
-            if (toSpawn.Count == 0)
-                return;
+                if (toSpawn.Count == 0)
+                    return;
 
-            foreach (string npcName in toSpawn)
-            {
-                List<string> tpl = NpcAI.GetNpcTemplate(npcName);
-                if (tpl == null || tpl.Count < 22)
-                    continue;
-
-                double angle = NpcAI.RandomPos.NextDouble() * Math.PI * 2;
-                int distance = NpcAI.RandomPos.Next(SPAWN_MIN_DISTANCE, SPAWN_MAX_DISTANCE);
-
-                int x = CENTER_X + (int)(Math.Cos(angle) * distance);
-                int y = CENTER_Y + (int)(Math.Sin(angle) * distance);
-
-                if (x < 300) x = 300;
-                if (x > 20700) x = 20700;
-                if (y < 300) y = 300;
-                if (y > 12600) y = 12600;
-
-                Npc npc = NpcManager.CreateNewInstance(
-                    tpl[0],
-                    session.CharacterInfo.MapId, x, y,
-                    Convert.ToInt32(tpl[4]),
-                    Convert.ToInt32(tpl[5]),
-                    Convert.ToInt32(tpl[6]),
-                    Convert.ToInt32(tpl[7]),
-                    Convert.ToInt32(tpl[8]),
-                    Convert.ToInt32(tpl[9]),
-                    Convert.ToInt32(tpl[10]),
-                    Convert.ToInt32(tpl[11]),
-                    Convert.ToInt32(tpl[12]),
-                    Convert.ToInt32(tpl[13]),
-                    Convert.ToInt32(tpl[14]),
-                    tpl[15],
-                    Convert.ToInt32(tpl[16]),
-                    Convert.ToInt32(tpl[17]),
-                    Convert.ToInt32(tpl[18]),
-                    Convert.ToInt32(tpl[19]),
-                    Convert.ToInt32(tpl[20]),
-                    Convert.ToInt32(tpl[21])
-                );
-
-                npc.Respawn = false;
-                npc.SharedRewards = 1;
-
-                instance.AddNpcToMap(npc);
-                NpcAI.NpcToAdd.Add(npc);
-
-                npc.SetTargetWithoutAttackTimer(run.CharacterId);
-
-                lock (SyncRoot)
+                foreach (WaveSpawn spawn in toSpawn)
                 {
+                    WaveNpc entry = spawn.Entry;
+                    List<string> tpl = entry.Name == "-=[ DemaNeR ]=-"
+                        ? new List<string> { entry.Name,"1","0","0","11","400000","400000","300000","300000","300","409600","256","0","0","0","","0","0","0","0","0","4215" }
+                        : NpcAI.GetNpcTemplate(entry.Name);
+                    if (tpl == null || tpl.Count < 22)
+                        continue;
+
+                    double angle = NpcAI.RandomPos.NextDouble() * Math.PI * 2;
+                    int distance = NpcAI.RandomPos.Next(SPAWN_MIN_DISTANCE, SPAWN_MAX_DISTANCE);
+
+                    int x = CENTER_X + (int)(Math.Cos(angle) * distance);
+                    int y = CENTER_Y + (int)(Math.Sin(angle) * distance);
+
+                    if (x < 300) x = 300;
+                    if (x > 20700) x = 20700;
+                    if (y < 300) y = 300;
+                    if (y > 12600) y = 12600;
+
+                    Npc npc = NpcManager.CreateNewInstance(
+                        tpl[0],
+                        session.CharacterInfo.MapId, x, y,
+                        Convert.ToInt32(tpl[4]),
+                        Convert.ToInt32(tpl[5]),
+                        Convert.ToInt32(tpl[6]),
+                        Convert.ToInt32(tpl[7]),
+                        Convert.ToInt32(tpl[8]),
+                        Convert.ToInt32(tpl[9]),
+                        Convert.ToInt32(tpl[10]),
+                        Convert.ToInt32(tpl[11]),
+                        Convert.ToInt32(tpl[12]),
+                        Convert.ToInt32(tpl[13]),
+                        Convert.ToInt32(tpl[14]),
+                        tpl[15],
+                        Convert.ToInt32(tpl[16]),
+                        Convert.ToInt32(tpl[17]),
+                        Convert.ToInt32(tpl[18]),
+                        Convert.ToInt32(tpl[19]),
+                        Convert.ToInt32(tpl[20]),
+                        Convert.ToInt32(tpl[21])
+                    );
+
+                    if (entry.Name == "-=[ DemaNeR ]=-")
+                    {
+                        // FAQ-based stats; standard Andromeda range/cadence/AI, no added ability.
+                        npc.DamageMin = 3580; npc.DamageMax = 4850;
+                        npc.ExperienceReward = 51200; npc.HonorReward = 512;
+                    }
+                    // Owner-approved force affects combat only. Rewards/cargo/speed stay unchanged.
+                    npc.ShipMaxHp *= entry.HpMultiplier; npc.ShipHp = npc.ShipMaxHp;
+                    npc.ShipMaxShield *= entry.ShieldMultiplier; npc.ShipShield = npc.ShipMaxShield;
+                    npc.DamageMin *= entry.DamageMultiplier; npc.DamageMax *= entry.DamageMultiplier;
+                    npc.Damages *= entry.DamageMultiplier;
+                    if (spawn.Group != null)
+                    {
+                        if (entry.Protected) { npc.GalaxyGateProtection = spawn.Group; spawn.Group.Principal = npc; }
+                        else run.Escorts.Add(npc.Id, spawn.Group);
+                    }
+                    npc.Respawn = false;
+                    npc.SharedRewards = 1;
+
                     run.AliveNpcIds.Add(npc.Id);
                     if (!NpcOwners.ContainsKey(npc.Id))
                         NpcOwners.Add(npc.Id, run.CharacterId);
-                }
+                    instance.AddNpcToMap(npc);
+                    NpcAI.NpcToAdd.Add(npc);
+                    npc.SetTargetWithoutAttackTimer(run.CharacterId);
+            }
             }
         }
 
         public static void OnNpcDestroyed(int mapId, int npcId)
         {
             if (!IsGateMap(mapId)) return;
-            if (!NpcOwners.ContainsKey(npcId)) return;
-
-            int ownerCharacterId = NpcOwners[npcId];
-            NpcOwners.Remove(npcId);
-
-            if (!Runs.ContainsKey(ownerCharacterId)) return;
-            GateRun run = Runs[ownerCharacterId];
+            int ownerCharacterId;
+            GateRun run;
+            lock (SyncRoot)
+            {
+                if (!NpcOwners.ContainsKey(npcId)) return;
+                ownerCharacterId = NpcOwners[npcId];
+                NpcOwners.Remove(npcId);
+                if (!Runs.ContainsKey(ownerCharacterId)) return;
+                run = Runs[ownerCharacterId];
+                if (run.Retired || !run.AliveNpcIds.Remove(npcId)) return;
+                GalaxyGateProtection group;
+                if (run.Escorts.TryGetValue(npcId, out group))
+                {
+                    run.Escorts.Remove(npcId);
+                    if (group.EscortDestroyed() && group.Principal != null)
+                        group.Principal.SendGalaxyGateProtection(SessionManager.GetSessionByCharacterId(ownerCharacterId));
+                }
+            }
 
             bool waveFinishedNow = false;
             bool completedNow = false;
@@ -644,14 +697,14 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             lock (SyncRoot)
             {
-                run.AliveNpcIds.Remove(npcId);
-                if (run.Completed) return;
+                if (run.Completed || run.WaveFinished || run.Retired) return;
 
                 bool noAlive = run.AliveNpcIds.Count == 0;
                 bool noPending = run.PendingNpcSpawns == null || run.PendingNpcSpawns.Count == 0;
 
                 if (noAlive && noPending)
                 {
+                    run.WaveFinished = true;
                     if (run.CurrentWave >= totalWaves)
                     {
                         run.Completed = true;
@@ -905,6 +958,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
         {
             if (run == null) return;
 
+            lock (SyncRoot) { run.Retired = true; run.Escorts.Clear(); }
             StopSpawnBatchTimer(run);
 
             lock (SyncRoot)
@@ -992,7 +1046,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 if (wave == 4) return new List<WaveNpc>() { new WaveNpc("-=[ Saimon ]=-", 80) };
                 if (wave == 5) return new List<WaveNpc>() { new WaveNpc("-=[ Devolarium ]=-", 20) };
                 if (wave == 6) return new List<WaveNpc>() { new WaveNpc("-=[ Kristallin ]=-", 80) };
-                if (wave == 7) return new List<WaveNpc>() { new WaveNpc("-=[ Sibelon ]=-", 16) };
+                if (wave == 7) return new List<WaveNpc>() { new WaveNpc("-=[ Sibelon ]=-", 20) };
                 if (wave == 8) return new List<WaveNpc>() { new WaveNpc("-=[ Sibelonit ]=-", 80) };
                 if (wave == 9) return new List<WaveNpc>() { new WaveNpc("-=[ Kristallon ]=-", 16) };
                 if (wave == 10) return new List<WaveNpc>() { new WaveNpc("-=[ Protegit ]=-", 30) };
@@ -1001,16 +1055,20 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             if (gateId == 4)
             {
-                if (wave == 1) return new List<WaveNpc>() { new WaveNpc("-=[ Lordakia ]=-", 5), new WaveNpc("-=[ Mordon ]=-", 10), new WaveNpc("-=[ Saimon ]=-", 15) };
-                if (wave == 2) return new List<WaveNpc>() { new WaveNpc("-=[ Streuner ]=-", 11), new WaveNpc("-=[ Boss Streuner ]=-", 1) };
-                if (wave == 3) return new List<WaveNpc>() { new WaveNpc("-=[ Mordon ]=-", 5), new WaveNpc("-=[ Saimon ]=-", 10), new WaveNpc("-=[ Kristallin ]=-", 15) };
-                if (wave == 4) return new List<WaveNpc>() { new WaveNpc("-=[ Lordakia ]=-", 12), new WaveNpc("-=[ Lordakium ]=-", 1) };
-                if (wave == 5) return new List<WaveNpc>() { new WaveNpc("-=[ Boss Lordakia ]=-", 10), new WaveNpc("-=[ Boss Mordon ]=-", 8), new WaveNpc("-=[ Boss Saimon ]=-", 6) };
-                if (wave == 6) return new List<WaveNpc>() { new WaveNpc("-=[ Sibelonit ]=-", 15), new WaveNpc("-=[ Sibelon ]=-", 1) };
-                if (wave == 7) return new List<WaveNpc>() { new WaveNpc("-=[ Sibelonit ]=-", 5), new WaveNpc("-=[ Kristallin ]=-", 10), new WaveNpc("-=[ Boss Streuner ]=-", 5) };
-                if (wave == 8) return new List<WaveNpc>() { new WaveNpc("-=[ Kristallin ]=-", 10), new WaveNpc("-=[ Kristallon ]=-", 1) };
-                if (wave == 9) return new List<WaveNpc>() { new WaveNpc("-=[ Protegit ]=-", 15), new WaveNpc("-=[ Boss Lordakium ]=-", 3) };
-                if (wave == 10) return new List<WaveNpc>() { new WaveNpc("-=[ Boss Lordakium ]=-", 3) };
+                // FAQ composition; explicit Andromeda combat-only force and escort bindings.
+                if (wave == 1) return new List<WaveNpc> { new WaveNpc("-=[ Lordakia ]=-",5,2),new WaveNpc("-=[ Mordon ]=-",10,2),new WaveNpc("-=[ Saimon ]=-",15,2) };
+                if (wave == 2) return new List<WaveNpc> { new WaveNpc("-=[ Streuner ]=-",11,2,1),new WaveNpc("-=[ StreuneR ]=-",1,4,1,true) };
+                if (wave == 3) return new List<WaveNpc> { new WaveNpc("-=[ Mordon ]=-",5,2),new WaveNpc("-=[ Saimon ]=-",10,2),new WaveNpc("-=[ Kristallin ]=-",15,2) };
+                if (wave == 4) return new List<WaveNpc> { new WaveNpc("-=[ Lordakia ]=-",12,4,1),new WaveNpc("-=[ Lordakium ]=-",1,2,1,true) };
+                if (wave == 5) return new List<WaveNpc> { new WaveNpc("-=[ Boss Lordakia ]=-",10),new WaveNpc("-=[ Boss Mordon ]=-",8),new WaveNpc("-=[ Boss Saimon ]=-",6) };
+                if (wave == 6) return new List<WaveNpc> { new WaveNpc("-=[ Sibelonit ]=-",15,2,1),new WaveNpc("-=[ Sibelon ]=-",1,3,1,true) };
+                if (wave == 7) return new List<WaveNpc> { new WaveNpc("-=[ Sibelonit ]=-",5,2),new WaveNpc("-=[ Kristallin ]=-",10,3),new WaveNpc("-=[ Boss StreuneR ]=-",5) };
+                if (wave == 8) return new List<WaveNpc> { new WaveNpc("-=[ Kristallin ]=-",10,3,1),new WaveNpc("-=[ Kristallon ]=-",1,2,1,true) };
+                if (wave == 9) return new List<WaveNpc> {
+                    new WaveNpc("-=[ Protegit ]=-",5,2,1),new WaveNpc("-=[ Boss Lordakium ]=-",1,1,1,true),
+                    new WaveNpc("-=[ Protegit ]=-",5,2,2),new WaveNpc("-=[ Boss Lordakium ]=-",1,1,2,true),
+                    new WaveNpc("-=[ Protegit ]=-",5,2,3),new WaveNpc("-=[ Boss Lordakium ]=-",1,1,3,true) };
+                if (wave == 10) return new List<WaveNpc> { new WaveNpc("-=[ DemaNeR ]=-",3) };
                 return null;
             }
 

@@ -897,6 +897,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.CharacterInfo.NpcInRange.Add(npc.Id);
 
             session.SendData(PacketComposer.Compose("C", npc.Id.ToString() + "|" + (object)npc.ShipId + "|0|" + npc.ClanTag + "|" + npc.Name + "|" + (object)npc.LocX + "|" + (object)npc.LocY + "|" + (object)npc.FactionId + "|" + (object)npc.IsClanMember + "|" + (object)npc.Rank + "|" + (object)npc.IsBoss + "|" + (object)npc.IsClanMember + "|" + (object)npc.GalaxyGatesRings));
+            npc.SendGalaxyGateProtection(session);
             session.SendData(PacketComposer.Compose("n", "pt|" + npc.Id + "|" + npc.GameTitle));
 
             if (npc.IsMoving)
