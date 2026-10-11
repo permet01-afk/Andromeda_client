@@ -3188,13 +3188,16 @@ function updateShieldEffects(now) {
     }
 }
 
-function spawnPortalJumpEffect(x, y) {
+function spawnPortalJumpEffect(x, y, onComplete = null) {
     if (x == null || y == null || !PORTAL_JUMP_ANIM) return;
-    portalJumpEffects.push({
+    const effect = {
         x: x,
         y: y,
         startedAt: performance.now()
-    });
+    };
+    if (typeof onComplete === "function") effect.onComplete = onComplete;
+    portalJumpEffects.push(effect);
+    return effect;
 }
 
 function spawnSmartbombEffect(x, y, onHero = false) {
@@ -3225,6 +3228,8 @@ function updatePortalJumpEffects(now) {
         const fx = portalJumpEffects[i];
         if (now - fx.startedAt < totalDuration) {
             portalJumpEffects[keepCount++] = fx;
+        } else if (typeof fx.onComplete === "function") {
+            fx.onComplete();
         }
     }
     portalJumpEffects.length = keepCount;

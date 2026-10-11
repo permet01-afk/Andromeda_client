@@ -4610,6 +4610,20 @@ function drawPortals() {
         }
         ctx.restore();
     }
+    // Only accepted Continue visuals reach this list. Their lifetime is the normal jump effect.
+    for (const pid in consumedGalaxyGateContinuePortals) {
+        const p = consumedGalaxyGateContinuePortals[pid];
+        if (!p || !p.jumpEffect) continue;
+        const dx = p.x - shipX;
+        const dy = p.y - shipY;
+        if (dx * dx + dy * dy > VIEW_RADIUS_SQ) continue;
+        const key = PORTAL_TYPE_TO_SPRITE_KEY[p.typeId];
+        const activeImg = key ? getPortalSpriteFrame(key, "active", 0) : null;
+        if (!activeImg) continue;
+        ctx.save();
+        drawPortalFrame(activeImg, mapToScreenX(p.x), mapToScreenY(p.y), entityScale);
+        ctx.restore();
+    }
 }
 
 function drawTooltip() {

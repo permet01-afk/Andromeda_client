@@ -2744,6 +2744,7 @@ function resetMapState(newMapId) {
     invalidateGroupMinimapCache();
     if (typeof clearEntityRuntimeActiveLists === "function") clearEntityRuntimeActiveLists();
     for (const id in portals) delete portals[id];
+    for (const id in consumedGalaxyGateContinuePortals) delete consumedGalaxyGateContinuePortals[id];
     if (pendingAttackLocksByAttackerId instanceof Map) pendingAttackLocksByAttackerId.clear();
     if (attackLockAttackersByTargetId instanceof Map) attackLockAttackersByTargetId.clear();
     if (typeof clearAllCollectableAnimationStates === "function") clearAllCollectableAnimationStates();
@@ -2895,7 +2896,8 @@ function handlePacket_n(parts, i) {
             if (!isNaN(portalId) && portals[portalId]) {
                 const portal = portals[portalId];
                 if (isCurrentGalaxyGateContinuePortal(portalId, portal)) {
-                    // REM is authoritative. Do not retain the accepted Continue until a jump animation ends.
+                    // REM consumes gameplay availability immediately. U starts its final visual animation.
+                    consumedGalaxyGateContinuePortals[portalId] = portal;
                     delete portals[portalId];
                     return;
                 }
@@ -4623,6 +4625,7 @@ function handlePacket_portal(parts, i) {
         }
     }
     if (isNaN(x) || isNaN(y)) return;
+    delete consumedGalaxyGateContinuePortals[portalId]; // A new authoritative portal replaces any retired visual.
     const p = ensurePortal(portalId);
     p.factionId = factionId;
     p.typeId = typeId;
@@ -4648,9 +4651,25 @@ function handlePacket_U(parts, i) {
             beginPortalJumpLock(nextMap, portalId);
         }
     } catch (_) {}
-    // The preceding REM may already have deleted this portal. Avoid the fallback
-    // jump effect at the hero for same-map Continue only; normal jumps are unchanged.
-    if (nextMap === Number(currentMapId) && isCurrentGalaxyGateContinuePortal(portalId, portals[portalId] || null)) return;
+    const continueVisual = consumedGalaxyGateContinuePortals[portalId] || portals[portalId] || null;
+    if (nextMap === Number(currentMapId) && isCurrentGalaxyGateContinuePortal(portalId, continueVisual)) {
+        // Authoritative U may follow REM or arrive first. Keep only a non-interactive visual.
+        if (!continueVisual || continueVisual.jumpEffect) return;
+        delete portals[portalId];
+        consumedGalaxyGateContinuePortals[portalId] = continueVisual;
+        continueVisual.jumpEffect = spawnPortalJumpEffect(continueVisual.x, continueVisual.y, () => {
+            if (consumedGalaxyGateContinuePortals[portalId] === continueVisual) {
+                delete consumedGalaxyGateContinuePortals[portalId];
+            }
+        });
+        if (!continueVisual.jumpEffect) delete consumedGalaxyGateContinuePortals[portalId];
+        try {
+            if (window.AudioManager && typeof window.AudioManager.playSoundEffect === "function") {
+                window.AudioManager.playSoundEffect(5, false, false, continueVisual.x, continueVisual.y, true);
+            }
+        } catch (_) {}
+        return;
+    }
     if (!isNaN(portalId) && portals[portalId]) {
         const portal = portals[portalId];
         const jumpNow = performance.now();

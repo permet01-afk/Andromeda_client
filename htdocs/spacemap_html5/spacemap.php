@@ -751,10 +751,10 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <script src="client_config.js?v=flash-strict-combat-20261011-1"></script>
 <link rel="stylesheet" href="ship_death.css?v=phase5-window14-2">
 <script src="ship_death.js?v=phase5-window14-2"></script>
-<script src="client_network.js?v=gg-continue-cleanup-20261011-1"></script>
-<script src="client_entities.js?v=flash-strict-combat-20261011-1"></script>
-<script src="client_combat.js?v=flash-strict-combat-20261011-1"></script>
-<script src="client_graphics.js?v=gg-delta-ish-loop-3"></script>
+<script src="client_network.js?v=gg-continue-animation-20261011-1"></script>
+<script src="client_entities.js?v=gg-continue-animation-20261011-1"></script>
+<script src="client_combat.js?v=gg-continue-animation-20261011-1"></script>
+<script src="client_graphics.js?v=gg-continue-animation-20261011-1"></script>
 <script src="client_ui.js?v=flash-strict-combat-20261011-1"></script>
 <script src="client_quests.js?v=phase7-quest-visual-3"></script>
 <script src="client_map_decor_data.js?v=phase8c-decor-1"></script>

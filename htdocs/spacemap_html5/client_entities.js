@@ -41,6 +41,8 @@ function clearFlashStatusEffects() {
 }
 
 const portals = {};
+// Consumed GG Continue portals are visual-only and never enter minimap/interaction lists.
+const consumedGalaxyGateContinuePortals = {};
 
 const laserBeams = [];
 
