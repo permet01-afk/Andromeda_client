@@ -27,9 +27,36 @@ namespace OrbitReborn_Emulator.Game.Handlers
             internal CharacterInfo PlayerInfo;
             internal ShipGameplayLease PlayerLife;
             internal Timer Timer;
+            internal Action ResumeTick;
+            internal bool WaitingForRange;
+            internal long RangeRetryDeadline;
         }
 
         [ThreadStatic] private static PrimaryLaserState executingPrimaryLaser;
+        private const int PRIMARY_LASER_RANGE_CHECK_MS = 50;
+
+        private static void SuspendPrimaryLaserForRange(Session owner, int targetId)
+        {
+            var state = executingPrimaryLaser;
+            if (state == null || state.Owner != owner || state.TargetId != targetId
+                || !IsPrimaryLaserCurrent(state)) return;
+            state.WaitingForRange = true;
+            // Keep the existing full attack/auto-launcher retry rate while out
+            // of laser range. Lightweight probes must not accelerate it.
+            state.RangeRetryDeadline = Stopwatch.GetTimestamp()
+                + (long)Math.Ceiling(state.Info.AttackSpeed * Stopwatch.Frequency / 1000.0);
+        }
+
+        private static bool ShouldWaitForPrimaryLaserRange(PrimaryLaserState state)
+        {
+            if (!state.WaitingForRange || Stopwatch.GetTimestamp() >= state.RangeRetryDeadline)
+                return false;
+            // Read the same authoritative positions as the normal admission
+            // path. Do not advance motion or admit damage from client positions.
+            double distance = state.Npc != null ? GetDistanceNpc(state.Owner, state.Npc)
+                : GetDistance(state.Owner, state.Player);
+            return distance > RANGE_LASER;
+        }
 
         private static bool IsPrimaryLaserCurrent(PrimaryLaserState state, bool checkTargetLife = true)
         {
@@ -129,6 +156,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Player = player, PlayerInfo = player == null ? null : player.CharacterInfo,
                     PlayerLife = player == null ? null : player.CharacterInfo.GameplayLease
                 };
+                state.ResumeTick = () => LaserAttackTimer(state);
                 info.PrimaryLaser = state;
                 if (!IsPrimaryLaserCurrent(state)) { info.PrimaryLaser = null; return; }
                 state.Timer = new Timer(LaserAttackTimer, state, Timeout.Infinite, Timeout.Infinite);

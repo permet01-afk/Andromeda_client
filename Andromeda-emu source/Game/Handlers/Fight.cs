@@ -3381,7 +3381,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             lock (state.Info.PrimaryLaserSync)
             {
                 if (!IsPrimaryLaserCurrent(state)) return;
-                if (!state.Info.TryEnterLaserAttackTick(() => LaserAttackTimer(state))) return;
+                if (!state.Info.TryEnterLaserAttackTick(state.ResumeTick)) return;
             }
             var previous = executingPrimaryLaser;
             executingPrimaryLaser = state;
@@ -3390,6 +3390,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (!IsPrimaryLaserCurrent(state)) return;
                 int wait = PrimaryLaserWait(state.Info);
                 if (wait > 0) { SchedulePrimaryLaser(state, wait); return; }
+                if (ShouldWaitForPrimaryLaserRange(state))
+                {
+                    SchedulePrimaryLaser(state, PRIMARY_LASER_RANGE_CHECK_MS);
+                    return;
+                }
+                // Only a fresh, explicit range refusal may enable fast probes.
+                // Other refusals retain the existing full retry behavior.
+                state.WaitingForRange = false;
                 var map = MapManager.GetInstanceByMapId(state.MapId);
                 long previousDeadline = Interlocked.Read(ref state.Info.PrimaryLaserDeadline);
                 lock (state.Info.PrimaryLaserSync)
@@ -3401,7 +3409,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 else if (state.PlayerInfo.PeaceZone) Fight.StopLaserForTarget(state.Owner, state.Player, state.TargetId);
                 else Fight.AttackPlayerCore(map, state.Owner, state.Player, 0);
                 bool admitted = Interlocked.Read(ref state.Info.PrimaryLaserDeadline) != previousDeadline;
-                SchedulePrimaryLaser(state, admitted ? 0 : state.Info.AttackSpeed);
+                SchedulePrimaryLaser(state, admitted ? 0 : state.WaitingForRange
+                    ? PRIMARY_LASER_RANGE_CHECK_MS : state.Info.AttackSpeed);
             }
             catch (Exception ex)
             {
@@ -3536,6 +3545,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
             else
             {
+                if (damage) SuspendPrimaryLaserForRange(Session, Npc.Id);
                 if (distanceNpc <= RANGE_LASER || Session.CharacterInfo.OutOfRange)
                     return;
 
@@ -3792,6 +3802,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
             else
             {
+                if (damage) SuspendPrimaryLaserForRange(Session, Ennemy.CharacterId);
                 if (distance <= RANGE_LASER || Session.CharacterInfo.OutOfRange)
                     return;
 
