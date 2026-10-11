@@ -342,7 +342,6 @@ let selectedTargetId = null;
 let pendingTargetSelectionId = null;
 let pendingTargetSelectionStartedAt = 0;
 const TARGET_SELECTION_PENDING_TIMEOUT_MS = 15000;
-let pendingTargetLaserAttackIntentId = null;
 
 function getTargetSelectionNowMs() {
     return typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
@@ -353,35 +352,10 @@ function normalizeTargetSelectionId(targetId) {
     return Number.isFinite(id) ? id : null;
 }
 
-function clearPendingTargetLaserAttackIntent(targetId = null) {
-    if (targetId == null || pendingTargetLaserAttackIntentId == null || Number(pendingTargetLaserAttackIntentId) === Number(targetId)) {
-        pendingTargetLaserAttackIntentId = null;
-    }
-}
-
-function queuePendingTargetLaserAttackIntent(targetId) {
-    const id = normalizeTargetSelectionId(targetId);
-    if (id == null) return false;
-    pendingTargetLaserAttackIntentId = id;
-    return true;
-}
-
-function consumePendingTargetLaserAttackIntent(targetId) {
-    const id = normalizeTargetSelectionId(targetId);
-    if (id == null || pendingTargetLaserAttackIntentId == null) return false;
-    if (Number(pendingTargetLaserAttackIntentId) !== Number(id)) {
-        pendingTargetLaserAttackIntentId = null;
-        return false;
-    }
-    pendingTargetLaserAttackIntentId = null;
-    return true;
-}
-
 function clearPendingTargetSelection(targetId = null) {
     if (targetId == null || pendingTargetSelectionId == null || Number(pendingTargetSelectionId) === Number(targetId)) {
         pendingTargetSelectionId = null;
         pendingTargetSelectionStartedAt = 0;
-        clearPendingTargetLaserAttackIntent(targetId);
     }
 }
 
@@ -395,16 +369,9 @@ function isTargetSelectionPending(targetId = null) {
     return targetId == null || Number(pendingTargetSelectionId) === Number(targetId);
 }
 
-function queueLaserAttackIntentForPendingTargetSelection() {
-    if (pendingTargetSelectionId != null && isTargetSelectionPending(pendingTargetSelectionId)) {
-        return queuePendingTargetLaserAttackIntent(pendingTargetSelectionId);
-    }
-    return false;
-}
-
 function requestLaserOnCurrentOrPendingTarget(options = {}) {
     if (selectedTargetId == null) {
-        return queueLaserAttackIntentForPendingTargetSelection();
+        return false; // Flash never stores an attack for an unconfirmed selection.
     }
     if (options.toggle === true && typeof toggleLaserOnSelectedTarget === "function") {
         toggleLaserOnSelectedTarget();
@@ -419,14 +386,9 @@ function requestLaserOnCurrentOrPendingTarget(options = {}) {
 function requestTargetSelectionLikeFlash(targetId) {
     const id = normalizeTargetSelectionId(targetId);
     if (id == null) return false;
-    if (pendingTargetLaserAttackIntentId != null && Number(pendingTargetLaserAttackIntentId) !== Number(id)) {
-        queuePendingTargetLaserAttackIntent(id);
-    }
-    const alreadySelected = selectedTargetId != null && Number(selectedTargetId) === Number(id);
+    // SES requests selection only. A and its laser job survive until N(B).
     pendingTargetSelectionId = id;
     pendingTargetSelectionStartedAt = getTargetSelectionNowMs();
-    if (!alreadySelected) selectedTargetId = null;
-    resetPendingRangeResume(id);
     sendSelectShip(id);
     return true;
 }
@@ -434,22 +396,29 @@ function requestTargetSelectionLikeFlash(targetId) {
 function confirmTargetSelectionFromServer(targetId) {
     const id = normalizeTargetSelectionId(targetId);
     if (id == null) return false;
-    if (pendingTargetSelectionId != null) {
-        if (!isTargetSelectionPending(id)) {
-            clearPendingTargetLaserAttackIntent(id);
-            return false;
+    // A response for an earlier request must not replace the newer pending selection.
+    if (pendingTargetSelectionId != null && isTargetSelectionPending()
+        && Number(pendingTargetSelectionId) !== Number(id)) return false;
+    const previousId = selectedTargetId;
+    if (previousId != null && Number(previousId) !== Number(id)) {
+        selectedTargetId = null;
+        if (typeof hasPrimaryLaserVisualJob === "function" && hasPrimaryLaserVisualJob(heroId, previousId)) {
+            sendLaserStop(previousId, true);
         }
-        if (pendingTargetSelectionId != null && Number(pendingTargetSelectionId) !== Number(id)) {
-            clearPendingTargetLaserAttackIntent();
-            return false;
+        // This is cleanup of A, never an intention to start B.
+        if (attackIntentTargetId === previousId) attackIntentTargetId = null;
+        if (pendingAttackAckTargetId === previousId) {
+            pendingAttackAckTargetId = null;
+            pendingAttackAckStartMs = 0;
         }
+        if (currentLaserTargetId === previousId) currentLaserTargetId = null;
+        if (confirmedAttackTargetId === previousId) confirmedAttackTargetId = null;
+        if (typeof clearHeroCombatLogActiveTarget === "function") clearHeroCombatLogActiveTarget(previousId);
+        resetPendingRangeResume(previousId);
+        isChasingTarget = false;
     }
-    const shouldSendPendingLaserAttack = consumePendingTargetLaserAttackIntent(id);
     selectedTargetId = id;
     clearPendingTargetSelection(id);
-    if (shouldSendPendingLaserAttack && typeof sendLaserAttack === "function") {
-        sendLaserAttack(id);
-    }
     return true;
 }
 
@@ -1349,16 +1318,7 @@ function handleFlashDoubleClickAttackFromMouseDown(screenX, screenY) {
     if (!isFlashDoubleClick) return false;
     const hitShip = findEntityAtScreenPos(screenX, screenY, isShipOrNpcEntity, 60, true);
     if (!hitShip) return false;
-    if (selectedTargetId == null) {
-        if (pendingTargetSelectionId != null
-            && Number(pendingTargetSelectionId) === Number(hitShip.id)
-            && typeof requestLaserOnCurrentOrPendingTarget === "function") {
-            return requestLaserOnCurrentOrPendingTarget({
-                toggle: true
-            });
-        }
-        return false;
-    }
+    if (selectedTargetId == null) return false;
     const selectedShip = entities[selectedTargetId];
     if (!selectedShip || (selectedShip.kind !== "player" && selectedShip.kind !== "npc")) return false;
     toggleLaserOnSelectedTarget();
@@ -1543,7 +1503,6 @@ canvas.addEventListener("mousedown", e => {
         confirmedAttackTargetId = null;
         pendingAttackAckTargetId = null;
         pendingAttackAckStartMs = 0;
-        clearPendingTargetLaserAttackIntent();
         resetPendingRangeResume();
         isChasingTarget = false;
         return;
@@ -1574,26 +1533,6 @@ canvas.addEventListener("mousedown", e => {
     handleFlashDoubleClickAttackFromMouseDown(screenX, screenY);
     const clickedShip = findEntityAtScreenPos(screenX, screenY, isShipOrNpcEntity, 60, true);
     if (clickedShip) {
-        if (selectedTargetId !== null && selectedTargetId !== clickedShip.id) {
-            const logActiveTargetId = typeof heroCombatLogActiveTargetId !== "undefined" ? heroCombatLogActiveTargetId : null;
-            const hasConfirmedAttackOnSelected = currentLaserTargetId === selectedTargetId || confirmedAttackTargetId === selectedTargetId || logActiveTargetId === selectedTargetId;
-            const hasAttackStateOnSelected = hasConfirmedAttackOnSelected || attackIntentTargetId === selectedTargetId || pendingAttackAckTargetId === selectedTargetId;
-            if (hasAttackStateOnSelected) {
-                if (typeof logFlashCombatLocaleMessage === "function") {
-                    if (hasConfirmedAttackOnSelected) {
-                        logFlashCombatLocaleMessage("attstop", selectedTargetId, targetName => `Attack on ${targetName} was cancelled.`, "CLIENT");
-                    }
-                }
-                sendLaserStop(selectedTargetId, true);
-                currentLaserTargetId = null;
-                attackIntentTargetId = null;
-                confirmedAttackTargetId = null;
-                pendingAttackAckTargetId = null;
-                pendingAttackAckStartMs = 0;
-                if (typeof clearHeroCombatLogActiveTarget === "function") clearHeroCombatLogActiveTarget(selectedTargetId);
-                isChasingTarget = false;
-            }
-        }
         requestTargetSelectionLikeFlash(clickedShip.id);
         if (clickedShip.kind === "player" && clickedShip.name) {
             const groupInput = document.getElementById("groupInputName");
@@ -1785,10 +1724,7 @@ window.addEventListener("mouseup", e => {
 });
 
 function toggleLaserOnSelectedTarget() {
-    if (selectedTargetId == null) {
-        queueLaserAttackIntentForPendingTargetSelection();
-        return;
-    }
+    if (selectedTargetId == null) return;
     if (selectedTargetId === heroId) {
         addInfoMessage("You cannot attack yourself.");
         try {
@@ -1802,10 +1738,10 @@ function toggleLaserOnSelectedTarget() {
         isChasingTarget = false;
         return;
     }
-    const logActiveTargetId = typeof heroCombatLogActiveTargetId !== "undefined" ? heroCombatLogActiveTargetId : null;
-    const isConfirmedAttackingSelected = confirmedAttackTargetId === selectedTargetId || currentLaserTargetId === selectedTargetId || logActiveTargetId === selectedTargetId;
-    const isPendingAttackSelected = attackIntentTargetId === selectedTargetId || pendingAttackAckTargetId === selectedTargetId;
-    const isAttackingSelected = isConfirmedAttackingSelected || isPendingAttackSelected;
+    // Flash toggles the actual hero LaserAttackJob, not a command awaiting a reply.
+    const isConfirmedAttackingSelected = typeof hasPrimaryLaserVisualJob === "function"
+        && hasPrimaryLaserVisualJob(heroId, selectedTargetId);
+    const isAttackingSelected = isConfirmedAttackingSelected;
     if (typeof isHeroGroupMemberTarget === "function" && isHeroGroupMemberTarget(selectedTargetId)) {
         if (isAttackingSelected && typeof sendLaserStop === "function") {
             sendLaserStop(selectedTargetId, true);

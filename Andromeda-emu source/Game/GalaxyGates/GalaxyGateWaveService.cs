@@ -3,11 +3,13 @@ using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Techs;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Threading;
 
 namespace OrbitReborn_Emulator.Game.GalaxyGates
@@ -33,6 +35,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
         private const int SPAWN_BATCH_INTERVAL_MS = 2500;
         private const int SPAWN_BATCH_MIN = 5;
         private const int SPAWN_BATCH_MAX = 20;
+        private const int WAVE_COUNTDOWN_SECONDS = 10;
 
         private static readonly object SyncRoot = new object();
 
@@ -58,10 +61,25 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             public int SpawnBatchSize;
             public Timer SpawnBatchTimer;
 
+            public readonly Guid RunId = Guid.NewGuid();
+            public long WaveGeneration;
+            public bool CountdownActive;
+            public long CountdownDeadline;
+            public int LastCountdownSecond = -1;
+            public Timer CountdownTimer;
+            public Session OwnerSession;
+
             public bool Completed;
             public bool Retired;
             public bool WaveFinished;
             public Dictionary<int, GalaxyGateProtection> Escorts = new Dictionary<int, GalaxyGateProtection>();
+        }
+
+        private sealed class WaveTimerState
+        {
+            public readonly GateRun Run;
+            public readonly long Generation;
+            public WaveTimerState(GateRun run) { Run = run; Generation = run.WaveGeneration; }
         }
 
         private class WaveNpc
@@ -284,7 +302,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 if (!session.CharacterInfo.NpcInRange.Contains(npc.Id))
                     session.CharacterInfo.NpcInRange.Add(npc.Id);
 
-                session.SendData(PacketComposer.Compose("C", npc.Id.ToString() + "|" + (object)npc.ShipId + "|0|" + npc.ClanTag + "|" + npc.Name + "|" + (object)npc.LocX + "|" + (object)npc.LocY + "|" + (object)npc.FactionId + "|" + (object)npc.IsClanMember + "|" + (object)npc.Rank + "|" + (object)npc.IsBoss + "|" + (object)npc.IsClanMember + "|" + (object)npc.GalaxyGatesRings));
+                session.SendData(PacketComposer.Compose("C", npc.Id.ToString() + "|" + (object)npc.ShipId + "|0|" + npc.ClanTag + "|" + npc.Name + "|" + (object)npc.LocX + "|" + (object)npc.LocY + "|" + (object)npc.FactionId + "|" + (object)npc.IsClanMember + "|" + (object)npc.Rank + "|" + (object)npc.IsBoss + "|" + (object)npc.IsClanMember + "|" + (object)npc.GalaxyGatesRings + "|0|0|0|MV|" + npc.ShipSpeed + "|" + npc.VisualLifeToken));
                 npc.SendGalaxyGateProtection(session);
                 session.SendData(MapUserMovementListComposer.ComposeIA(new CList<MapActor>() { actor }));
 
@@ -296,6 +314,14 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
         }
 
         public static void OnPlayerEnteredMap(Session session)
+        {
+            if (session == null || session.CharacterInfo == null) return;
+            lock (TechInventoryService.SyncRoot(session.CharacterId))
+            lock (session.CharacterInfo.DroneImpactSyncRoot)
+                OnPlayerEnteredMapCore(session);
+        }
+
+        private static void OnPlayerEnteredMapCore(Session session)
         {
             if (session == null || session.CharacterInfo == null)
                 return;
@@ -370,7 +396,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             lock (SyncRoot)
             {
-                if (!Runs.ContainsKey(session.CharacterId))
+                if (!Runs.ContainsKey(session.CharacterId) || Runs[session.CharacterId].Retired)
                 {
                     run = new GateRun
                     {
@@ -382,6 +408,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                         Lives = lives,
                         Completed = false
                     };
+                    if (Runs.ContainsKey(session.CharacterId)) Runs.Remove(session.CharacterId);
                     Runs.Add(session.CharacterId, run);
                 }
                 else
@@ -392,6 +419,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     run.MapId = mapId;
                     run.Lives = lives;
                 }
+                run.OwnerSession = session;
             }
 
             if (completed == 1)
@@ -413,6 +441,20 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             lock (SyncRoot)
             {
+                if (run.WaveFinished)
+                {
+                    // A resync between waves does not stand in for the CONTINUE action.
+                    SpawnWaveTransitionPortals(session, run.GateId);
+                    return;
+                }
+                // Transport reconnect/resync keeps the same run and monotonic deadline.
+                // Explicit logout/map leave/death retires the run through CleanupRun.
+                if (run.CountdownActive)
+                {
+                    ClearInternalPortals(session);
+                    ContinueWaveCountdown(session, run, true);
+                    return;
+                }
                 waveAlreadyRunning = run.AliveNpcIds.Count > 0 || run.PendingNpcSpawns.Count > 0;
                 shouldResumeSpawns = (run.PendingNpcSpawns.Count > 0 && run.SpawnBatchTimer == null);
                 resumeBatchSize = run.SpawnBatchSize;
@@ -492,6 +534,9 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             lock (SyncRoot)
             {
+                if (!IsCurrentRun(run) || run.CountdownActive || run.AliveNpcIds.Count > 0
+                    || run.PendingNpcSpawns.Count > 0) return;
+                ++run.WaveGeneration;
                 run.CurrentWave = waveNumber;
                 run.Completed = false;
                 run.WaveFinished = false;
@@ -510,24 +555,98 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     run.SpawnBatchTimer.Dispose();
                     run.SpawnBatchTimer = null;
                 }
+                run.CountdownActive = true;
+                run.CountdownDeadline = Stopwatch.GetTimestamp() + WAVE_COUNTDOWN_SECONDS * Stopwatch.Frequency;
+                run.LastCountdownSecond = -1;
+                ContinueWaveCountdown(session, run, true);
+            }
+        }
+
+        // Call with SyncRoot held. Never revive a timer belonging to an old run/wave.
+        private static bool IsCurrentRun(GateRun run)
+        {
+            return run != null && !run.Retired && Runs.ContainsKey(run.CharacterId)
+                && object.ReferenceEquals(Runs[run.CharacterId], run);
+        }
+
+        private static bool IsLiveOwner(Session session, GateRun run)
+        {
+            return session != null && object.ReferenceEquals(session, run.OwnerSession)
+                && session.CharacterInfo != null && !session.Stopped && !session.StoppedPlayer
+                && !session.CharacterInfo.Disconnected && !session.CharacterInfo.Destroy
+                && !session.CharacterInfo.DeadCommitted && session.CharacterInfo.ShipHp > 0
+                && session.MapJoined && session.CharacterId == run.CharacterId
+                && session.CharacterInfo.MapId == run.MapId;
+        }
+
+        private static void StopWaveCountdownTimer(GateRun run)
+        {
+            if (run.CountdownTimer == null) return;
+            run.CountdownTimer.Dispose();
+            run.CountdownTimer = null;
+        }
+
+        private static void OnWaveCountdownTimer(object state)
+        {
+            WaveTimerState timer = (WaveTimerState)state;
+            GateRun run = timer.Run;
+            Session session = run.OwnerSession;
+            if (session == null || session.CharacterInfo == null) return;
+            lock (TechInventoryService.SyncRoot(run.CharacterId))
+            lock (session.CharacterInfo.DroneImpactSyncRoot)
+            lock (SyncRoot)
+            {
+                if (!IsCurrentRun(run) || timer.Generation != run.WaveGeneration || !run.CountdownActive) return;
+                ContinueWaveCountdown(session, run, false);
+            }
+        }
+
+        // One one-shot timer per run, aligned to the original 10s deadline, never per NPC/batch.
+        // A disconnected transport parks it. Reconnect resumes that deadline; no offline spawn.
+        private static void ContinueWaveCountdown(Session session, GateRun run, bool replay)
+        {
+            if (!IsCurrentRun(run) || !run.CountdownActive) return;
+            if (!IsLiveOwner(session, run))
+            {
+                StopWaveCountdownTimer(run);
+                ++run.WaveGeneration; // Queued callbacks cannot resume this parked timer.
+                return;
             }
 
-            SpawnNpcBatch(session, run, batchSize);
+            long remaining = Math.Max(0, run.CountdownDeadline - Stopwatch.GetTimestamp());
+            int seconds = (int)Math.Ceiling(remaining / (double)Stopwatch.Frequency);
+            if (replay || seconds != run.LastCountdownSecond)
+            {
+                run.LastCountdownSecond = seconds;
+                session.SendData(PacketComposer.Compose("A", "STD|Wave " + run.CurrentWave
+                    + (seconds > 0 ? " begins in " + seconds : " begins now")));
+            }
+            if (remaining == 0)
+            {
+                // Claim completion before the first spawn. Duplicate callbacks/resyncs cannot claim it twice.
+                run.CountdownActive = false;
+                StopWaveCountdownTimer(run);
+                SpawnNpcBatch(session, run, run.SpawnBatchSize);
+                StartSpawnBatchTimerIfNeeded(run);
+                return;
+            }
 
-            StartSpawnBatchTimerIfNeeded(run);
-
-            session.SendData(PacketComposer.Compose("A", "STD|Galaxy Gate: Wave " + waveNumber + "/" + totalWaves + " started."));
+            if (run.CountdownTimer == null)
+                run.CountdownTimer = new Timer(OnWaveCountdownTimer, new WaveTimerState(run), Timeout.Infinite, Timeout.Infinite);
+            long untilNextSecond = remaining - (seconds - 1L) * Stopwatch.Frequency;
+            int due = Math.Max(1, (int)Math.Ceiling(untilNextSecond * 1000.0 / Stopwatch.Frequency));
+            run.CountdownTimer.Change(due, Timeout.Infinite);
         }
 
         private static void StartSpawnBatchTimerIfNeeded(GateRun run)
         {
             lock (SyncRoot)
             {
-                if (run == null) return;
+                if (!IsCurrentRun(run) || run.CountdownActive || run.Completed || run.WaveFinished) return;
                 if (run.SpawnBatchTimer != null) return;
                 if (run.PendingNpcSpawns == null || run.PendingNpcSpawns.Count <= 0) return;
 
-                run.SpawnBatchTimer = new Timer(OnSpawnBatchTimer, run, SPAWN_BATCH_INTERVAL_MS, SPAWN_BATCH_INTERVAL_MS);
+                run.SpawnBatchTimer = new Timer(OnSpawnBatchTimer, new WaveTimerState(run), SPAWN_BATCH_INTERVAL_MS, SPAWN_BATCH_INTERVAL_MS);
             }
         }
 
@@ -545,32 +664,37 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
         private static void OnSpawnBatchTimer(object state)
         {
-            GateRun run = (GateRun)state;
+            WaveTimerState timer = (WaveTimerState)state;
+            GateRun run = timer.Run;
             if (run == null) return;
 
-            Session s = SessionManager.GetSessionByCharacterId(run.CharacterId);
+            Session s = run.OwnerSession;
             if (s == null || s.CharacterInfo == null)
             {
                 StopSpawnBatchTimer(run);
                 return;
             }
 
-            if (s.CharacterInfo.MapId != run.MapId)
+            lock (TechInventoryService.SyncRoot(run.CharacterId))
+            lock (s.CharacterInfo.DroneImpactSyncRoot)
+            lock (SyncRoot)
             {
-                StopSpawnBatchTimer(run);
-                return;
+                if (!IsCurrentRun(run) || timer.Generation != run.WaveGeneration) return;
+                if (!IsLiveOwner(s, run))
+                {
+                    StopSpawnBatchTimer(run);
+                    ++run.WaveGeneration;
+                    return;
+                }
+
+                int batch = run.SpawnBatchSize;
+                if (batch <= 0) batch = SPAWN_BATCH_MIN;
+
+                SpawnNpcBatch(s, run, batch);
+
+                if (run.PendingNpcSpawns.Count == 0)
+                    StopSpawnBatchTimer(run);
             }
-
-            int batch;
-            lock (SyncRoot) { batch = run.SpawnBatchSize; }
-            if (batch <= 0) batch = SPAWN_BATCH_MIN;
-
-            SpawnNpcBatch(s, run, batch);
-
-            bool hasMore;
-            lock (SyncRoot) { hasMore = run.PendingNpcSpawns.Count > 0; }
-            if (!hasMore)
-                StopSpawnBatchTimer(run);
         }
 
         private static void SpawnNpcBatch(Session session, GateRun run, int maxToSpawn)
@@ -585,7 +709,8 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
 
             lock (SyncRoot)
             {
-                if (run.Retired || run.WaveFinished || session.CharacterId != run.CharacterId
+                if (!IsCurrentRun(run) || run.CountdownActive || run.Completed || run.WaveFinished
+                    || !IsLiveOwner(session, run) || session.CharacterId != run.CharacterId
                     || session.CharacterInfo.MapId != run.MapId) return;
 
                 if (run.PendingNpcSpawns == null) return;
@@ -958,7 +1083,14 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
         {
             if (run == null) return;
 
-            lock (SyncRoot) { run.Retired = true; run.Escorts.Clear(); }
+            lock (SyncRoot)
+            {
+                run.Retired = true;
+                ++run.WaveGeneration;
+                run.CountdownActive = false;
+                StopWaveCountdownTimer(run);
+                run.Escorts.Clear();
+            }
             StopSpawnBatchTimer(run);
 
             lock (SyncRoot)

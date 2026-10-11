@@ -748,14 +748,14 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <script>window.__ANDROMEDA_SHIELD_EFFECT_ATLAS_MANIFESTS = <?php echo json_encode(loadShieldEffectAtlasManifests(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;</script>
 <script>window.__ANDRO_AUDIO_ASSET_MANIFEST = <?php echo json_encode($audioAssetManifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;</script>
 <script src="client_audio.js?v=1016"></script>
-<script src="client_config.js?v=gg-delta-demaner-1"></script>
+<script src="client_config.js?v=flash-strict-combat-20261011-1"></script>
 <link rel="stylesheet" href="ship_death.css?v=phase5-window14-2">
 <script src="ship_death.js?v=phase5-window14-2"></script>
-<script src="client_network.js?v=gg-delta-ish-loop-3"></script>
-<script src="client_entities.js?v=phase10c-1"></script>
-<script src="client_combat.js?v=phase10c-hud-d-1"></script>
+<script src="client_network.js?v=flash-strict-combat-20261011-1"></script>
+<script src="client_entities.js?v=flash-strict-combat-20261011-1"></script>
+<script src="client_combat.js?v=flash-strict-combat-20261011-1"></script>
 <script src="client_graphics.js?v=gg-delta-ish-loop-3"></script>
-<script src="client_ui.js?v=phase7-quest-visual-3"></script>
+<script src="client_ui.js?v=flash-strict-combat-20261011-1"></script>
 <script src="client_quests.js?v=phase7-quest-visual-3"></script>
 <script src="client_map_decor_data.js?v=phase8c-decor-1"></script>
 <script src="client_map_decor.js?v=phase8c-decor-1"></script>

@@ -1285,8 +1285,6 @@ function selectGroupMemberLikeFlash(memberId) {
     const ent = getExistingVisualEntity(memberId);
     if (!ent || ent.kind !== "player" || member.hp != null && Number(member.hp) <= 0 || ent.hp != null && Number(ent.hp) <= 0) return false;
     if (Number(memberId) === Number(selectedTargetId) || isTargetSelectionPending(memberId)) return false;
-    // A member-card click selects only: do not transfer a queued double-click shot.
-    clearPendingTargetLaserAttackIntent();
     return requestTargetSelectionLikeFlash(memberId);
 }
 

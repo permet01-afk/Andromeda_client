@@ -847,11 +847,9 @@ function __isPriorityGameRxItem(item, blockedEntityIds) {
     const pendingId = typeof pendingTargetSelectionId !== "undefined" ? pendingTargetSelectionId : null;
     const selectedId = typeof selectedTargetId !== "undefined" ? selectedTargetId : null;
     const hero = typeof heroId !== "undefined" ? heroId : null;
-    if (item.opcode === "N") {
-        if (pendingId != null && Number(targetId) === Number(pendingId)) return true;
-        if (pendingId == null && selectedId != null && Number(targetId) === Number(selectedId)) return true;
-        return false;
-    }
+    // N responses include global unlocks. Preserve their wire order, even if an
+    // older selection is no longer the requested target; its handler will reject it.
+    if (item.opcode === "N") return true;
     if (item.opcode === "Y") {
         if (hero != null && Number(targetId) === Number(hero)) return true;
         if (pendingId != null && Number(targetId) === Number(pendingId)) return true;
@@ -872,6 +870,10 @@ function __takePriorityGameRxItem(scanLimit) {
             item.priorityTaken = true;
             return item;
         }
+        // Never pull a later selection/HP update ahead of an unprocessed attack,
+        // stop or range transition. That could resurrect A or clear confirmed B.
+        if (item.opcode === "N" || item.opcode === "a" || item.opcode === "P"
+            || item.opcode === "O" || item.opcode === "X") return null;
     }
     return null;
 }
@@ -1432,7 +1434,9 @@ function addInstantLogMessage(text, sourceOpcode) {
                 if (infoMessages[n].replaceKey === "tdm-countdown") infoMessages.splice(n, 1);
             }
         }
-        addInfoMessage(msg, getInstantLogDurationMs(sourceOpcode), sourceOpcode === "HP", tdmCountdown ? "tdm-countdown" : null);
+        const ggCountdown = sourceOpcode === "STD" && /^Wave \d+ begins (?:in (?:10|[1-9])|now)$/.test(msg);
+        addInfoMessage(msg, getInstantLogDurationMs(sourceOpcode), sourceOpcode === "HP",
+            tdmCountdown ? "tdm-countdown" : ggCountdown ? "gg-wave-countdown" : null);
     }
 }
 
@@ -1606,14 +1610,14 @@ function clearHeroAttackRuntimeState(options = {}) {
         moveTargetFromMinimap = false;
     }
     if (typeof laserBeams !== "undefined" && Array.isArray(laserBeams)) {
-        laserBeams.length = 0;
+        for (let n = laserBeams.length - 1; n >= 0; n--) {
+            if (laserBeams[n].attackerId === heroId) laserBeams.splice(n, 1);
+        }
     }
-    if (typeof clearSabLaserVisualJobsForLocalHero === "function") {
-        clearSabLaserVisualJobsForLocalHero();
+    if (typeof clearPrimaryLaserVisualJobsForLocalHero === "function") {
+        clearPrimaryLaserVisualJobsForLocalHero();
     }
-    if (targetId != null && typeof clearSabLaserVisualJobsForEntity === "function") {
-        clearSabLaserVisualJobsForEntity(targetId);
-    }
+    if (typeof cancelRsbBurst === "function") cancelRsbBurst(heroId);
     if (typeof clearHeroMissingCombatTarget === "function") clearHeroMissingCombatTarget(targetId);
     clearHeroCombatLogActiveTarget(targetId);
     return targetId;
@@ -2763,7 +2767,7 @@ function resetMapState(newMapId) {
     groupPings.length = 0;
     if (typeof cancelRsbBurst === "function") cancelRsbBurst(null);
     if (typeof clearSabRingState === "function") clearSabRingState();
-    if (typeof clearSabLaserVisualJobs === "function") clearSabLaserVisualJobs();
+    if (typeof clearPrimaryLaserVisualJobs === "function") clearPrimaryLaserVisualJobs();
     if (typeof clearRemovedEntitySnapshots === "function") clearRemovedEntitySnapshots();
     selectedTargetId = null;
     if (typeof clearPendingTargetSelection === "function") clearPendingTargetSelection();
@@ -3586,9 +3590,19 @@ function resolveEntityInterpolationPoseNow(ent, now = performance.now()) {
     };
 }
 
+function npcReconciliationDuration(ent, current, x, y, duration) {
+    const requested = Number.isFinite(duration) && duration > 0 ? duration : 0;
+    const speed = Number(ent && ent.npcNativeSpeed);
+    if (!ent || ent.kind !== "npc" || !Number.isFinite(speed) || speed <= 0) return requested;
+    // The server's duration starts at its own pose; our rendered start may be farther away.
+    // Limit the rendered segment to native speed, with no family constants or extra timer.
+    return Math.max(requested, Math.ceil(Math.hypot(x - current.x, y - current.y) * 1000 / speed));
+}
+
 function startEntityInterpolationTo(ent, x, y, duration, now = performance.now()) {
     if (!ent || !Number.isFinite(x) || !Number.isFinite(y)) return;
     const current = resolveEntityInterpolationPoseNow(ent, now);
+    duration = npcReconciliationDuration(ent, current, x, y, duration);
     ent.x = current.x;
     ent.y = current.y;
     if (!ent.interp) {
@@ -4734,6 +4748,16 @@ function handlePacket_C(parts, i) {
     const y = parseInt(parts[i + 6], 10);
     const factionId = parseInt(parts[i + 7] || "0", 10);
     if (isNaN(id) || isNaN(x) || isNaN(y)) return;
+    const hasMovementMetadata = parts[i + 16] === "MV";
+    const nativeSpeed = hasMovementMetadata ? Number(parts[i + 17]) : 0;
+    const lifeToken = hasMovementMetadata ? String(parts[i + 18] || "") : "";
+    const previous = entities[id];
+    const sameLife = previous && previous.kind === "npc" && !previous.destroyedVisualAt
+        && lifeToken && previous.npcLifeToken === lifeToken;
+    if (previous && previous.kind === "npc" && !sameLife && lifeToken) {
+        // Reused IDs must not keep old locks, effects, HP or a dead visual generation.
+        handlePacket_R([ String(id) ], 0);
+    }
     const e = ensureEntity(id);
     if (e.kind !== "npc" || e.destroyedVisualAt) {
         if (typeof resetEntityVisualLife === "function") resetEntityVisualLife(e);
@@ -4742,7 +4766,13 @@ function handlePacket_C(parts, i) {
     e.gameTitleKey = "";
     e.type = shipId;
     e.shipId = shipId;
-    resetEntityInterpolationTo(e, x, y);
+    e.npcNativeSpeed = Number.isFinite(nativeSpeed) && nativeSpeed > 0 ? nativeSpeed : null;
+    e.npcLifeToken = lifeToken;
+    if (sameLife && e.npcNativeSpeed) {
+        startEntityInterpolationTo(e, x, y, 0);
+    } else {
+        resetEntityInterpolationTo(e, x, y);
+    }
     e.name = name;
     e.factionId = isNaN(factionId) ? 0 : factionId;
     applyPendingAttackLockForEntity(id);
@@ -4807,8 +4837,8 @@ function handlePacket_noAttack(parts, i) {
     if (typeof laserBeams !== "undefined") {
         laserBeams.length = 0;
     }
-    if (typeof clearSabLaserVisualJobsForLocalHero === "function") {
-        clearSabLaserVisualJobsForLocalHero();
+    if (typeof clearPrimaryLaserVisualJobsForLocalHero === "function") {
+        clearPrimaryLaserVisualJobsForLocalHero();
     }
     if (typeof isChasingTarget !== "undefined") isChasingTarget = false;
 }
@@ -5423,140 +5453,137 @@ const SAB_RING_STATE_TTL_MS = 1e4;
 const SAB_RING_STATE_MAX = 256;
 const SAB_RING_STATE_PRUNE_INTERVAL_MS = 1000;
 let sabRingStateLastPruneAt = 0;
-const SAB_LASER_VISUAL_JOBS = new Map;
-let sabLaserVisualJobSeq = 1;
-const SAB_LASER_VISUAL_TICK_MS = 100;
+// Flash LaserAttackJob: one primary target per attacker; packets refresh the job,
+// the 100 ms visual timer never sends commands or creates gameplay damage.
+const PRIMARY_LASER_VISUAL_JOBS = new Map;
+const PRIMARY_LASER_VISUAL_TICK_MS = 100;
+let primaryLaserVisualTimerId = null;
+let primaryLaserVisualTimerDue = 0;
 
-function getSabLaserVisualJobKey(attackerId, targetId, skilledLaser) {
-    return `${attackerId}|${targetId}|${skilledLaser ? 1 : 0}`;
-}
-
-function cancelSabLaserVisualJob(key) {
-    const job = SAB_LASER_VISUAL_JOBS.get(key);
-    if (job && job.intervalId != null) {
-        clearInterval(job.intervalId);
-        job.intervalId = null;
-    }
-    SAB_LASER_VISUAL_JOBS.delete(key);
-}
-
-function clearSabLaserVisualJobs() {
-    for (const key of Array.from(SAB_LASER_VISUAL_JOBS.keys())) {
-        cancelSabLaserVisualJob(key);
-    }
-}
-
-function clearSabLaserVisualJobsForEntity(entityId) {
-    if (entityId == null || SAB_LASER_VISUAL_JOBS.size === 0) return;
-    for (const [key, job] of Array.from(SAB_LASER_VISUAL_JOBS.entries())) {
-        if (job && (job.attackerId === entityId || job.targetId === entityId)) {
-            cancelSabLaserVisualJob(key);
+function schedulePrimaryLaserVisualTick() {
+    let due = Infinity;
+    for (const job of PRIMARY_LASER_VISUAL_JOBS.values()) due = Math.min(due, job.nextTickAt);
+    if (primaryLaserVisualTimerId != null && primaryLaserVisualTimerDue === due) return;
+    if (primaryLaserVisualTimerId != null) clearTimeout(primaryLaserVisualTimerId);
+    primaryLaserVisualTimerId = null;
+    if (!Number.isFinite(due)) return;
+    primaryLaserVisualTimerDue = due;
+    primaryLaserVisualTimerId = setTimeout(() => {
+        primaryLaserVisualTimerId = null;
+        const now = performance.now();
+        for (const job of Array.from(PRIMARY_LASER_VISUAL_JOBS.values())) {
+            if (job.nextTickAt > now) continue;
+            job.nextTickAt = now + PRIMARY_LASER_VISUAL_TICK_MS;
+            tickPrimaryLaserVisualJob(job);
         }
+        schedulePrimaryLaserVisualTick();
+    }, Math.max(0, due - performance.now()));
+}
+
+function hasPrimaryLaserVisualJob(attackerId, targetId) {
+    const job = PRIMARY_LASER_VISUAL_JOBS.get(attackerId);
+    if (job && job.targetId === targetId) return true;
+    const burst = RSB_BURST_STATE.get(String(attackerId));
+    return !!burst && burst.targetId === targetId;
+}
+
+function cancelPrimaryLaserVisualJob(attackerId) {
+    PRIMARY_LASER_VISUAL_JOBS.delete(attackerId);
+    schedulePrimaryLaserVisualTick();
+}
+
+function clearPrimaryLaserVisualJobs() {
+    for (const attackerId of Array.from(PRIMARY_LASER_VISUAL_JOBS.keys())) {
+        cancelPrimaryLaserVisualJob(attackerId);
     }
 }
 
-function clearSabLaserVisualJobsForAttacker(attackerId, exceptKey = null) {
-    if (attackerId == null || SAB_LASER_VISUAL_JOBS.size === 0) return;
-    for (const [key, job] of Array.from(SAB_LASER_VISUAL_JOBS.entries())) {
-        if (key !== exceptKey && job && job.attackerId === attackerId) {
-            cancelSabLaserVisualJob(key);
-        }
+function clearPrimaryLaserVisualJobsForEntity(entityId) {
+    for (const [attackerId, job] of PRIMARY_LASER_VISUAL_JOBS) {
+        if (attackerId === entityId || job.targetId === entityId) cancelPrimaryLaserVisualJob(attackerId);
     }
 }
 
+function clearPrimaryLaserVisualJobsForLocalHero() {
+    if (typeof heroId !== "undefined" && heroId != null) cancelPrimaryLaserVisualJob(heroId);
+}
+
+// Ammo selection may stop the SAB job without cancelling another primary pattern.
 function clearSabLaserVisualJobsForLocalHero() {
-    if (typeof heroId === "undefined" || heroId == null) return;
-    clearSabLaserVisualJobsForAttacker(heroId);
+    const job = typeof heroId !== "undefined" ? PRIMARY_LASER_VISUAL_JOBS.get(heroId) : null;
+    if (job && job.patternId === 4) cancelPrimaryLaserVisualJob(heroId);
 }
 
-function normalizeSabLaserTiming(value, fallback) {
-    const numeric = Number(value);
-    return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : fallback;
-}
-
-function refreshSabLaserVisualJob(job, fireRateMs, attackLengthMs, beamDurationMs, spawnTick) {
-    if (!job) return null;
-    job.active = true;
-    job.lastPacketAt = performance.now();
-    job.fireRateMs = normalizeSabLaserTiming(fireRateMs, job.fireRateMs || 200);
-    job.attackLengthMs = normalizeSabLaserTiming(attackLengthMs, job.attackLengthMs || 1350);
-    job.beamDurationMs = normalizeSabLaserTiming(beamDurationMs, job.beamDurationMs || 500);
-    if (typeof spawnTick === "function") {
-        job.spawnTick = spawnTick;
+function tickPrimaryLaserVisualJob(job) {
+    if (PRIMARY_LASER_VISUAL_JOBS.get(job.attackerId) !== job) return;
+    const attacker = snapshotEntityById(job.attackerId);
+    const target = snapshotEntityById(job.targetId);
+    if (!attacker || !target
+        || (job.attackerLifeId != null && attacker.visualLifeId !== job.attackerLifeId)
+        || (job.targetLifeId != null && target.visualLifeId !== job.targetLifeId)) {
+        cancelPrimaryLaserVisualJob(job.attackerId);
+        return;
     }
-    return job;
-}
-
-function tickSabLaserVisualJob(key) {
-    const job = SAB_LASER_VISUAL_JOBS.get(key);
-    if (!job) return;
-    const attackLength = normalizeSabLaserTiming(job.attackLengthMs, 1350);
-    const fireRate = normalizeSabLaserTiming(job.fireRateMs, 200);
-    const tickMs = normalizeSabLaserTiming(job.tickMs, SAB_LASER_VISUAL_TICK_MS);
-    if (job.cnt > attackLength) {
+    if (job.cnt > job.attackLengthMs) {
         if (!job.active) {
-            cancelSabLaserVisualJob(key);
+            cancelPrimaryLaserVisualJob(job.attackerId);
             return;
         }
         job.cnt = 0;
         job.active = false;
     }
-    if (job.cnt % fireRate === 0) {
-        const attackerSnap = snapshotEntityById(job.attackerId);
-        const targetSnap = snapshotEntityById(job.targetId);
-        if (!attackerSnap || !targetSnap) {
-            cancelSabLaserVisualJob(key);
-            return;
-        }
-        if (typeof job.spawnTick === "function") {
-            const firstTick = !job.spawnCount;
-            job.spawnTick(performance.now(), true, firstTick);
-            job.spawnCount = (job.spawnCount || 0) + 1;
-        }
+    if (job.cnt % job.fireRateMs === 0) {
+        job.spawnTick(performance.now(), job.spawnCount === 0);
+        job.spawnCount++;
     }
-    job.cnt += tickMs;
+    job.cnt += PRIMARY_LASER_VISUAL_TICK_MS;
 }
 
-function startSabLaserVisualJob(key, attackerId, targetId, skilledLaser, fireRateMs, attackLengthMs, beamDurationMs, spawnTick) {
-    cancelSabLaserVisualJob(key);
-    const now = performance.now();
+function startOrRefreshPrimaryLaserVisualJob(attackerId, targetId, patternId, fireRateMs, attackLengthMs, spawnTick) {
+    const existing = PRIMARY_LASER_VISUAL_JOBS.get(attackerId);
+    if (existing && existing.targetId === targetId && existing.fireRateMs === fireRateMs) {
+        existing.active = true;
+        existing.patternId = patternId;
+        existing.attackLengthMs = attackLengthMs;
+        existing.spawnTick = spawnTick;
+        return existing;
+    }
+    cancelPrimaryLaserVisualJob(attackerId);
+    const attacker = snapshotEntityById(attackerId);
+    const target = snapshotEntityById(targetId);
+    if (!attacker || !target) return null;
     const job = {
-        key: key,
-        attackerId: attackerId,
-        targetId: targetId,
-        skilledLaser: !!skilledLaser,
-        startedAt: now,
-        lastPacketAt: now,
-        fireRateMs: normalizeSabLaserTiming(fireRateMs, 200),
-        attackLengthMs: normalizeSabLaserTiming(attackLengthMs, 1350),
-        beamDurationMs: normalizeSabLaserTiming(beamDurationMs, 500),
-        tickMs: SAB_LASER_VISUAL_TICK_MS,
-        cnt: 0,
-        active: true,
-        spawnTick: spawnTick,
-        spawnCount: 0,
-        intervalId: null,
-        seq: sabLaserVisualJobSeq++
+        attackerId, targetId, patternId, fireRateMs, attackLengthMs, spawnTick,
+        attackerLifeId: attacker.visualLifeId, targetLifeId: target.visualLifeId,
+        cnt: 0, active: true, spawnCount: 0,
+        nextTickAt: performance.now() + PRIMARY_LASER_VISUAL_TICK_MS
     };
-    SAB_LASER_VISUAL_JOBS.set(key, job);
-    tickSabLaserVisualJob(key);
-    if (SAB_LASER_VISUAL_JOBS.get(key) === job) {
-        job.intervalId = setInterval(() => {
-            const activeJob = SAB_LASER_VISUAL_JOBS.get(key);
-            if (!activeJob || activeJob.seq !== job.seq) return;
-            tickSabLaserVisualJob(key);
-        }, SAB_LASER_VISUAL_TICK_MS);
+    PRIMARY_LASER_VISUAL_JOBS.set(attackerId, job);
+    // The first logical pulse runs in the packet handler, before the timer starts.
+    tickPrimaryLaserVisualJob(job);
+    if (PRIMARY_LASER_VISUAL_JOBS.get(attackerId) === job) {
+        schedulePrimaryLaserVisualTick();
     }
     return job;
 }
 
-function startOrRefreshSabLaserVisualJob(key, attackerId, targetId, skilledLaser, fireRateMs, attackLengthMs, beamDurationMs, spawnTick) {
-    const activeJob = SAB_LASER_VISUAL_JOBS.get(key);
-    if (activeJob) {
-        refreshSabLaserVisualJob(activeJob, fireRateMs, attackLengthMs, beamDurationMs, spawnTick);
-        return activeJob;
-    }
-    return startSabLaserVisualJob(key, attackerId, targetId, skilledLaser, fireRateMs, attackLengthMs, beamDurationMs, spawnTick);
+function getPrimaryLaserVisualTiming(attackerSnap, patternId) {
+    let laserClass = 0;
+    if (shouldUseProtegitLaser(attackerSnap)) laserClass = 2;
+    else if (shouldUseDevolariumLaser(attackerSnap)) laserClass = 4;
+    else if (shouldUseLordakiumLaser(attackerSnap)) laserClass = 5;
+    else if (shouldUseNettelLaser(attackerSnap)) laserClass = 1;
+    else if (shouldUseCrystal2Laser(attackerSnap)) laserClass = 6;
+    else if (shouldUseCrystalLaser(attackerSnap)) laserClass = 3;
+    const xmlPatterns = window.PRIMARY_LASER_VISUAL_PATTERNS || {};
+    const meta = xmlPatterns[`${laserClass}|${patternId}`] || xmlPatterns[`${laserClass}|0`];
+    // Local game.xml defaults are retained for offline asset-loader failure only.
+    const fallbackRate = laserClass === 0 ? (patternId === 4 ? 200 : patternId === 7 ? 4000 : 400)
+        : laserClass === 3 || laserClass === 6 ? 2000 : laserClass === 4 ? 500 : 1000;
+    return {
+        fireRateMs: meta ? meta.fireRateMs : fallbackRate,
+        attackLengthMs: meta ? meta.attackLengthMs : LASER_ATTACK_LENGTH_MS
+    };
 }
 
 function pruneSabRingState(now = performance.now(), force = false) {
@@ -5840,7 +5867,8 @@ function handlePacket_laserAttack(parts, i) {
     const skilledLaser = !!parseInt(parts[i + 4], 10);
     if (isNaN(attackerId) || isNaN(targetId)) return;
     if (targetId === -1) {
-        clearSabLaserVisualJobsForAttacker(attackerId);
+        cancelPrimaryLaserVisualJob(attackerId);
+        cancelRsbBurst(attackerId);
         const attackerLive = entities[attackerId];
         if (attackerLive) {
             clearAttackLockForEntity(attackerLive);
@@ -5854,6 +5882,13 @@ function handlePacket_laserAttack(parts, i) {
         }
         return;
     }
+    // A late visual from the previously confirmed target cannot reopen its hero job.
+    // While N(B) is pending, A is still selected and its packets remain valid.
+    if (attackerId === heroId && Number(targetId) !== Number(selectedTargetId)) return;
+    const previousJob = PRIMARY_LASER_VISUAL_JOBS.get(attackerId);
+    if (previousJob && previousJob.targetId !== targetId) cancelPrimaryLaserVisualJob(attackerId);
+    const previousBurst = RSB_BURST_STATE.get(String(attackerId));
+    if (previousBurst && previousBurst.targetId !== targetId) cancelRsbBurst(attackerId);
     updateEntityClaim(targetId, attackerId);
     if (heroId !== null && attackerId === heroId) {
         if (typeof heroCombatLogActiveTargetId !== "undefined" && heroCombatLogActiveTargetId !== targetId) {
@@ -6119,27 +6154,8 @@ function handlePacket_laserAttack(parts, i) {
         }
     };
     const now = performance.now();
-    if (patternId === 4 && visual.absorber && !visual.playLoop && visual.spriteId === 4) {
-        const fireRate = typeof window !== "undefined" && Number.isFinite(window.SAB_LASER_FIRE_RATE_MS) && window.SAB_LASER_FIRE_RATE_MS > 0 ? window.SAB_LASER_FIRE_RATE_MS : 200;
-        const attackLength = Number.isFinite(visual.attackLengthMs) && visual.attackLengthMs > 0 ? visual.attackLengthMs : typeof LASER_ATTACK_LENGTH_MS !== "undefined" ? LASER_ATTACK_LENGTH_MS : 1350;
-        const beamDuration = Number.isFinite(duration) && duration > 0 ? duration : 500;
-        const key = getSabLaserVisualJobKey(attackerId, targetId, skilledLaser);
-        clearSabLaserVisualJobsForAttacker(attackerId, key);
-        startOrRefreshSabLaserVisualJob(key, attackerId, targetId, skilledLaser, fireRate, attackLength, beamDuration, (createdAt, playSound, firstTick) => {
-            if (firstTick) {
-                spawnBeamEntries(createdAt, showShieldDamage, playSound);
-                return;
-            }
-            spawnBeamEntries(createdAt, false, playSound, {
-                suppressImpactVisual: true,
-                localSabVisual: true
-            });
-        });
-        maybeSpawnEnergyLeechEcho(now);
-        return;
-    }
-    clearSabLaserVisualJobsForAttacker(attackerId);
     if (visual.spriteId === 6) {
+        cancelPrimaryLaserVisualJob(attackerId);
         const cfg = window.RSB_VISUAL_BURST || {};
         const burstCount = Number.isFinite(cfg.count) ? cfg.count : 5;
         const burstSpacing = Number.isFinite(cfg.spacingMs) ? cfg.spacingMs : 120;
@@ -6169,7 +6185,17 @@ function handlePacket_laserAttack(parts, i) {
         maybeSpawnEnergyLeechEcho(now);
         return;
     }
-    spawnBeamEntries(now, showShieldDamage);
+    const timing = getPrimaryLaserVisualTiming(attackerSnap, patternId);
+    let packetImpactPending = showShieldDamage;
+    startOrRefreshPrimaryLaserVisualJob(attackerId, targetId, patternId,
+        timing.fireRateMs, timing.attackLengthMs, (createdAt, firstTick) => {
+            const showImpact = packetImpactPending;
+            packetImpactPending = false;
+            spawnBeamEntries(createdAt, showImpact, true, {
+                suppressImpactVisual: !showImpact,
+                localSabVisual: patternId === 4 && !firstTick
+            });
+        });
     maybeSpawnEnergyLeechEcho(now);
 }
 
@@ -6216,7 +6242,7 @@ function handlePacket_attackInfo(parts, i) {
     if (!isNaN(hp) && hp <= 0) {
         cancelRsbBurstsByTarget(targetId);
         clearSabRingStateForEntity(targetId);
-        clearSabLaserVisualJobsForEntity(targetId);
+        clearPrimaryLaserVisualJobsForEntity(targetId);
         removeLaserBeamsForEntity(targetId);
         releaseSabShotsForEntity(targetId);
     }
@@ -6284,7 +6310,7 @@ function handlePacket_remove(parts, i) {
     cancelRsbBurstsByTarget(e.id);
     cancelRsbBurst(e.id);
     clearSabRingStateForEntity(e.id);
-    clearSabLaserVisualJobsForEntity(e.id);
+    clearPrimaryLaserVisualJobsForEntity(e.id);
     removeLaserBeamsForEntity(e.id);
     releaseSabShotsForEntity(e.id);
     detachRocketAttacksForEntity(e.id);
@@ -6372,7 +6398,7 @@ function handlePacket_R(parts, i) {
     if (ent.kind === "player" || ent.kind === "npc") {
         cancelRsbBurstsByTarget(ent.id);
         cancelRsbBurst(ent.id);
-        clearSabLaserVisualJobsForEntity(ent.id);
+        clearPrimaryLaserVisualJobsForEntity(ent.id);
         removeLaserBeamsForEntity(ent.id);
         queueEntityVisualCleanup(ent.id, {
             clearSabRing: true,
@@ -6615,7 +6641,7 @@ function forceUnlock(targetId, options = {}) {
     removeLaserBeamsForEntity(targetId);
     releaseSabShotsForEntity(targetId);
     clearSabRingStateForEntity(targetId);
-    clearSabLaserVisualJobsForEntity(targetId);
+    clearPrimaryLaserVisualJobsForEntity(targetId);
 }
 
 function clampExplosionType(v) {
@@ -6703,7 +6729,7 @@ function handlePacket_K(parts, i) {
         cancelRsbBurstsByTarget(heroId);
         cancelRsbBurst(heroId);
         clearSabRingStateForEntity(heroId);
-        clearSabLaserVisualJobsForEntity(heroId);
+        clearPrimaryLaserVisualJobsForEntity(heroId);
         removeLaserBeamsForEntity(heroId);
         releaseSabShotsForEntity(heroId);
         if (typeof activeLasers !== "undefined") activeLasers = [];
@@ -6722,7 +6748,7 @@ function handlePacket_K(parts, i) {
         forceUnlock(id, { suppressServerStop: true, preserveMinimapMove: true });
         cancelRsbBurstsByTarget(id);
         cancelRsbBurst(id);
-        clearSabLaserVisualJobsForEntity(id);
+        clearPrimaryLaserVisualJobsForEntity(id);
         removeLaserBeamsForEntity(id);
         queueEntityVisualCleanup(id, {
             clearSabRing: true,

@@ -71,7 +71,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
         public static bool CanSessionAttackNpc(Session session, Npc npc)
         {
             if (session == null || session.CharacterInfo == null || npc == null) return false;
-            return !npc.IsGalaxyGateProtected && GalaxyGateWaveService.CanSessionInteractWithNpc(session, npc);
+            return GalaxyGateWaveService.CanSessionInteractWithNpc(session, npc);
+        }
+
+        private static bool CanSessionDamageNpc(Session session, Npc npc)
+        {
+            return CanSessionAttackNpc(session, npc) && !npc.IsGalaxyGateProtected;
         }
 
         public static void SendNpcScopedMessage(MapInstance instance, Npc npc, ServerMessage message, Session fallbackOwner = null)
@@ -1209,7 +1214,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         return;
 
                     Npc npc = (Npc)actorNpc.ReferenceObject;
-                    if (npc == null || npc.IsDestroying || npc.SpawnSeq != context.TargetSpawnSeq || !CanSessionAttackNpc(session, npc))
+                    if (npc == null || npc.IsDestroying || npc.SpawnSeq != context.TargetSpawnSeq || !CanSessionDamageNpc(session, npc))
                         return;
 
                     if (npc.ShipId == 442)
@@ -2184,7 +2189,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
                 }
 
-                if (!CanSessionAttackNpc(attacker, npcTarget)) return;
+                if (!CanSessionDamageNpc(attacker, npcTarget)) return;
                 npcTarget.UpdateAttackers(attacker.CharacterId, damagePerTick);
 
                 if (npcTarget.ShipHp - damagePerTick > 0)
@@ -2438,84 +2443,40 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void SelectPlayer(Session Session, ClientMessage Message)
         {
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(Session.CurrentMapId);
-            if (instanceByMapId == null)
-                return;
-
-            int nextInt = Message.GetNextInt(1);
-
-            if (instanceByMapId.GetActorByReferenceId(nextInt, MapActorType.AiBot) != null)
+            var info = Session.CharacterInfo;
+            var map = MapManager.GetInstanceByMapId(Session.CurrentMapId);
+            if (info == null || map == null) return;
+            int targetId = Message.GetNextInt(1);
+            Npc npc = null;
+            Session player = null;
+            ServerMessage response;
+            var actor = map.GetActorByReferenceId(targetId, MapActorType.AiBot);
+            if (actor != null)
             {
-                if (Session.CharacterInfo.SelectedPlayer != nextInt)
-                {
-                    if (Session.CharacterInfo.LaserAttackTimer != null)
-                        Session.CharacterInfo.LaserAttackTimer.Dispose();
-
-                    Session.CharacterInfo.SelectedPlayer = nextInt;
-
-                    if (Session.CharacterInfo.Attacking)
-                        Fight.StopLaserAttack(Session, Message);
-                }
-
-                Npc referenceObject = (Npc)instanceByMapId.GetActorByReferenceId(nextInt, MapActorType.AiBot).ReferenceObject;
-                if (referenceObject == null)
-                    return;
-
-                if (!CanSessionAttackNpc(Session, referenceObject))
-                {
-                    Session.CharacterInfo.SelectedPlayer = 0;
-                    Session.SendData(PacketComposer.Compose("N", "-1"));
-                    return;
-                }
-
-                Session.SendData(PacketComposer.Compose(
-                    "N",
-                    referenceObject.Id.ToString() + "|" +
-                    referenceObject.Name + "|" +
-                    (object)referenceObject.ShipShield + "|" +
-                    (object)referenceObject.ShipMaxShield + "|" +
-                    (object)referenceObject.ShipHp + "|" +
-                    (object)referenceObject.ShipMaxHp
-                ));
-
-                Fight.SendNpcTargetOwnershipVisual(Session, referenceObject);
-
+                npc = actor.ReferenceObject as Npc;
+                if (npc == null || npc.IsDestroying) return;
+                if (!CanSessionAttackNpc(Session, npc)) { StopLaser(Session, null); return; }
+                response = PacketComposer.Compose("N", npc.Id + "|" + npc.Name + "|" + npc.ShipShield
+                    + "|" + npc.ShipMaxShield + "|" + npc.ShipHp + "|" + npc.ShipMaxHp);
             }
             else
             {
-                MapActor actorByReferenceId = instanceByMapId.GetActorByReferenceId(nextInt, MapActorType.UserCharacter);
-                if (actorByReferenceId == null)
-                    return;
-
-                Session sessionByCharacterId = SessionManager.GetSessionByCharacterId(actorByReferenceId.ReferenceId);
-                if (sessionByCharacterId == null || sessionByCharacterId.CharacterInfo == null)
-                    return;
-
-                if (IsSessionInGalaxyGate(Session) || IsSessionInGalaxyGate(sessionByCharacterId))
-                {
-                    Session.CharacterInfo.SelectedPlayer = 0;
-                    Session.SendData(PacketComposer.Compose("N", "-1"));
-                    return;
-                }
-
-                if (UnixTimestamp.GetCurrent() - sessionByCharacterId.CharacterInfo.LastEMP <= 2.0)
-                    return;
-
-                if (Session.CharacterInfo.SelectedPlayer != nextInt)
-                {
-                    if (Session.CharacterInfo.LaserAttackTimer != null)
-                        Session.CharacterInfo.LaserAttackTimer.Dispose();
-
-                    Session.CharacterInfo.SelectedPlayer = nextInt;
-
-                    if (Session.CharacterInfo.Attacking)
-                        Fight.StopLaserAttack(Session, Message);
-                }
-
-                Session.SendData(FightSelectPlayerComposer.Compose(sessionByCharacterId.CharacterInfo));
-
-                Fight.SendPlayerTargetOwnershipVisual(Session, sessionByCharacterId);
+                actor = map.GetActorByReferenceId(targetId, MapActorType.UserCharacter);
+                if (actor == null) return;
+                player = SessionManager.GetSessionByCharacterId(actor.ReferenceId);
+                if (player == null || player.CharacterInfo == null) return;
+                if (IsSessionInGalaxyGate(Session) || IsSessionInGalaxyGate(player)) { StopLaser(Session, null); return; }
+                if (UnixTimestamp.GetCurrent() - player.CharacterInfo.LastEMP <= 2.0) return;
+                response = FightSelectPlayerComposer.Compose(player.CharacterInfo);
             }
+            if (info.SelectedPlayer != targetId) StopLaser(Session, null, false);
+            lock (info.PrimaryLaserSync)
+            {
+                info.SelectedPlayer = targetId;
+                Session.SendData(response);
+            }
+            if (npc != null) SendNpcTargetOwnershipVisual(Session, npc);
+            else SendPlayerTargetOwnershipVisual(Session, player);
         }
 
         private static bool IsRsbReady(Session session)
@@ -3098,7 +3059,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (actorNpc != null)
                 {
                     Npc npc = (Npc)actorNpc.ReferenceObject;
-                    if (npc == null || npc.IsDestroying || !CanSessionAttackNpc(session, npc))
+                    if (npc == null || npc.IsDestroying || !CanSessionDamageNpc(session, npc))
                         return;
 
                     if (npc.SpawnSeq != targetSpawnSeq)
@@ -3194,13 +3155,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
         {
             int result = 0;
 
-            if (!int.TryParse(Message.GetNextString(1), out result))
-                Fight.StopLaser(Session, null);
-            else
-            {
-                Session sessionByCharacterId = SessionManager.GetSessionByCharacterId(result);
-                Fight.StopLaser(Session, sessionByCharacterId, false);
-            }
+            if (!int.TryParse(Message.GetNextString(1), out result)) return;
+            Fight.StopLaser(Session, SessionManager.GetSessionByCharacterId(result), false, result);
         }
 
         public static void CanAttack(object state)
@@ -3222,8 +3178,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void LaserAttack(Session Session, ClientMessage Message)
         {
-            if (Session.CharacterInfo == null)
-                return;
+            if (Session.CharacterInfo == null) return;
+            if (!Session.IsChat)
+            {
+                int requestedTarget;
+                if (!int.TryParse(Message.GetNextString(1), out requestedTarget)
+                    || requestedTarget == 0 || requestedTarget != Session.CharacterInfo.SelectedPlayer) return;
+                lock (Session.CharacterInfo.PrimaryLaserSync)
+                    if (IsPrimaryLaserCurrent(Session.CharacterInfo.PrimaryLaser)) return;
+            }
 
             if (Session.CharacterInfo.Invincible)
             {
@@ -3243,9 +3206,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
-            if (Session.CharacterInfo.LaserAttackTimer != null)
-                Session.CharacterInfo.LaserAttackTimer.Dispose();
-
+            CancelPrimaryLaser(Session.CharacterInfo);
             Session.CharacterInfo.Attacking = false;
 
             if (!Session.CharacterInfo.CanLaserAttack)
@@ -3295,23 +3256,21 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 npc = false;
             }
 
-            Session.CharacterInfo.Attacking = true;
-
+            lock (Session.CharacterInfo.PrimaryLaserSync)
+            {
+                int targetId = npc ? ((Npc)referenceObject).Id : ((Session)referenceObject).CharacterId;
+                if (Session.CharacterInfo.SelectedPlayer != targetId || Session.CharacterInfo.Destroy || Session.StoppedPlayer) return;
+                Session.CharacterInfo.Attacking = true;
+                if (npc)
+                {
+                    Npc n = (Npc)referenceObject;
+                    Session.SendData(PacketComposer.Compose("N", n.Id.ToString() + "|" + n.Name + "|" + n.ShipShield + "|" + n.ShipMaxShield + "|" + n.ShipHp + "|" + n.ShipMaxHp));
+                }
+                else Session.SendData(FightSelectPlayerComposer.Compose(((Session)referenceObject).CharacterInfo));
+            }
             Fight.BroadcastLockIntent(instanceByMapId, Session);
-
-            if (npc)
-            {
-                Npc n = (Npc)referenceObject;
-                Session.SendData(PacketComposer.Compose("N", n.Id.ToString() + "|" + n.Name + "|" + n.ShipShield + "|" + n.ShipMaxShield + "|" + n.ShipHp + "|" + n.ShipMaxHp));
-                Fight.SendNpcTargetOwnershipVisual(Session, n);
-            }
-            else
-            {
-                Session p = (Session)referenceObject;
-                Session.SendData(FightSelectPlayerComposer.Compose(p.CharacterInfo));
-                Fight.SendPlayerTargetOwnershipVisual(Session, p);
-            }
-
+            if (npc) Fight.SendNpcTargetOwnershipVisual(Session, (Npc)referenceObject);
+            else Fight.SendPlayerTargetOwnershipVisual(Session, (Session)referenceObject);
 
             if (!npc)
             {
@@ -3325,24 +3284,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (Session.CharacterInfo.Invisible == 1)
                 Fight.RemoveCloack(Session, instanceByMapId);
 
-            double wait = DateTime.Now.TimeOfDay.TotalMilliseconds - Session.CharacterInfo.PreviousDamageTime;
-
-            if (Session.CharacterInfo.PreviousDamageTime <= 0 || wait >= Session.CharacterInfo.AttackSpeed || wait < 0)
-                wait = 0;
-            else
-            {
-                double remainingWait = Session.CharacterInfo.AttackSpeed - wait;
-                if (Fight.CanSendFacticeLaserAttack(Session, remainingWait))
-                    Fight.FacticeLaserAttack(Session);
-                wait = remainingWait;
-            }
-
-            Session.CharacterInfo.LaserAttackTimer = new System.Threading.Timer(
-                new TimerCallback(Fight.LaserAttackTimer),
-                (object)Session,
-                (int)wait,
-                Session.CharacterInfo.AttackSpeed
-            );
+            int wait = PrimaryLaserWait(Session.CharacterInfo);
+            if (Fight.CanSendFacticeLaserAttack(Session, wait)) Fight.FacticeLaserAttack(Session);
+            StartPrimaryLaser(Session, referenceObject);
 
             if (Session.CharacterInfo.AutoRocketSkill == 1 && Session.CharacterInfo.HasAutoRocketCpu)
             {
@@ -3430,82 +3374,46 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void LaserAttackTimer(object attacker)
         {
+            var state = attacker as PrimaryLaserState;
+            if (state == null) return;
+            // Validate and register the deferred wakeup atomically with selection:
+            // a stale A must never replace B's waiting callback.
+            lock (state.Info.PrimaryLaserSync)
+            {
+                if (!IsPrimaryLaserCurrent(state)) return;
+                if (!state.Info.TryEnterLaserAttackTick(() => LaserAttackTimer(state))) return;
+            }
+            var previous = executingPrimaryLaser;
+            executingPrimaryLaser = state;
             try
             {
-                Session Session = (Session)attacker;
-                if (Session == null || Session.CharacterInfo == null)
-                    return;
-
-                if (!Session.CharacterInfo.TryEnterLaserAttackTick())
-                    return;
-
-                try
+                if (!IsPrimaryLaserCurrent(state)) return;
+                int wait = PrimaryLaserWait(state.Info);
+                if (wait > 0) { SchedulePrimaryLaser(state, wait); return; }
+                var map = MapManager.GetInstanceByMapId(state.MapId);
+                long previousDeadline = Interlocked.Read(ref state.Info.PrimaryLaserDeadline);
+                lock (state.Info.PrimaryLaserSync)
                 {
-                    MapInstance instanceByMapId = MapManager.GetInstanceByMapId(Session.CurrentMapId);
-                    if (instanceByMapId == null)
-                        return;
-
-                    if (Session.CharacterInfo.SelectedPlayer == 0)
-                    {
-                        Fight.StopLaser(Session, null);
-                        return;
-                    }
-
-                    Fight.TryStartAutoRocketLauncher(Session);
-
-                    MapActor actorByReferenceId = instanceByMapId.GetActorByReferenceId(Session.CharacterInfo.SelectedPlayer, MapActorType.AiBot);
-                    if (actorByReferenceId != null)
-                    {
-                        Npc referenceObject = (Npc)actorByReferenceId.ReferenceObject;
-                        if (referenceObject == null)
-                        {
-                            Fight.StopLaser(Session, null);
-                            return;
-                        }
-
-                        if (referenceObject.IsDestroying)
-                        {
-                            Fight.StopLaser(Session, null);
-                            return;
-                        }
-
-                        Fight.AttackNpcCore(instanceByMapId, Session, referenceObject, 0);
-                    }
-                    else if (Session.CharacterInfo.MapId == 80 && Survivor.Active && Survivor.SafeBattle)
-                    {
-                        Fight.StopLaser(Session, null, false);
-                    }
-                    else if (Session.CharacterInfo.MapId == 81 && Invasion.Active && Invasion.SafeBattle)
-                    {
-                        Fight.StopLaser(Session, null, false);
-                    }
-                    else
-                    {
-                        Session sessionByCharacterId = SessionManager.GetSessionByCharacterId(Session.CharacterInfo.SelectedPlayer);
-                        if (sessionByCharacterId == null || sessionByCharacterId.CharacterInfo == null || Session.CurrentMapId != sessionByCharacterId.CurrentMapId)
-                        {
-                            Fight.StopLaser(Session, sessionByCharacterId);
-                        }
-                        else if (sessionByCharacterId.CharacterInfo.PeaceZone)
-                        {
-                            Fight.StopLaser(Session, sessionByCharacterId);
-                        }
-                        else
-                        {
-                            Fight.AttackPlayerCore(instanceByMapId, Session, sessionByCharacterId, 0);
-                        }
-                    }
+                    if (!IsPrimaryLaserCurrent(state)) return;
+                    Fight.TryStartAutoRocketLauncher(state.Owner);
                 }
-                finally
-                {
-                    if (Session != null && Session.CharacterInfo != null)
-                        Session.CharacterInfo.ExitLaserAttackTick();
-                }
-
+                if (state.Npc != null) Fight.AttackNpcCore(map, state.Owner, state.Npc, 0);
+                else if (state.PlayerInfo.PeaceZone) Fight.StopLaserForTarget(state.Owner, state.Player, state.TargetId);
+                else Fight.AttackPlayerCore(map, state.Owner, state.Player, 0);
+                bool admitted = Interlocked.Read(ref state.Info.PrimaryLaserDeadline) != previousDeadline;
+                SchedulePrimaryLaser(state, admitted ? 0 : state.Info.AttackSpeed);
             }
             catch (Exception ex)
             {
                 LogTimerFailure("LaserAttackTimer", ex);
+                // Keep the previous periodic timer's recovery behavior, without
+                // replaying an already admitted salvo or spinning on a failure.
+                SchedulePrimaryLaser(state, state.Info.AttackSpeed);
+            }
+            finally
+            {
+                executingPrimaryLaser = previous;
+                state.Info.ExitLaserAttackTick();
             }
         }
 
@@ -3568,10 +3476,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     if (Npc != null && Npc.ShipId == 442 && Ammo == 5)
                         return;
 
-                    if (Ammo == 6 && !Fight.IsRsbReady(Session))
-                        return;
-
-                    if (!Session.CharacterInfo.TryConsumeLaserAmmo(volley))
+                    int admission = AdmitLaserVolley(Session, volley, Npc.Id);
+                    if (admission == 0) return;
+                    if (admission < 0)
                     {
                         Fight.StopLaser(Session, null, false);
 
@@ -3612,10 +3519,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Fight.StartRsbCooldown(Session);
                 }
 
+                if (IsStalePrimaryCleanup(Session) || Session.CharacterInfo.SelectedPlayer != Npc.Id) return;
                 Session.CharacterInfo.PreviousAttacked = Npc.Id;
 
-                if (damage && Ammo != 6)
-                    Session.CharacterInfo.PreviousDamageTime = now;
 
                 if (Session.CharacterInfo.Invisible == 1)
                 {
@@ -3644,7 +3550,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             int Ammo = volley.AmmoId;
             if (Npc == null)
                 return;
-            if (!CanSessionAttackNpc(Session, Npc))
+            if (!CanSessionDamageNpc(Session, Npc))
                 return;
 
             double multiplier = Fight.GetMultiplier(Ammo, volley.ApisBuilt);
@@ -3745,7 +3651,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (Npc.ShipHp > 0)
                     return;
 
-                Fight.StopLaser(Session, null);
+                Fight.StopLaserForTarget(Session, null, Npc.Id);
 
                 Fight.KillNPC(Instance, Npc, Session);
             }
@@ -3797,6 +3703,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (!PlayerCanAttack(Session, Ennemy) || (TeamDeathMatch.IsTdm(Session) && Ennemy.CharacterInfo.ActiveISH))
                 return;
 
+            if (damage && !TeamDeathMatch.ValidAttack(Session, Ennemy)) return;
+
             LaserVolleySnapshot volley = Session.CharacterInfo.CaptureLaserVolley(Ammo);
             Ammo = volley.AmmoId;
             if (volley.LaserCount <= 0)
@@ -3819,10 +3727,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 if (damage)
                 {
-                    if (Ammo == 6 && !Fight.IsRsbReady(Session))
-                        return;
-
-                    if (!Session.CharacterInfo.TryConsumeLaserAmmo(volley))
+                    int admission = AdmitLaserVolley(Session, volley, Ennemy.CharacterId);
+                    if (admission == 0) return;
+                    if (admission < 0)
                     {
                         Fight.StopLaser(Session, Ennemy, false);
 
@@ -3835,7 +3742,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.SendData(PacketComposer.Compose("B", Session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                 }
 
-                if (damage && !TeamDeathMatch.ValidAttack(Session, Ennemy)) return;
                 double now = DateTime.Now.TimeOfDay.TotalMilliseconds;
                 double num = now - Session.CharacterInfo.LastRSB75;
                 bool missed = damage && !Fight.RollPlayerLaserHit(Session, Ennemy);
@@ -3851,7 +3757,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (missed)
                     SendMissToPlayerTarget(Instance, Session, Ennemy);
 
-                Session.CharacterInfo.Attacking = true;
+                lock (Session.CharacterInfo.PrimaryLaserSync)
+                    if (!IsStalePrimaryCleanup(Session) && Session.CharacterInfo.SelectedPlayer == Ennemy.CharacterId)
+                        Session.CharacterInfo.Attacking = true;
 
                 if (damage && !missed)
                 {
@@ -3864,10 +3772,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Fight.StartRsbCooldown(Session);
                 }
 
+                if (IsStalePrimaryCleanup(Session) || Session.CharacterInfo.SelectedPlayer != Ennemy.CharacterId) return;
                 Session.CharacterInfo.PreviousAttacked = 0;
 
-                if (damage && Ammo != 6)
-                    Session.CharacterInfo.PreviousDamageTime = now;
 
                 if (Session.CharacterInfo.Invisible == 1)
                 {
@@ -4030,14 +3937,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 if (Ennemy.CharacterInfo.Destroy && !DroneWearService.IsPendingDeath(Ennemy, deathContext))
                 {
-                    Fight.StopLaser(Session, Ennemy);
+                    Fight.StopLaserForTarget(Session, Ennemy, Ennemy.CharacterId);
                     return;
                 }
 
                 if (!DroneWearService.IsPendingDeath(Ennemy, deathContext))
                     return;
 
-                Fight.StopLaser(Session, Ennemy);
+                Fight.StopLaserForTarget(Session, Ennemy, Ennemy.CharacterId);
 
                 Fight.KillGameplayPlayer(Ennemy, deathContext, true);
             }
@@ -4264,50 +4171,31 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        public static void StopLaser(Session Session, Session Ennemy, bool unlock = true)
+        public static void StopLaser(Session Session, Session Ennemy, bool unlock = true, int expectedTarget = 0)
         {
-            if (Session.CharacterInfo.LaserAttackTimer != null)
-                Session.CharacterInfo.LaserAttackTimer.Dispose();
-
-            if (Session.CharacterInfo.LaserAttackCanTimer != null)
-                Session.CharacterInfo.LaserAttackCanTimer.Dispose();
-
-            Session.CharacterInfo.Attacking = false;
-            Session.CharacterInfo.ActiveAutoRocket = false;
-            Session.CharacterInfo.OutOfRange = false;
-
-            try
+            if (Session == null || Session.CharacterInfo == null) return;
+            var info = Session.CharacterInfo;
+            lock (info.PrimaryLaserSync)
             {
-                Session.CharacterInfo.FlushPendingPrimaryAmmoToDb();
+                if (IsStalePrimaryCleanup(Session) || (expectedTarget != 0 && info.SelectedPlayer != expectedTarget)) return;
+                CancelPrimaryLaser(info);
+                if (info.LaserAttackCanTimer != null) info.LaserAttackCanTimer.Dispose();
+                info.Attacking = false;
+                info.ActiveAutoRocket = false;
+                info.OutOfRange = false;
+                if (unlock) Fight.Unlock(Session);
+                info.LaserAttackCanTimer = new Timer(Fight.CanAttack, Session, 1000, Timeout.Infinite);
+                var map = MapManager.GetInstanceByMapId(Session.CurrentMapId);
+                if (map != null)
+                {
+                    if (unlock) Fight.BroadcastLockIntentClear(map, Session);
+                    SendSessionScopedMessageForOtherOnly(map, Session, PacketComposer.Compose(
+                        "a", Session.CharacterId + "|-1|0|" + info.ShieldMechanics + "|" + info.FatLasers));
+                }
             }
-            catch { }
-
-            if (unlock)
-                Fight.Unlock(Session);
-
-            Session.CharacterInfo.LaserAttackCanTimer =
-    new System.Threading.Timer(new TimerCallback(Fight.CanAttack), (object)Session, 1000, 0);
-
-            MapInstance instanceByMapId = MapManager.GetInstanceByMapId(Session.CurrentMapId);
-            if (instanceByMapId == null)
-                return;
-
-            if (unlock)
-                Fight.BroadcastLockIntentClear(instanceByMapId, Session);
-
-            SendSessionScopedMessageForOtherOnly(instanceByMapId, Session, PacketComposer.Compose(
-                "a",
-                Session.CharacterId.ToString() + "|" + (object)-1 + "|" + (object)0 + "|" + (object)Session.CharacterInfo.ShieldMechanics + "|" + (object)Session.CharacterInfo.FatLasers
-            ));
-
-            if (Ennemy == null || Ennemy.CharacterInfo == null)
-                return;
-
-            lock (Ennemy.CharacterInfo.Attacked)
-            {
-                if (Ennemy.CharacterInfo.Attacked.Contains(Session))
-                    Ennemy.CharacterInfo.Attacked.Remove(Session);
-            }
+            try { info.FlushPendingPrimaryAmmoToDb(); } catch { }
+            if (Ennemy != null && Ennemy.CharacterInfo != null)
+                lock (Ennemy.CharacterInfo.Attacked) Ennemy.CharacterInfo.Attacked.Remove(Session);
         }
 
         private static int CalculatePlayerCargoLossAmount(int cargoAmount)
@@ -4509,8 +4397,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                                 sessionByCharacterId.CharacterInfo.PlayerInRange.Remove(Session.CharacterInfo.Id);
                                 if (sessionByCharacterId.CharacterInfo.SelectedPlayer == Session.CharacterId)
                                 {
-                                    Fight.StopLaser(sessionByCharacterId, null);
-                                    sessionByCharacterId.CharacterInfo.SelectedPlayer = 0;
+                                    Fight.StopLaserForTarget(sessionByCharacterId, null, Session.CharacterId);
                                 }
                             }
                         }
@@ -4795,7 +4682,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             if (Spaceball.IsSpaceballNpc(npc))
                 return;
-            if (!CanSessionAttackNpc(session, npc))
+            if (!CanSessionDamageNpc(session, npc))
                 return;
 
             int shieldPart = Convert.ToInt32(damage * 0.8);
@@ -4837,7 +4724,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             if (Spaceball.IsSpaceballNpc(npc))
                 return;
-            if (!CanSessionAttackNpc(session, npc))
+            if (!CanSessionDamageNpc(session, npc))
                 return;
 
             int shieldDamage = Math.Max(0, damage);
@@ -4914,7 +4801,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             if (DroneWearService.IsPendingDeath(target, deathContext))
             {
-                Fight.StopLaser(attacker, target);
+                Fight.StopLaserForTarget(attacker, target, target.CharacterId);
                 Fight.KillGameplayPlayer(target, deathContext, true);
             }
         }

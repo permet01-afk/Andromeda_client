@@ -41,6 +41,10 @@ namespace OrbitReborn_Emulator.Game.Characters
                 if (!TechInventoryService.IsCurrent(owner) || owner.CharacterInfo.Disconnected) return;
                 try
                 {
+                    // Ownership is read from committed DB state for this kill, never from the
+                    // runtime fleet: a drone can be bought on the web while the pilot is online.
+                    // An empty result linearizes this no-op before a concurrent purchase commits.
+                    if (!HasProgressionDrones(owner.CharacterId)) return;
                     DroneEquipmentState state = Change(owner.CharacterId, points, false);
                     owner.CharacterInfo.ApplyDroneProgression(state);
                     if (state.LeveledUp)
@@ -57,6 +61,22 @@ namespace OrbitReborn_Emulator.Game.Characters
                 {
                     Output.WriteLine("[Drone progression] player=" + owner.CharacterId + " award=" + points + ": " + ex.Message, OutputLevel.Warning);
                 }
+            }
+        }
+        private static bool HasProgressionDrones(int playerId)
+        {
+            // Avoid opening a write transaction / locking users for accounts with no Iris/Flax.
+            // Existing fleets still use the unchanged authoritative transaction below.
+            using (var db = SqlDatabaseManager.GetClient("DroneProgressionService.HasProgressionDrones"))
+            {
+                db.ResetCommand();
+                try
+                {
+                    db.SetParameter("p", playerId);
+                    object droneId = db.ExecuteScalar("SELECT id FROM drone WHERE player_id=@p AND item_id IN (3,5) LIMIT 1");
+                    return droneId != null && droneId != DBNull.Value;
+                }
+                finally { db.ResetCommand(); }
             }
         }
         public static void PublishDrones(Session owner)

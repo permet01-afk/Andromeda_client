@@ -3632,6 +3632,23 @@ function parseDronePatternsFromXml(xmlDoc) {
     }
 }
 
+function parsePrimaryLaserVisualPatternsFromXml(xmlDoc) {
+    if (!xmlDoc) return;
+    const patterns = {};
+    xmlDoc.querySelectorAll("lasers > laser").forEach(node => {
+        const laserClass = parseInt(node.getAttribute("class"), 10);
+        const type = parseInt(node.getAttribute("type"), 10);
+        const fireRateMs = parseInt(node.getAttribute("fireRate"), 10);
+        const attackLengthMs = parseInt(node.getAttribute("attackLength"), 10);
+        if (!Number.isFinite(laserClass) || !Number.isFinite(type) || !(fireRateMs > 0)) return;
+        patterns[`${laserClass}|${type}`] = Object.freeze({
+            fireRateMs,
+            attackLengthMs: attackLengthMs > 0 ? attackLengthMs : 1350
+        });
+    });
+    window.PRIMARY_LASER_VISUAL_PATTERNS = Object.freeze(patterns);
+}
+
 function parsePulseLaserBurstFromXml(xmlDoc) {
     if (!xmlDoc) return;
     const node = xmlDoc.querySelector('lasers laser[class="0"][type="6"]') || xmlDoc.querySelector('lasers laser[type="6"]');
@@ -3724,6 +3741,7 @@ function loadExpansionPatternsFromGameXml() {
                 parseHitpointColorsFromXml(xmlDoc);
                 parseColorPatternsFromXml(xmlDoc);
                 parseDronePatternsFromXml(xmlDoc);
+                parsePrimaryLaserVisualPatternsFromXml(xmlDoc);
                 parsePulseLaserBurstFromXml(xmlDoc);
                 parseSabLaserVisualFromXml(xmlDoc);
                 parseSabShotDurationFromXml(xmlDoc);
@@ -13990,7 +14008,8 @@ function finishQuickbarInteraction(event) {
 const __flashOriginalExecuteItemActionDirectly = executeItemActionDirectly;
 
 function flashHeroHasActiveLaserAttack() {
-    return currentLaserTargetId != null || attackIntentTargetId != null || confirmedAttackTargetId != null || pendingAttackAckTargetId != null;
+    return selectedTargetId != null && typeof hasPrimaryLaserVisualJob === "function"
+        && hasPrimaryLaserVisualJob(heroId, selectedTargetId);
 }
 
 function flashToggleOrStartLaserOnSelectedTarget() {
@@ -14020,11 +14039,7 @@ executeItemActionDirectly = function(item, options = {}) {
         if (flashShouldSendAmmoSelection(nextAmmoId)) {
             sendSelectAmmo(nextAmmoId);
         }
-        const hasPendingSelectionTarget = typeof pendingTargetSelectionId !== "undefined"
-            && pendingTargetSelectionId != null
-            && typeof isTargetSelectionPending === "function"
-            && isTargetSelectionPending(pendingTargetSelectionId);
-        if (selectedTargetId == null && !hasPendingSelectionTarget) {
+        if (selectedTargetId == null) {
             return true;
         }
         if (isRsbAmmo) {

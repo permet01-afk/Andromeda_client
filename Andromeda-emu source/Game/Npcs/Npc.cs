@@ -130,6 +130,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private readonly object mRespawnDelaySync = new object();
 
         private int mSpawnSeq;
+        private static long mNextVisualInstanceId;
+        private readonly long mVisualInstanceId = Interlocked.Increment(ref mNextVisualInstanceId);
+
+        // Distinguish a same-life C refresh from a new object or respawn using the same NPC ID.
+        public string VisualLifeToken { get { return mVisualInstanceId + ":" + mSpawnSeq; } }
 
         private const int NPC_KILL_ECONOMY_MULTIPLIER = 3;
 
@@ -2000,7 +2005,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     continue;
 
                 if (sessionById.CharacterInfo.SelectedPlayer == npc.Id)
-                    Fight.StopLaser(sessionById, null);
+                    Fight.StopLaserForTarget(sessionById, null, npc.Id);
 
                 sessionById.CharacterInfo.NpcInRange.Remove(npc.Id);
                 sessionById.SendData(PacketComposer.Compose("R", npc.Id.ToString()));
@@ -2106,7 +2111,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                         {
                             if (sessionById.CharacterInfo.SelectedPlayer == this.Id)
                             {
-                                Fight.StopLaser(sessionById, null);
+                                Fight.StopLaserForTarget(sessionById, null, this.Id);
                             }
 
                             sessionById.CharacterInfo.NpcInRange.Remove(this.Id);
@@ -2366,7 +2371,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     sessionByCharacterId.SendData(PacketComposer.Compose("QST", "UPD"));
 
                 if (sessionByCharacterId.CharacterInfo.SelectedPlayer == this.Id)
-                    Fight.StopLaser(sessionByCharacterId, null);
+                    Fight.StopLaserForTarget(sessionByCharacterId, null, this.Id);
 
                 if (int32_1 != 0)
                     sessionByCharacterId.SendData(PacketComposer.Compose("y", "CRE|" + (object)int32_1 + "|" + (object)sessionByCharacterId.CharacterInfo.Credits));

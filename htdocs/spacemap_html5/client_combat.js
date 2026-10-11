@@ -676,9 +676,10 @@ function sendLaserStop(targetId, force = false, keepIntent = false) {
     if (window.FLASH_PARITY_DEBUG) {
         console.log("[WS] Sending LASER_STOP →", packet);
     }
-    if (typeof clearSabLaserVisualJobsForLocalHero === "function") {
-        clearSabLaserVisualJobsForLocalHero();
+    if (typeof clearPrimaryLaserVisualJobsForLocalHero === "function") {
+        clearPrimaryLaserVisualJobsForLocalHero();
     }
+    if (typeof cancelRsbBurst === "function") cancelRsbBurst(heroId);
     if (currentLaserTargetId === targetId) currentLaserTargetId = null;
     if (!keepIntent && attackIntentTargetId === targetId) attackIntentTargetId = null;
     if (!keepIntent && confirmedAttackTargetId === targetId) {
@@ -1244,12 +1245,9 @@ function smoothEntityRotations(dt) {
 }
 
 function reinforceLockState() {
-    const candidate = selectedTargetId !== null ? selectedTargetId : currentLaserTargetId !== null ? currentLaserTargetId : pendingRangeResumeTargetId !== null ? pendingRangeResumeTargetId : attackIntentTargetId;
-    if (candidate != null) {
-        if (selectedTargetId === null) selectedTargetId = candidate;
-        if (attackIntentTargetId === null && currentLaserTargetId !== null) {
-            attackIntentTargetId = currentLaserTargetId;
-        }
+    // Only N confirms a normal target. Combat/visual state may not synthesize selection.
+    if (selectedTargetId != null && currentLaserTargetId === selectedTargetId && attackIntentTargetId === null) {
+        attackIntentTargetId = currentLaserTargetId;
     }
 }
 

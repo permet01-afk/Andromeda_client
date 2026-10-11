@@ -216,6 +216,12 @@ namespace OrbitReborn_Emulator.Game.Characters
         private long mDbAmmoEmp01;
         private int mAmmoSyncClientUpdatePending;
         private int mLaserAttackTickGuard;
+        private readonly object mLaserAttackTickSync = new object();
+        private Action mDeferredLaserAttackTick;
+        internal readonly object PrimaryLaserSync = new object();
+        internal OrbitReborn_Emulator.Game.Handlers.Fight.PrimaryLaserState PrimaryLaser;
+        internal long PrimaryLaserDeadline;
+        internal long LaserSelectionGeneration;
         private bool mOutOfRange;
         private readonly object mEquipmentSnapshotLock = new object();
         private int mWebsiteConfigRefreshGuard;
@@ -1084,7 +1090,11 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
             set
             {
-                this.mSelectedPlayer = value;
+                lock (this.PrimaryLaserSync)
+                {
+                    if (this.mSelectedPlayer != value) this.LaserSelectionGeneration++;
+                    this.mSelectedPlayer = value;
+                }
             }
         }
 
@@ -6019,14 +6029,31 @@ namespace OrbitReborn_Emulator.Game.Characters
             return changedForClient;
         }
 
-        public bool TryEnterLaserAttackTick()
+        public bool TryEnterLaserAttackTick(Action onAvailable = null)
         {
-            return Interlocked.Exchange(ref this.mLaserAttackTickGuard, 1) == 0;
+            lock (this.mLaserAttackTickSync)
+            {
+                if (this.mLaserAttackTickGuard != 0)
+                {
+                    // At most one latest valid callback, woken by release, never by polling.
+                    if (onAvailable != null) this.mDeferredLaserAttackTick = onAvailable;
+                    return false;
+                }
+                Volatile.Write(ref this.mLaserAttackTickGuard, 1);
+                return true;
+            }
         }
 
         public void ExitLaserAttackTick()
         {
-            Interlocked.Exchange(ref this.mLaserAttackTickGuard, 0);
+            Action resume;
+            lock (this.mLaserAttackTickSync)
+            {
+                Volatile.Write(ref this.mLaserAttackTickGuard, 0);
+                resume = this.mDeferredLaserAttackTick;
+                this.mDeferredLaserAttackTick = null;
+            }
+            if (resume != null) ThreadPool.QueueUserWorkItem(_ => resume());
         }
 
         public bool IsLaserAttackTickRunning

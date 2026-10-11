@@ -896,7 +896,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (!session.CharacterInfo.NpcInRange.Contains(npc.Id))
                 session.CharacterInfo.NpcInRange.Add(npc.Id);
 
-            session.SendData(PacketComposer.Compose("C", npc.Id.ToString() + "|" + (object)npc.ShipId + "|0|" + npc.ClanTag + "|" + npc.Name + "|" + (object)npc.LocX + "|" + (object)npc.LocY + "|" + (object)npc.FactionId + "|" + (object)npc.IsClanMember + "|" + (object)npc.Rank + "|" + (object)npc.IsBoss + "|" + (object)npc.IsClanMember + "|" + (object)npc.GalaxyGatesRings));
+            // Keep the legacy optional fields (including Flash isNPC/cloak) at their old zero defaults.
+            // MV is trailing HTML5 metadata, not another movement packet or an AI cadence change.
+            // Spaceball changes speed after creation; retain its existing event movement semantics.
+            int nativeNpcSpeed = Spaceball.IsSpaceballNpc(npc) ? 0 : npc.ShipSpeed;
+            session.SendData(PacketComposer.Compose("C", npc.Id.ToString() + "|" + (object)npc.ShipId + "|0|" + npc.ClanTag + "|" + npc.Name + "|" + (object)npc.LocX + "|" + (object)npc.LocY + "|" + (object)npc.FactionId + "|" + (object)npc.IsClanMember + "|" + (object)npc.Rank + "|" + (object)npc.IsBoss + "|" + (object)npc.IsClanMember + "|" + (object)npc.GalaxyGatesRings + "|0|0|0|MV|" + nativeNpcSpeed + "|" + npc.VisualLifeToken));
             npc.SendGalaxyGateProtection(session);
             session.SendData(PacketComposer.Compose("n", "pt|" + npc.Id + "|" + npc.GameTitle));
 
