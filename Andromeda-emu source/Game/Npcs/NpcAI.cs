@@ -754,6 +754,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 Npc.LocX = Npc.NewLocX;
                 Npc.LocY = Npc.NewLocY;
                 NpcAI.StopNpcPathFinder(Npc);
+                LaserVisualService.PositionChanged(Npc);
                 return;
             }
             else
@@ -761,6 +762,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 Npc.LocX = (int)position.X;
                 Npc.LocY = (int)position.Y;
             }
+            LaserVisualService.PositionChanged(Npc);
         }
 
         public static void TryMoveNpc(Npc Npc)

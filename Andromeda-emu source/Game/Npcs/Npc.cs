@@ -27,6 +27,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         public double CubikonLastSpawnTick = 0.0;
 
+        internal long LaserVisualEpoch;
         public int ParentNpcId = 0;
 
         public GalaxyGateProtection GalaxyGateProtection;
@@ -474,6 +475,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     this.PathFinder = null;
                 }
                 this.LastMove = now;
+                LaserVisualService.PositionChanged(this);
                 return;
             }
 
@@ -487,6 +489,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             this.LocX = currentX;
             this.LocY = currentY;
             this.LastMove = now;
+            LaserVisualService.PositionChanged(this);
         }
 
         public void StopMovementAtCurrentPosition()
@@ -2054,6 +2057,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (IsGalaxyGateProtected || !TryAdmitDeathReward()) return;
 
             this.IsDestroying = true;
+            LaserVisualService.Remove(this);
 
             if (map != null)
                 Fight.BroadcastLockIntentClearForTarget(map, this.Id);
@@ -2430,6 +2434,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         public void StopNpcAttack()
         {
+            Interlocked.Increment(ref this.LaserVisualEpoch);
+            LaserVisualService.Stop(this);
             bool hadAttackLock = this.TargetId != 0 || this.IsAttacking || this.AttackTimer != null;
             if (hadAttackLock)
                 Invasion.BroadcastInvaderLockClear(this);
@@ -2457,6 +2463,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (!CanLockTargetAfterEmp(targetId, now))
                 return;
 
+            Interlocked.Increment(ref this.LaserVisualEpoch);
+            LaserVisualService.Stop(this);
             bool hadAttackLock = this.TargetId != 0 || this.IsAttacking || this.AttackTimer != null;
             if (hadAttackLock)
                 Invasion.BroadcastInvaderLockClear(this);
@@ -2483,6 +2491,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (!CanLockTargetAfterEmp(targetId, now))
                 return;
 
+            if (this.TargetId != targetId)
+            {
+                Interlocked.Increment(ref this.LaserVisualEpoch);
+                LaserVisualService.Stop(this);
+            }
             int previousTargetId = this.TargetId;
             bool preserveRecentAttackGuard = previousTargetId == targetId && this.mLastDamageTick != 0;
 
@@ -2512,6 +2525,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         public void Attack(object Npc)
         {
+            long visualEpoch = Interlocked.Read(ref this.LaserVisualEpoch);
             if (System.Threading.Interlocked.Exchange(ref this.mAttackInProgress, 1) == 1)
                 return;
 
@@ -2588,6 +2602,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     return;
                 }
 
+                LaserVisualService.PositionChanged(this);
                 int shootRange = Invasion.GetNpcAttackRange(this, this.IsBoss == 1 ? 500 : 460);
                 if (!DistanceUtil.IsWithinRangeSquared(sessionByCharacterId.CharacterInfo.LocX, sessionByCharacterId.CharacterInfo.LocY, this.LocX, this.LocY, shootRange))
                     return;
@@ -2601,6 +2616,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 this.mLastDamageTick = nowTick;
 
                 int ammoType = Invasion.GetNpcLaserPattern(this);
+                LaserVisualService.Shot(instanceByMapId, this, sessionByCharacterId, ammoType, sessionByCharacterId.CharacterInfo.ShieldMechanics, this.FatLasers, 0, shootRange, false, visualEpoch);
                 ServerMessage npcAttackMessage = PacketComposer.Compose("a", this.Id.ToString() + "|" + sessionByCharacterId.CharacterId + "|" + ammoType + "|" + sessionByCharacterId.CharacterInfo.ShieldMechanics + "|" + this.FatLasers);
                 if (GalaxyGateWaveService.IsGateMap(this.MapId))
                     sessionByCharacterId.SendData(npcAttackMessage);

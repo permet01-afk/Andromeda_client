@@ -365,6 +365,9 @@ namespace OrbitReborn_Emulator.Game.Maps
 
         public bool RemoveActorFromMap(int ActorId)
         {
+            var visualActor = GetActor(ActorId);
+            if (visualActor != null)
+                LaserVisualService.Remove(visualActor.Type == MapActorType.AiBot ? visualActor.ReferenceObject : SessionManager.GetSessionById(visualActor.ReferenceSessionId));
             lock (this.mActorSyncRoot)
             {
                 lock (this.mActors)
@@ -651,6 +654,7 @@ namespace OrbitReborn_Emulator.Game.Maps
                 return;
             try
             {
+                LaserVisualService.RemoveMap(this);
                 this.mUnloaded = true;
                 long clearActorsStart = PerformanceProfiler.Start();
                 try

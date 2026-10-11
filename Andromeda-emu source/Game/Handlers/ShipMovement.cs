@@ -236,6 +236,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
 
+            LaserVisualService.PositionChanged(Session);
             ShipMovement.CheckWarningZone(Session);
             ShipMovement.CheckPeaceZone(Session);
             ShipMovement.CheckPortalZone(Session);
@@ -297,6 +298,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
                 catch { }
+                LaserVisualService.PositionChanged(Session);
                 return;
             }
 
@@ -310,6 +312,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Session.CharacterInfo.LocX = currentX;
             Session.CharacterInfo.LocY = currentY;
             Session.CharacterInfo.LastMove.Restart();
+            LaserVisualService.PositionChanged(Session);
         }
 
         private static void TryMovePlayer(Session Session)
@@ -901,6 +904,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             // Spaceball changes speed after creation; retain its existing event movement semantics.
             int nativeNpcSpeed = Spaceball.IsSpaceballNpc(npc) ? 0 : npc.ShipSpeed;
             session.SendData(PacketComposer.Compose("C", npc.Id.ToString() + "|" + (object)npc.ShipId + "|0|" + npc.ClanTag + "|" + npc.Name + "|" + (object)npc.LocX + "|" + (object)npc.LocY + "|" + (object)npc.FactionId + "|" + (object)npc.IsClanMember + "|" + (object)npc.Rank + "|" + (object)npc.IsBoss + "|" + (object)npc.IsClanMember + "|" + (object)npc.GalaxyGatesRings + "|0|0|0|MV|" + nativeNpcSpeed + "|" + npc.VisualLifeToken));
+            LaserVisualService.Created(session, npc);
             npc.SendGalaxyGateProtection(session);
             session.SendData(PacketComposer.Compose("n", "pt|" + npc.Id + "|" + npc.GameTitle));
 

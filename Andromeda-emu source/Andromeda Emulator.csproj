@@ -128,6 +128,7 @@
     <Compile Include="Game\Handlers\Chat.cs" />
     <Compile Include="Game\Handlers\Fight.cs" />
     <Compile Include="Game\Handlers\Fight.PrimaryLaser.cs" />
+    <Compile Include="Game\Handlers\LaserVisualService.cs" />
     <Compile Include="Storage\SqlDatabaseTransaction.cs" />
     <Compile Include="Game\Techs\TechRuntimeState.cs" />
     <Compile Include="Game\Techs\TechSchema.cs" />

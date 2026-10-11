@@ -1097,6 +1097,7 @@ function connectToServer(isReconnect = false) {
     armWsConnectWatchdog(ws, url);
     ws.binaryType = "arraybuffer";
     ws.onopen = () => {
+        resetIncomingLaserVisualProtocol(true);
         // No ownership survives a transport/login boundary without a fresh TX|S.
         window.heroTechRuntimeState = Object.create(null);
         window.heroTechCooldownMeta = Object.create(null);
@@ -1322,6 +1323,7 @@ const PACKET_HANDLERS = {
     J: handlePacket_J,
     LK: handlePacket_LK,
     a: handlePacket_laserAttack,
+    LVS: handlePacket_LVS,
     M: handlePacket_shootMissedA,
     Z: handlePacket_shootMissedT,
     SAB_SHOT: handlePacket_sabShot,
@@ -2841,10 +2843,13 @@ function handlePacket_i(parts, i) {
     } catch (_) {}
     const __curMapId = typeof currentMapId !== "undefined" && currentMapId !== null ? parseInt(currentMapId, 10) : NaN;
     if (!isNaN(__curMapId) && __curMapId === newMapId) {
+        resetIncomingLaserVisualProtocolForInit(false);
+        requestIncomingLaserVisualProtocol(true);
         return;
     }
     const prevMapId = typeof currentMapId !== "undefined" ? currentMapId : null;
     resetMapState(newMapId);
+    requestIncomingLaserVisualProtocol(true);
     if (prevMapId !== null && prevMapId !== newMapId) {
         try {
             if (window.AudioManager && typeof window.AudioManager.playSoundEffect === "function") {
@@ -4448,7 +4453,10 @@ function handlePacket_RDY(parts, i) {
         removeFlashConnectionInfoWindowSafe();
     }
     heroLoaded = true;
+    // An authoritative init can replace the MapActor even when the map number is unchanged.
+    resetIncomingLaserVisualProtocolForInit();
     trySendRdyMap();
+    requestIncomingLaserVisualProtocol();
 }
 
 const HONEY_BOX_HASHES = new Set([ "100vp", "103wa", "109xs", "10tv0", "13b44", "13jaa", "13p97", "13umf", "152g8", "1604u", "1801q", "180fk", "1ag6n", "1bfcm", "1c2tu", "1c3oi", "1e5au", "1ecek", "1fnxl", "1fsi3", "1g4pv", "1g568", "1g65j", "1g7du", "1gtlm", "1hd2h", "1hviz", "1isk4", "1jyqj", "1kjds", "1lmf1", "1malf", "1mc48", "1my80", "1nad0", "1nesl", "1oloo", "1r78f", "1scn2", "1srrl", "1srvg", "1ss4t", "1szeq", "1t5p4", "1trob", "1ts89", "1ucay", "1ukl6", "1usjy", "1v20m", "2u942", "3k2hr", "3mtlo", "416n4", "48chq", "49ol8", "5naot", "6dge9", "6ovbk", "6x1u8", "87k2a", "8v03f", "9icg0", "a2abg", "bu9m9", "bv8wq", "ci7m0", "fc9f7", "h0rbx", "hkw3g", "hm27v", "hs940", "lnkdf", "lqzp9", "m79jj", "mk797", "n5cwr", "ntr63", "oeoud", "ov57p", "ozims", "puvoe", "q0e4a", "q4knx", "qj4o9", "qtqry", "rckbt", "rku9c", "sn8n9", "tbeuu", "usc1j", "uy62u", "v2qxb", "w27x1", "wbku5", "wl0wr", "xixzz", "yyr28", "zel71", "znmjs" ]);
@@ -5507,6 +5515,206 @@ const PRIMARY_LASER_VISUAL_TICK_MS = 100;
 let primaryLaserVisualTimerId = null;
 let primaryLaserVisualTimerDue = 0;
 
+// Additive, opt-in authority for remote visual generators. Legacy O/X remains
+// exclusively the local hero's outgoing range contract; beams already in flight
+// are never removed by these notifications.
+let incomingLaserVisualProtocolActive = false;
+let incomingLaserVisualReadyPending = false;
+let incomingLaserVisualPendingMapId = null;
+let incomingLaserVisualPendingNonce = null;
+let incomingLaserVisualPendingForHeroInit = false;
+let incomingLaserVisualRequestCounter = 0;
+let incomingLaserVisualContext = null;
+let incomingLaserVisualLastScope = null;
+const INCOMING_LASER_VISUAL_STATE_LIMIT = 4096;
+const INCOMING_LASER_VISUAL_LIFE_LIMIT = 8192;
+const INCOMING_LASER_VISUAL_LIVES = new Map;
+const INCOMING_LASER_VISUAL_RETIRED_LIVES = new Set;
+const INCOMING_LASER_VISUAL_STATES = new Map;
+
+function resetIncomingLaserVisualProtocol(resetCapability = false) {
+    incomingLaserVisualContext = null;
+    incomingLaserVisualReadyPending = false;
+    incomingLaserVisualPendingMapId = null;
+    incomingLaserVisualPendingNonce = null;
+    incomingLaserVisualPendingForHeroInit = false;
+    INCOMING_LASER_VISUAL_LIVES.clear();
+    INCOMING_LASER_VISUAL_RETIRED_LIVES.clear();
+    INCOMING_LASER_VISUAL_STATES.clear();
+    if (resetCapability) incomingLaserVisualProtocolActive = false;
+}
+
+function resetIncomingLaserVisualProtocolForInit(preserveMapRequest = true) {
+    // i (map) may already have requested a scope before I (hero init) arrives.
+    // Keep that same-map request pending: issuing a second one would leave the
+    // client on the first READY while the server has already moved to the second.
+    const pendingForThisMap = preserveMapRequest && incomingLaserVisualReadyPending
+        && incomingLaserVisualPendingForHeroInit && incomingLaserVisualPendingMapId === currentMapId;
+    const pendingNonce = incomingLaserVisualPendingNonce;
+    // Retire only incoming generators. Already emitted beams finish normally.
+    for (const id of Array.from(PRIMARY_LASER_VISUAL_JOBS.keys())) {
+        if (id !== heroId) cancelPrimaryLaserVisualJob(id);
+    }
+    for (const id of Array.from(RSB_BURST_STATE.keys())) {
+        if (Number(id) !== heroId) cancelRsbBurst(Number(id));
+    }
+    resetIncomingLaserVisualProtocol();
+    if (pendingForThisMap) {
+        incomingLaserVisualReadyPending = true;
+        incomingLaserVisualPendingMapId = currentMapId;
+        incomingLaserVisualPendingNonce = pendingNonce;
+    }
+}
+
+function createIncomingLaserVisualRequestNonce() {
+    // Public request correlation only; this is not an authentication credential.
+    if (typeof window !== "undefined" && window.crypto && typeof window.crypto.getRandomValues === "function") {
+        const bytes = new Uint8Array(16);
+        window.crypto.getRandomValues(bytes);
+        return Array.from(bytes, value => value.toString(16).padStart(2, "0")).join("");
+    }
+    const serial = (++incomingLaserVisualRequestCounter).toString(16).padStart(16, "0");
+    return Date.now().toString(16).padStart(16, "0") + serial;
+}
+
+function requestIncomingLaserVisualProtocol(forHeroInit = false) {
+    if (incomingLaserVisualReadyPending || heroId == null) return;
+    incomingLaserVisualReadyPending = true;
+    incomingLaserVisualPendingMapId = currentMapId;
+    incomingLaserVisualPendingNonce = createIncomingLaserVisualRequestNonce();
+    incomingLaserVisualPendingForHeroInit = forHeroInit;
+    sendRaw("LVS|1|" + incomingLaserVisualPendingNonce);
+}
+
+function renewIncomingLaserVisualScopeIfFull() {
+    if (INCOMING_LASER_VISUAL_STATES.size < INCOMING_LASER_VISUAL_STATE_LIMIT
+        && INCOMING_LASER_VISUAL_LIVES.size + INCOMING_LASER_VISUAL_RETIRED_LIVES.size < INCOMING_LASER_VISUAL_LIFE_LIMIT) return false;
+    // Never evict an individual tombstone and silently accept its old packets.
+    // Negotiate a fresh observer scope instead; no gameplay intent is changed.
+    for (const id of Array.from(PRIMARY_LASER_VISUAL_JOBS.keys())) {
+        if (id !== heroId) cancelPrimaryLaserVisualJob(id);
+    }
+    for (const id of Array.from(RSB_BURST_STATE.keys())) {
+        if (Number(id) !== heroId) cancelRsbBurst(Number(id));
+    }
+    resetIncomingLaserVisualProtocol();
+    requestIncomingLaserVisualProtocol();
+    return true;
+}
+
+function incomingLaserLocalLife(id) {
+    if (id === heroId) return heroHp > 0 ? -1 : null;
+    const ent = entities[id];
+    if (!ent || (ent.kind !== "player" && ent.kind !== "npc") || ent.destroyedVisualAt) return null;
+    return typeof ensureEntityVisualLife === "function" ? ensureEntityVisualLife(ent) : ent.visualLifeId;
+}
+
+function invalidateIncomingLaserVisualEntity(id) {
+    const life = INCOMING_LASER_VISUAL_LIVES.get(id);
+    if (life) life.localLife = null;
+    for (const state of INCOMING_LASER_VISUAL_STATES.values()) {
+        if (state.attackerId === id || state.targetId === id) state.detached = true;
+    }
+}
+
+function incomingLaserPublicToken(value) {
+    return typeof value === "string" && /^[A-Za-z0-9_:-]{1,96}$/.test(value);
+}
+
+function incomingLaserVisualLifeMatches(id, publicLife) {
+    const binding = INCOMING_LASER_VISUAL_LIVES.get(id);
+    return !!binding && binding.publicLife === publicLife && binding.localLife != null
+        && binding.localLife === incomingLaserLocalLife(id);
+}
+
+function handlePacket_LVS(parts, i) {
+    if (parts[i] === "READY") {
+        const scope = parts[i + 2], mapId = Number(parts[i + 3]);
+        const instance = parts[i + 4], selfLife = parts[i + 5], requestNonce = parts[i + 6];
+        if (parts[i + 1] !== "1" || !incomingLaserVisualReadyPending
+            || requestNonce !== incomingLaserVisualPendingNonce || !/^[A-Fa-f0-9]{16,64}$/.test(requestNonce || "")
+            || !incomingLaserPublicToken(scope) || !incomingLaserPublicToken(instance)
+            || !incomingLaserPublicToken(selfLife) || scope === incomingLaserVisualLastScope
+            || mapId !== Number(currentMapId)) return;
+        for (const id of Array.from(PRIMARY_LASER_VISUAL_JOBS.keys())) {
+            if (id !== heroId) cancelPrimaryLaserVisualJob(id);
+        }
+        for (const id of Array.from(RSB_BURST_STATE.keys())) {
+            if (Number(id) !== heroId) cancelRsbBurst(Number(id));
+        }
+        resetIncomingLaserVisualProtocol();
+        incomingLaserVisualProtocolActive = true;
+        incomingLaserVisualLastScope = scope;
+        incomingLaserVisualContext = { scope, mapId, instance };
+        INCOMING_LASER_VISUAL_LIVES.set(heroId, { publicLife: selfLife, localLife: incomingLaserLocalLife(heroId) });
+        return;
+    }
+    const context = incomingLaserVisualContext;
+    if (!incomingLaserVisualProtocolActive || !context) return;
+    if (parts[i] === "LIFE") {
+        const id = Number(parts[i + 3]), mapId = Number(parts[i + 4]), publicLife = parts[i + 6];
+        if (parts[i + 1] !== "1" || parts[i + 2] !== context.scope
+            || mapId !== context.mapId || parts[i + 5] !== context.instance
+            || !Number.isSafeInteger(id) || id === 0 || !incomingLaserPublicToken(publicLife)) return;
+        if (INCOMING_LASER_VISUAL_RETIRED_LIVES.has(`${id}:${publicLife}`)) return;
+        const old = INCOMING_LASER_VISUAL_LIVES.get(id);
+        const localLife = incomingLaserLocalLife(id);
+        if (localLife == null) return; // Creation must precede the authoritative LIFE.
+        if (renewIncomingLaserVisualScopeIfFull()) return;
+        if (old && (old.publicLife !== publicLife || old.localLife !== localLife)) {
+            if (old.publicLife !== publicLife) INCOMING_LASER_VISUAL_RETIRED_LIVES.add(`${id}:${old.publicLife}`);
+            clearPrimaryLaserVisualJobsForEntity(id);
+        }
+        INCOMING_LASER_VISUAL_LIVES.set(id, { publicLife, localLife });
+        return;
+    }
+    if (parts[i] !== "1" || !["SHOT", "STATE", "SNAPSHOT"].includes(parts[i + 1])) return;
+    const event = {
+        kind: parts[i + 1], scope: parts[i + 2], attackerId: Number(parts[i + 3]), targetId: Number(parts[i + 4]),
+        mapId: Number(parts[i + 5]), instance: parts[i + 6], attackerLife: parts[i + 7], targetLife: parts[i + 8],
+        generation: Number(parts[i + 9]), sequence: Number(parts[i + 10]), state: parts[i + 11],
+        channel: parts[i + 12], pattern: Number(parts[i + 13]), shield: parts[i + 14], fat: parts[i + 15], expansion: parts[i + 16]
+    };
+    if (event.scope !== context.scope || event.mapId !== context.mapId || event.instance !== context.instance
+        || !Number.isSafeInteger(event.attackerId) || !Number.isSafeInteger(event.targetId)
+        || event.attackerId === heroId || event.attackerId === 0 || event.targetId === 0 || event.targetId === -1
+        || !Number.isSafeInteger(event.generation) || event.generation <= 0
+        || !Number.isSafeInteger(event.sequence) || event.sequence <= 0
+        || !["ATTACKING", "PAUSED_RANGE", "STOPPED"].includes(event.state)
+        || !["P", "R"].includes(event.channel)
+        || !incomingLaserVisualLifeMatches(event.attackerId, event.attackerLife)
+        || !incomingLaserVisualLifeMatches(event.targetId, event.targetLife)) return;
+    if (event.kind === "SHOT" && (event.state !== "ATTACKING"
+        || !Number.isSafeInteger(event.pattern) || event.pattern < 0 || event.pattern > 255)) return;
+    const key = `${event.attackerId}:${event.channel}`;
+    const previous = INCOMING_LASER_VISUAL_STATES.get(key);
+    const sameLife = previous && previous.attackerLife === event.attackerLife;
+    if (sameLife && (event.generation < previous.generation
+        || (event.generation === previous.generation && (event.sequence <= previous.sequence
+            || previous.state === "STOPPED" || previous.targetId !== event.targetId
+            || previous.targetLife !== event.targetLife)))) return;
+    const sameEngagement = sameLife && event.generation === previous.generation && !previous.detached;
+    if (renewIncomingLaserVisualScopeIfFull()) return;
+    if (event.channel === "P" && previous && !sameEngagement) cancelPrimaryLaserVisualJob(event.attackerId);
+    INCOMING_LASER_VISUAL_STATES.set(key, event);
+    if (event.state === "STOPPED") {
+        if (event.channel === "P") cancelPrimaryLaserVisualJob(event.attackerId);
+        else cancelRsbBurst(event.attackerId);
+        return;
+    }
+    if (event.channel === "P" && event.state === "PAUSED_RANGE") {
+        const job = PRIMARY_LASER_VISUAL_JOBS.get(event.attackerId);
+        if (job && job.targetId === event.targetId && job.incomingGeneration === event.generation) job.paused = true;
+        schedulePrimaryLaserVisualTick();
+        return;
+    }
+    // STATE/SNAPSHOT describes engagement, never replays a shot or wakes a timer.
+    // Only a fresh admitted SHOT resumes the retained phase after range suspension.
+    if (event.kind !== "SHOT") return;
+    handlePacket_laserAttack([String(event.attackerId), String(event.targetId), String(event.pattern),
+        event.shield || "0", event.fat || "0", event.expansion || "0"], 0, event);
+}
+
 function schedulePrimaryLaserVisualTick() {
     let due = Infinity;
     for (const job of PRIMARY_LASER_VISUAL_JOBS.values()) {
@@ -5545,9 +5753,11 @@ function clearPrimaryLaserVisualJobs() {
     for (const attackerId of Array.from(PRIMARY_LASER_VISUAL_JOBS.keys())) {
         cancelPrimaryLaserVisualJob(attackerId);
     }
+    resetIncomingLaserVisualProtocol();
 }
 
 function clearPrimaryLaserVisualJobsForEntity(entityId) {
+    invalidateIncomingLaserVisualEntity(entityId);
     for (const [attackerId, job] of PRIMARY_LASER_VISUAL_JOBS) {
         if (attackerId === entityId || job.targetId === entityId) cancelPrimaryLaserVisualJob(attackerId);
     }
@@ -5619,13 +5829,22 @@ function tickPrimaryLaserVisualJob(job) {
     job.cnt += PRIMARY_LASER_VISUAL_TICK_MS;
 }
 
-function startOrRefreshPrimaryLaserVisualJob(attackerId, targetId, patternId, fireRateMs, attackLengthMs, spawnTick) {
+function startOrRefreshPrimaryLaserVisualJob(attackerId, targetId, patternId, fireRateMs, attackLengthMs, spawnTick, authoritativeEvent = null) {
     const existing = PRIMARY_LASER_VISUAL_JOBS.get(attackerId);
-    if (existing && existing.targetId === targetId && existing.fireRateMs === fireRateMs) {
+    const retainedAuthority = authoritativeEvent && existing
+        && existing.incomingGeneration === authoritativeEvent.generation
+        && existing.incomingScope === authoritativeEvent.scope;
+    if (existing && existing.targetId === targetId && (existing.fireRateMs === fireRateMs || retainedAuthority)) {
         existing.active = true;
         existing.patternId = patternId;
+        existing.fireRateMs = fireRateMs;
         existing.attackLengthMs = attackLengthMs;
         existing.spawnTick = spawnTick;
+        if (authoritativeEvent && existing.paused) {
+            existing.paused = false;
+            existing.nextTickAt = performance.now() + PRIMARY_LASER_VISUAL_TICK_MS;
+            schedulePrimaryLaserVisualTick();
+        }
         return existing;
     }
     cancelPrimaryLaserVisualJob(attackerId);
@@ -5635,6 +5854,8 @@ function startOrRefreshPrimaryLaserVisualJob(attackerId, targetId, patternId, fi
     const job = {
         attackerId, targetId, patternId, fireRateMs, attackLengthMs, spawnTick,
         attackerLifeId: attacker.visualLifeId, targetLifeId: target.visualLifeId,
+        incomingGeneration: authoritativeEvent ? authoritativeEvent.generation : null,
+        incomingScope: authoritativeEvent ? authoritativeEvent.scope : null,
         cnt: 0, active: true, spawnCount: 0, paused: false,
         nextTickAt: performance.now() + PRIMARY_LASER_VISUAL_TICK_MS
     };
@@ -5938,7 +6159,7 @@ function flushEntityVisualCleanups() {
     }
 }
 
-function handlePacket_laserAttack(parts, i) {
+function handlePacket_laserAttack(parts, i, authoritativeEvent = null) {
     if (parts.length < i + 5) return;
     const attackerId = parseInt(parts[i], 10);
     const targetId = parseInt(parts[i + 1], 10);
@@ -5946,6 +6167,9 @@ function handlePacket_laserAttack(parts, i) {
     const showShieldDamage = !!parseInt(parts[i + 3], 10);
     const skilledLaser = !!parseInt(parts[i + 4], 10);
     if (isNaN(attackerId) || isNaN(targetId)) return;
+    // A legacy a is not an admission and carries no generation. Once negotiated,
+    // only the authoritative LVS SHOT may drive a remote generator (including RSB).
+    if (incomingLaserVisualProtocolActive && attackerId !== heroId && !authoritativeEvent) return;
     if (targetId === -1) {
         cancelPrimaryLaserVisualJob(attackerId);
         cancelRsbBurst(attackerId);
@@ -6281,7 +6505,7 @@ function handlePacket_laserAttack(parts, i) {
                 suppressImpactVisual: !showImpact,
                 localSabVisual: patternId === 4 && !firstTick
             });
-        });
+        }, authoritativeEvent);
     maybeSpawnEnergyLeechEcho(now);
 }
 

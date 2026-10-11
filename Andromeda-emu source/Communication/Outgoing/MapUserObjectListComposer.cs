@@ -37,6 +37,7 @@ namespace OrbitReborn_Emulator.Communication.Outgoing
                 serverMessage.Append(Session.CharacterInfo.GetClanDiplomacyStateTo(((CharacterInfo)key.ReferenceObject).ClanId));
                 serverMessage.Append(0);
                 serverMessage.AppendBreak();
+                OrbitReborn_Emulator.Game.Handlers.LaserVisualService.AppendCreate(serverMessage, Session, SessionManager.GetSessionByCharacterId(key.ReferenceId));
                 if (Session.CharacterInfo.Settings.ShowDrones == 1)
                 {
                     serverMessage.AppendShort("0|n");

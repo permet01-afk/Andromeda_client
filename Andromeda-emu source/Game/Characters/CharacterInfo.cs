@@ -1102,12 +1102,25 @@ namespace OrbitReborn_Emulator.Game.Characters
         {
             get
             {
-                return this.mSelectedAmmo;
+                lock (this.mEquipmentSnapshotLock)
+                    return this.mSelectedAmmo;
             }
             set
             {
+                bool changed;
                 lock (this.mEquipmentSnapshotLock)
+                {
+                    changed = this.mSelectedAmmo != value;
                     this.mSelectedAmmo = value;
+                }
+                // Visual notifications may read this snapshot lock: call only
+                // after releasing it. Ammo changes never reset the weapon deadline.
+                if (changed && this.mSessionId > 0 && SessionManager.ActiveConnections > 0)
+                {
+                    var session = SessionManager.GetSessionById(this.mSessionId);
+                    if (session != null && ReferenceEquals(session.CharacterInfo, this))
+                        OrbitReborn_Emulator.Game.Handlers.LaserVisualService.PositionChanged(session);
+                }
             }
         }
 

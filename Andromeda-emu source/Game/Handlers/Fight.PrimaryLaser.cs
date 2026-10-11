@@ -40,6 +40,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             var state = executingPrimaryLaser;
             if (state == null || state.Owner != owner || state.TargetId != targetId
                 || !IsPrimaryLaserCurrent(state)) return;
+            LaserVisualService.PauseForRange(owner, targetId);
             state.WaitingForRange = true;
             // Keep the existing full attack/auto-launcher retry rate while out
             // of laser range. Lightweight probes must not accelerate it.
@@ -55,7 +56,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             // path. Do not advance motion or admit damage from client positions.
             double distance = state.Npc != null ? GetDistanceNpc(state.Owner, state.Npc)
                 : GetDistance(state.Owner, state.Player);
-            return distance > RANGE_LASER;
+            return distance > GetLaserRange(state.Info.SelectedAmmo);
         }
 
         private static bool IsPrimaryLaserCurrent(PrimaryLaserState state, bool checkTargetLife = true)
@@ -127,6 +128,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 var state = info.PrimaryLaser;
                 info.PrimaryLaser = null;
+                if (state != null) LaserVisualService.Stop(state.Owner);
                 if (state != null && state.Timer != null) state.Timer.Dispose();
                 if (info.LaserAttackTimer != null) info.LaserAttackTimer.Dispose();
                 info.LaserAttackTimer = null;

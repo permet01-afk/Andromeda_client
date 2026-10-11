@@ -26,6 +26,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
     public static partial class Fight
     {
         private const double RANGE_LASER = 700.0;
+        // Andromeda adaptation: only the captured SAB salvo gains this range.
+        internal static double GetLaserRange(int ammoId) { return ammoId == 5 ? 750.0 : RANGE_LASER; }
         private const double RANGE_ROCKET = 750.0;
         private const int DIMINISHER_SELF_SHIELD_LOSS_PERCENT = 30;
         private const int TECH_ENERGY_LEECH_LIFESTEAL_PERCENT = 10;
@@ -493,6 +495,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
         {
             DataRouter.RegisterHandler("SES", new ProcessRequestCallback(Fight.SelectPlayer), false);
             DataRouter.RegisterHandler("SEL", new ProcessRequestCallback(Fight.SelectPlayerDecoy), false);
+            DataRouter.RegisterHandler("LVS", new ProcessRequestCallback(LaserVisualService.Negotiate), false);
             DataRouter.RegisterHandler("u", new ProcessRequestCallback(Fight.SelectAmmo), false);
             DataRouter.RegisterHandler("G", new ProcessRequestCallback(Fight.StopLaserAttack), false);
             DataRouter.RegisterHandler("a", new ProcessRequestCallback(Fight.LaserAttack), true);
@@ -3460,8 +3463,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
+            bool directRsb = Ammo == 6;
+            long visualSelection = Session.CharacterInfo.LaserSelectionGeneration;
             LaserVolleySnapshot volley = Session.CharacterInfo.CaptureLaserVolley(Ammo);
             Ammo = volley.AmmoId;
+            double laserRange = GetLaserRange(volley.AmmoId);
             if (volley.LaserCount <= 0)
             {
                 Fight.StopLaser(Session, null, false);
@@ -3472,13 +3478,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             double distanceNpc = Fight.GetDistanceNpc(Session, Npc);
 
-            if (distanceNpc <= RANGE_LASER && Session.CharacterInfo.OutOfRange)
+            if (!directRsb && distanceNpc <= laserRange && Session.CharacterInfo.OutOfRange)
             {
                 Session.CharacterInfo.OutOfRange = false;
                 Session.SendData(PacketComposer.Compose("X", ""));
             }
 
-            if (distanceNpc <= RANGE_LASER && !Session.CharacterInfo.OutOfRange)
+            if (distanceNpc <= laserRange && (directRsb || !Session.CharacterInfo.OutOfRange))
             {
                 if (damage)
                 {
@@ -3508,6 +3514,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 if (num < 0.0 || num >= 300.0)
                 {
+                    if (damage)
+                    {
+                        lock (Session.CharacterInfo.PrimaryLaserSync)
+                        {
+                            if (Session.CharacterInfo.LaserSelectionGeneration == visualSelection && !IsStalePrimaryCleanup(Session))
+                                LaserVisualService.Shot(Instance, Session, Npc, volley.VisualLaserType, Npc.ShieldMechanics, volley.SkilledLaser, volley.ExpansionStage, laserRange, Ammo == 6, visualSelection);
+                        }
+                    }
                     SendNpcScopedMessage(Instance, Npc, PacketComposer.Compose(
                         "a",
                         Session.CharacterId.ToString() + "|" + (object)Npc.Id + "|" + (object)volley.VisualLaserType + "|" + (object)Npc.ShieldMechanics + "|" + (object)volley.SkilledLaser + "|" + volley.ExpansionStage
@@ -3545,8 +3559,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
             else
             {
+                // A direct RSB is independent of the persistent primary O/X state.
+                if (directRsb) return;
                 if (damage) SuspendPrimaryLaserForRange(Session, Npc.Id);
-                if (distanceNpc <= RANGE_LASER || Session.CharacterInfo.OutOfRange)
+                if (distanceNpc <= laserRange || Session.CharacterInfo.OutOfRange)
                     return;
 
                 Session.SendData(PacketComposer.Compose("O", ""));
@@ -3715,8 +3731,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             if (damage && !TeamDeathMatch.ValidAttack(Session, Ennemy)) return;
 
+            bool directRsb = Ammo == 6;
+            long visualSelection = Session.CharacterInfo.LaserSelectionGeneration;
             LaserVolleySnapshot volley = Session.CharacterInfo.CaptureLaserVolley(Ammo);
             Ammo = volley.AmmoId;
+            double laserRange = GetLaserRange(volley.AmmoId);
             if (volley.LaserCount <= 0)
             {
                 Fight.StopLaser(Session, Ennemy, false);
@@ -3727,13 +3746,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             double distance = Fight.GetDistance(Session, Ennemy);
 
-            if (distance <= RANGE_LASER && Session.CharacterInfo.OutOfRange)
+            if (!directRsb && distance <= laserRange && Session.CharacterInfo.OutOfRange)
             {
                 Session.CharacterInfo.OutOfRange = false;
                 Session.SendData(PacketComposer.Compose("X", ""));
             }
 
-            if (distance <= RANGE_LASER && !Session.CharacterInfo.OutOfRange)
+            if (distance <= laserRange && (directRsb || !Session.CharacterInfo.OutOfRange))
             {
                 if (damage)
                 {
@@ -3758,6 +3777,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 if (num < 0.0 || num >= 300.0)
                 {
+                    if (damage)
+                    {
+                        lock (Session.CharacterInfo.PrimaryLaserSync)
+                        {
+                            if (Session.CharacterInfo.LaserSelectionGeneration == visualSelection && !IsStalePrimaryCleanup(Session))
+                                LaserVisualService.Shot(Instance, Session, Ennemy, volley.VisualLaserType, Ennemy.CharacterInfo.ShieldMechanics, volley.SkilledLaser, volley.ExpansionStage, laserRange, Ammo == 6, visualSelection);
+                        }
+                    }
                     SendPlayerScopedCombatMessage(Instance, Session, Ennemy, PacketComposer.Compose(
                         "a",
                         Session.CharacterId.ToString() + "|" + (object)Ennemy.CharacterId + "|" + (object)volley.VisualLaserType + "|" + (object)Ennemy.CharacterInfo.ShieldMechanics + "|" + (object)volley.SkilledLaser + "|" + volley.ExpansionStage
@@ -3802,8 +3829,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
             else
             {
+                // A direct RSB is independent of the persistent primary O/X state.
+                if (directRsb) return;
                 if (damage) SuspendPrimaryLaserForRange(Session, Ennemy.CharacterId);
-                if (distance <= RANGE_LASER || Session.CharacterInfo.OutOfRange)
+                if (distance <= laserRange || Session.CharacterInfo.OutOfRange)
                     return;
 
                 Session.SendData(PacketComposer.Compose("O", ""));
@@ -4190,6 +4219,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             {
                 if (IsStalePrimaryCleanup(Session) || (expectedTarget != 0 && info.SelectedPlayer != expectedTarget)) return;
                 CancelPrimaryLaser(info);
+                LaserVisualService.Stop(Session);
                 if (info.LaserAttackCanTimer != null) info.LaserAttackCanTimer.Dispose();
                 info.Attacking = false;
                 info.ActiveAutoRocket = false;
@@ -4353,6 +4383,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
 
                 Session.CharacterInfo.Destroy = true;
+                LaserVisualService.Remove(Session);
                 TechInventoryService.StopBattleRepairOnDeath(Session);
 
                 Fight.StopLaser(Session, null);

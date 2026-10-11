@@ -331,6 +331,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
             {
                 if (this.StoppedPlayer || this.CharacterInfo == null || this.HasPendingGameplayDeath) return;
                 this.CharacterInfo.Disconnected = true;
+                LaserVisualService.Remove(this);
                 this.CharacterInfo.StopBoosterAutoRefresh();
                 Socket socket = this.mSocket;
                 this.mStoppedTimestamp = UnixTimestamp.GetCurrent();
@@ -374,6 +375,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             if (CharacterInfo == null || !CharacterInfo.DeadCommitted) throw new InvalidOperationException("Death is not committed.");
             CharacterInfo.Disconnected = true;
+            LaserVisualService.Remove(this);
             CharacterInfo.CanMove = false;
             CharacterInfo.SelectedPlayer = 0;
             CharacterInfo.KillStrek = 0;
@@ -655,6 +657,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 && UnixTimestamp.GetCurrent() - this.mLastReconnectHandoffTimestamp < 2.0)
                 return;
 
+            LaserVisualService.Remove(this);
             TeamDeathMatch.BeforeDisconnect(this, false);
             TechInventoryService.Suspend(this);
             SessionManager.UnregisterAuthenticatedSession(this);

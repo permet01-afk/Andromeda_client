@@ -105,6 +105,7 @@ namespace OrbitReborn_Emulator.Communication.Outgoing
                 serverMessage.Append("A|0|BRB|" + (object)Info.Id + "|" + (object)Info.BattleRepairCount);
                 serverMessage.AppendBreak();
             }
+            OrbitReborn_Emulator.Game.Handlers.LaserVisualService.AppendCreate(serverMessage, Session, OrbitReborn_Emulator.Game.Sessions.SessionManager.GetSessionByCharacterId(Info.Id));
             return serverMessage;
         }
     }
