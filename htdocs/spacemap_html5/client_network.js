@@ -2868,6 +2868,23 @@ function getExistingVisualEntity(targetId) {
     return ent;
 }
 
+// Internal GG Continue identity mirrors GalaxyGateWaveService's per-owner IDs.
+// Legacy portal packets do not include destinations, so an empty targetMaps is valid.
+function isCurrentGalaxyGateContinuePortal(portalId, portal = null) {
+    const mapId = Number(currentMapId);
+    const gateId = mapId === 51 ? 1 : mapId === 52 ? 2 : mapId === 53 ? 3 : mapId === 55 ? 4 : 0;
+    const ownerId = Number(heroId);
+    if (!gateId || !Number.isSafeInteger(ownerId) || ownerId <= 0) return false;
+    const expectedId = 92000000 + ownerId * 50 + gateId * 10 + 1;
+    if (!Number.isSafeInteger(expectedId) || Number(portalId) !== expectedId) return false;
+    if (portal) {
+        if (Number(portal.typeId) !== gateId + 1) return false;
+        if (Array.isArray(portal.targetMaps) && portal.targetMaps.some(id => Number(id) !== mapId)) return false;
+        if (portal.targetMapId != null && Number(portal.targetMapId) > 0 && Number(portal.targetMapId) !== mapId) return false;
+    }
+    return true;
+}
+
 function handlePacket_n(parts, i) {
     if (parts.length < i + 1) return;
     const sub = parts[i];
@@ -2877,6 +2894,11 @@ function handlePacket_n(parts, i) {
             const portalId = parseInt(parts[i + 2], 10);
             if (!isNaN(portalId) && portals[portalId]) {
                 const portal = portals[portalId];
+                if (isCurrentGalaxyGateContinuePortal(portalId, portal)) {
+                    // REM is authoritative. Do not retain the accepted Continue until a jump animation ends.
+                    delete portals[portalId];
+                    return;
+                }
                 const now = performance.now();
                 const pendingDelay = 350;
                 const activeDuration = typeof PORTAL_ACTIVE_DURATION !== "undefined" ? PORTAL_ACTIVE_DURATION : 1e3;
@@ -4626,6 +4648,9 @@ function handlePacket_U(parts, i) {
             beginPortalJumpLock(nextMap, portalId);
         }
     } catch (_) {}
+    // The preceding REM may already have deleted this portal. Avoid the fallback
+    // jump effect at the hero for same-map Continue only; normal jumps are unchanged.
+    if (nextMap === Number(currentMapId) && isCurrentGalaxyGateContinuePortal(portalId, portals[portalId] || null)) return;
     if (!isNaN(portalId) && portals[portalId]) {
         const portal = portals[portalId];
         const jumpNow = performance.now();
