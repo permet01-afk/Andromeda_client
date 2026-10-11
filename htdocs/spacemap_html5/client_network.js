@@ -1131,6 +1131,7 @@ function connectToServer(isReconnect = false) {
     };
     ws.onerror = err => console.error("[WS] ERROR:", err);
     ws.onclose = e => {
+        if (ws === __wsInstance) clearPrimaryLaserVisualJobs();
         if (window.AndromedaShipDeath && window.AndromedaShipDeath.terminal) {
             clearWsConnectWatchdog(); stopPingTimer(); wsConnecting = false;
             window.__ANDRO_WS_CONNECTED = false; ws = null;
@@ -4902,7 +4903,7 @@ function handlePacket_logoutConfirmed() {
 function handlePacket_O(parts, i) {
     logFlashCombatLocaleMessage("outofrange", null, "Out of range", "O");
     const prevLaserTarget = typeof currentLaserTargetId !== "undefined" ? currentLaserTargetId : null;
-    const resumeTarget = (typeof attackIntentTargetId !== "undefined" ? attackIntentTargetId : null) ?? (typeof confirmedAttackTargetId !== "undefined" ? confirmedAttackTargetId : null) ?? prevLaserTarget ?? (typeof selectedTargetId !== "undefined" ? selectedTargetId : null);
+    const resumeTarget = (typeof attackIntentTargetId !== "undefined" ? attackIntentTargetId : null) ?? (typeof confirmedAttackTargetId !== "undefined" ? confirmedAttackTargetId : null) ?? prevLaserTarget;
     if (typeof currentLaserTargetId !== "undefined") currentLaserTargetId = null;
     if (typeof pendingAttackAckTargetId !== "undefined" && pendingAttackAckTargetId === resumeTarget) {
         pendingAttackAckTargetId = null;
@@ -4917,11 +4918,12 @@ function handlePacket_O(parts, i) {
         if (typeof pendingRangeResumeMessage !== "undefined") pendingRangeResumeMessage = true;
         if (typeof rangeProtectedTargetId !== "undefined") rangeProtectedTargetId = resumeTarget;
     }
+    suspendPrimaryLaserVisualJobsForLocalHero();
     if (typeof cancelRsbBurst === "function" && typeof heroId !== "undefined") cancelRsbBurst(heroId);
 }
 
 function handlePacket_X(parts, i) {
-    const resumeTarget = pendingRangeResumeTargetId ?? attackIntentTargetId ?? confirmedAttackTargetId ?? selectedTargetId;
+    const resumeTarget = pendingRangeResumeTargetId ?? attackIntentTargetId ?? confirmedAttackTargetId;
     if (pendingRangeResumeMessage && resumeTarget != null) {
         logFlashCombatLocaleMessage("fightcont", null, "The battle continues.", "X");
     }
@@ -4929,6 +4931,7 @@ function handlePacket_X(parts, i) {
         attackIntentTargetId = resumeTarget;
     }
     pendingRangeResumeMessage = false;
+    resumePrimaryLaserVisualJobsForLocalHero();
 }
 
 function handlePacket_F(parts, i) {
@@ -5506,7 +5509,9 @@ let primaryLaserVisualTimerDue = 0;
 
 function schedulePrimaryLaserVisualTick() {
     let due = Infinity;
-    for (const job of PRIMARY_LASER_VISUAL_JOBS.values()) due = Math.min(due, job.nextTickAt);
+    for (const job of PRIMARY_LASER_VISUAL_JOBS.values()) {
+        if (!job.paused) due = Math.min(due, job.nextTickAt);
+    }
     if (primaryLaserVisualTimerId != null && primaryLaserVisualTimerDue === due) return;
     if (primaryLaserVisualTimerId != null) clearTimeout(primaryLaserVisualTimerId);
     primaryLaserVisualTimerId = null;
@@ -5516,7 +5521,7 @@ function schedulePrimaryLaserVisualTick() {
         primaryLaserVisualTimerId = null;
         const now = performance.now();
         for (const job of Array.from(PRIMARY_LASER_VISUAL_JOBS.values())) {
-            if (job.nextTickAt > now) continue;
+            if (job.paused || job.nextTickAt > now) continue;
             job.nextTickAt = now + PRIMARY_LASER_VISUAL_TICK_MS;
             tickPrimaryLaserVisualJob(job);
         }
@@ -5552,6 +5557,37 @@ function clearPrimaryLaserVisualJobsForLocalHero() {
     if (typeof heroId !== "undefined" && heroId != null) cancelPrimaryLaserVisualJob(heroId);
 }
 
+// Andromeda sends O/X to the out-of-range attacker only, without actor IDs.
+// Apply Flash idle/resume to the outgoing hero job; incoming jobs remain live.
+// Already emitted beams keep rendering; only new logical pulses are suspended.
+function suspendPrimaryLaserVisualJobsForLocalHero() {
+    if (typeof heroId === "undefined" || heroId == null) return;
+    for (const job of PRIMARY_LASER_VISUAL_JOBS.values()) {
+        if (job.attackerId === heroId) job.paused = true;
+    }
+    schedulePrimaryLaserVisualTick();
+}
+
+function resumePrimaryLaserVisualJobsForLocalHero() {
+    if (typeof heroId === "undefined" || heroId == null) return;
+    const now = performance.now();
+    for (const job of PRIMARY_LASER_VISUAL_JOBS.values()) {
+        if (!job.paused || job.attackerId !== heroId) continue;
+        const attacker = snapshotEntityById(job.attackerId);
+        const target = snapshotEntityById(job.targetId);
+        if (!attacker || !target
+            || (job.attackerLifeId != null && attacker.visualLifeId !== job.attackerLifeId)
+            || (job.targetLifeId != null && target.visualLifeId !== job.targetLifeId)) {
+            PRIMARY_LASER_VISUAL_JOBS.delete(job.attackerId);
+            continue;
+        }
+        job.paused = false;
+        // Timer.start() resumes on the next 100 ms tick, retaining cnt/active.
+        job.nextTickAt = now + PRIMARY_LASER_VISUAL_TICK_MS;
+    }
+    schedulePrimaryLaserVisualTick();
+}
+
 // Ammo selection may stop the SAB job without cancelling another primary pattern.
 function clearSabLaserVisualJobsForLocalHero() {
     const job = typeof heroId !== "undefined" ? PRIMARY_LASER_VISUAL_JOBS.get(heroId) : null;
@@ -5559,7 +5595,7 @@ function clearSabLaserVisualJobsForLocalHero() {
 }
 
 function tickPrimaryLaserVisualJob(job) {
-    if (PRIMARY_LASER_VISUAL_JOBS.get(job.attackerId) !== job) return;
+    if (PRIMARY_LASER_VISUAL_JOBS.get(job.attackerId) !== job || job.paused) return;
     const attacker = snapshotEntityById(job.attackerId);
     const target = snapshotEntityById(job.targetId);
     if (!attacker || !target
@@ -5599,7 +5635,7 @@ function startOrRefreshPrimaryLaserVisualJob(attackerId, targetId, patternId, fi
     const job = {
         attackerId, targetId, patternId, fireRateMs, attackLengthMs, spawnTick,
         attackerLifeId: attacker.visualLifeId, targetLifeId: target.visualLifeId,
-        cnt: 0, active: true, spawnCount: 0,
+        cnt: 0, active: true, spawnCount: 0, paused: false,
         nextTickAt: performance.now() + PRIMARY_LASER_VISUAL_TICK_MS
     };
     PRIMARY_LASER_VISUAL_JOBS.set(attackerId, job);
@@ -5929,6 +5965,12 @@ function handlePacket_laserAttack(parts, i) {
     // A late visual from the previously confirmed target cannot reopen its hero job.
     // While N(B) is pending, A is still selected and its packets remain valid.
     if (attackerId === heroId && Number(targetId) !== Number(selectedTargetId)) return;
+    // A late primary packet after G must not recreate the cancelled hero job.
+    // Direct u|6 RSB is a separate admitted burst, with no primary attack intent.
+    if (attackerId === heroId && patternId !== 6
+        && targetId !== attackIntentTargetId
+        && targetId !== confirmedAttackTargetId
+        && targetId !== pendingAttackAckTargetId) return;
     const previousJob = PRIMARY_LASER_VISUAL_JOBS.get(attackerId);
     if (previousJob && previousJob.targetId !== targetId) cancelPrimaryLaserVisualJob(attackerId);
     const previousBurst = RSB_BURST_STATE.get(String(attackerId));
