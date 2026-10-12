@@ -2,6 +2,7 @@ using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
+using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Maps.Collectables;
 using OrbitReborn_Emulator.Game.Portal;
@@ -339,14 +340,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (client == null || session == null || session.CharacterInfo == null || string.IsNullOrEmpty(columnName) || amount <= 0)
                 return false;
 
-            client.ClearParameters();
-            client.SetParameter("id", (object)session.CharacterInfo.Id);
+            bool persisted = session.CharacterInfo.PersistAmmoCredit(columnName, amount, () =>
+            {
+                client.ClearParameters();
+                client.SetParameter("id", (object)session.CharacterInfo.Id);
+                return client.ExecuteNonQuery(
+                    "UPDATE users SET credits = credits - " + creditsCost + ", uridium = uridium - " + uridiumCost + ", " + columnName + " = " + columnName + " + " + amount + " WHERE id = @id AND credits >= " + creditsCost + " AND uridium >= " + uridiumCost + CharacterInfo.AmmoCreditSqlFence(columnName, amount) + " LIMIT 1"
+                );
+            });
 
-            int affected = client.ExecuteNonQuery(
-                "UPDATE users SET credits = credits - " + creditsCost + ", uridium = uridium - " + uridiumCost + ", " + columnName + " = " + columnName + " + " + amount + " WHERE id = @id AND credits >= " + creditsCost + " AND uridium >= " + uridiumCost + " LIMIT 1"
-            );
-
-            if (affected <= 0)
+            if (!persisted)
                 return false;
 
             session.CharacterInfo.Credits -= creditsCost;
@@ -359,41 +362,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             if (isLaser)
             {
-                switch (itemId)
-                {
-                    case FASTBUY_LASER_LCB10:
-                        session.CharacterInfo.AmmoLcb10 += amount;
-                        break;
-                    case FASTBUY_LASER_MCB25:
-                        session.CharacterInfo.AmmoMcb25 += amount;
-                        break;
-                    case FASTBUY_LASER_MCB50:
-                        session.CharacterInfo.AmmoMcb50 += amount;
-                        break;
-                    case FASTBUY_LASER_SAB50:
-                        session.CharacterInfo.AmmoSab50 += amount;
-                        break;
-                }
-
                 session.SendData(UserDataComposer.Compose(session));
                 session.SendData(PacketComposer.Compose("y", "BAT|" + itemId + "|" + amount));
                 session.SendData(PacketComposer.Compose("B", session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
             }
             else
             {
-                switch (itemId)
-                {
-                    case FASTBUY_ROCKET_R310:
-                        session.CharacterInfo.AmmoR310 += amount;
-                        break;
-                    case FASTBUY_ROCKET_PLT2026:
-                        session.CharacterInfo.AmmoPlt2026 += amount;
-                        break;
-                    case FASTBUY_ROCKET_PLT2021:
-                        session.CharacterInfo.AmmoPlt2021 += amount;
-                        break;
-                }
-
                 session.SendData(UserDataComposer.Compose(session));
                 session.SendData(PacketComposer.Compose("y", "ROK|" + itemId + "|" + amount));
                 session.SendData(PacketComposer.Compose("3", session.CharacterInfo.GetSecondaryWeaponInfoPayload()));

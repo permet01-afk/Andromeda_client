@@ -1,5 +1,6 @@
 ﻿using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Handlers;
+using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Maps.Collectables;
 using OrbitReborn_Emulator.Game.Npcs;
@@ -418,7 +419,7 @@ namespace OrbitReborn_Emulator.Game.Event
             client.SetParameter("factionId", (object)factionId);
             client.SetParameter("now", (object)now);
             client.SetParameter("boosterSeconds", (object)boosterSeconds);
-            client.ExecuteNonQuery(
+            int affected = client.ExecuteNonQuery(
                 "UPDATE users SET " +
                 "uridium = uridium + " + (object)FinalRewardUridium + ", " +
                 "booster_dmg_time = IF(booster_dmg_time > @now, booster_dmg_time + @boosterSeconds, @now + @boosterSeconds), " +
@@ -428,6 +429,8 @@ namespace OrbitReborn_Emulator.Game.Event
                 "ammo_rsb75 = ammo_rsb75 + " + (object)FinalRewardRsb75 + " " +
                 "WHERE factionid = @factionId" + excludeOnline
             );
+            if (affected <= 0)
+                return;
             client.ClearParameters();
             client.SetParameter("factionId", (object)factionId);
             client.SetParameter("message", (object)message);
@@ -436,21 +439,29 @@ namespace OrbitReborn_Emulator.Game.Event
 
         private static void GrantConnectedWinningFactionReward(Session session, string message)
         {
+            bool ammoPersisted;
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
                 session.CharacterInfo.AddReward(client, 0, FinalRewardUridium, 0, true);
-                session.CharacterInfo.AddLog(client, message);
-                client.ClearParameters();
-                client.SetParameter("id", (object)session.CharacterInfo.Id);
-                client.ExecuteNonQuery("UPDATE users SET ammo_ucb100 = ammo_ucb100 + " + (object)FinalRewardUcb100 + ", ammo_rsb75 = ammo_rsb75 + " + (object)FinalRewardRsb75 + " WHERE id=@id LIMIT 1");
-                session.CharacterInfo.AmmoUcb100 += (long)FinalRewardUcb100;
-                session.CharacterInfo.AmmoRsb75 += (long)FinalRewardRsb75;
+                var ammoCredits = new Dictionary<string, long> {
+                    { "ammo_ucb100", FinalRewardUcb100 },
+                    { "ammo_rsb75", FinalRewardRsb75 }
+                };
+                ammoPersisted = session.CharacterInfo.PersistAmmoCredits(ammoCredits, () =>
+                {
+                    client.ClearParameters();
+                    client.SetParameter("id", (object)session.CharacterInfo.Id);
+                    return client.ExecuteNonQuery("UPDATE users SET ammo_ucb100 = ammo_ucb100 + " + (object)FinalRewardUcb100 + ", ammo_rsb75 = ammo_rsb75 + " + (object)FinalRewardRsb75 + " WHERE id=@id" + CharacterInfo.AmmoCreditSqlFence(ammoCredits) + " LIMIT 1");
+                });
+                if (ammoPersisted)
+                    session.CharacterInfo.AddLog(client, message);
             }
             session.CharacterInfo.AddBoosterReward("dmg", FinalRewardBoosterHours);
             session.CharacterInfo.AddBoosterReward("hp", FinalRewardBoosterHours);
             session.CharacterInfo.AddBoosterReward("shd", FinalRewardBoosterHours);
             session.SendData(PacketComposer.Compose("y", "URI|" + (object)FinalRewardUridium + "|" + (object)session.CharacterInfo.Uridium));
-            session.SendData(PacketComposer.Compose("A", "STD|" + message));
+            if (ammoPersisted)
+                session.SendData(PacketComposer.Compose("A", "STD|" + message));
         }
 
         private static void GrantWinningFactionReward(int factionId)

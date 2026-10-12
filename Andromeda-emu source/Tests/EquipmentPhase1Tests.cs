@@ -87,6 +87,7 @@ internal static class EquipmentPhase1Tests
         info.ShipHp = 100000;
         info.ActiveConfig = 1;
         info.SelectedAmmo = 1;
+        info.SelectedPlayer = 900100; // The combat fixture attacks the selected NPC, as real gameplay does.
         info.MapId = 1;
         info.FactionId = 1;
         info.LocX = 1000;
@@ -309,6 +310,7 @@ internal static class EquipmentPhase1Tests
 
         info = Character(); player = Player(info); var enemy = Player(Character(), 900002);
         Set(enemy.CharacterInfo, "mId", 900002); enemy.CharacterInfo.PeaceZone = true;
+        info.SelectedPlayer = enemy.CharacterId;
         Call("AttackPlayer", null, player, enemy, 0, true);
         Check(info.AmmoLcb10 == 100, "PvP refusal consumes nothing");
     }

@@ -696,6 +696,12 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
                 if (this.CharacterInfo != null)
                 {
+                    this.CharacterInfo.CloseAmmoConsumption();
+                    if (this.CharacterInfo.AmmoSyncTimer != null)
+                    {
+                        this.CharacterInfo.AmmoSyncTimer.Dispose();
+                        this.CharacterInfo.AmmoSyncTimer = (Timer)null;
+                    }
                     ShipMovement.StopMovementTracking(this);
                     if (this.CharacterInfo.LaserAttackTimer != null)
                     {
@@ -753,11 +759,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     }
                     catch { if (this.CharacterInfo.DeadCommitted) throw; }
 
-                    if (this.CharacterInfo.AmmoSyncTimer != null)
-                    {
-                        this.CharacterInfo.AmmoSyncTimer.Dispose();
-                        this.CharacterInfo.AmmoSyncTimer = (Timer)null;
-                    }
                     if (this.CharacterInfo.ConfigRefreshTimer != null)
                     {
                         this.CharacterInfo.ConfigRefreshTimer.Dispose();

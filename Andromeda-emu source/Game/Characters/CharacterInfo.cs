@@ -195,6 +195,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         private readonly object mFightUntilDbSyncLock = new object();
         private readonly object mPrimaryAmmoSyncLock = new object();
         private readonly object mPrimaryAmmoFlushLock = new object();
+        private int mAmmoConsumptionClosed;
         private bool mPrimaryAmmoDirty;
         private long mDbAmmoLcb10;
         private long mDbAmmoMcb25;
@@ -5700,11 +5701,155 @@ namespace OrbitReborn_Emulator.Game.Characters
             return Interlocked.Exchange(ref this.mAmmoSyncClientUpdatePending, 0) == 1;
         }
 
+        private static bool IsAmmoCreditColumn(string column)
+        {
+            switch (column)
+            {
+                case "ammo_lcb10": case "ammo_mcb25": case "ammo_mcb50":
+                case "ammo_ucb100": case "ammo_sab50": case "ammo_rsb75":
+                case "ammo_r310": case "ammo_plt2026": case "ammo_plt2021": case "ammo_dcr250":
+                case "ammo_hstrm01": case "ammo_ubr100": case "ammo_eco10":
+                case "ammo_smb01": case "ammo_ish01": case "ammo_emp01":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static void AddPersistedAmmoCredit(ref long local, ref long baseline, long amount)
+        {
+            // Advancing both balances preserves baseline-local: an award is not a
+            // flush acknowledgement and must never hide an already admitted shot.
+            long nextBaseline = checked(baseline + amount);
+            long nextLocal = checked(local + amount);
+            baseline = nextBaseline;
+            local = nextLocal;
+        }
+
+        private static long GetAmmoCreditCap(string column)
+        {
+            switch (column)
+            {
+                case "ammo_hstrm01": case "ammo_ubr100": case "ammo_eco10":
+                case "ammo_smb01": case "ammo_ish01": case "ammo_emp01":
+                    return int.MaxValue;
+                default: return long.MaxValue;
+            }
+        }
+
+        public static string AmmoCreditSqlFence(string column, long amount)
+        {
+            if (!IsAmmoCreditColumn(column) || amount <= 0L || amount > GetAmmoCreditCap(column))
+                return " AND 0=1";
+            // Additions must refuse overflow atomically, even with a non-strict
+            // SQL mode or a concurrent site award not yet visible in this cache.
+            return " AND " + column + " <= "
+                + (GetAmmoCreditCap(column) - amount).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        public static string AmmoCreditSqlFence(IDictionary<string, long> credits)
+        {
+            if (credits == null || credits.Count == 0) return " AND 0=1";
+            var conditions = new System.Text.StringBuilder();
+            foreach (var credit in credits)
+                conditions.Append(AmmoCreditSqlFence(credit.Key, credit.Value));
+            return conditions.ToString();
+        }
+
+        private bool CanApplyAmmoCredit(string column, long amount)
+        {
+            long cap = GetAmmoCreditCap(column);
+            if (amount > cap) return false;
+            long limit = cap - amount;
+            switch (column)
+            {
+                case "ammo_lcb10": return this.AmmoLcb10 <= limit && this.mDbAmmoLcb10 <= limit;
+                case "ammo_mcb25": return this.AmmoMcb25 <= limit && this.mDbAmmoMcb25 <= limit;
+                case "ammo_mcb50": return this.AmmoMcb50 <= limit && this.mDbAmmoMcb50 <= limit;
+                case "ammo_ucb100": return this.AmmoUcb100 <= limit && this.mDbAmmoUcb100 <= limit;
+                case "ammo_sab50": return this.AmmoSab50 <= limit && this.mDbAmmoSab50 <= limit;
+                case "ammo_rsb75": return this.AmmoRsb75 <= limit && this.mDbAmmoRsb75 <= limit;
+                case "ammo_r310": return this.AmmoR310 <= limit && this.mDbAmmoR310 <= limit;
+                case "ammo_plt2026": return this.AmmoPlt2026 <= limit && this.mDbAmmoPlt2026 <= limit;
+                case "ammo_plt2021": return this.AmmoPlt2021 <= limit && this.mDbAmmoPlt2021 <= limit;
+                case "ammo_dcr250": return this.AmmoDcr250 <= limit && this.mDbAmmoDcr250 <= limit;
+                case "ammo_hstrm01": return this.AmmoHstrm01 <= limit && this.mDbAmmoHstrm01 <= limit;
+                case "ammo_ubr100": return this.AmmoUbr100 <= limit && this.mDbAmmoUbr100 <= limit;
+                case "ammo_eco10": return this.AmmoEco10 <= limit && this.mDbAmmoEco10 <= limit;
+                case "ammo_smb01": return this.AmmoSmb01 <= limit && this.mDbAmmoSmb01 <= limit;
+                case "ammo_ish01": return this.AmmoIsh01 <= limit && this.mDbAmmoIsh01 <= limit;
+                case "ammo_emp01": return this.AmmoEmp01 <= limit && this.mDbAmmoEmp01 <= limit;
+                default: return false;
+            }
+        }
+
+        public bool PersistAmmoCredit(string column, long amount, Func<int> persist)
+        {
+            return this.PersistAmmoCredits(new Dictionary<string, long> { { column, amount } }, persist);
+        }
+
+        public bool PersistAmmoCredits(IDictionary<string, long> credits, Func<int> persist)
+        {
+            if (credits == null || credits.Count == 0 || persist == null) return false;
+            var snapshot = new Dictionary<string, long>(credits);
+            foreach (var credit in snapshot)
+                if (!IsAmmoCreditColumn(credit.Key) || credit.Value <= 0L) return false;
+
+            lock (this.mPrimaryAmmoFlushLock)
+            {
+                // Validate the entire award before committing SQL. While this gate
+                // is held only consumption may change local stocks, by reducing them.
+                lock (this.mPrimaryAmmoSyncLock)
+                    lock (this.mSecondaryAmmoSyncLock)
+                        foreach (var credit in snapshot)
+                            if (!this.CanApplyAmmoCredit(credit.Key, credit.Value)) return false;
+                // SQL and local acknowledgement share the same gate as all flushes
+                // and refreshes. A failed statement must not create runtime ammo.
+                if (persist() != 1) return false;
+                lock (this.mPrimaryAmmoSyncLock)
+                    foreach (var credit in snapshot)
+                        switch (credit.Key)
+                        {
+                            case "ammo_lcb10": AddPersistedAmmoCredit(ref this.AmmoLcb10, ref this.mDbAmmoLcb10, credit.Value); break;
+                            case "ammo_mcb25": AddPersistedAmmoCredit(ref this.AmmoMcb25, ref this.mDbAmmoMcb25, credit.Value); break;
+                            case "ammo_mcb50": AddPersistedAmmoCredit(ref this.AmmoMcb50, ref this.mDbAmmoMcb50, credit.Value); break;
+                            case "ammo_ucb100": AddPersistedAmmoCredit(ref this.AmmoUcb100, ref this.mDbAmmoUcb100, credit.Value); break;
+                            case "ammo_sab50": AddPersistedAmmoCredit(ref this.AmmoSab50, ref this.mDbAmmoSab50, credit.Value); break;
+                            case "ammo_rsb75": AddPersistedAmmoCredit(ref this.AmmoRsb75, ref this.mDbAmmoRsb75, credit.Value); break;
+                        }
+                lock (this.mSecondaryAmmoSyncLock)
+                    foreach (var credit in snapshot)
+                        switch (credit.Key)
+                        {
+                            case "ammo_r310": AddPersistedAmmoCredit(ref this.AmmoR310, ref this.mDbAmmoR310, credit.Value); break;
+                            case "ammo_plt2026": AddPersistedAmmoCredit(ref this.AmmoPlt2026, ref this.mDbAmmoPlt2026, credit.Value); break;
+                            case "ammo_plt2021": AddPersistedAmmoCredit(ref this.AmmoPlt2021, ref this.mDbAmmoPlt2021, credit.Value); break;
+                            case "ammo_dcr250": AddPersistedAmmoCredit(ref this.AmmoDcr250, ref this.mDbAmmoDcr250, credit.Value); break;
+                            case "ammo_hstrm01": AddPersistedAmmoCredit(ref this.AmmoHstrm01, ref this.mDbAmmoHstrm01, credit.Value); break;
+                            case "ammo_ubr100": AddPersistedAmmoCredit(ref this.AmmoUbr100, ref this.mDbAmmoUbr100, credit.Value); break;
+                            case "ammo_eco10": AddPersistedAmmoCredit(ref this.AmmoEco10, ref this.mDbAmmoEco10, credit.Value); break;
+                            case "ammo_smb01": AddPersistedAmmoCredit(ref this.AmmoSmb01, ref this.mDbAmmoSmb01, credit.Value); break;
+                            case "ammo_ish01": AddPersistedAmmoCredit(ref this.AmmoIsh01, ref this.mDbAmmoIsh01, credit.Value); break;
+                            case "ammo_emp01": AddPersistedAmmoCredit(ref this.AmmoEmp01, ref this.mDbAmmoEmp01, credit.Value); break;
+                        }
+                return true;
+            }
+        }
+
+        public void CloseAmmoConsumption()
+        {
+            Interlocked.Exchange(ref this.mAmmoConsumptionClosed, 1);
+            // Drain an admission that had entered its short stock lock before the
+            // close. Later launcher callbacks cannot debit after the final flush.
+            lock (this.mPrimaryAmmoSyncLock) { }
+            lock (this.mSecondaryAmmoSyncLock) { }
+        }
+
         private bool TryConsumePrimaryLaserColumn(ref long localValue, int amount)
         {
             lock (this.mPrimaryAmmoSyncLock)
             {
-                if (localValue < amount)
+                if (Volatile.Read(ref this.mAmmoConsumptionClosed) != 0 || localValue < amount)
                     return false;
 
                 localValue -= amount;
@@ -5715,13 +5860,20 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool FlushPendingPrimaryAmmoToDb()
         {
+            // This gate also serializes secondary flushes, credits and DB refreshes.
             // Timer, stop-combat and logout must not persist the same delta twice.
             // Keep the short stock lock separate: shots may continue during database I/O.
-            lock (this.mPrimaryAmmoFlushLock)
-                return this.FlushPendingPrimaryAmmoToDbCore();
+            lock (this.mPrimaryAmmoSyncLock)
+                if (!this.mPrimaryAmmoDirty) return false;
+            // All pooled SQL borrowers must acquire their client before this gate.
+            // Otherwise a credited client can wait for a gate held by a flush that
+            // is itself waiting for that client in an exhausted bounded pool.
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("AmmoSyncTick.PrimaryAmmoFlush"))
+                lock (this.mPrimaryAmmoFlushLock)
+                    return this.FlushPendingPrimaryAmmoToDbCore(client);
         }
 
-        private bool FlushPendingPrimaryAmmoToDbCore()
+        private bool FlushPendingPrimaryAmmoToDbCore(SqlDatabaseClient client)
         {
             long ammoLcb10;
             long ammoMcb25;
@@ -5773,7 +5925,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
 
             DataRow row;
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("AmmoSyncTick.PrimaryAmmoFlush"))
             {
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
@@ -5784,7 +5935,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 client.SetParameter("consume_sab50", (object)consumeSab50);
                 client.SetParameter("consume_rsb75", (object)consumeRsb75);
                 int changed = client.ExecuteNonQuery(
-                    "UPDATE users SET ammo_lcb10=IF(ammo_lcb10 > @consume_lcb10, ammo_lcb10 - @consume_lcb10, 0), ammo_mcb25=IF(ammo_mcb25 > @consume_mcb25, ammo_mcb25 - @consume_mcb25, 0), ammo_mcb50=IF(ammo_mcb50 > @consume_mcb50, ammo_mcb50 - @consume_mcb50, 0), ammo_ucb100=IF(ammo_ucb100 > @consume_ucb100, ammo_ucb100 - @consume_ucb100, 0), ammo_sab50=IF(ammo_sab50 > @consume_sab50, ammo_sab50 - @consume_sab50, 0), ammo_rsb75=IF(ammo_rsb75 > @consume_rsb75, ammo_rsb75 - @consume_rsb75, 0) WHERE id=@id LIMIT 1"
+                    "UPDATE users SET ammo_lcb10=IF(ammo_lcb10 > @consume_lcb10, ammo_lcb10 - @consume_lcb10, 0), ammo_mcb25=IF(ammo_mcb25 > @consume_mcb25, ammo_mcb25 - @consume_mcb25, 0), ammo_mcb50=IF(ammo_mcb50 > @consume_mcb50, ammo_mcb50 - @consume_mcb50, 0), ammo_ucb100=IF(ammo_ucb100 > @consume_ucb100, ammo_ucb100 - @consume_ucb100, 0), ammo_sab50=IF(ammo_sab50 > @consume_sab50, ammo_sab50 - @consume_sab50, 0), ammo_rsb75=IF(ammo_rsb75 > @consume_rsb75, ammo_rsb75 - @consume_rsb75, 0) WHERE id=@id" + ShipLifecycleService.OwnerFence(client, this.GameplayLease) + " LIMIT 1"
                 );
                 if (changed != 1)
                     throw new InvalidOperationException("Could not persist the primary ammo delta.");
@@ -5867,6 +6018,15 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool FlushPendingSecondaryAmmoToDb()
         {
+            lock (this.mSecondaryAmmoSyncLock)
+                if (!this.mSecondaryAmmoDirty) return false;
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("AmmoSyncTick.SecondaryAmmoFlush"))
+                lock (this.mPrimaryAmmoFlushLock)
+                    return this.FlushPendingSecondaryAmmoToDbCore(client);
+        }
+
+        private bool FlushPendingSecondaryAmmoToDbCore(SqlDatabaseClient client)
+        {
             long ammoR310;
             long ammoPlt2026;
             long ammoPlt2021;
@@ -5930,12 +6090,15 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (consumeR310 <= 0L && consumePlt2026 <= 0L && consumePlt2021 <= 0L && consumeDcr250 <= 0L && consumeHstrm01 <= 0L && consumeUbr100 <= 0L && consumeEco10 <= 0L && consumeSmb01 <= 0L && consumeIsh01 <= 0L && consumeEmp01 <= 0L)
             {
                 lock (this.mSecondaryAmmoSyncLock)
-                    this.mSecondaryAmmoDirty = false;
+                    this.mSecondaryAmmoDirty = this.AmmoR310 != ammoR310 || this.AmmoPlt2026 != ammoPlt2026
+                        || this.AmmoPlt2021 != ammoPlt2021 || this.AmmoDcr250 != ammoDcr250
+                        || this.AmmoHstrm01 != ammoHstrm01 || this.AmmoUbr100 != ammoUbr100
+                        || this.AmmoEco10 != ammoEco10 || this.AmmoSmb01 != ammoSmb01
+                        || this.AmmoIsh01 != ammoIsh01 || this.AmmoEmp01 != ammoEmp01;
                 return false;
             }
 
             DataRow row;
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("AmmoSyncTick.SecondaryAmmoFlush"))
             {
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
@@ -5949,9 +6112,26 @@ namespace OrbitReborn_Emulator.Game.Characters
                 client.SetParameter("consume_smb01", (object)consumeSmb01);
                 client.SetParameter("consume_ish01", (object)consumeIsh01);
                 client.SetParameter("consume_emp01", (object)consumeEmp01);
-                client.ExecuteNonQuery(
-                    "UPDATE users SET ammo_r310=IF(ammo_r310 > @consume_r310, ammo_r310 - @consume_r310, 0), ammo_plt2026=IF(ammo_plt2026 > @consume_plt2026, ammo_plt2026 - @consume_plt2026, 0), ammo_plt2021=IF(ammo_plt2021 > @consume_plt2021, ammo_plt2021 - @consume_plt2021, 0), ammo_dcr250=IF(ammo_dcr250 > @consume_dcr250, ammo_dcr250 - @consume_dcr250, 0), ammo_hstrm01=IF(ammo_hstrm01 > @consume_hstrm01, ammo_hstrm01 - @consume_hstrm01, 0), ammo_ubr100=IF(ammo_ubr100 > @consume_ubr100, ammo_ubr100 - @consume_ubr100, 0), ammo_eco10=IF(ammo_eco10 > @consume_eco10, ammo_eco10 - @consume_eco10, 0), ammo_smb01=IF(ammo_smb01 > @consume_smb01, ammo_smb01 - @consume_smb01, 0), ammo_ish01=IF(ammo_ish01 > @consume_ish01, ammo_ish01 - @consume_ish01, 0), ammo_emp01=IF(ammo_emp01 > @consume_emp01, ammo_emp01 - @consume_emp01, 0) WHERE id=@id LIMIT 1"
+                int changed = client.ExecuteNonQuery(
+                    "UPDATE users SET ammo_r310=IF(ammo_r310 > @consume_r310, ammo_r310 - @consume_r310, 0), ammo_plt2026=IF(ammo_plt2026 > @consume_plt2026, ammo_plt2026 - @consume_plt2026, 0), ammo_plt2021=IF(ammo_plt2021 > @consume_plt2021, ammo_plt2021 - @consume_plt2021, 0), ammo_dcr250=IF(ammo_dcr250 > @consume_dcr250, ammo_dcr250 - @consume_dcr250, 0), ammo_hstrm01=IF(ammo_hstrm01 > @consume_hstrm01, ammo_hstrm01 - @consume_hstrm01, 0), ammo_ubr100=IF(ammo_ubr100 > @consume_ubr100, ammo_ubr100 - @consume_ubr100, 0), ammo_eco10=IF(ammo_eco10 > @consume_eco10, ammo_eco10 - @consume_eco10, 0), ammo_smb01=IF(ammo_smb01 > @consume_smb01, ammo_smb01 - @consume_smb01, 0), ammo_ish01=IF(ammo_ish01 > @consume_ish01, ammo_ish01 - @consume_ish01, 0), ammo_emp01=IF(ammo_emp01 > @consume_emp01, ammo_emp01 - @consume_emp01, 0) WHERE id=@id" + ShipLifecycleService.OwnerFence(client, this.GameplayLease) + " LIMIT 1"
                 );
+                if (changed != 1)
+                    throw new InvalidOperationException("Could not persist the secondary ammo delta.");
+
+                // Acknowledged UPDATEs must not be replayed if the following read fails.
+                lock (this.mSecondaryAmmoSyncLock)
+                {
+                    this.mDbAmmoR310 = ammoR310;
+                    this.mDbAmmoPlt2026 = ammoPlt2026;
+                    this.mDbAmmoPlt2021 = ammoPlt2021;
+                    this.mDbAmmoDcr250 = ammoDcr250;
+                    this.mDbAmmoHstrm01 = ammoHstrm01;
+                    this.mDbAmmoUbr100 = ammoUbr100;
+                    this.mDbAmmoEco10 = ammoEco10;
+                    this.mDbAmmoSmb01 = ammoSmb01;
+                    this.mDbAmmoIsh01 = ammoIsh01;
+                    this.mDbAmmoEmp01 = ammoEmp01;
+                }
 
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
@@ -6117,7 +6297,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             lock (this.mSecondaryAmmoSyncLock)
             {
-                if (localValue < required)
+                if (Volatile.Read(ref this.mAmmoConsumptionClosed) != 0 || localValue < required)
                     return false;
 
                 localValue -= required;
@@ -6251,13 +6431,13 @@ namespace OrbitReborn_Emulator.Game.Characters
         }
         public bool RefreshQuestRewardData()
         {
-            lock (this.mPrimaryAmmoFlushLock)
-                return this.RefreshQuestRewardDataCore();
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                lock (this.mPrimaryAmmoFlushLock)
+                    return this.RefreshQuestRewardDataCore(client);
         }
 
-        private bool RefreshQuestRewardDataCore()
+        private bool RefreshQuestRewardDataCore(SqlDatabaseClient client)
         {
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
@@ -6338,16 +6518,16 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool RefreshAmmoFromDbIfHigher()
         {
-            lock (this.mPrimaryAmmoFlushLock)
-                return this.RefreshAmmoFromDbIfHigherCore();
+            long perfStart = PerformanceProfiler.Start();
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("RefreshAmmoFromDbIfHigher"))
+                lock (this.mPrimaryAmmoFlushLock)
+                    return this.RefreshAmmoFromDbIfHigherCore(client, perfStart);
         }
 
-        private bool RefreshAmmoFromDbIfHigherCore()
+        private bool RefreshAmmoFromDbIfHigherCore(SqlDatabaseClient client, long perfStart)
         {
-            long perfStart = PerformanceProfiler.Start();
             try
             {
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("RefreshAmmoFromDbIfHigher"))
                 {
                     client.ClearParameters();
                     client.SetParameter("id", (object)this.mId);

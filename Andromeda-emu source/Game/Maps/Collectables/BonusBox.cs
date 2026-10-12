@@ -1,5 +1,6 @@
 ﻿using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Storage;
 using OrbitReborn_Emulator.Util;
 using System;
@@ -200,15 +201,14 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                     return;
             }
 
-            client.ClearParameters();
-            client.SetParameter("id", user.CharacterInfo.Id);
-            client.ExecuteNonQuery(
-                "UPDATE users SET " + column + " = " + column + " + " + amount + " WHERE id = @id LIMIT 1"
-            );
-
-            if (ammoId == LASER_LCB10) user.CharacterInfo.AmmoLcb10 += amount;
-            else if (ammoId == LASER_MCB25) user.CharacterInfo.AmmoMcb25 += amount;
-            else if (ammoId == LASER_MCB50) user.CharacterInfo.AmmoMcb50 += amount;
+            if (!user.CharacterInfo.PersistAmmoCredit(column, amount, () =>
+            {
+                client.ClearParameters();
+                client.SetParameter("id", user.CharacterInfo.Id);
+                return client.ExecuteNonQuery(
+                    "UPDATE users SET " + column + " = " + column + " + " + amount + " WHERE id = @id" + CharacterInfo.AmmoCreditSqlFence(column, amount) + " LIMIT 1"
+                );
+            })) return;
 
             user.SendData(PacketComposer.Compose("y", "BAT|" + ammoId + "|" + amount));
 
@@ -229,13 +229,14 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                     return;
             }
 
-            client.ClearParameters();
-            client.SetParameter("id", user.CharacterInfo.Id);
-            client.ExecuteNonQuery(
-                "UPDATE users SET " + column + " = " + column + " + " + amount + " WHERE id = @id LIMIT 1"
-            );
-
-            if (rocketId == ROCKET_PLT2021) user.CharacterInfo.AmmoPlt2021 += amount;
+            if (!user.CharacterInfo.PersistAmmoCredit(column, amount, () =>
+            {
+                client.ClearParameters();
+                client.SetParameter("id", user.CharacterInfo.Id);
+                return client.ExecuteNonQuery(
+                    "UPDATE users SET " + column + " = " + column + " + " + amount + " WHERE id = @id" + CharacterInfo.AmmoCreditSqlFence(column, amount) + " LIMIT 1"
+                );
+            })) return;
 
             user.SendData(PacketComposer.Compose("y", "ROK|" + rocketId + "|" + amount));
 

@@ -1,6 +1,7 @@
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Maps;
+using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Game.Maps.Collectables;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Portal;
@@ -843,20 +844,26 @@ namespace OrbitReborn_Emulator.Game.Event
                 return;
 
             bool leveledUp = false;
+            bool ammoPersisted = true;
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
                 leveledUp = session.CharacterInfo.ApplyNpcKillRewardBatch(client, credits, uridium, 0, 0, xp, honor, 1);
 
                 if (ucb > 0 || rsb > 0)
                 {
-                    client.ClearParameters();
-                    client.SetParameter("id", (object)session.CharacterInfo.Id);
-                    client.ExecuteNonQuery("UPDATE users SET ammo_ucb100 = ammo_ucb100 + " + (object)ucb + ", ammo_rsb75 = ammo_rsb75 + " + (object)rsb + " WHERE id=@id LIMIT 1");
-                    session.CharacterInfo.AmmoUcb100 += (long)ucb;
-                    session.CharacterInfo.AmmoRsb75 += (long)rsb;
+                    var ammoCredits = new Dictionary<string, long>();
+                    if (ucb > 0) ammoCredits.Add("ammo_ucb100", ucb);
+                    if (rsb > 0) ammoCredits.Add("ammo_rsb75", rsb);
+                    ammoPersisted = session.CharacterInfo.PersistAmmoCredits(ammoCredits, () =>
+                    {
+                        client.ClearParameters();
+                        client.SetParameter("id", (object)session.CharacterInfo.Id);
+                        return client.ExecuteNonQuery("UPDATE users SET ammo_ucb100 = ammo_ucb100 + " + (object)ucb + ", ammo_rsb75 = ammo_rsb75 + " + (object)rsb + " WHERE id=@id" + CharacterInfo.AmmoCreditSqlFence(ammoCredits) + " LIMIT 1");
+                    });
                 }
 
-                session.CharacterInfo.AddLog(client, logMessage);
+                if (ammoPersisted)
+                    session.CharacterInfo.AddLog(client, logMessage);
             }
 
             if (seprom > 0)
@@ -877,14 +884,14 @@ namespace OrbitReborn_Emulator.Game.Event
             if (honor > 0)
                 session.SendData(PacketComposer.Compose("y", "HON|" + honor + "|" + session.CharacterInfo.Honor));
 
-            if (ucb > 0 || rsb > 0)
+            if (ammoPersisted && (ucb > 0 || rsb > 0))
                 session.SendData(PacketComposer.Compose("B", session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
 
             if (seprom > 0 || promerium > 0)
                 session.SendData(session.CharacterInfo.GetCargoMessage());
 
             session.SendData(UserDataComposer.Compose(session));
-            if (instantLogMessages != null)
+            if (ammoPersisted && instantLogMessages != null)
             {
                 foreach (string instantLogMessage in instantLogMessages)
                 {

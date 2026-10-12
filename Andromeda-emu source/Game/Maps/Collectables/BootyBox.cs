@@ -2,6 +2,7 @@
 
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Storage;
 using OrbitReborn_Emulator.Util;
 using System;
@@ -52,13 +53,16 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
 
                         if (roll <= 31)
                         {
-                            client.ClearParameters();
-                            client.SetParameter("id", (object)user.CharacterInfo.Id);
-                            client.ExecuteNonQuery("UPDATE users SET ammo_ucb100 = ammo_ucb100 + 2000 WHERE id = @id LIMIT 1");
-
-                            user.CharacterInfo.AmmoUcb100 += 2000;
-                            user.SendData(PacketComposer.Compose("B", user.CharacterInfo.GetPrimaryWeaponInfoPayload()));
-                            user.SendData(PacketComposer.Compose("A", "STD|You received 2000 UCB-100."));
+                            if (user.CharacterInfo.PersistAmmoCredit("ammo_ucb100", 2000, () =>
+                            {
+                                client.ClearParameters();
+                                client.SetParameter("id", (object)user.CharacterInfo.Id);
+                                return client.ExecuteNonQuery("UPDATE users SET ammo_ucb100 = ammo_ucb100 + 2000 WHERE id = @id" + CharacterInfo.AmmoCreditSqlFence("ammo_ucb100", 2000) + " LIMIT 1");
+                            }))
+                            {
+                                user.SendData(PacketComposer.Compose("B", user.CharacterInfo.GetPrimaryWeaponInfoPayload()));
+                                user.SendData(PacketComposer.Compose("A", "STD|You received 2000 UCB-100."));
+                            }
                         }
                         else if (roll <= 46)
                         {
@@ -89,33 +93,42 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                         }
                         else if (roll <= 63)
                         {
-                            client.ClearParameters();
-                            client.SetParameter("id", (object)user.CharacterInfo.Id);
-                            client.ExecuteNonQuery("UPDATE users SET ammo_smb01 = ammo_smb01 + 15 WHERE id = @id LIMIT 1");
-
-                            user.CharacterInfo.AmmoSmb01 += 15;
-                            user.SendData(PacketComposer.Compose("3", user.CharacterInfo.GetSecondaryWeaponInfoPayload()));
-                            user.SendData(PacketComposer.Compose("A", "STD|You received 15 SMB-01."));
+                            if (user.CharacterInfo.PersistAmmoCredit("ammo_smb01", 15, () =>
+                            {
+                                client.ClearParameters();
+                                client.SetParameter("id", (object)user.CharacterInfo.Id);
+                                return client.ExecuteNonQuery("UPDATE users SET ammo_smb01 = ammo_smb01 + 15 WHERE id = @id" + CharacterInfo.AmmoCreditSqlFence("ammo_smb01", 15) + " LIMIT 1");
+                            }))
+                            {
+                                user.SendData(PacketComposer.Compose("3", user.CharacterInfo.GetSecondaryWeaponInfoPayload()));
+                                user.SendData(PacketComposer.Compose("A", "STD|You received 15 SMB-01."));
+                            }
                         }
                         else if (roll <= 71)
                         {
-                            client.ClearParameters();
-                            client.SetParameter("id", (object)user.CharacterInfo.Id);
-                            client.ExecuteNonQuery("UPDATE users SET ammo_ish01 = ammo_ish01 + 15 WHERE id = @id LIMIT 1");
-
-                            user.CharacterInfo.AmmoIsh01 += 15;
-                            user.SendData(PacketComposer.Compose("3", user.CharacterInfo.GetSecondaryWeaponInfoPayload()));
-                            user.SendData(PacketComposer.Compose("A", "STD|You received 15 ISH-01."));
+                            if (user.CharacterInfo.PersistAmmoCredit("ammo_ish01", 15, () =>
+                            {
+                                client.ClearParameters();
+                                client.SetParameter("id", (object)user.CharacterInfo.Id);
+                                return client.ExecuteNonQuery("UPDATE users SET ammo_ish01 = ammo_ish01 + 15 WHERE id = @id" + CharacterInfo.AmmoCreditSqlFence("ammo_ish01", 15) + " LIMIT 1");
+                            }))
+                            {
+                                user.SendData(PacketComposer.Compose("3", user.CharacterInfo.GetSecondaryWeaponInfoPayload()));
+                                user.SendData(PacketComposer.Compose("A", "STD|You received 15 ISH-01."));
+                            }
                         }
                         else if (roll <= 79)
                         {
-                            client.ClearParameters();
-                            client.SetParameter("id", (object)user.CharacterInfo.Id);
-                            client.ExecuteNonQuery("UPDATE users SET ammo_emp01 = ammo_emp01 + 15 WHERE id = @id LIMIT 1");
-
-                            user.CharacterInfo.AmmoEmp01 += 15;
-                            user.SendData(PacketComposer.Compose("3", user.CharacterInfo.GetSecondaryWeaponInfoPayload()));
-                            user.SendData(PacketComposer.Compose("A", "STD|You received 15 EMP-01."));
+                            if (user.CharacterInfo.PersistAmmoCredit("ammo_emp01", 15, () =>
+                            {
+                                client.ClearParameters();
+                                client.SetParameter("id", (object)user.CharacterInfo.Id);
+                                return client.ExecuteNonQuery("UPDATE users SET ammo_emp01 = ammo_emp01 + 15 WHERE id = @id" + CharacterInfo.AmmoCreditSqlFence("ammo_emp01", 15) + " LIMIT 1");
+                            }))
+                            {
+                                user.SendData(PacketComposer.Compose("3", user.CharacterInfo.GetSecondaryWeaponInfoPayload()));
+                                user.SendData(PacketComposer.Compose("A", "STD|You received 15 EMP-01."));
+                            }
                         }
                         else if (roll <= 86)
                         {
