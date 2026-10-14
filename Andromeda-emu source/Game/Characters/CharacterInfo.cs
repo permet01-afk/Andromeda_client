@@ -4268,7 +4268,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.TouchFightUntilDatabase(UnixTimestamp.GetCurrent());
         }
 
-        private void TouchFightUntilDatabase(double time)
+        internal void TouchFightUntilDatabase(double time)
         {
             int now = (int)time;
             int until = now + FightUntilDbSeconds;
@@ -4298,6 +4298,18 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public void UpdateAttacker(Session attacker)
         {
+            UpdateAttackerCore(attacker, true);
+        }
+
+        // Impact callers retain attribution ordering, then persist outside their
+        // impact lock using this exact timestamp rather than extending the window.
+        internal double UpdateAttackerRuntime(Session attacker)
+        {
+            return UpdateAttackerCore(attacker, false);
+        }
+
+        private double UpdateAttackerCore(Session attacker, bool persistFightUntil)
+        {
             double time = UnixTimestamp.GetCurrent();
             if (this.IsRepairing)
             {
@@ -4308,19 +4320,19 @@ namespace OrbitReborn_Emulator.Game.Characters
 
             this.mNoFightTimer = 0;
 
-            this.TouchFightUntilDatabase(time);
+            if (persistFightUntil) this.TouchFightUntilDatabase(time);
 
             if (this.Attacker == null || this.Attacker.CharacterInfo == null)
             {
                 this.Attacker = attacker;
                 this.LastAttackByAttackerReceived = time;
-                return;
+                return time;
             }
 
             if (this.Attacker == attacker)
             {
                 this.LastAttackByAttackerReceived = time;
-                return;
+                return time;
             }
             if (time - this.LastAttackByAttackerReceived < 10.0)
             {
@@ -4330,11 +4342,12 @@ namespace OrbitReborn_Emulator.Game.Characters
                 {
                     this.assistAttacker[attacker] = time;
                 }
-                return;
+                return time;
             }
             this.Attacker = attacker;
             this.assistAttacker.Remove(attacker);
             this.Attacker.SendData(PacketComposer.Compose("n", "USH|" + (object)this.Id));
+            return time;
         }
 
 
@@ -4521,8 +4534,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                 int perfKillerId = attackerInfo.Id;
                 int perfVictimId = victimInfo.Id;
 
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("PvpReward"))
-                {
                     string _Message1 = "You have destroyed " + this.Username + ".";
                     string _Message2 = "You have been destroyed by " + WebUtility.HtmlEncode(attackerInfo.Username) + ".";
                     this.Attacker.SendData(PacketComposer.Compose("A", "STD|" + _Message1));
@@ -4530,15 +4541,22 @@ namespace OrbitReborn_Emulator.Game.Characters
                     bool rewardAsEnemy = attackerInfo.ShouldTreatPvpKillAsEnemy(victimInfo, attackerInfo.MapId);
                     bool penalizeFriendly = !rewardAsEnemy && attackerInfo.ShouldPenalizeFriendlyPvpKill(victimInfo, attackerInfo.MapId);
 
-                    if (rewardAsEnemy)
+                    // Award may acquire the killer's lifecycle. Never retain a legacy
+                    // pool client while waiting for a different player's lifecycle.
+                    if (rewardAsEnemy && attackerInfo.Id != victimInfo.Id
+                        && (attackerInfo.ClanId <= 0 || attackerInfo.ClanId != victimInfo.ClanId))
+                        DroneProgressionService.Award(this.Attacker, DroneRules.PvpAward(attackerInfo.ShipId, victimInfo.ShipId));
+
+                if (rewardAsEnemy)
+                {
+                    // Quest/title callbacks borrow their own clients. Finish these
+                    // writes first and release the lease before invoking them.
+                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("PvpReward.Logs"))
                     {
-                        // Do not turn a mixed-faction same-clan kill into drone farming.
-                        if (attackerInfo.Id != victimInfo.Id && (attackerInfo.ClanId <= 0 || attackerInfo.ClanId != victimInfo.ClanId))
-                            DroneProgressionService.Award(this.Attacker, DroneRules.PvpAward(attackerInfo.ShipId, victimInfo.ShipId));
                         attackerInfo.AddKill(client);
                         attackerInfo.AddLog(client, _Message1);
                         victimInfo.AddLog(client, _Message2);
-
+                    }
                         long perfStepStart = PerformanceProfiler.Start();
                         bool questProgressChanged = QuestObjectiveProgress.AddPlayerKillProgress(attackerInfo.Id);
                         perfQuestMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
@@ -4571,6 +4589,11 @@ namespace OrbitReborn_Emulator.Game.Characters
                         if (questProgressChanged || titleProgressChanged)
                             this.Attacker.SendData(PacketComposer.Compose("QST", "UPD"));
 
+                }
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("PvpReward"))
+                {
+                    if (rewardAsEnemy)
+                    {
                         if (!_1v1.IsOnMap(attackerInfo.MapId))
                             ++attackerInfo.KillStrek;
 
@@ -4865,8 +4888,10 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (mask == this.mBoosterMaskLast)
                 return;
 
+            lock (TechInventoryService.SyncRoot(this.Id))
             lock (this.mBoosterRefreshLock)
             {
+                if (!ReferenceEquals(session.CharacterInfo, this) || session.StoppedPlayer || this.Disconnected) return;
                 if (mask == this.mBoosterMaskLast)
                     return;
 

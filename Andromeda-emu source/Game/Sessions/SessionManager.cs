@@ -23,7 +23,71 @@ namespace OrbitReborn_Emulator.Game.Sessions
         private static ConcurrentDictionary<int, int> mCharacterSessionIndex;
         private static Timer mMonitorThread;
         private static Timer mNoFightThread;
-        private static object mSyncRoot;
+        private static readonly object mSyncRoot = new object();
+        // Program opens its TCP listener before this manager is initialized.
+        // No receive chunk may race the initial counter/registry setup.
+        private static volatile bool mShuttingDown = true;
+        private static int mActiveDispatches;
+
+        internal static bool IsShuttingDown { get { return mShuttingDown; } }
+
+        // One admission per received chunk, including its deferred deaths.
+        // Normal dispatch uses only atomics, never a global combat monitor.
+        internal static bool TryEnterDispatch()
+        {
+            if (mShuttingDown) return false;
+            Interlocked.Increment(ref mActiveDispatches);
+            if (!mShuttingDown) return true;
+            ExitDispatch();
+            return false;
+        }
+
+        internal static void ExitDispatch()
+        {
+            if (Interlocked.Decrement(ref mActiveDispatches) == 0 && mShuttingDown)
+                lock (mSyncRoot) Monitor.PulseAll(mSyncRoot);
+        }
+
+        internal static void BeginShutdown()
+        {
+            // This monitor protects connection admission/retirement only.
+            // Never retain it while entering a player lifecycle or SQL pool.
+            lock (mSyncRoot) mShuttingDown = true;
+        }
+
+        private static void DrainTimer(ref Timer timer)
+        {
+            Timer current = Interlocked.Exchange(ref timer, null);
+            if (current == null) return;
+            using (var completed = new ManualResetEvent(false))
+                if (current.Dispose(completed)) completed.WaitOne();
+        }
+
+        internal static void Shutdown()
+        {
+            BeginShutdown();
+            DrainTimer(ref mMonitorThread);
+            DrainTimer(ref mNoFightThread);
+            List<Session> sessions;
+            lock (mSyncRoot)
+            {
+                while (Volatile.Read(ref mActiveDispatches) != 0)
+                    Monitor.Wait(mSyncRoot);
+                sessions = mSessions == null ? new List<Session>() : new List<Session>(mSessions.Values);
+            }
+            var failures = new List<Exception>();
+            foreach (Session session in sessions)
+            {
+                try { session.Shutdown(); }
+                catch (Exception error)
+                {
+                    Output.WriteLine("[Shutdown] sessionId=" + session.Id + " save failed: " + error, OutputLevel.CriticalError);
+                    failures.Add(error);
+                }
+            }
+            if (failures.Count != 0)
+                throw new AggregateException("Session saves failed; SQL remains open and clean shutdown was not completed.", failures);
+        }
 
         private const double STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS = 30.0;
 
@@ -81,13 +145,14 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         public static void Initialize()
         {
+            SessionManager.mActiveDispatches = 0;
             SessionManager.mSessions = new ConcurrentDictionary<int, Session>();
             SessionManager.mSessionsToStop = new CList<int>();
             SessionManager.mCharacterSessionIndex = new ConcurrentDictionary<int, int>();
             SessionManager.mCounter = 1;
             SessionManager.mMonitorThread = new Timer(new TimerCallback(SessionManager.ExecuteMonitor), (object)null, TimeSpan.FromMilliseconds(300.0), TimeSpan.FromMilliseconds(300.0));
             SessionManager.mNoFightThread = new Timer(new TimerCallback(SessionManager.ExecuteNoFightMonitor), (object)null, TimeSpan.FromMilliseconds(1000.0), TimeSpan.FromMilliseconds(1000.0));
-            SessionManager.mSyncRoot = new object();
+            lock (mSyncRoot) SessionManager.mShuttingDown = false;
         }
 
         private static void LogTimerFailure(string callbackName, Exception ex)
@@ -323,7 +388,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
             return HasRecentIncomingAttackActivity(session, now);
         }
 
-        private static void SynchronizeStoppedGameplayBeforeAutoLogout(Session session, SqlDatabaseClient client)
+        private static void SynchronizeStoppedGameplayBeforeAutoLogout(Session session)
         {
             if (session == null || session.CharacterInfo == null || !session.Authenticated)
                 return;
@@ -342,8 +407,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
             try
             {
-                session.CharacterInfo.SynchronizeShipSkillCooldowns(client);
-                session.CharacterInfo.SynchronizeStatistics(client, 0);
+                // The caller owns lifecycle/impact. Flushes above borrow their
+                // own clients; do not retain this save lease during Dispose.
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("SessionManager.ExecuteMonitor.AutoLogout"))
+                {
+                    session.CharacterInfo.SynchronizeShipSkillCooldowns(client);
+                    session.CharacterInfo.SynchronizeStatistics(client, 0);
+                }
             }
             catch (Exception ex)
             {
@@ -384,51 +454,46 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 }
                 if (clist2.Count > 0)
                 {
-                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("SessionManager.ExecuteMonitor.Stop"))
+                    foreach (Session key in (IEnumerable<Session>)clist2.Keys)
                     {
-                        foreach (Session key in (IEnumerable<Session>)clist2.Keys)
+                        try
                         {
-                            try
-                            {
-                                key.Stop(client);
-                            }
-                            catch (Exception ex)
-                            {
-                                Output.WriteLine((object)("[SessionMgr] Stop failed for sessionId=" + key.Id + ": " + ex.ToString()), OutputLevel.Warning);
-                            }
+                            key.Stop();
+                        }
+                        catch (Exception ex)
+                        {
+                            Output.WriteLine((object)("[SessionMgr] Stop failed for sessionId=" + key.Id + ": " + ex.ToString()), OutputLevel.Warning);
                         }
                     }
                 }
                 if (clist1.Count > 0)
                 {
-                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("SessionManager.ExecuteMonitor.AutoLogout"))
+                    foreach (Session key in (IEnumerable<Session>)clist1.Keys)
                     {
-                        foreach (Session key in (IEnumerable<Session>)clist1.Keys)
+                        try
                         {
-                            try
+                            // A reconnect can arrive after the monitor built clist1.
+                            // Recheck before borrowing SQL, under the same lifecycle
+                            // and impact order as authentication and retirement.
+                            lock (TechInventoryService.SyncRoot(key.CharacterId))
+                            lock (key.CharacterInfo != null ? key.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(key.CharacterId))
                             {
-                                // A reconnect can arrive after the monitor built clist1.
-                                // Recheck under the same per-player lock as authentication.
-                                lock (TechInventoryService.SyncRoot(key.CharacterId))
-                                lock (key.CharacterInfo != null ? key.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(key.CharacterId))
+                                if (key.HasPendingGameplayDeath) continue;
+                                if (key.StoppedPlayer)
                                 {
-                                    if (key.HasPendingGameplayDeath) continue;
-                                    if (key.StoppedPlayer)
-                                    {
-                                        key.Stop(client); // Transport only; terminal sessions never persist twice.
-                                        ForgetSession(key);
-                                        continue;
-                                    }
-                                    if (!key.Stopped || ShouldKeepStoppedGameplaySessionAlive(key)) continue;
-                                    SynchronizeStoppedGameplayBeforeAutoLogout(key, client);
-                                    key.Dispose();
+                                    key.Stop(); // Transport only; terminal sessions never persist twice.
                                     ForgetSession(key);
+                                    continue;
                                 }
+                                if (!key.Stopped || ShouldKeepStoppedGameplaySessionAlive(key)) continue;
+                                SynchronizeStoppedGameplayBeforeAutoLogout(key);
+                                key.Dispose();
+                                ForgetSession(key);
                             }
-                            catch (Exception ex)
-                            {
-                                Output.WriteLine((object)("[SessionMgr] Auto-logout prepare failed for sessionId=" + key.Id + ": " + ex.ToString()), OutputLevel.Warning);
-                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Output.WriteLine((object)("[SessionMgr] Auto-logout prepare failed for sessionId=" + key.Id + ": " + ex.ToString()), OutputLevel.Warning);
                         }
                     }
                 }
@@ -559,6 +624,11 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         public static void HandleIncomingConnection(Socket IncomingSocket)
         {
+            if (mShuttingDown)
+            {
+                try { IncomingSocket.Close(); } catch { }
+                return;
+            }
             bool flag = ModerationBanManager.IsRemoteAddressBlacklisted(IncomingSocket.RemoteEndPoint.ToString().Split(':')[0]);
             Output.WriteLine((object)((flag ? "Rejected" : "Accepted") + " incoming connection from " + IncomingSocket.RemoteEndPoint.ToString().Split(':')[0] + "."), OutputLevel.Informational);
             if (flag)
@@ -573,9 +643,17 @@ namespace OrbitReborn_Emulator.Game.Sessions
             }
             else
             {
-                int num = SessionManager.mCounter++;
-                Output.WriteLine((object)("[SESSION] Creating new session id=" + num + " from " + IncomingSocket.RemoteEndPoint.ToString().Split(':')[0]), OutputLevel.DebugInformation);
-                SessionManager.mSessions.TryAdd(num, new Session(num, IncomingSocket));
+                lock (mSyncRoot)
+                {
+                    if (mShuttingDown)
+                    {
+                        try { IncomingSocket.Close(); } catch { }
+                        return;
+                    }
+                    int num = SessionManager.mCounter++;
+                    Output.WriteLine((object)("[SESSION] Creating new session id=" + num + " from " + IncomingSocket.RemoteEndPoint.ToString().Split(':')[0]), OutputLevel.DebugInformation);
+                    SessionManager.mSessions.TryAdd(num, new Session(num, IncomingSocket));
+                }
             }
         }
     }

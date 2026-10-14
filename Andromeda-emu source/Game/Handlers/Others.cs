@@ -199,16 +199,20 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
 
+            bool purchaseSucceeded;
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
-                if (!ApplyFastBuyPurchase(client, Session, isLaser, resolvedId, amount, creditsCost, uridiumCost, columnName))
-                {
-                    Session.CharacterInfo.GetUpdatedCredits();
-                    Session.CharacterInfo.GetUpdatedUridium();
-                    Session.SendData(UserDataComposer.Compose(Session));
-                    Session.SendData(PacketComposer.Compose("A", "STD|Purchase failed. Please try again."));
-                    return;
-                }
+                purchaseSucceeded = ApplyFastBuyPurchase(client, Session, isLaser, resolvedId, amount, creditsCost, uridiumCost, columnName);
+            }
+            if (!purchaseSucceeded)
+            {
+                // Wallet reads borrow a client too. Release the purchase lease
+                // first so a rejected purchase also works with a bounded pool.
+                Session.CharacterInfo.GetUpdatedCredits();
+                Session.CharacterInfo.GetUpdatedUridium();
+                Session.SendData(UserDataComposer.Compose(Session));
+                Session.SendData(PacketComposer.Compose("A", "STD|Purchase failed. Please try again."));
+                return;
             }
 
             Session.SendData(PacketComposer.Compose("A", "STD|" + BuildFastBuyPurchaseMessage(itemLabel, amount, creditsCost, uridiumCost)));
@@ -511,8 +515,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.CharacterInfo.DisconnectTimer = (Timer)null;
                 --TimerManager.TimerRunning;
 
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("Logout.Complete"))
-                    session.EndGameplay(client, true);
+                session.EndGameplay(true);
                 return;
             }
 

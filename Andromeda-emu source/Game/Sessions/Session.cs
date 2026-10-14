@@ -41,6 +41,19 @@ namespace OrbitReborn_Emulator.Game.Sessions
         private const byte DELIM_BS = (byte)'\\';
         private const byte DELIM_CHAR0 = (byte)'0';
 
+        // A packet may admit a death of another player while owning its sender's
+        // lifecycle. Finish those deaths after releasing the sender, on this same
+        // thread and before the next packet. Normal packets allocate no list.
+        [ThreadStatic] private static bool mDispatchingPacket;
+        [ThreadStatic] private static List<Action> mPacketCompletions;
+        internal static bool IsDispatchingPacket { get { return mDispatchingPacket; } }
+        internal static void CompleteAfterPacket(Action completion)
+        {
+            if (!mDispatchingPacket) { completion(); return; }
+            if (mPacketCompletions == null) mPacketCompletions = new List<Action>();
+            mPacketCompletions.Add(completion);
+        }
+
         private sealed class SendState
         {
             public Socket Socket;
@@ -58,6 +71,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
         private bool mPongOk;
         private double mStoppedTimestamp;
         private bool mAuthProcessed;
+        private bool mShutdownRetirementIncomplete;
         private int mMapId;
         private bool mMapAuthed;
         private bool mMapJoined;
@@ -240,9 +254,10 @@ namespace OrbitReborn_Emulator.Game.Sessions
         public void TryAuthenticate(string Ticket, string RemoteAddress)
         {
             Output.WriteLine((object)("[AUTH] TryAuthenticate sessionId=" + this.mId + " remote=" + RemoteAddress), OutputLevel.DebugInformation);
+            int CharacterId;
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
-                int CharacterId = SingleSignOnAuthenticator.TryAuthenticate(client, Ticket, RemoteAddress);
+                CharacterId = SingleSignOnAuthenticator.TryAuthenticate(client, Ticket, RemoteAddress);
                 if (CharacterId <= 0)
                 {
                     Output.WriteLine((object)("[AUTH] Reject sessionId=" + this.mId + ": invalid SSO/ticket for remote=" + RemoteAddress), OutputLevel.Warning);
@@ -250,9 +265,12 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     return;
                 }
 
-                // Serialize retirement, handoff and fresh loading for this player only.
+            }
+                // Never retain a pool client while waiting for the player lifecycle.
+                // Retirement, handoff and fresh loading still serialize for this player.
                 lock (TechInventoryService.SyncRoot(CharacterId))
                 {
+                    if (SessionManager.IsShuttingDown) return;
                     Session existingGameplaySession = SessionManager.GetSessionByCharacterId(CharacterId);
                     if (existingGameplaySession != null && !object.ReferenceEquals(existingGameplaySession, this))
                     lock (existingGameplaySession.CharacterInfo.DroneImpactSyncRoot)
@@ -262,9 +280,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
                             SessionManager.StopSession(this.mId);
                             return; // Retry after the admitted death has finished publishing.
                         }
-                        client.ClearParameters();
-                        client.SetParameter("id", CharacterId);
-                        object activeShip = client.ExecuteScalar("SELECT shipid FROM users WHERE id=@id LIMIT 1");
+                        object activeShip;
+                        using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                        {
+                            client.ClearParameters();
+                            client.SetParameter("id", CharacterId);
+                            activeShip = client.ExecuteScalar("SELECT shipid FROM users WHERE id=@id LIMIT 1");
+                        }
                         bool sameShip = activeShip != null && activeShip != DBNull.Value
                             && Convert.ToInt32(activeShip) == existingGameplaySession.CharacterInfo.ShipId;
                         if (!existingGameplaySession.CharacterInfo.Destroy && !existingGameplaySession.CharacterInfo.DeadCommitted && !existingGameplaySession.CharacterInfo.Disconnected && sameShip
@@ -274,15 +296,17 @@ namespace OrbitReborn_Emulator.Game.Sessions
                             existingGameplaySession.CharacterInfo.TimestampLastOnline = UnixTimestamp.GetCurrent();
                             existingGameplaySession.mAuthProcessed = true;
                             SessionManager.RegisterAuthenticatedSession(existingGameplaySession);
-                            MarkOnline(client, CharacterId);
+                            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient()) MarkOnline(client, CharacterId);
                             this.mReconnectHandoffTarget = existingGameplaySession;
                             Output.WriteLine((object)("[AUTH] Reconnect handoff sessionId=" + this.mId + " -> sessionId=" + existingGameplaySession.Id + " charId=" + CharacterId), OutputLevel.DebugInformation);
                             SessionManager.StopSession(this.mId);
                             return;
                         }
-                        existingGameplaySession.EndGameplay(client, false);
+                        existingGameplaySession.EndGameplay(false);
                     }
 
+                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                    {
                     CharacterInfo characterInfo;
                     try
                     {
@@ -310,8 +334,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     SessionManager.RegisterAuthenticatedSession(this);
                     MarkOnline(client, CharacterId);
                     Output.WriteLine((object)("[AUTH] OK sessionId=" + this.mId + " charId=" + this.mCharacterInfo.Id), OutputLevel.DebugInformation);
+                    }
                 }
-            }
         }
 
         private static void MarkOnline(SqlDatabaseClient client, int characterId)
@@ -323,13 +347,19 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         // A completed logout is terminal. Network reconnects may still hand off a
         // live world instance, but never an instance with an obsolete active ship.
-        public void EndGameplay(SqlDatabaseClient client, bool confirmLogout)
+        public void EndGameplay(bool confirmLogout)
+        {
+            EndGameplayCore(confirmLogout, false);
+        }
+
+        private void EndGameplayCore(bool confirmLogout, bool strictAmmoFlush)
         {
             lock (TechInventoryService.SyncRoot(this.CharacterId))
             lock (this.CharacterInfo != null ? this.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(this.CharacterId))
             using (TechInventoryService.BeginTransition(this))
             {
-                if (this.StoppedPlayer || this.CharacterInfo == null || this.HasPendingGameplayDeath) return;
+                if ((this.StoppedPlayer && !(strictAmmoFlush && this.mShutdownRetirementIncomplete)) || this.CharacterInfo == null || this.HasPendingGameplayDeath) return;
+                if (strictAmmoFlush) this.mShutdownRetirementIncomplete = true;
                 this.CharacterInfo.Disconnected = true;
                 LaserVisualService.Remove(this);
                 this.CharacterInfo.StopBoosterAutoRefresh();
@@ -347,9 +377,11 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     }
                     MapManager.RemoveUserFromMap(this);
                     TeamDeathMatch.BeforeDisconnect(this, confirmLogout);
-                    DisposeCore(true, true); // Stop callbacks and flush pending ammo before acknowledging logout.
-                    this.CharacterInfo.SynchronizeStatistics(client, 0);
+                    DisposeCore(true, true, strictAmmoFlush); // Stop callbacks and flush pending ammo before acknowledging logout.
+                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                        this.CharacterInfo.SynchronizeStatistics(client, 0);
                     DroneWearService.EndGameplay(this.CharacterId, this.DroneGameplayToken);
+                    if (strictAmmoFlush) this.mShutdownRetirementIncomplete = false;
                     if (confirmLogout && socket != null)
                     {
                         // Keep only the transport until the client processes the confirmation.
@@ -364,7 +396,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     {
                         try { if (socket != null) socket.Close(); } catch { }
                         this.mSocket = null;
-                        SessionManager.ForgetSession(this);
+                        if (!strictAmmoFlush || !this.mShutdownRetirementIncomplete) SessionManager.ForgetSession(this);
                     }
                 }
             }
@@ -408,6 +440,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         private void BeginReceive()
         {
+            if (SessionManager.IsShuttingDown) return;
             try
             {
                 Socket socket = this.mSocket;
@@ -551,6 +584,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         private void ProcessData(byte[] Data, int Offset, int Count, Socket receiveSocket)
         {
+            if (Data == null || Count <= 0 || !SessionManager.TryEnterDispatch()) return;
+            try { ProcessDataCore(Data, Offset, Count, receiveSocket); }
+            finally { SessionManager.ExitDispatch(); }
+        }
+
+        private void ProcessDataCore(byte[] Data, int Offset, int Count, Socket receiveSocket)
+        {
             if (Data == null || Count <= 0) return;
             var packets = new List<byte[]>();
             lock (this.mRxBuffer)
@@ -583,9 +623,15 @@ namespace OrbitReborn_Emulator.Game.Sessions
             // reconnect acquires that lock before replacing/clearing the old socket buffer.
             foreach (byte[] packetBytes in packets)
             {
+                bool previousDispatch = mDispatchingPacket;
+                List<Action> previousCompletions = mPacketCompletions;
+                mDispatchingPacket = true;
+                mPacketCompletions = null;
+                try
+                {
                 lock (this.CharacterId > 0 ? TechInventoryService.SyncRoot(this.CharacterId) : this)
                 {
-                    if (!object.ReferenceEquals(receiveSocket, this.mSocket) || this.StoppedPlayer) return;
+                    if (SessionManager.IsShuttingDown || !object.ReferenceEquals(receiveSocket, this.mSocket) || this.StoppedPlayer) return;
                     if (packetBytes[0] == (byte)'<')
                     {
                         this.SendData(CrossdomainPolicy.GetBytes());
@@ -634,19 +680,92 @@ namespace OrbitReborn_Emulator.Game.Sessions
                         return;
                     }
                 }
+                }
+                finally
+                {
+                    List<Action> completions = mPacketCompletions;
+                    mDispatchingPacket = previousDispatch;
+                    mPacketCompletions = previousCompletions;
+                    if (completions != null)
+                    {
+                        if (previousDispatch)
+                        {
+                            if (mPacketCompletions == null) mPacketCompletions = new List<Action>();
+                            mPacketCompletions.AddRange(completions);
+                        }
+                        else foreach (Action completion in completions)
+                        {
+                            try { completion(); }
+                            catch (Exception error)
+                            {
+                                // Keep other admitted deaths progressing, but report the
+                                // failure and retire the sender rather than hiding it.
+                                try { Output.WriteLine("[Packet completion] " + error, OutputLevel.CriticalError); }
+                                catch (Exception loggingError)
+                                {
+                                    // A broken output sink must not strand other admitted deaths.
+                                    try { Console.Error.WriteLine("[Packet completion] " + error + "; logging failed: " + loggingError.Message); }
+                                    catch { }
+                                }
+                                SessionManager.StopSession(this.mId);
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        public void Stop(SqlDatabaseClient MySqlClient)
+        internal void Shutdown()
+        {
+            object lifecycle = TechInventoryService.SyncRoot(this.CharacterId);
+            lock (lifecycle)
+            {
+                while (true)
+                {
+                    lock (this.CharacterInfo != null ? this.CharacterInfo.DroneImpactSyncRoot : lifecycle)
+                    {
+                        if (!this.HasPendingGameplayDeath)
+                        {
+                            if (this.CharacterInfo != null && !this.IsChat && (!this.StoppedPlayer || this.mShutdownRetirementIncomplete))
+                                EndGameplayCore(false, true);
+                            else
+                            {
+                                // Terminal/fail-closed lives must never save old ship
+                                // statistics, but their admitted ammo still must flush.
+                                if (this.CharacterInfo != null && !this.IsChat)
+                                {
+                                    this.CharacterInfo.CloseAmmoConsumption();
+                                    this.CharacterInfo.FlushPendingPrimaryAmmoToDb();
+                                    this.CharacterInfo.FlushPendingSecondaryAmmoToDb();
+                                }
+                                StopCore();
+                                DisposeCore(false, false, true);
+                            }
+                            try { if (this.mSocket != null) this.mSocket.Close(); } catch { }
+                            this.mSocket = null;
+                            SessionManager.ForgetSession(this);
+                            return;
+                        }
+                        if (this.CharacterInfo.PendingDroneDeath == null && !this.CharacterInfo.DroneDeathPublishing)
+                            throw new InvalidOperationException("Cannot complete shutdown: lethal life has no admitted death owner.");
+                    }
+                    // Release the lifecycle while its admitted death finishes.
+                    // No impact lock, SQL lease, timeout or polling is retained.
+                    Monitor.Wait(lifecycle);
+                }
+            }
+        }
+
+        public void Stop()
         {
             if (this == null) return;
             lock (TechInventoryService.SyncRoot(this.CharacterId))
             lock (this.CharacterInfo != null ? this.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(this.CharacterId))
             using (TechInventoryService.BeginTransition(this))
-                StopCore(MySqlClient);
+                StopCore();
         }
 
-        private void StopCore(SqlDatabaseClient MySqlClient)
+        private void StopCore()
         {
             if (this.Stopped || (this.CharacterInfo != null && this.HasPendingGameplayDeath)) return;
 
@@ -666,7 +785,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
             this.mSocket = null;
 
             if (this.Authenticated && !this.StoppedPlayer)
-                this.mCharacterInfo.SynchronizeStatistics(MySqlClient, 0);
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                    this.mCharacterInfo.SynchronizeStatistics(client, 0);
 
             this.mStoppedTimestamp = UnixTimestamp.GetCurrent();
         }
@@ -680,7 +800,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 DisposeCore();
         }
 
-        private void DisposeCore(bool keepSocket = false, bool deferDroneRelease = false)
+        private void DisposeCore(bool keepSocket = false, bool deferDroneRelease = false, bool strictAmmoFlush = false)
         {
             if (this.StoppedPlayer || (this.CharacterInfo != null && this.HasPendingGameplayDeath)) return;
             if (!this.Stopped && !keepSocket)
@@ -697,6 +817,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 if (this.CharacterInfo != null)
                 {
                     this.CharacterInfo.CloseAmmoConsumption();
+                    // Dispose is terminal; live reconnect keeps this Session/info
+                    // and never reaches this cleanup through the anonymous socket.
+                    this.CharacterInfo.ClearActiveShipSkill();
                     if (this.CharacterInfo.AmmoSyncTimer != null)
                     {
                         this.CharacterInfo.AmmoSyncTimer.Dispose();
@@ -751,13 +874,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     {
                         this.CharacterInfo.FlushPendingPrimaryAmmoToDb();
                     }
-                    catch { if (this.CharacterInfo.DeadCommitted) throw; }
+                    catch { if (strictAmmoFlush || this.CharacterInfo.DeadCommitted) throw; }
 
                     try
                     {
                         this.CharacterInfo.FlushPendingSecondaryAmmoToDb();
                     }
-                    catch { if (this.CharacterInfo.DeadCommitted) throw; }
+                    catch { if (strictAmmoFlush || this.CharacterInfo.DeadCommitted) throw; }
 
                     if (this.CharacterInfo.ConfigRefreshTimer != null)
                     {

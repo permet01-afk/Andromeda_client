@@ -509,10 +509,29 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private sealed class ShipSkillTimerContext
         {
             public int SourceId;
+            public CharacterInfo SourceInfo;
+            public GameplayDeathContext SourceLife;
+            public double SkillUntil;
             public long TdmLife;
             public int SkillType;
             public int[] TargetIds;
             public GameplayDeathContext TargetLife;
+        }
+
+        private static bool IsCurrentShipSkillSource(Session source, ShipSkillTimerContext context)
+        {
+            if (source == null || source.CharacterInfo == null || context == null || context.SourceLife == null)
+                return false;
+            CharacterInfo info = source.CharacterInfo;
+            // A live socket handoff retains this info and gameplay lease. A fresh
+            // actor or newer activation must never inherit an old queued callback.
+            // Do not compare map: a legitimate timed buff still ends after a jump.
+            return ReferenceEquals(info, context.SourceInfo)
+                && !source.StoppedPlayer && !info.Disconnected && !info.Destroy && !info.DeadCommitted
+                && context.SourceLife.LifeEpoch == Interlocked.Read(ref source.DroneLifeEpoch)
+                && context.SourceLife.SessionToken == source.DroneGameplayToken
+                && context.SkillUntil == info.ActiveShipSkillUntil
+                && TeamDeathMatch.ValidProjectile(source, context.TdmLife);
         }
 
         private sealed class ChainImpulseTarget
@@ -2015,6 +2034,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             ShipSkillTimerContext timerContext = new ShipSkillTimerContext()
             {
                 SourceId = session.CharacterId,
+                SourceInfo = session.CharacterInfo,
+                SourceLife = DroneWearService.Capture(session, GameplayDeathCause.Pvp),
+                SkillUntil = session.CharacterInfo.ActiveShipSkillUntil,
                 TdmLife = Interlocked.Read(ref session.TdmLifeGeneration),
                 SkillType = skillType,
                 TargetIds = targetIds.ToArray(),
@@ -2055,9 +2077,10 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
 
                 Session session = SessionManager.GetSessionByCharacterId(timerContext.SourceId);
-                if (session == null || session.CharacterInfo == null)
-                    return;
-                if (!TeamDeathMatch.ValidProjectile(session, timerContext.TdmLife)) return;
+                if (session == null || session.CharacterInfo == null) return;
+                lock (TechInventoryService.SyncRoot(session.CharacterId))
+                {
+                if (!IsCurrentShipSkillSource(session, timerContext)) return;
 
                 if (session.CharacterInfo.ActiveShipSkillType != timerContext.SkillType)
                     return;
@@ -2087,11 +2110,28 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Fight.RefreshShipSpeed(session);
 
                 Fight.SendShipSkillStatus(session);
-
+                }
             }
             catch (Exception ex)
             {
                 LogTimerFailure("EndTimedShipSkill", ex);
+            }
+        }
+
+        private static void FinishCurrentVenomPulse(Session source, ShipSkillTimerContext context, bool consumePulse, bool stopSkill)
+        {
+            // Call only after releasing the victim impact lock and SQL client.
+            // A newer activation must not inherit an old callback's decrement/removal.
+            lock (TechInventoryService.SyncRoot(source.CharacterId))
+            {
+                if (!IsCurrentShipSkillSource(source, context) || source.CharacterInfo.ActiveShipSkillType != 5) return;
+                if (consumePulse && source.CharacterInfo.ActiveShipSkillTicksRemaining > 0)
+                    --source.CharacterInfo.ActiveShipSkillTicksRemaining;
+                if (stopSkill || source.CharacterInfo.ActiveShipSkillTicksRemaining <= 0)
+                {
+                    Fight.StopCurrentShipSkill(source, true);
+                    Fight.SendShipSkillStatus(source);
+                }
             }
         }
 
@@ -2104,20 +2144,19 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
 
                 Session attacker = SessionManager.GetSessionByCharacterId(timerContext.SourceId);
-                if (!TeamDeathMatch.ValidProjectile(attacker, timerContext.TdmLife)) return;
-                if (attacker == null || attacker.CharacterInfo == null || attacker.CharacterInfo.ActiveShipSkillType != 5)
+                if (!IsCurrentShipSkillSource(attacker, timerContext) || attacker.CharacterInfo.ActiveShipSkillType != 5)
                     return;
 
                 int targetId = timerContext.TargetIds[0];
                 MapInstance instanceByMapId = MapManager.GetInstanceByMapId(attacker.CurrentMapId);
                 if (instanceByMapId == null)
                     return;
+                if (!IsCurrentShipSkillSource(attacker, timerContext)) return;
 
                 int pulsesRemaining = attacker.CharacterInfo.ActiveShipSkillTicksRemaining;
                 if (pulsesRemaining <= 0)
                 {
-                    Fight.StopCurrentShipSkill(attacker, true);
-                    Fight.SendShipSkillStatus(attacker);
+                    Fight.FinishCurrentVenomPulse(attacker, timerContext, false, true);
                     return;
                 }
 
@@ -2129,17 +2168,21 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 {
                     if (target.CurrentMapId != attacker.CurrentMapId)
                     {
-                        Fight.StopCurrentShipSkill(attacker, true);
-                        Fight.SendShipSkillStatus(attacker);
+                        Fight.FinishCurrentVenomPulse(attacker, timerContext, false, true);
                         return;
                     }
 
                     var deathContext = DroneWearService.Capture(target, GameplayDeathCause.Pvp);
+                    double attackTime;
+                    bool targetDied;
                     lock (target.CharacterInfo.DroneImpactSyncRoot)
                     {
+                    // Admission is renewed after waiting for the victim, without
+                    // acquiring the source lifecycle inside the victim impact lock.
+                    if (!IsCurrentShipSkillSource(attacker, timerContext)) return;
                     if (!DroneWearService.IsCurrentLife(target, deathContext) || !DroneWearService.IsCurrentLife(target, timerContext.TargetLife) || target.CharacterInfo.ShipHp <= 0) return;
                     if (TeamDeathMatch.IsTdm(attacker) && !TeamDeathMatch.CanDamage(attacker, target)) return;
-                    target.CharacterInfo.UpdateAttacker(attacker);
+                    attackTime = target.CharacterInfo.UpdateAttackerRuntime(attacker);
 
                     if (target.CharacterInfo.ShipHp - damagePerTick > 0)
                         target.CharacterInfo.ShipHp -= damagePerTick;
@@ -2151,28 +2194,23 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                     TeamDeathMatch.RecordDamage(attacker, target, damagePerTick);
                     DroneWearService.MarkLethalImpact(target, deathContext);
+                    targetDied = DroneWearService.IsPendingDeath(target, deathContext);
                     }
+                    try
+                    {
+                    target.CharacterInfo.TouchFightUntilDatabase(attackTime);
                     if (damagePerTick > 0)
                         target.CharacterInfo.RegisterShieldDamageReceived();
 
                     target.SendData(PacketComposer.Compose("A", "HPT|" + (object)target.CharacterInfo.ShipHp + "|" + (object)target.CharacterInfo.ShipMaxHp));
                     Fight.SendTargetWindowUpdate(target, instanceByMapId, damagePerTick);
-
-                    if (attacker.CharacterInfo.ActiveShipSkillTicksRemaining > 0)
-                        --attacker.CharacterInfo.ActiveShipSkillTicksRemaining;
-
-                    if (DroneWearService.IsPendingDeath(target, deathContext))
-                    {
-                        Fight.StopCurrentShipSkill(attacker, true);
-                        Fight.SendShipSkillStatus(attacker);
-                        Fight.KillGameplayPlayer(target, deathContext);
-                        return;
                     }
-
-                    if (attacker.CharacterInfo.ActiveShipSkillTicksRemaining <= 0)
+                    finally
                     {
-                        Fight.StopCurrentShipSkill(attacker, true);
-                        Fight.SendShipSkillStatus(attacker);
+                        // Notification failures cannot abandon the already admitted
+                        // impact/death. Complete outside victim I and source L.
+                        try { Fight.FinishCurrentVenomPulse(attacker, timerContext, true, targetDied); }
+                        finally { if (targetDied) Fight.KillGameplayPlayer(target, deathContext); }
                     }
                     return;
                 }
@@ -2180,19 +2218,17 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Npc npcTarget = Fight.ResolveNpcTargetById(instanceByMapId, targetId);
                 if (npcTarget == null)
                 {
-                    Fight.StopCurrentShipSkill(attacker, true);
-                    Fight.SendShipSkillStatus(attacker);
+                    Fight.FinishCurrentVenomPulse(attacker, timerContext, false, true);
                     return;
                 }
 
                 if (Spaceball.IsSpaceballNpc(npcTarget))
                 {
-                    Fight.StopCurrentShipSkill(attacker, true);
-                    Fight.SendShipSkillStatus(attacker);
+                    Fight.FinishCurrentVenomPulse(attacker, timerContext, false, true);
                     return;
                 }
 
-                if (!CanSessionDamageNpc(attacker, npcTarget)) return;
+                if (!IsCurrentShipSkillSource(attacker, timerContext) || !CanSessionDamageNpc(attacker, npcTarget)) return;
                 npcTarget.UpdateAttackers(attacker.CharacterId, damagePerTick);
 
                 if (npcTarget.ShipHp - damagePerTick > 0)
@@ -2218,22 +2254,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
 
-                if (attacker.CharacterInfo.ActiveShipSkillTicksRemaining > 0)
-                    --attacker.CharacterInfo.ActiveShipSkillTicksRemaining;
-
-                if (npcTarget.ShipHp <= 0)
+                bool npcDied = npcTarget.ShipHp <= 0;
+                if (npcDied)
                 {
-                    Fight.StopCurrentShipSkill(attacker, true);
-                    Fight.SendShipSkillStatus(attacker);
-                    Fight.KillNPC(instanceByMapId, npcTarget, attacker);
+                    try { Fight.FinishCurrentVenomPulse(attacker, timerContext, true, true); }
+                    finally { Fight.KillNPC(instanceByMapId, npcTarget, attacker); }
                     return;
                 }
-
-                if (attacker.CharacterInfo.ActiveShipSkillTicksRemaining <= 0)
-                {
-                    Fight.StopCurrentShipSkill(attacker, true);
-                    Fight.SendShipSkillStatus(attacker);
-                }
+                Fight.FinishCurrentVenomPulse(attacker, timerContext, true, false);
 
             }
             catch (Exception ex)
@@ -3886,11 +3914,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
 
             {
+                double attackTime;
                 lock (Ennemy.CharacterInfo.DroneImpactSyncRoot)
                 {
                 if (!DroneWearService.IsCurrentLife(Ennemy, deathContext) || Ennemy.CharacterInfo.ShipHp <= 0) return;
                 if (TeamDeathMatch.IsTdm(Session) && !TeamDeathMatch.CanDamage(Session, Ennemy)) return;
-                Ennemy.CharacterInfo.UpdateAttacker(Session);
+                attackTime = Ennemy.CharacterInfo.UpdateAttackerRuntime(Session);
                 if (Ammo == 5)
                 {
                     num2 = Fight.ApplyDiminisherShieldBonus(Session, Ennemy, num2);
@@ -3948,6 +3977,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 TeamDeathMatch.RecordDamage(Session, Ennemy, num2);
                 DroneWearService.MarkLethalImpact(Ennemy, deathContext);
                 }
+                Ennemy.CharacterInfo.TouchFightUntilDatabase(attackTime);
                 Fight.ApplyEnergyLeech(Session, num2, Ammo, Instance);
 
                 MapInstance damageObserverInstance = MapManager.GetInstanceByMapId(Session.CharacterInfo.MapId);
@@ -4310,7 +4340,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
         // Administrative relocation is deliberately separate from gameplay death.
         public static void EvacuatePlayer(Session Session, bool keepCargo = false)
         {
-            if (Session == null) return;
+            if (Session == null || Session.CharacterInfo == null) return;
+            lock (TechInventoryService.SyncRoot(Session.CharacterId))
             using (TechInventoryService.BeginTransition(Session))
                 KillPlayerCore(Session, keepCargo);
         }
@@ -4318,6 +4349,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
         public static void KillGameplayPlayer(Session player, GameplayDeathContext context, bool grantPvpReward = false)
         {
             if (player == null || player.CharacterInfo == null) return;
+            if (Session.IsDispatchingPacket)
+            {
+                Session.CompleteAfterPacket(() => KillGameplayPlayer(player, context, grantPvpReward));
+                return;
+            }
             DroneDeathResult result;
             try
             {
@@ -4366,6 +4402,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 player.SendData(PacketComposer.Compose("A","STD|Your session could not be saved. Please reconnect after the server recovers."));
                 SessionManager.StopSession(player.Id);
                 Output.WriteLine("[Drone wear] death failed player=" + player.CharacterId + ": " + ex, OutputLevel.CriticalError);
+            }
+            finally
+            {
+                // Shutdown waits on this lifecycle only after releasing impact/SQL.
+                // Signal success, TDM admission and fail-closed completion alike.
+                object lifecycle = TechInventoryService.SyncRoot(player.CharacterId);
+                lock (lifecycle) Monitor.PulseAll(lifecycle);
             }
         }
 

@@ -36,6 +36,24 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.RefreshEquippedExtras(client);
             }
 
+            PublishConfigurationRefresh(Session, restartAutoRocket, includeUserData, broadcastSelectedTarget);
+        }
+
+        // Prepare under the timer's existing lease, then publish after it is
+        // released: restarting auto rockets may persist refinery counters.
+        internal static bool PrepareConfigurationRefresh(Session Session, SqlDatabaseClient client)
+        {
+            if (Session == null || Session.CharacterInfo == null)
+                return false;
+
+            bool restartAutoRocket = Session.CharacterInfo.ActiveAutoRocket;
+            Session.CharacterInfo.ActiveAutoRocket = false;
+            Session.CharacterInfo.RefreshEquippedExtras(client);
+            return restartAutoRocket;
+        }
+
+        internal static void PublishConfigurationRefresh(Session Session, bool restartAutoRocket, bool includeUserData, bool broadcastSelectedTarget)
+        {
             if (includeUserData)
                 Session.SendData(UserDataComposer.Compose(Session));
 

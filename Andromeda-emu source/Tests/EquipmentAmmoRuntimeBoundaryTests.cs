@@ -77,7 +77,7 @@ internal static class EquipmentAmmoRuntimeBoundaryTests
         Check(!(bool)Get(info, "mPrimaryAmmoDirty") && !(bool)Get(info, "mSecondaryAmmoDirty"),
             "terminal fixture has no pending storage operation");
         // deferDroneRelease=true isolates callback disposal from SQL-owned lease release.
-        Call(typeof(Session), "DisposeCore", session, false, true);
+        Call(typeof(Session), "DisposeCore", session, false, true, false);
         Check(session.StoppedPlayer && (int)Get(info, "mAmmoConsumptionClosed") == 1,
             "actual authenticated terminal disposal closes ammo admission");
         Check(!info.TryConsumeLaserAmmo(info.CaptureLaserVolley()) && !info.TryConsumeRocketAmmo(1)

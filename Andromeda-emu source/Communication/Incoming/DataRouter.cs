@@ -4,7 +4,6 @@ using OrbitReborn_Emulator.Game.Chat;
 using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Libs;
-using OrbitReborn_Emulator.Storage;
 using System.Collections.Generic;
 
 namespace OrbitReborn_Emulator.Communication.Incoming
@@ -36,20 +35,17 @@ namespace OrbitReborn_Emulator.Communication.Incoming
         public static void refreshGroup(Session Session) { }
         public static void kick(Session Session)
         {
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            if (Session.CharacterInfo != null)
             {
-                if (Session.CharacterInfo != null)
-                {
-                    MapManager.RemoveUserFromMap(Session);
-                    ChatManager.RemovePlayerFromEICChannel(Session);
-                    ChatManager.RemovePlayerFromMMOChannel(Session);
-                    ChatManager.RemovePlayerFromVRUChannel(Session);
-                    ChatManager.RemovePlayerFromGlobalChannel(Session);
-                    Session.CharacterInfo.Disconnected = true;
-                }
-                Session.Stop(client);
-                Session.Dispose();
+                MapManager.RemoveUserFromMap(Session);
+                ChatManager.RemovePlayerFromEICChannel(Session);
+                ChatManager.RemovePlayerFromMMOChannel(Session);
+                ChatManager.RemovePlayerFromVRUChannel(Session);
+                ChatManager.RemovePlayerFromGlobalChannel(Session);
+                Session.CharacterInfo.Disconnected = true;
             }
+            Session.Stop();
+            Session.Dispose();
         }
         public static void HandleData(Session Session, ClientMessage Message)
         {

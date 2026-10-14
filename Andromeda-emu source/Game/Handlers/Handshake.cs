@@ -67,6 +67,18 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (!Session.Authenticated)
                 return;
 
+            // Authentication may hand off to another Session. Take its lifecycle
+            // before borrowing SQL; the incoming anonymous receive lock is not it.
+            lock (TechInventoryService.SyncRoot(Session.CharacterId))
+            {
+                if (Session.Stopped || Session.StoppedPlayer || Session.HasPendingGameplayDeath)
+                    return;
+                CompleteUserInfo(Session, Message, nextString);
+            }
+        }
+
+        private static void CompleteUserInfo(Session Session, ClientMessage Message, string nextString)
+        {
             bool reconnectHandoff = Session.ConsumeReconnectHandoffFlag();
 
             Output.WriteLine("LOGIN OK for ticket " + nextString + " from " + Session.RemoteAddress, OutputLevel.Notification);
@@ -357,25 +369,33 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                     perfUserId = s.CharacterId;
                     perfActive = true;
-                    using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("ConfigRefreshTick"))
+                    bool claimed = false;
+                    try
                     {
-                        if (!s.CharacterInfo.TryClaimWebsiteConfigRefresh(client)) return;
-                        try
+                        string previousDrones;
+                        int previousStage;
+                        bool restartAutoRocket;
+                        using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("ConfigRefreshTick"))
                         {
-                            string previousDrones = s.CharacterInfo.GetDronePacketString();
-                            int previousStage = s.CharacterInfo.ExpansionStage;
+                            if (!s.CharacterInfo.TryClaimWebsiteConfigRefresh(client)) return;
+                            claimed = true;
+                            previousDrones = s.CharacterInfo.GetDronePacketString();
+                            previousStage = s.CharacterInfo.ExpansionStage;
                             s.CharacterInfo.RefreshUserDataPreservingRuntime(client, false);
-                            SelectAction.PublishExpansionStage(s, previousStage);
-                            if (previousDrones != s.CharacterInfo.GetDronePacketString()) DroneProgressionService.PublishDrones(s);
-                            SelectAction.SendConfigurationRefresh(s, true, true);
-                            s.SendData(PacketComposer.Compose("B", s.CharacterInfo.GetPrimaryWeaponInfoPayload()));
-                            s.SendData(PacketComposer.Compose("3", s.CharacterInfo.GetSecondaryWeaponInfoPayload()));
+                            restartAutoRocket = SelectAction.PrepareConfigurationRefresh(s, client);
                         }
-                        catch
-                        {
-                            s.CharacterInfo.RetryWebsiteConfigRefresh(client);
-                            throw;
-                        }
+                        SelectAction.PublishExpansionStage(s, previousStage);
+                        if (previousDrones != s.CharacterInfo.GetDronePacketString()) DroneProgressionService.PublishDrones(s);
+                        SelectAction.PublishConfigurationRefresh(s, restartAutoRocket, true, true);
+                        s.SendData(PacketComposer.Compose("B", s.CharacterInfo.GetPrimaryWeaponInfoPayload()));
+                        s.SendData(PacketComposer.Compose("3", s.CharacterInfo.GetSecondaryWeaponInfoPayload()));
+                    }
+                    catch
+                    {
+                        if (claimed)
+                            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("ConfigRefreshTick.Retry"))
+                                s.CharacterInfo.RetryWebsiteConfigRefresh(client);
+                        throw;
                     }
                 }
             }

@@ -191,14 +191,18 @@ namespace OrbitReborn_Emulator
         public static void Stop()
         {
             Output.WriteLine((object)Localization.GetValue("core.uninit", (string[])null));
+            SessionManager.BeginShutdown();
+            Program.mAlive = false;
+            if (Program.mServer != null) Program.mServer.Dispose();
+            Program.mServer = (SocketListener)null;
             OrbitReborn_Emulator.Game.Event.Tdm.TdmScheduleRuntime.Shutdown();
             OrbitReborn_Emulator.Game.Event.TeamDeathMatch.Disable();
             OrbitReborn_Emulator.Game.Event.Tdm.TdmRewardRuntime.Shutdown();
-            Program.mAlive = false;
+            // SQL must remain available until every admitted packet/death and
+            // pending ammo debit has finished. A failed save aborts clean exit.
+            SessionManager.Shutdown();
             PerformanceProfiler.Uninitialize();
             SqlDatabaseManager.Uninitialize();
-            Program.mServer.Dispose();
-            Program.mServer = (SocketListener)null;
             Environment.Exit(0);
         }
     }

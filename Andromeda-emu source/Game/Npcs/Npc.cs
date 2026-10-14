@@ -2057,6 +2057,16 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (IsGalaxyGateProtected || !TryAdmitDeathReward()) return;
 
             this.IsDestroying = true;
+            if (Session.IsDispatchingPacket)
+            {
+                Session.CompleteAfterPacket(() => DestroyAdmitted(map));
+                return;
+            }
+            DestroyAdmitted(map);
+        }
+
+        private void DestroyAdmitted(MapInstance map)
+        {
             LaserVisualService.Remove(this);
 
             if (map != null)
