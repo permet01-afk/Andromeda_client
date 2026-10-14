@@ -286,7 +286,7 @@ function rememberFlashPoiCollisionValues(fromX, fromY, toX, toY, resultX, result
 }
 
 function flashNoaScaleFactor() {
-    const width = MAP_WIDTH > 0 ? MAP_WIDTH : STD_MAP_WIDTH;
+    const width = Number.isFinite(MAP_WIDTH) && MAP_WIDTH > 0 ? MAP_WIDTH : STD_MAP_WIDTH;
     return width / FLASH_NOA_BMP_WIDTH;
 }
 
@@ -324,8 +324,11 @@ function addFlashPoiZone(zoneType, zoneId, shape, designId, points) {
         zoneId: Number(zoneId) || 0,
         shape: String(shape || "").toUpperCase(),
         designId: Number(designId) || 0,
-        points: (points || []).map(v => Number(v))
+        points: (Array.isArray(points) ? points : []).map(v => Number(v))
     };
+    if (zone.zoneType === "NOA" && (!zone.points.every(Number.isFinite) ||
+        (zone.shape === "REC" && zone.points.length < 4) ||
+        (zone.shape === "CIR" && (zone.points.length < 3 || zone.points[2] < 0)))) return;
     if (zone.shape === "REC" && zone.points.length >= 4) {
         zone.x1 = zone.points[0];
         zone.y1 = zone.points[1];
@@ -338,6 +341,7 @@ function addFlashPoiZone(zoneType, zoneId, shape, designId, points) {
     if (zone.zoneType !== "NOA") return;
     flashNoaZones.push(zone);
     const scale = flashNoaScaleFactor();
+    if (!Number.isFinite(scale) || scale <= 0 || !Number.isFinite(MAP_WIDTH) || !Number.isFinite(MAP_HEIGHT)) return;
     const grid = ensureFlashNoaGrid();
     if (!grid) return;
     if (zone.shape === "REC" && zone.points.length >= 4) {
@@ -386,14 +390,44 @@ function addFlashPoiZone(zoneType, zoneId, shape, designId, points) {
 
 window.addFlashPoiZone = addFlashPoiZone;
 
+function isCollidingWithNoaLongScaledCoords(x0, y0, dx, dy, sx, sy) {
+    // Index the same Bresenham pixels; do not clip/restart its error term at the map edge.
+    // The dominant axis visits each grid column/row once, even for very distant endpoints.
+    const horizontal = dx >= -dy;
+    const start = horizontal ? x0 : y0;
+    const direction = horizontal ? sx : sy;
+    const limit = (horizontal ? FLASH_NOA_BMP_WIDTH : FLASH_NOA_BMP_HEIGHT) - 1;
+    const length = horizontal ? dx : -dy;
+    const first = Math.max(0, direction > 0 ? -start : start - limit);
+    const last = Math.min(length, direction > 0 ? limit - start : start);
+    if (first > last) return false;
+    // Only this unusual long-segment path needs exact products beyond Number's integer precision.
+    const major = BigInt(length), minor = BigInt(horizontal ? -dy : dx);
+    const denominator = 2n * major;
+    for (let step = first; step <= last; step++) {
+        const offset = Number((2n * BigInt(step) * minor + major) / denominator);
+        const x = x0 + sx * (horizontal ? step : offset);
+        const y = y0 + sy * (horizontal ? offset : step);
+        if (isNoaCell(x, y)) return true;
+    }
+    return false;
+}
+
 function isCollidingWithNoaScaledCoords(startX, startY, endX, endY) {
     if (!flashNoaGrid) return false;
     let x0 = Math.round(startX), y0 = Math.round(startY);
     const x1 = Math.round(endX), y1 = Math.round(endY);
+    // Raster steps must be finite, exact integer increments. Invalid input is not a route.
+    if (!Number.isSafeInteger(x0) || !Number.isSafeInteger(y0) ||
+        !Number.isSafeInteger(x1) || !Number.isSafeInteger(y1)) return false;
     const dx = Math.abs(x1 - x0);
     const sx = x0 < x1 ? 1 : -1;
     const dy = -Math.abs(y1 - y0);
     const sy = y0 < y1 ? 1 : -1;
+    if (!Number.isSafeInteger(2 * (dx - dy))) return false;
+    if (dx > FLASH_NOA_BMP_WIDTH || -dy > FLASH_NOA_BMP_HEIGHT) {
+        return isCollidingWithNoaLongScaledCoords(x0, y0, dx, dy, sx, sy);
+    }
     let err = dx + dy;
     while (true) {
         if (isNoaCell(x0, y0)) return true;
@@ -420,6 +454,8 @@ function isCollidingWithNoaScaled(p1, p2 = null) {
 }
 
 function getCollisionPointScaled(fromPoint, toPoint, out = null) {
+    if (!fromPoint || !toPoint || !Number.isFinite(fromPoint.x) || !Number.isFinite(fromPoint.y) ||
+        !Number.isFinite(toPoint.x) || !Number.isFinite(toPoint.y)) return null;
     let p1x = fromPoint.x;
     let p1y = fromPoint.y;
     let p2x = toPoint.x;
@@ -428,6 +464,10 @@ function getCollisionPointScaled(fromPoint, toPoint, out = null) {
     while (d > 1) {
         const midX = Math.floor((p1x - p2x) * .5) + p2x;
         const midY = Math.floor((p1y - p2y) * .5) + p2y;
+        // Flash stores Point.distance in an int: adjacent diagonals already stop there.
+        // Keep all progressing legacy paths; stop only when the integer midpoint cannot shrink the segment.
+        if ((midX === p1x && midY === p1y) || (midX === p2x && midY === p2y) ||
+            !Number.isFinite(midX) || !Number.isFinite(midY)) break;
         if (isCollidingWithNoaScaledCoords(p1x, p1y, midX, midY)) {
             p2x = midX;
             p2y = midY;
@@ -600,6 +640,9 @@ function checkFlashPoiZoneCollisionsValues(fromX, fromY, toX, toY, out = null) {
     if (hasCachedFlashPoiCollisionValues(fromX, fromY, toX, toY)) {
         return cloneCachedFlashPoiCollision(out);
     }
+    if (!Number.isFinite(fromX) || !Number.isFinite(fromY) || !Number.isFinite(toX) || !Number.isFinite(toY) ||
+        !Number.isFinite(MAP_MIN_X) || !Number.isFinite(MAP_MIN_Y) ||
+        !Number.isFinite(MAP_WIDTH) || !Number.isFinite(MAP_HEIGHT)) return null;
     const from = flashPoiScratchFrom;
     const to = flashPoiScratchTo;
     from.x = fromX - MAP_MIN_X;
@@ -12220,7 +12263,17 @@ function flashResolveActionItemIconPath(item, selectedItem) {
     if (Array.isArray(item.iconFrames) && item.iconFrames.length > 0) {
         return item.iconFrames[0] || item.iconPath || "";
     }
-    return item.iconPath || getQuickbarIconPath(item) || "";
+    return getQuickbarFallbackIconPath(item) || "";
+}
+
+function getQuickbarFallbackIconPath(item) {
+    if (!item) return null;
+    if (item.iconPath) return item.iconPath;
+    const lookup = QUICKBAR_ICON_LOOKUP[item.type];
+    if (!lookup) return null;
+    if (item.id !== undefined && lookup[item.id]) return lookup[item.id];
+    if (item.code !== undefined && lookup[item.code]) return lookup[item.code];
+    return null;
 }
 
 function flashGetActionMenuCooldownInfo(item) {
@@ -13716,11 +13769,7 @@ getQuickbarIconPath = function(item) {
         const resolvedPath = flashResolveActionItemIconPath(resolved, resolved);
         if (resolvedPath) return resolvedPath;
     }
-    const lookup = QUICKBAR_ICON_LOOKUP[resolved.type];
-    if (!lookup) return resolved.iconPath || null;
-    if (resolved.id !== undefined && lookup[resolved.id]) return lookup[resolved.id];
-    if (resolved.code !== undefined && lookup[resolved.code]) return lookup[resolved.code];
-    return resolved.iconPath || null;
+    return getQuickbarFallbackIconPath(resolved);
 };
 
 function flashSerializeQuickbarSlots() {

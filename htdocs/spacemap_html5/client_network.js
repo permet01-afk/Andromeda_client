@@ -4368,6 +4368,15 @@ function handlePacket_RDY(parts, i) {
     const isInitialRdyI = !window.__ANDRO_HAS_INITIAL_RDY_I;
     if (isInitialRdyI) window.__ANDRO_HAS_INITIAL_RDY_I = true;
     const mapChanged = mapId !== null && mapId !== currentMapId;
+    // RDY also refreshes stats/configuration. Only an actual new hero life retires
+    // outgoing callbacks; an ordinary alive refresh must keep its laser phase.
+    if (isInitialRdyI || mapChanged || (id !== null && id !== heroId) || (heroHp <= 0 && shipHp > 0)) {
+        laserVisualEpoch++;
+        if (heroId != null) {
+            cancelPrimaryLaserVisualJob(heroId);
+            cancelRsbBurst(heroId);
+        }
+    }
     if (mapChanged) {
         resetMapState(mapId);
     }
@@ -5514,6 +5523,35 @@ const PRIMARY_LASER_VISUAL_JOBS = new Map;
 const PRIMARY_LASER_VISUAL_TICK_MS = 100;
 let primaryLaserVisualTimerId = null;
 let primaryLaserVisualTimerDue = 0;
+let laserVisualEpoch = 1;
+
+// A shared admission identity is captured once, not once per beam or render frame.
+// The epoch covers reconnect/same-map respawn, including the hero's legacy -1 life.
+function captureLaserVisualIdentity(attackerId, targetId) {
+    return {
+        epoch: laserVisualEpoch, mapId: currentMapId, attackerId, targetId,
+        attackerLifeId: incomingLaserLocalLife(attackerId), targetLifeId: incomingLaserLocalLife(targetId)
+    };
+}
+
+function laserVisualIdentityMatches(identity, side = null) {
+    if (!identity || identity.epoch !== laserVisualEpoch || identity.mapId !== currentMapId) return false;
+    return (side === "target" || (identity.attackerLifeId != null
+        && identity.attackerLifeId === incomingLaserLocalLife(identity.attackerId)))
+        && (side === "attacker" || (identity.targetLifeId != null
+        && identity.targetLifeId === incomingLaserLocalLife(identity.targetId)));
+}
+
+function resolveLaserVisualSnapshot(beam, side) {
+    const id = side === "attacker" ? beam.attackerId : beam.targetId;
+    const identity = beam.visualIdentity;
+    if (identity && (identity.epoch !== laserVisualEpoch || identity.mapId !== currentMapId
+        || (id === heroId ? heroHp <= 0 : entities[id] && entities[id].destroyedVisualAt))) return null;
+    const snapshot = snapshotEntityById(id); // Reuse the existing per-frame snapshot cache.
+    if (!identity) return snapshot;
+    const life = side === "attacker" ? identity.attackerLifeId : identity.targetLifeId;
+    return snapshot && life != null && snapshot.visualLifeId === life ? snapshot : null;
+}
 
 // Additive, opt-in authority for remote visual generators. Legacy O/X remains
 // exclusively the local hero's outgoing range contract; beams already in flight
@@ -5725,7 +5763,8 @@ function schedulePrimaryLaserVisualTick() {
     primaryLaserVisualTimerId = null;
     if (!Number.isFinite(due)) return;
     primaryLaserVisualTimerDue = due;
-    primaryLaserVisualTimerId = setTimeout(() => {
+    const timerId = setTimeout(() => {
+        if (primaryLaserVisualTimerId !== timerId) return;
         primaryLaserVisualTimerId = null;
         const now = performance.now();
         for (const job of Array.from(PRIMARY_LASER_VISUAL_JOBS.values())) {
@@ -5735,6 +5774,7 @@ function schedulePrimaryLaserVisualTick() {
         }
         schedulePrimaryLaserVisualTick();
     }, Math.max(0, due - performance.now()));
+    primaryLaserVisualTimerId = timerId;
 }
 
 function hasPrimaryLaserVisualJob(attackerId, targetId) {
@@ -5750,6 +5790,8 @@ function cancelPrimaryLaserVisualJob(attackerId) {
 }
 
 function clearPrimaryLaserVisualJobs() {
+    laserVisualEpoch++;
+    cancelRsbBurst(null);
     for (const attackerId of Array.from(PRIMARY_LASER_VISUAL_JOBS.keys())) {
         cancelPrimaryLaserVisualJob(attackerId);
     }
@@ -5758,6 +5800,8 @@ function clearPrimaryLaserVisualJobs() {
 
 function clearPrimaryLaserVisualJobsForEntity(entityId) {
     invalidateIncomingLaserVisualEntity(entityId);
+    cancelRsbBurst(entityId);
+    cancelRsbBurstsByTarget(entityId);
     for (const [attackerId, job] of PRIMARY_LASER_VISUAL_JOBS) {
         if (attackerId === entityId || job.targetId === entityId) cancelPrimaryLaserVisualJob(attackerId);
     }
@@ -5783,11 +5827,7 @@ function resumePrimaryLaserVisualJobsForLocalHero() {
     const now = performance.now();
     for (const job of PRIMARY_LASER_VISUAL_JOBS.values()) {
         if (!job.paused || job.attackerId !== heroId) continue;
-        const attacker = snapshotEntityById(job.attackerId);
-        const target = snapshotEntityById(job.targetId);
-        if (!attacker || !target
-            || (job.attackerLifeId != null && attacker.visualLifeId !== job.attackerLifeId)
-            || (job.targetLifeId != null && target.visualLifeId !== job.targetLifeId)) {
+        if (!laserVisualIdentityMatches(job.visualIdentity)) {
             PRIMARY_LASER_VISUAL_JOBS.delete(job.attackerId);
             continue;
         }
@@ -5806,11 +5846,7 @@ function clearSabLaserVisualJobsForLocalHero() {
 
 function tickPrimaryLaserVisualJob(job) {
     if (PRIMARY_LASER_VISUAL_JOBS.get(job.attackerId) !== job || job.paused) return;
-    const attacker = snapshotEntityById(job.attackerId);
-    const target = snapshotEntityById(job.targetId);
-    if (!attacker || !target
-        || (job.attackerLifeId != null && attacker.visualLifeId !== job.attackerLifeId)
-        || (job.targetLifeId != null && target.visualLifeId !== job.targetLifeId)) {
+    if (!laserVisualIdentityMatches(job.visualIdentity)) {
         cancelPrimaryLaserVisualJob(job.attackerId);
         return;
     }
@@ -5834,7 +5870,8 @@ function startOrRefreshPrimaryLaserVisualJob(attackerId, targetId, patternId, fi
     const retainedAuthority = authoritativeEvent && existing
         && existing.incomingGeneration === authoritativeEvent.generation
         && existing.incomingScope === authoritativeEvent.scope;
-    if (existing && existing.targetId === targetId && (existing.fireRateMs === fireRateMs || retainedAuthority)) {
+    if (existing && existing.targetId === targetId && laserVisualIdentityMatches(existing.visualIdentity)
+        && (existing.fireRateMs === fireRateMs || retainedAuthority)) {
         existing.active = true;
         existing.patternId = patternId;
         existing.fireRateMs = fireRateMs;
@@ -5848,12 +5885,11 @@ function startOrRefreshPrimaryLaserVisualJob(attackerId, targetId, patternId, fi
         return existing;
     }
     cancelPrimaryLaserVisualJob(attackerId);
-    const attacker = snapshotEntityById(attackerId);
-    const target = snapshotEntityById(targetId);
-    if (!attacker || !target) return null;
+    const visualIdentity = captureLaserVisualIdentity(attackerId, targetId);
+    if (!laserVisualIdentityMatches(visualIdentity)) return null;
     const job = {
         attackerId, targetId, patternId, fireRateMs, attackLengthMs, spawnTick,
-        attackerLifeId: attacker.visualLifeId, targetLifeId: target.visualLifeId,
+        visualIdentity,
         incomingGeneration: authoritativeEvent ? authoritativeEvent.generation : null,
         incomingScope: authoritativeEvent ? authoritativeEvent.scope : null,
         cnt: 0, active: true, spawnCount: 0, paused: false,
@@ -5931,7 +5967,7 @@ function pruneRsbBurstState() {
     if (!(RSB_BURST_STATE instanceof Map) || RSB_BURST_STATE.size <= RSB_BURST_STATE_MAX) return;
     for (const key of Array.from(RSB_BURST_STATE.keys())) {
         const state = RSB_BURST_STATE.get(key);
-        if (!state || !state.timeouts || state.timeouts.length === 0) {
+        if (!state || !state.timeouts || state.timeouts.size === 0) {
             RSB_BURST_STATE.delete(key);
         }
         if (RSB_BURST_STATE.size <= RSB_BURST_STATE_MAX) return;
@@ -5940,9 +5976,9 @@ function pruneRsbBurstState() {
 
 function clearRsbBurstState(key) {
     const state = RSB_BURST_STATE.get(key);
-    if (state && state.timeouts && state.timeouts.length) {
+    if (state && state.timeouts) {
         state.timeouts.forEach(clearTimeout);
-        state.timeouts.length = 0;
+        state.timeouts.clear();
     }
     RSB_BURST_STATE.delete(key);
 }
@@ -5956,14 +5992,8 @@ function cancelRsbBurst(attackerId = null) {
     }
     const key = String(attackerId);
     clearRsbBurstState(key);
-    if (typeof laserBeams !== "undefined") {
-        for (let i = laserBeams.length - 1; i >= 0; i--) {
-            const b = laserBeams[i];
-            if (b && b.attackerId === attackerId && b.spriteId === 6) {
-                laserBeams.splice(i, 1);
-            }
-        }
-    }
+    // Cancel future pulses only. Admitted beams finish; explicit death/map cleanup
+    // already owns their removal or trajectory detachment.
 }
 
 function beginRsbBurst(attackerId, targetId = null) {
@@ -5972,8 +6002,9 @@ function beginRsbBurst(attackerId, targetId = null) {
     const key = String(attackerId);
     const state = {
         seq: rsbBurstSequenceCounter++,
-        timeouts: [],
+        timeouts: new Set,
         targetId: targetId,
+        visualIdentity: captureLaserVisualIdentity(attackerId, targetId),
         startedAt: performance.now()
     };
     RSB_BURST_STATE.set(key, state);
@@ -5995,8 +6026,8 @@ function cancelRsbBurstsByTarget(targetId) {
 
 function freezeLaserBeamTrajectory(beam) {
     if (!beam || !beam.followTargets || !beam.attackerId || !beam.targetId) return;
-    const attacker = snapshotEntityById(beam.attackerId);
-    const target = snapshotEntityById(beam.targetId);
+    const attacker = resolveLaserVisualSnapshot(beam, "attacker");
+    const target = resolveLaserVisualSnapshot(beam, "target");
     if (!attacker || !target) return;
     const hasOffset = Number.isFinite(beam.offsetX) && Number.isFinite(beam.offsetY);
     const hasEndOffset = Number.isFinite(beam.offsetEndX) && Number.isFinite(beam.offsetEndY);
@@ -6117,8 +6148,9 @@ function queueEntityVisualCleanup(entityId, options = {}) {
     if (entityId == null) return;
     const key = String(entityId);
     let job = PENDING_ENTITY_VISUAL_CLEANUPS.get(key);
-    if (!job) {
-        job = { entityId: entityId };
+    const visualLifeId = incomingLaserLocalLife(entityId);
+    if (!job || job.epoch !== laserVisualEpoch || job.visualLifeId !== visualLifeId) {
+        job = { entityId: entityId, epoch: laserVisualEpoch, visualLifeId };
         PENDING_ENTITY_VISUAL_CLEANUPS.set(key, job);
     }
     if (options.clearSabRing) job.clearSabRing = true;
@@ -6131,6 +6163,10 @@ function queueEntityVisualCleanup(entityId, options = {}) {
 function runEntityVisualCleanupJob(job) {
     if (!job || job.entityId == null) return;
     const entityId = job.entityId;
+    const currentLife = incomingLaserLocalLife(entityId);
+    // Removed entities may still need their old effects detached. A replacement
+    // life (or a different map/session) must never receive the old cleanup.
+    if (job.epoch !== laserVisualEpoch || (currentLife != null && currentLife !== job.visualLifeId)) return;
     if (job.clearSabRing) clearSabRingStateForEntity(entityId);
     if (job.releaseSabShots) releaseSabShotsForEntity(entityId);
     if (job.detachRocketAttacks) detachRocketAttacksForEntity(entityId);
@@ -6222,6 +6258,8 @@ function handlePacket_laserAttack(parts, i, authoritativeEvent = null) {
     const attackerSnap = snapshotEntityById(attackerId);
     const targetSnap = snapshotEntityById(targetId);
     if (!attackerSnap || !targetSnap) return;
+    const visualIdentity = captureLaserVisualIdentity(attackerId, targetId);
+    if (!laserVisualIdentityMatches(visualIdentity)) return;
     let visual = resolveLaserVisual(patternId, skilledLaser);
     if (shouldUseProtegitLaser(attackerSnap)) {
         visual = {
@@ -6362,6 +6400,7 @@ function handlePacket_laserAttack(parts, i, authoritativeEvent = null) {
                 entries.push({
                     attackerId: attackerId,
                     targetId: targetId,
+                    visualIdentity,
                     patternId: patternId,
                     expansionStage: salvoState.stage,
                     spriteId: visual.spriteId,
@@ -6413,7 +6452,8 @@ function handlePacket_laserAttack(parts, i, authoritativeEvent = null) {
             const entriesBySlot = new Map(entries.map(entry => [ entry.salvoSlot, entry ]));
             for (let idx = laserBeams.length - 1; idx >= 0; idx--) {
                 const beam = laserBeams[idx];
-                if (beam.playLoop && beam.attackerId === attackerId && beam.targetId === targetId && beam.patternId === patternId && beam.skilledLaser === skilledLaser) {
+                if (beam.playLoop && beam.attackerId === attackerId && beam.targetId === targetId && beam.patternId === patternId && beam.skilledLaser === skilledLaser
+                    && (!beam.visualIdentity || laserVisualIdentityMatches(beam.visualIdentity))) {
                     const slot = beam.salvoSlot ?? "0-0";
                     const entry = entriesBySlot.get(slot);
                     if (entry) {
@@ -6478,20 +6518,26 @@ function handlePacket_laserAttack(parts, i, authoritativeEvent = null) {
             const timeoutId = setTimeout(() => {
                 const state = RSB_BURST_STATE.get(String(attackerId));
                 if (!state || state.seq !== seq) return;
+                state.timeouts.delete(timeoutId);
+                if (!laserVisualIdentityMatches(state.visualIdentity)) {
+                    clearRsbBurstState(String(attackerId));
+                    return;
+                }
                 spawnBeamEntries(performance.now(), isFirst ? showShieldDamage : false, true, null, pulseOffsets);
             }, delay);
             const state = RSB_BURST_STATE.get(String(attackerId));
-            if (state) state.timeouts.push(timeoutId);
+            if (state) state.timeouts.add(timeoutId);
         }
         const cleanupDelay = Math.max(0, burstCount * burstSpacing + duration + 250);
         const cleanupTimeoutId = setTimeout(() => {
             const key = String(attackerId);
             const state = RSB_BURST_STATE.get(key);
             if (!state || state.seq !== seq) return;
+            state.timeouts.delete(cleanupTimeoutId);
             clearRsbBurstState(key);
         }, cleanupDelay);
         const state = RSB_BURST_STATE.get(String(attackerId));
-        if (state) state.timeouts.push(cleanupTimeoutId);
+        if (state) state.timeouts.add(cleanupTimeoutId);
         maybeSpawnEnergyLeechEcho(now);
         return;
     }

@@ -1769,7 +1769,7 @@ function triggerLaserImpactEffect(beam) {
 }
 
 function handleLaserImpact(beam) {
-    const targetSnap = snapshotEntityById(beam.targetId);
+    const targetSnap = resolveLaserVisualSnapshot(beam, "target");
     const isPlayerOrNpc = targetSnap && (targetSnap.kind === "player" || targetSnap.kind === "npc");
     if (!isPlayerOrNpc) return;
     // A projectile is not evidence of damage (MISS and secondary visual pulses).
@@ -2039,7 +2039,7 @@ function drawLaserBeams() {
         let targetSnapshot = null;
         let targetSnapshotReady = false;
         if (beam.attackerId) {
-            attackerSnapshot = snapshotEntityById(beam.attackerId);
+            attackerSnapshot = resolveLaserVisualSnapshot(beam, "attacker");
             attackerSnapshotReady = true;
             if (attackerSnapshot && (attackerSnapshot.shipId === 31 || attackerSnapshot.shipId === 73)) {
                 continue;
@@ -2051,11 +2051,11 @@ function drawLaserBeams() {
         const endOffsetY = hasEndOffset ? beam.offsetEndY : hasOffset ? beam.offsetY : 0;
         if (beam.followTargets && beam.attackerId && beam.targetId) {
             if (!attackerSnapshotReady) {
-                attackerSnapshot = snapshotEntityById(beam.attackerId);
+                attackerSnapshot = resolveLaserVisualSnapshot(beam, "attacker");
                 attackerSnapshotReady = true;
             }
             if (!targetSnapshotReady) {
-                targetSnapshot = snapshotEntityById(beam.targetId);
+                targetSnapshot = resolveLaserVisualSnapshot(beam, "target");
                 targetSnapshotReady = true;
             }
             const attacker = attackerSnapshot;
@@ -2107,7 +2107,7 @@ function drawLaserBeams() {
         const isSabBeam = beam.spriteId === 4;
         if (isSabBeam && beam.targetId) {
             if (!targetSnapshotReady) {
-                targetSnapshot = snapshotEntityById(beam.targetId);
+                targetSnapshot = resolveLaserVisualSnapshot(beam, "target");
                 targetSnapshotReady = true;
             }
             const target = targetSnapshot;
@@ -2120,7 +2120,7 @@ function drawLaserBeams() {
         }
         if (isSabBeam && beam.attackerId) {
             if (!attackerSnapshotReady) {
-                attackerSnapshot = snapshotEntityById(beam.attackerId);
+                attackerSnapshot = resolveLaserVisualSnapshot(beam, "attacker");
                 attackerSnapshotReady = true;
             }
             const attacker = attackerSnapshot;

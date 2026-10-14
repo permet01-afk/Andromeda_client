@@ -88,13 +88,19 @@ test('Delayed burst keeps captured stage and frame after A/B update',()=>{
 const metaStart=sources.combat.indexOf('const LASER_PATTERN_META ='),metaEnd=sources.combat.indexOf('\n};',metaStart)+3;
 ctx.MAX_LASER_SPRITE_ID=100;ctx.LASER_ATTACK_LENGTH_MS=1350;run(sources.combat.slice(metaStart,metaEnd));
 use('combat','resolveLaserVisual');use('network','applyLaserLength');use('network','handlePacket_laserAttack');
-const no=()=>{};for(const n of ['updateEntityClaim','setAttackLockTargetForEntity','clearSabLaserVisualJobsForAttacker'])ctx[n]=no;
+const no=()=>{};for(const n of ['updateEntityClaim','setAttackLockTargetForEntity','clearSabLaserVisualJobsForAttacker','cancelPrimaryLaserVisualJob','cancelRsbBurst'])ctx[n]=no;
+ctx.incomingLaserVisualProtocolActive=false;ctx.PRIMARY_LASER_VISUAL_JOBS=new Map();
+ctx.currentMapId=1;ctx.heroHp=100;ctx.laserVisualEpoch=1;
+for(const name of ['incomingLaserLocalLife','captureLaserVisualIdentity','laserVisualIdentityMatches'])use('network',name);
 for(const n of ['shouldUseProtegitLaser','shouldUseDevolariumLaser','shouldUseLordakiumLaser','shouldUseNettelLaser','shouldUseCrystal2Laser','shouldUseCrystalLaser','shouldSuppressVisibleNpcLaser'])ctx[n]=()=>false;
 ctx.getLaserSpriteFrame=()=>({width:60});ctx.LASER_SPRITE_INFO={};ctx.DEFAULT_LASER_SPEED_MS=150;ctx.laserBeams=[];
 ctx.snapshotEntityById=id=>ctx.entities[id];ctx.RSB_BURST_STATE=new Map();ctx.clearRsbBurstState=k=>ctx.RSB_BURST_STATE.delete(k);
-let timers=[];ctx.setTimeout=(fn,delay)=>{timers.push({fn,delay});return timers.length;};ctx.beginRsbBurst=id=>{ctx.RSB_BURST_STATE.set(String(id),{seq:1,timeouts:[]});return 1;};
-ctx.getSabLaserVisualJobKey=()=>'';ctx.startOrRefreshSabLaserVisualJob=(key,a,t,skilled,rate,length,duration,callback)=>{callback(1000,false,true);callback(1200,false,false);};
-function fire(type,stage,skilled=false){ctx.heroId=999;ctx.entities={2:{id:2,shipId:10,kind:'player',x:0,y:0,angle:0},3:{id:3,shipId:10,kind:'player',x:1000,y:0}};ctx.applyExpansionStage(ctx.entities[2],stage);ctx.laserBeams=[];timers=[];ctx.handlePacket_laserAttack(['2','3',String(type),'0',skilled?'1':'0',String(stage)],0);}
+let timers=[];ctx.setTimeout=(fn,delay)=>{timers.push({fn,delay});return timers.length;};ctx.beginRsbBurst=(id,targetId)=>{ctx.RSB_BURST_STATE.set(String(id),{seq:1,timeouts:new Set(),visualIdentity:ctx.captureLaserVisualIdentity(id,targetId)});return 1;};
+// Timing is covered by the laser-lifecycle suite; this fixture exercises the
+// packet's captured stage and offsets through the current primary-job API.
+ctx.getPrimaryLaserVisualTiming=()=>({fireRateMs:200,attackLengthMs:1350});
+ctx.startOrRefreshPrimaryLaserVisualJob=(a,t,pattern,rate,length,callback)=>{callback(1000,true);if(pattern===4)callback(1200,false);};
+function fire(type,stage,skilled=false){ctx.heroId=999;ctx.entities={2:{id:2,shipId:10,kind:'player',visualLifeId:1,x:0,y:0,angle:0},3:{id:3,shipId:10,kind:'player',visualLifeId:2,x:1000,y:0}};ctx.applyExpansionStage(ctx.entities[2],stage);ctx.laserBeams=[];timers=[];ctx.handlePacket_laserAttack(['2','3',String(type),'0',skilled?'1':'0',String(stage)],0);}
 test('Actual RSB handler: exactly five pulses, 2/3/2/3/2, captured stage despite live switch',()=>{
     fire(6,3);const pulses=timers.filter(t=>t.delay<=480);assert.equal(pulses.length,5);ctx.applyExpansionStage(ctx.entities[2],1);
     const counts=[];for(const t of pulses){const old=ctx.laserBeams.length;t.fn();counts.push(ctx.laserBeams.length-old);}
