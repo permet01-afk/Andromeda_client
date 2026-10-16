@@ -700,19 +700,9 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 
                 txt.innerText = 'Starting connection...';
 
-                try {
-                    if (typeof window.hideConnectionLostWindow === "function") {
-                        window.hideConnectionLostWindow();
-                    }
-                } catch (e) {}
-
+                // initGame prepares the existing UI, then hands the loader to
+                // startNetwork's connection window immediately before connecting.
                 document.getElementById('gameContainer').style.display = 'block';
-
-                try {
-                    if (typeof window.showConnectionInfoWindow === "function") {
-                        window.showConnectionInfoWindow();
-                    }
-                } catch (e) {}
 
                 if (typeof initGame !== 'function') {
                     console.error('[START] initGame is missing.');
@@ -725,9 +715,13 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 
                 try {
                     await Promise.resolve(initGame());
-                    document.getElementById('loaderOverlay').style.display = 'none';
                 } catch (err) {
                     console.error('[START] initGame failed:', err);
+                    document.getElementById('loaderOverlay').style.display = 'block';
+                    try {
+                        if (typeof window.removeConnectionWindow === "function") window.removeConnectionWindow(0);
+                        if (typeof window.hideConnectionLostWindow === "function") window.hideConnectionLostWindow();
+                    } catch (_) {}
                     startClicked = false;
                     txt.innerText = 'Unable to start: game initialization failed.';
                     document.getElementById('gameContainer').style.display = 'none';
@@ -751,17 +745,17 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <script src="client_config.js?v=p0c-client-stability-20261014-1"></script>
 <link rel="stylesheet" href="ship_death.css?v=phase5-window14-2">
 <script src="ship_death.js?v=phase5-window14-2"></script>
-<script src="client_network.js?v=p0c-client-stability-20261014-1"></script>
+<script src="client_network.js?v=p1-startup-20261016-1"></script>
 <script src="client_entities.js?v=gg-continue-animation-20261011-1"></script>
 <script src="client_combat.js?v=p0c-client-stability-20261014-1"></script>
-<script src="client_graphics.js?v=gg-continue-animation-20261011-1"></script>
+<script src="client_graphics.js?v=p1-flash-stacking-20261016-4"></script>
 <script src="client_ui.js?v=flash-strict-combat-20261011-1"></script>
 <script src="client_quests.js?v=phase7-quest-visual-3"></script>
 <script src="client_map_decor_data.js?v=phase8c-decor-1"></script>
 <script src="client_map_decor.js?v=phase8c-decor-1"></script>
 <link rel="stylesheet" href="tdm.css?v=phase10c-hud-d-1">
 <script src="client_tdm.js?v=phase10c-hud-d-1"></script>
-<script src="client_bootstrap.js?v=phase10b-1"></script>
+<script src="client_bootstrap.js?v=p1-startup-20261016-1"></script>
 
 
 </body>

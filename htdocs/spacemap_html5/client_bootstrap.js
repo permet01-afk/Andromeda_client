@@ -355,9 +355,16 @@ window.initGame = async function() {
     if (typeof window.__ANDRO_TRY_PLAY_STARTUP_SOUNDS === "function") {
         window.__ANDRO_TRY_PLAY_STARTUP_SOUNDS("initGame");
     }
-    if (typeof window.startNetwork === "function" && !window.__ANDRO_NETWORK_STARTED) {
-        window.__ANDRO_NETWORK_STARTED = true;
+    if (typeof window.startNetwork !== "function") {
+        throw new Error("[Bootstrap] Network startup is unavailable.");
+    }
+    if (!window.__ANDRO_NETWORK_STARTED) {
+        // Release the preloader only after the existing UI/asset preparation.
+        // startNetwork now owns Info while the real server init is pending.
+        const loader = document.getElementById("loaderOverlay");
+        if (loader) loader.style.display = "none";
         window.startNetwork();
+        window.__ANDRO_NETWORK_STARTED = true;
     }
     requestAnimationFrame(render);
 };

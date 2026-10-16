@@ -59,6 +59,12 @@ window.addEventListener("beforeunload", () => {
 
 let heroLoaded = false;
 
+// RDY|I supplies the authoritative hero, map and coordinates. mapLoaded below
+// is the separate viewport/RDY|MAP handshake, not a texture or gameplay gate.
+window.isGameplayConnectionReady = () => !!(ws && ws.readyState === WebSocket.OPEN &&
+    heroLoaded && heroId > 0 && heroShipId > 0 && currentMapId > 0 &&
+    Number.isFinite(shipX) && Number.isFinite(shipY));
+
 let mapLoaded = false;
 
 let sentRdyMap = false;
@@ -1093,7 +1099,13 @@ function connectToServer(isReconnect = false) {
         attempt: wsReconnectAttempts,
         reconnect: !!isReconnect
     });
-    ws = new WebSocket(url);
+    try {
+        ws = new WebSocket(url);
+    } catch (err) {
+        // A synchronous transport failure must leave START/reconnect retryable.
+        wsConnecting = false;
+        throw err;
+    }
     armWsConnectWatchdog(ws, url);
     ws.binaryType = "arraybuffer";
     ws.onopen = () => {
@@ -1293,7 +1305,6 @@ function startChatInitMonitor() {
 window.startNetwork = () => {
     wsManualClose = false;
     showFlashConnectionInfoWindowSafe();
-    hideFlashConnectionLostWindowSafe();
     connectToServer(false);
     startChatInitMonitor();
 };
