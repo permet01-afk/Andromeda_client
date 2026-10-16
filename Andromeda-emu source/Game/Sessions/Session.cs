@@ -181,7 +181,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
             this.mPongOk = true;
 
             ConfigureSocket(this.mSocket);
+        }
 
+        // The manager publishes this fully initialized object before admitting
+        // packets. A constructor callback must never observe a missing session.
+        internal void StartReceiving()
+        {
+            if (!object.ReferenceEquals(SessionManager.GetSessionById(this.mId), this)) return;
             this.BeginReceive();
         }
 

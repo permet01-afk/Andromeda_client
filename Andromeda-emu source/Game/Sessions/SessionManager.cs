@@ -643,17 +643,41 @@ namespace OrbitReborn_Emulator.Game.Sessions
             }
             else
             {
-                lock (mSyncRoot)
+                Session session;
+                try
                 {
-                    if (mShuttingDown)
+                    lock (mSyncRoot)
                     {
-                        try { IncomingSocket.Close(); } catch { }
-                        return;
+                        if (mShuttingDown)
+                        {
+                            try { IncomingSocket.Close(); } catch { }
+                            return;
+                        }
+                        int num = SessionManager.mCounter++;
+                        Output.WriteLine((object)("[SESSION] Creating new session id=" + num + " from " + IncomingSocket.RemoteEndPoint.ToString().Split(':')[0]), OutputLevel.DebugInformation);
+                        session = new Session(num, IncomingSocket);
+                        if (!SessionManager.mSessions.TryAdd(num, session))
+                        {
+                            // Nothing has received or authenticated on this socket.
+                            // Never retire by ID here: that ID belongs to the winner.
+                            try { IncomingSocket.Close(); } catch { }
+                            Output.WriteLine("[SESSION] Could not publish session id=" + num, OutputLevel.Warning);
+                            return;
+                        }
                     }
-                    int num = SessionManager.mCounter++;
-                    Output.WriteLine((object)("[SESSION] Creating new session id=" + num + " from " + IncomingSocket.RemoteEndPoint.ToString().Split(':')[0]), OutputLevel.DebugInformation);
-                    SessionManager.mSessions.TryAdd(num, new Session(num, IncomingSocket));
                 }
+                catch (Exception error)
+                {
+                    // Construction/publication failed before any receive callback.
+                    try { IncomingSocket.Close(); } catch { }
+                    Output.WriteLine("[SESSION] Admission failed: " + error, OutputLevel.Warning);
+                    return;
+                }
+
+                // BeginReceive already handles a closed socket through StopSession.
+                // Shutdown owns every published session, even before this call.
+                // Do not hold the global admission monitor across a possible callback.
+                session.StartReceiving();
             }
         }
     }
