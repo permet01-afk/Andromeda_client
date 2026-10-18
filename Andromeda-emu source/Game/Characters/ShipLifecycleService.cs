@@ -110,7 +110,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 long next = checked(context.LifeEpoch + 1);
                 string destruction = Guid.NewGuid().ToString("N");
                 int price = Convert.ToInt32(user["shipid"]) == 1 || context.InvasionExempt ? 0 : 500;
-                db.Execute("UPDATE users SET current_hp=0,current_shield=0,current_shield1=0,current_shield2=0,online=0,mapid=@m,locx=@x,locy=@y,config_refresh_pending=1 WHERE id=@p","@m",map,"@x",x,"@y",y,"@p",id);
+                db.Execute("UPDATE users SET current_hp=0,current_shield=0,current_shield1=0,current_shield2=0,online=0,cloak_active=0,mapid=@m,locx=@x,locy=@y,config_refresh_pending=1 WHERE id=@p","@m",map,"@x",x,"@y",y,"@p",id);
                 db.Execute("UPDATE player_ship_state SET status='DESTROYED',destruction_id=@d,death_life_epoch=@e,destroyed_at=UTC_TIMESTAMP(),cause=@c,destination_map=@m,destination_x=@x,destination_y=@y,repair_cost=@cost,invasion_exempt=@inv,version=version+1 WHERE player_id=@p",
                     "@d",destruction,"@e",context.LifeEpoch,"@c",context.Cause.ToString(),"@m",map,"@x",x,"@y",y,"@cost",price,"@inv",context.InvasionExempt ? 1 : 0,"@p",id);
                 db.Execute("UPDATE player_drone_state SET life_epoch=@e,equipment_version=equipment_version+1 WHERE player_id=@p","@e",next,"@p",id);

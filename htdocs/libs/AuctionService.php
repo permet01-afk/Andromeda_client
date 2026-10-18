@@ -137,18 +137,6 @@ class AuctionService
                 $refundStmt->execute([':amount' => $previousBid, ':id' => $previousBidderId]);
             }
 
-            $bidStmt = $this->db->prepare(
-                'INSERT INTO auction_bids (lot_id, player_id, bid_credits, previous_bidder_id, previous_bid_credits)
-                 VALUES (:lot_id, :player_id, :bid_credits, :previous_bidder_id, :previous_bid_credits)'
-            );
-            $bidStmt->execute([
-                ':lot_id' => $lotId,
-                ':player_id' => $this->playerId,
-                ':bid_credits' => $bidCredits,
-                ':previous_bidder_id' => $previousBidderId,
-                ':previous_bid_credits' => $previousBid,
-            ]);
-
             $updateLot = $this->db->prepare(
                 'UPDATE auction_lots
                  SET current_bid_credits = :bid, current_bidder_id = :bidder

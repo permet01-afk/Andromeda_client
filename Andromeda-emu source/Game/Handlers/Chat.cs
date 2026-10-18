@@ -10,6 +10,7 @@ using OrbitReborn_Emulator.Game.Misc;
 using OrbitReborn_Emulator.Game.Moderation;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Techs;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
 using System;
@@ -109,9 +110,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void ChatInit(Session Session, ClientMessage Message)
         {
+            // Bind a transport once. A replay cannot rebind chat or convert gameplay.
+            if (Session == null || Session.CharacterInfo != null) return;
             Message.GetNextString(2);
             int num = int.Parse(Message.GetNextString(3));
             string nextString = Message.GetNextString(4);
+            // Anonymous transport dispatch holds only its own lock. Resolve and
+            // bind again under the same lifecycle used by login and retirement.
+            lock (TechInventoryService.SyncRoot(num))
+            {
+            if (Session.CharacterInfo != null || Session.Stopped || Session.StoppedPlayer) return;
             if (ModerationBanManager.IsUserIdChatBlacklisted(num))
             {
                 Output.WriteLine((object)("Login from id " + (object)num + " rejected: banned from the chat."));
@@ -123,9 +131,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session sessionByCharacterId = SessionManager.GetSessionByCharacterId(num);
                 if (sessionByCharacterId == null || sessionByCharacterId.CharacterInfo.AuthTicket != nextString)
                     return;
-                Session.IsChat = true;
-                Session.CharacterInfo = sessionByCharacterId.CharacterInfo;
-                if (!Session.IsChat)
+                if (!Session.TryBindChatAuthority(sessionByCharacterId))
                     return;
                 Session.SendData(PacketComposer.ComposeChat("bv%" + (object)Session.CharacterInfo.Id + "#"));
                 ChatManager.AddPlayerToGlobalChannel(Session);
@@ -156,6 +162,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.SendData(PacketComposer.ComposeChat("by%" + groupRoomId + "|Group|" + groupRoomId + "|-1#"));
                 string str = " <span class='mwLightblue'>Welcome on <span class='mwCyan'>Andromeda</span></span>";
                 Session.SendData(PacketComposer.ComposeChat("dq%" + str + "#"));
+            }
             }
         }
 
@@ -642,7 +649,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.SendData(PacketComposer.ComposeChat("cw%" + sessionByUsernameChat8.CharacterInfo.Username + "@ " + str4 + "#"));
                     sessionByUsernameChat8.SendData(PacketComposer.ComposeChat("cv%" + Session.CharacterInfo.Username + "@ " + str4 + "#"));
 
-                    ChatManager.BroadcastMessage(PacketComposer.ComposeChat("a%" + (object)5 + "@[" + Session.CharacterInfo.Username + " TO " + sessionByUsernameChat8.CharacterInfo.Username + "]@" + str4 + "#"), false);
+                    ChatManager.BroadcastMessage(PacketComposer.ComposeChat("a%" + (object)5 + "@[" + Session.CharacterInfo.Username + " TO " + sessionByUsernameChat8.CharacterInfo.Username + "]@" + str4 + "#"), true);
                     using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                     {
                         client.ClearParameters();

@@ -196,15 +196,20 @@ wss.on("connection", (ws, req) => {
         return true;
     };
     const sendPacketToWs = packet => {
-        if (ws.readyState !== WebSocket.OPEN) return false;
+        if (ws.readyState !== WebSocket.OPEN) {
+            closeBoth("WebSocket not open while sending TCP packet", 1011, "ws_not_open");
+            return false;
+        }
         if (getWsBufferedAmount() > WS_BUFFER_HIGH_WATER) {
             pauseTcpForWs("ws_buffer_high_before_send");
             return false;
         }
         if (WS_BINARY_OUT) {
             const out = Buffer.concat([ packet, DELIM_NULL ]);
-            const preview = out.length > 200 ? out.slice(0, 200).toString("utf8") + "..." : out.toString("utf8");
-            if (LOG_PACKETS) console.log("[TCP -> WS/bin]", JSON.stringify(preview));
+            if (LOG_PACKETS) {
+                const preview = out.length > 200 ? out.slice(0, 200).toString("utf8") + "..." : out.toString("utf8");
+                console.log("[TCP -> WS/bin]", JSON.stringify(preview));
+            }
             ws.send(out, {
                 binary: true
             }, err => {
@@ -212,8 +217,10 @@ wss.on("connection", (ws, req) => {
             });
         } else {
             const text = packet.toString("utf8") + "\0";
-            const preview = text.length > 200 ? text.slice(0, 200) + "..." : text;
-            if (LOG_PACKETS) console.log("[TCP -> WS/txt]", JSON.stringify(preview));
+            if (LOG_PACKETS) {
+                const preview = text.length > 200 ? text.slice(0, 200) + "..." : text;
+                console.log("[TCP -> WS/txt]", JSON.stringify(preview));
+            }
             ws.send(text, err => {
                 if (err) closeBoth(`WS send error: ${err.message}`, 1011, "ws_send_error");
             });
@@ -278,8 +285,10 @@ wss.on("connection", (ws, req) => {
             if (!endsWithDelimiter(payload)) {
                 payload = Buffer.concat([ payload, TCP_DELIM ]);
             } else {}
-            const preview = payload.length > 200 ? payload.slice(0, 200).toString("utf8") + "..." : payload.toString("utf8");
-            if (LOG_PACKETS) console.log("[WS -> TCP]", JSON.stringify(preview));
+            if (LOG_PACKETS) {
+                const preview = payload.length > 200 ? payload.slice(0, 200).toString("utf8") + "..." : payload.toString("utf8");
+                console.log("[WS -> TCP]", JSON.stringify(preview));
+            }
             const writeOk = tcp.write(payload);
             if (!writeOk) {
                 tcpBackpressured = true;

@@ -4370,6 +4370,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                     result = ShipLifecycleService.AdmitDeath(player.CharacterId,context);
                     if (result == null) throw new InvalidOperationException("Death owner or life no longer matches.");
+                    player.CharacterInfo.Invisible = 0;
                     player.CharacterInfo.Destroy = true;
                     player.CharacterInfo.DeadCommitted = true;
                     player.CharacterInfo.DroneDeathPublishing = true;

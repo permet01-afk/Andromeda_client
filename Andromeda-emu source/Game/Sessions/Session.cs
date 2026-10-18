@@ -93,6 +93,12 @@ namespace OrbitReborn_Emulator.Game.Sessions
         private bool mMapJoined;
         private bool mStopped;
         private bool mIsChat;
+        // Chat follows one gameplay transport, including its death dialogue.
+        // These references are memory-only; no ticket or SQL lease is copied.
+        private volatile object mChatAuthorityEpoch = new object();
+        private volatile bool mChatAuthorityRevoked;
+        private Session mChatGameplayOwner;
+        private object mBoundChatAuthorityEpoch;
         private int mCurrentChatRoom;
         private bool mGlobalChatNoticeSent;
         private Session mReconnectHandoffTarget;
@@ -176,6 +182,36 @@ namespace OrbitReborn_Emulator.Game.Sessions
             set { this.mIsChat = value; }
         }
 
+        // Input calls this under the player lifecycle. Output/lookup may read it
+        // without acquiring another player's lifecycle while holding a channel.
+        internal bool HasCurrentChatAuthority
+        {
+            get
+            {
+                Session owner = this.mChatGameplayOwner;
+                return this.IsChat && !this.Stopped && !this.StoppedPlayer
+                    && this.CharacterInfo != null && owner != null
+                    && !owner.mChatAuthorityRevoked
+                    && object.ReferenceEquals(this.mBoundChatAuthorityEpoch, owner.mChatAuthorityEpoch)
+                    && object.ReferenceEquals(this.CharacterInfo, owner.CharacterInfo);
+            }
+        }
+
+        // Caller holds the player's lifecycle and has rechecked the live ticket.
+        internal bool TryBindChatAuthority(Session owner)
+        {
+            if (this.CharacterInfo != null || this.Stopped || this.StoppedPlayer
+                || owner == null || owner.IsChat || owner.CharacterInfo == null
+                || !owner.Authenticated || !owner.GameplayReady || owner.Stopped || owner.StoppedPlayer
+                || owner.mChatAuthorityRevoked)
+                return false;
+            this.mChatGameplayOwner = owner;
+            this.mBoundChatAuthorityEpoch = owner.mChatAuthorityEpoch;
+            this.CharacterInfo = owner.CharacterInfo;
+            this.IsChat = true;
+            return true;
+        }
+
         public int CurrentChatRoom
         {
             get { return this.mCurrentChatRoom; }
@@ -242,6 +278,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 return false;
 
             Socket oldSocket = this.mSocket;
+            // A handoff keeps Session/CharacterInfo but replaces their transport.
+            this.mChatAuthorityEpoch = new object();
+            this.mChatAuthorityRevoked = false;
             this.mSocket = newSocket;
             ConfigureSocket(this.mSocket);
             SessionManager.CancelStopSession(this.mId);
@@ -399,6 +438,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 throw new InvalidOperationException("Gameplay transport closed during initialization.");
             this.CharacterInfo.MarkRuntimeDataLoaded();
             this.mGameplayReady = true;
+            SessionManager.RetirePreviousChatSessions(this);
             SessionManager.RegisterAuthenticatedSession(this);
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient()) MarkOnline(client, this.CharacterId);
             LocalRewardOperations.Open(this);
@@ -460,6 +500,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
             {
                 if ((this.StoppedPlayer && !(strictAmmoFlush && this.mShutdownRetirementIncomplete)) || this.CharacterInfo == null || this.HasPendingGameplayDeath) return;
                 if (!this.CharacterInfo.RuntimeDataLoaded) { AbortIncompleteGameplay(); return; }
+                // Normal retirement is terminal for this owner's chat. Committed
+                // death deliberately does not pass here and preserves opened chat.
+                this.mChatAuthorityRevoked = true;
                 LocalRewardOperations.CloseAndDrain(this);
                 this.mGameplayReady = false;
                 if (strictAmmoFlush) this.mShutdownRetirementIncomplete = true;
@@ -601,6 +644,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             try
             {
+                // Broadcasts may hold a channel lock. Never close a chat or take
+                // a player lifecycle here: only reject an obsolete binding.
+                if (this.IsChat && !this.HasCurrentChatAuthority) return;
                 Socket socket = this.mSocket;
                 if (socket == null || !socket.Connected) return;
 
@@ -772,7 +818,14 @@ namespace OrbitReborn_Emulator.Game.Sessions
                         currentHeader = Message.Header;
                         if (this.CharacterInfo != null && !this.IsChat && !this.GameplayReady && currentHeader != "LOGIN")
                             return;
-                        if (this.CharacterInfo != null && (this.CharacterInfo.Destroy || this.CharacterInfo.DeadCommitted))
+                        // The same lifecycle remains held through dispatch, so
+                        // logout/handoff cannot slip between this check and a command.
+                        if (this.IsChat && !this.HasCurrentChatAuthority)
+                        {
+                            SessionManager.StopSession(this.mId, receiveSocket);
+                            return;
+                        }
+                        if (!this.IsChat && this.CharacterInfo != null && (this.CharacterInfo.Destroy || this.CharacterInfo.DeadCommitted))
                         {
                             if (!this.CharacterInfo.TdmDead || this.CharacterInfo.DeadCommitted) return;
                             // TDM death keeps its transport alive for FREE REPAIR/LEAVE.
@@ -933,6 +986,9 @@ namespace OrbitReborn_Emulator.Game.Sessions
             if (this.IsChat)
             {
                 ChatManager.RemovePlayerFromGlobalChannel(this);
+                ChatManager.RemovePlayerFromMMOChannel(this);
+                ChatManager.RemovePlayerFromEICChannel(this);
+                ChatManager.RemovePlayerFromVRUChannel(this);
                 this.StoppedPlayer = true;
                 return; // Do not close ammo/timers or release the gameplay lease.
             }

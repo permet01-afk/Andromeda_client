@@ -2532,12 +2532,12 @@ namespace OrbitReborn_Emulator.Game.Characters
         {
             this.NpcInRange = new CList<int>();
             this.PlayerInRange = new CList<int>();
-            this.Invisible = 0;
             CharacterInfo.EnsureShipSkillCooldownColumns(MySqlClient);
             CharacterInfo.EnsureRuntimeStateColumns(MySqlClient);
             MySqlClient.ClearParameters();
             MySqlClient.SetParameter("id", (object)Id);
             DataRow dataRow = MySqlClient.ExecuteQueryRow("SELECT * FROM users WHERE id = @id LIMIT 1");
+            this.Invisible = Convert.ToInt32(dataRow["cloak_active"]) == 1 ? 1 : 0;
             this.mSessionId = SessionId;
             var lifecycleSession = SessionManager.GetSessionById(SessionId);
             this.GameplayLease = lifecycleSession == null ? null : lifecycleSession.ShipLease;
@@ -2922,12 +2922,13 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
             MySqlClient.SetParameter("online", (object)online);
             MySqlClient.SetParameter("runtime_shipid", this.mShipId);
+            MySqlClient.SetParameter("cloak_active", this.Invisible == 1 ? 1 : 0);
             MySqlClient.SetParameter("current_hp", (object)(this.TdmDead ? this.ShipMaxHp : this.ShipHp));
             MySqlClient.SetParameter("current_shield1", (object)ClampRuntimeValue(this.Config1.Shield, 0, this.Config1.MaxShield));
             MySqlClient.SetParameter("current_shield2", (object)ClampRuntimeValue(this.Config2.Shield, 0, this.Config2.MaxShield));
             MySqlClient.SetParameter("active_config", (object)(this.ActiveConfig == 2 ? 2 : 1));
             // A web purchase/design switch must not inherit runtime vitals/config from the retired ship.
-            int affectedRows = MySqlClient.ExecuteNonQuery("UPDATE users SET lastlogin = @lastlogin, locx = @locx, locy = @locy, cooldown_ISH = @cdISH, cooldown_SMB = @cdSMB, mapid = @mapid, online = @online, current_hp = IF(shipid = @runtime_shipid, @current_hp, current_hp), current_shield1 = IF(shipid = @runtime_shipid, @current_shield1, current_shield1), current_shield2 = IF(shipid = @runtime_shipid, @current_shield2, current_shield2), active_config = IF(shipid = @runtime_shipid, @active_config, active_config) WHERE id = @id" + ShipLifecycleService.SaveFence(MySqlClient, GameplayLease) + " LIMIT 1");
+            int affectedRows = MySqlClient.ExecuteNonQuery("UPDATE users SET lastlogin = @lastlogin, locx = @locx, locy = @locy, cooldown_ISH = @cdISH, cooldown_SMB = @cdSMB, mapid = @mapid, online = @online, cloak_active = @cloak_active, current_hp = IF(shipid = @runtime_shipid, @current_hp, current_hp), current_shield1 = IF(shipid = @runtime_shipid, @current_shield1, current_shield1), current_shield2 = IF(shipid = @runtime_shipid, @current_shield2, current_shield2), active_config = IF(shipid = @runtime_shipid, @active_config, active_config) WHERE id = @id" + ShipLifecycleService.SaveFence(MySqlClient, GameplayLease) + " LIMIT 1");
             if (affectedRows != 1) throw new InvalidOperationException("Runtime snapshot persistence failed or ownership was lost.");
         }
 
@@ -3173,41 +3174,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                 newLevel = ExperienceSystem.GetLevelFromExperience(newExperience);
             }
 
-            int saveLocX;
-            int saveLocY;
-            int saveMapId;
-
-            if (this.MapId != 80)
-            {
-                saveLocX = this.LocX;
-                saveLocY = this.LocY;
-                saveMapId = this.MapId;
-            }
-            else if (this.FactionId == 1)
-            {
-                saveLocX = 2000;
-                saveLocY = 1100;
-                saveMapId = 1;
-            }
-            else if (this.FactionId == 2)
-            {
-                saveLocX = 18500;
-                saveLocY = 1100;
-                saveMapId = 5;
-            }
-            else if (this.FactionId == 3)
-            {
-                saveLocX = 19000;
-                saveLocY = 11000;
-                saveMapId = 9;
-            }
-            else
-            {
-                saveLocX = this.LocX;
-                saveLocY = this.LocY;
-                saveMapId = this.MapId;
-            }
-
             CharacterInfo.EnsureShipSkillCooldownColumns(MySqlClient);
             CharacterInfo.EnsureRuntimeStateColumns(MySqlClient);
             MySqlClient.ClearParameters();
@@ -3219,23 +3185,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("experience", (object)experience);
             MySqlClient.SetParameter("level", (object)newLevel);
             MySqlClient.SetParameter("honor", (object)honor);
-            MySqlClient.SetParameter("lastlogin", (object)UnixTimestamp.GetCurrent());
-            MySqlClient.SetParameter("locx", (object)saveLocX);
-            MySqlClient.SetParameter("locy", (object)saveLocY);
-            MySqlClient.SetParameter("mapid", (object)saveMapId);
-            MySqlClient.SetParameter("online", (object)online);
-            MySqlClient.SetParameter("current_hp", (object)(this.TdmDead ? this.ShipMaxHp : this.ShipHp));
-            MySqlClient.SetParameter("current_shield1", (object)ClampRuntimeValue(this.Config1.Shield, 0, this.Config1.MaxShield));
-            MySqlClient.SetParameter("current_shield2", (object)ClampRuntimeValue(this.Config2.Shield, 0, this.Config2.MaxShield));
-            MySqlClient.SetParameter("active_config", (object)(this.ActiveConfig == 2 ? 2 : 1));
-            MySqlClient.SetParameter("cdISH", (object)this.CoolDownISH);
-            MySqlClient.SetParameter("cdSMB", (object)this.CoolDownSMB);
-            MySqlClient.SetParameter("cdIH", (object)this.GetShipSkillCooldown(1));
-            MySqlClient.SetParameter("cdWS", (object)this.GetShipSkillCooldown(2));
-            MySqlClient.SetParameter("cdPS", (object)this.GetShipSkillCooldown(3));
-            MySqlClient.SetParameter("cdFOR", (object)this.GetShipSkillCooldown(4));
-            MySqlClient.SetParameter("cdSIN", (object)this.GetShipSkillCooldown(5));
-            MySqlClient.SetParameter("cdSB", (object)this.GetShipSkillCooldown(6));
             // Rewards remain deltas; runtime vitals/location use the separate life fence.
             MySqlClient.ExecuteNonQuery("UPDATE users SET uridium=uridium+@uridium,credits=credits+@credits,npc_kill=npc_kill+@npcPoints,rankpoints=rankpoints+@rankpoints,experience=experience+@experience,level=@level,honor=honor+@honor WHERE id=@id LIMIT 1");
             SynchronizeStatisticsCore(MySqlClient, this.Disconnected ? 0 : 1);

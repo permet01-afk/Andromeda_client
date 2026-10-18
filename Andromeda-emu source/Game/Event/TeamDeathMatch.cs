@@ -148,6 +148,7 @@ namespace OrbitReborn_Emulator.Game.Event
             var killer = context.Cause == GameplayDeathCause.Pvp ? c.Attacker : null;
             bool admitted = State.Die(victim.CharacterId, killer == null ? 0 : killer.CharacterId, context.TdmLife);
             // ANDROMEDA CUSTOM: no wear, hull debt, cargo loss or kill payout.
+            c.Invisible = 0;
             c.TdmDead = true; c.PendingDroneDeath = null; c.Destroy = true;
             c.CanMove = false; c.CanLaserAttack = false;
             if (!admitted && !State.IsDead(victim.CharacterId)) State.AbortParticipant(victim.CharacterId);

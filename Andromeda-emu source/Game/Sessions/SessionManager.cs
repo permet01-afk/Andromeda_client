@@ -173,6 +173,23 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 SessionManager.mCharacterSessionIndex[characterId] = session.Id;
         }
 
+        // Login is rare. An old chat may outlive its gameplay owner's committed
+        // death and removal from the gameplay index, so scan the chat transports.
+        internal static void RetirePreviousChatSessions(Session gameplayOwner)
+        {
+            if (gameplayOwner == null || gameplayOwner.IsChat || gameplayOwner.CharacterInfo == null) return;
+            lock (TechInventoryService.SyncRoot(gameplayOwner.CharacterId))
+            {
+                foreach (Session chat in mSessions.Values)
+                {
+                    if (chat == null || !chat.IsChat || chat.CharacterId != gameplayOwner.CharacterId) continue;
+                    chat.Stop();
+                    chat.Dispose();
+                    ForgetSession(chat);
+                }
+            }
+        }
+
         public static void UnregisterAuthenticatedSession(Session session)
         {
             if (session == null)
@@ -552,7 +569,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             foreach (Session session in (IEnumerable<Session>)SessionManager.mSessions.Values)
             {
-                if (!session.StoppedPlayer && session.IsChat && session.CharacterInfo.Username.ToLower() == uname)
+                if (!session.StoppedPlayer && session.IsChat && session.HasCurrentChatAuthority
+                    && session.CharacterInfo.Username.ToLower() == uname)
                     return session;
             }
             return (Session)null;
@@ -562,7 +580,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             foreach (Session session in (IEnumerable<Session>)SessionManager.mSessions.Values)
             {
-                if (!session.StoppedPlayer && session.IsChat && session.CharacterInfo.Username.ToLower() == Username)
+                if (!session.StoppedPlayer && session.IsChat && session.HasCurrentChatAuthority
+                    && session.CharacterInfo.Username.ToLower() == Username)
                     return session;
             }
             return (Session)null;

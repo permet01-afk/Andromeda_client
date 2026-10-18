@@ -147,7 +147,8 @@ namespace OrbitReborn_Emulator.Game.Chat
             {
                 foreach (Session item_0 in (IEnumerable<Session>)ChatManager.GlobalChannel.Keys)
                 {
-                    if (item_0 != null)
+                    if (item_0 != null && (!UsersWithRightsOnly
+                        || (item_0.CharacterInfo != null && item_0.CharacterInfo.IsAdmin)))
                         item_0.SendData(Message);
                 }
             }

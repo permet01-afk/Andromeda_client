@@ -1,0 +1,286 @@
+-- ANDROMEDA — MODIFICATIONS SQL À EXÉCUTER MANUELLEMENT
+-- Référence source : 3048de7d47c1a15e74793bdecb1aa64fd20585cb + candidat de clôture.
+-- Ce fichier est une procédure préparée. AUCUNE requête n'a été exécutée par son auteur.
+-- Ne pas exécuter sur une base simplement parce qu'elle porte un nom familier.
+-- Identifier d'abord l'instance, son port et la base réellement utilisée par votre émulateur.
+--
+-- OBLIGATOIRE POUR LE C# CLOAK
+-- Une seule évolution : users.cloak_active TINYINT(1) NOT NULL DEFAULT 0.
+-- La colonne est lue par le SELECT utilisateur existant et sauvée dans les UPDATE
+-- snapshot/mort existants. Aucun job, index, table, trigger, timer, polling ou nouveau
+-- journal de récompense n'est requis par ce correctif.
+-- Ne pas démarrer le nouveau C# avant que cette colonne soit présente et compatible.
+-- Une installation où la colonne est déjà correcte ne doit pas la recréer, la modifier
+-- ni remettre ses valeurs à zéro. Le bloc B ci-dessous conserve les valeurs existantes.
+--
+-- FACULTATIF : aucune autre modification SQL n'est proposée dans cette livraison.
+-- DESTRUCTIF : aucune suppression n'est nécessaire. Ne pas vider/supprimer de table,
+-- de compte, de reçu, de log, d'index ou de colonne pour installer ce correctif.
+-- Le retrait de l'INSERT historique auction_bids est un changement de code seulement :
+-- ne pas exécuter de DELETE/TRUNCATE/DROP sur auction_bids ou auction_wins.
+--
+-- AVANT SQL : SAUVEGARDE ET FENÊTRE D'ARRÊT
+-- 1. Fermer proprement les sessions de jeu ; arrêter l'émulateur qui écrit dans cette
+--    base et suspendre les écritures du site/tâches planifiées pendant l'opération.
+--    Ne pas arrêter un autre serveur/jeu sans rapport avec cette installation.
+-- 2. Conserver à part la version précédente complète du code, ses dépendances,
+--    configurations et paramètres de connexion. Ne pas la mélanger au nouveau build.
+-- 3. Dans phpMyAdmin, choisir LA base de cette installation dans la colonne de gauche.
+--    Ouvrir Exporter -> méthode personnalisée -> format SQL.
+--    Sélectionner toutes ses tables, structure ET données ; conserver les valeurs
+--    AUTO_INCREMENT. Inclure triggers, routines et événements si l'instance en possède
+--    et si vos droits/options d'export le permettent. Garder aussi les vues existantes.
+--    Si ces objets existent mais ne peuvent pas être exportés, faire compléter la
+--    sauvegarde par l'administrateur AVANT de poursuivre.
+-- 4. Télécharger le fichier, vérifier qu'il est non vide, l'ouvrir localement et
+--    confirmer qu'il contient notamment la structure et les données de users.
+--    Stocker ce fichier HORS du webroot, du dépôt Git et du paquet à partager : il
+--    contient des données de comptes sensibles. Ne pas le joindre au rapport public.
+-- 5. Pour une sauvegarde déjà qualifiée : vérifier sa restauration sur une base
+--    séparée de test, avec structure/données/compteurs et objets nécessaires.
+--    Le simple téléchargement d'un export ne prouve pas qu'il est restaurable.
+-- 6. Conserver aussi SHOW CREATE TABLE users avant modification (bloc A).
+--    ALTER TABLE peut attendre des verrous ou copier une table selon moteur/version.
+--    Il provoque un commit implicite : START TRANSACTION/ROLLBACK ne permet pas
+--    d'annuler cet ajout. Ne pas exécuter cette procédure au milieu d'une transaction.
+--
+-- UTILISATION PHPMYADMIN
+-- Exécuter A, puis lire ses résultats. Exécuter B seulement après sauvegarde et arrêt.
+-- Dans CHAQUE bloc, remplacer le nom A_REMPLACER_PAR_BASE_ANDROMEDA par le nom
+-- exact vérifié de votre base. Le garde refuse toute modification si ce nom diffère
+-- de DATABASE(). Ne pas remplacer ce garde par DATABASE() pour éviter la vérification.
+-- Les comparaisons CAST AS BINARY conservent la casse exacte du nom même si la
+-- collation habituelle du serveur est insensible à la casse.
+-- Copier un bloc complet dans l'onglet SQL puis cliquer Exécuter. Pas de DELIMITER,
+-- procédure stockée, changement sql_mode ou droit administrateur global nécessaire.
+-- Si l'accès information_schema ou le droit ALTER manque : STOP, ne pas contourner.
+-- La syntaxe utilise information_schema + PREPARE/EXECUTE/DEALLOCATE, sans dépendre
+-- de ADD COLUMN IF NOT EXISTS, qui n'est pas portable entre les branches visées.
+-- Cible documentaire : MariaDB 10.4 de l'environnement existant ; syntaxe également
+-- fondée sur les primitives SQL préparées documentées pour MySQL 8.0. Autres versions à vérifier
+-- sur une copie avant installation. Aucune exécution inter-version n'est revendiquée.
+
+-- ============================================================================
+-- BLOC A — LECTURE SEULE : INSTANCE, BASE ET COLONNE
+-- Remplacer UNE valeur ci-dessous. Aucun ALTER/UPDATE n'est exécuté dans ce bloc.
+-- ============================================================================
+
+SET @andromeda_expected_schema := 'A_REMPLACER_PAR_BASE_ANDROMEDA';
+
+SELECT VERSION() AS version_serveur,
+       @@port AS port_SQL,
+       DATABASE() AS base_selectionnee,
+       @andromeda_expected_schema AS base_attendue,
+       CASE
+           WHEN DATABASE() IS NULL THEN 'STOP : aucune base selectionnee'
+           WHEN CAST(DATABASE() AS BINARY) <> CAST(@andromeda_expected_schema AS BINARY) THEN 'STOP : base selectionnee differente'
+           ELSE 'Base concordante : verifier encore instance/port et sauvegarde'
+       END AS controle_base;
+
+SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE, ENGINE
+FROM information_schema.TABLES
+WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(DATABASE() AS BINARY)
+  AND CAST(DATABASE() AS BINARY) = CAST(@andromeda_expected_schema AS BINARY)
+  AND TABLE_NAME = 'users';
+
+SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, COLUMN_TYPE,
+       IS_NULLABLE, COLUMN_DEFAULT, EXTRA
+FROM information_schema.COLUMNS
+WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(DATABASE() AS BINARY)
+  AND CAST(DATABASE() AS BINARY) = CAST(@andromeda_expected_schema AS BINARY)
+  AND TABLE_NAME = 'users'
+  AND COLUMN_NAME = 'cloak_active';
+
+SET @andromeda_users_tables := (
+    SELECT COUNT(*)
+    FROM information_schema.TABLES
+    WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(DATABASE() AS BINARY)
+      AND CAST(DATABASE() AS BINARY) = CAST(@andromeda_expected_schema AS BINARY)
+      AND TABLE_NAME = 'users'
+      AND TABLE_TYPE = 'BASE TABLE'
+);
+
+SET @andromeda_show_sql := CASE
+    WHEN @andromeda_users_tables = 1 THEN
+        CONCAT('SHOW CREATE TABLE `', REPLACE(DATABASE(), '`', '``'), '`.`users`')
+    ELSE 'SELECT ''STOP : users absent, base non concordante ou droits insuffisants'' AS resultat'
+END;
+
+PREPARE andromeda_cloak_statement FROM @andromeda_show_sql;
+EXECUTE andromeda_cloak_statement;
+DEALLOCATE PREPARE andromeda_cloak_statement;
+
+-- Résultat attendu : la bonne instance/base, UNE table users.
+-- Si cloak_active n'a aucune ligne : son ajout est nécessaire (bloc B).
+-- Si elle existe : vérifier type entier tinyint, NOT NULL, défaut 0 et EXTRA vide.
+-- La colonne doit être ordinaire et visible : le C# la charge via SELECT *.
+-- Un champ INVISIBLE, généré, auto_increment ou à défaut calculé n'est pas accepté.
+-- Une largeur d'affichage tinyint/tinyint(1)/tinyint(n) n'affecte pas les valeurs 0/1.
+-- Un type différent, NULL autorisé, autre défaut ou EXTRA non vide impose STOP.
+-- Ne pas convertir/modifier une colonne existante automatiquement.
+
+-- ============================================================================
+-- BLOC B — AJOUT OBLIGATOIRE CONDITIONNEL, APRÈS SAUVEGARDE ET ARRÊT
+-- Le seul DDL possible est ADD COLUMN si elle est ABSENTE dans la base confirmée.
+-- Une colonne compatible existante est laissée intacte, y compris ses valeurs 1.
+-- Exécuter ce bloc complet, sans autre migration concurrente.
+-- ============================================================================
+
+SET @andromeda_expected_schema := 'A_REMPLACER_PAR_BASE_ANDROMEDA';
+SET @andromeda_schema := DATABASE();
+
+SET @andromeda_users_tables := (
+    SELECT COUNT(*)
+    FROM information_schema.TABLES
+    WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(@andromeda_schema AS BINARY)
+      AND CAST(@andromeda_schema AS BINARY) = CAST(@andromeda_expected_schema AS BINARY)
+      AND TABLE_NAME = 'users'
+      AND TABLE_TYPE = 'BASE TABLE'
+);
+
+SET @andromeda_cloak_columns := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(@andromeda_schema AS BINARY)
+      AND CAST(@andromeda_schema AS BINARY) = CAST(@andromeda_expected_schema AS BINARY)
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'cloak_active'
+);
+
+SET @andromeda_cloak_compatible := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(@andromeda_schema AS BINARY)
+      AND CAST(@andromeda_schema AS BINARY) = CAST(@andromeda_expected_schema AS BINARY)
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'cloak_active'
+      AND DATA_TYPE = 'tinyint'
+      AND IS_NULLABLE = 'NO'
+      AND REPLACE(COALESCE(COLUMN_DEFAULT, ''), CHAR(39), '') = '0'
+      AND COALESCE(EXTRA, '') = ''
+);
+
+SET @andromeda_migration_sql := CASE
+    WHEN @andromeda_schema IS NULL THEN
+        'SELECT ''STOP : aucune base selectionnee, aucune modification'' AS resultat'
+    WHEN CAST(@andromeda_schema AS BINARY) <> CAST(@andromeda_expected_schema AS BINARY) THEN
+        'SELECT ''STOP : nom de base non confirme, aucune modification'' AS resultat'
+    WHEN @andromeda_users_tables <> 1 THEN
+        'SELECT ''STOP : users absent/non unique ou droits insuffisants, aucune modification'' AS resultat'
+    WHEN @andromeda_cloak_columns = 0 THEN
+        CONCAT('ALTER TABLE `', REPLACE(@andromeda_schema, '`', '``'),
+               '`.`users` ADD COLUMN `cloak_active` TINYINT(1) NOT NULL DEFAULT 0')
+    WHEN @andromeda_cloak_columns = 1 AND @andromeda_cloak_compatible = 1 THEN
+        'SELECT ''DEJA COMPATIBLE : aucune modification, valeurs existantes conservees'' AS resultat'
+    ELSE
+        'SELECT ''STOP : cloak_active existe mais son contrat differe ; aucune conversion ni remise a zero'' AS resultat'
+END;
+
+SELECT @andromeda_schema AS base_cible,
+       @andromeda_migration_sql AS instruction_choisie;
+
+PREPARE andromeda_cloak_statement FROM @andromeda_migration_sql;
+EXECUTE andromeda_cloak_statement;
+DEALLOCATE PREPARE andromeda_cloak_statement;
+
+-- Si le résultat contient STOP ou une erreur, ne pas lancer le nouveau C#.
+-- Ne pas ajouter IGNORE, modifier le sql_mode, vider des données, forcer un lock
+-- ni convertir la colonne pour faire disparaître l'erreur. Conserver le résultat.
+-- En cas de course d'ajout par un autre administrateur : arrêter, relire A puis C.
+-- Pas de retry aveugle. Une erreur du DDL n'autorise pas la reprise du serveur.
+
+-- ============================================================================
+-- BLOC C — CONTRÔLE APRÈS AJOUT / NO-OP, LECTURE SEULE DES DONNÉES
+-- Remplacer le même nom. Pas de DML : les valeurs existantes ne sont pas corrigées.
+-- ============================================================================
+
+SET @andromeda_expected_schema := 'A_REMPLACER_PAR_BASE_ANDROMEDA';
+SET @andromeda_schema := DATABASE();
+
+SELECT TABLE_SCHEMA, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA
+FROM information_schema.COLUMNS
+WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(@andromeda_schema AS BINARY)
+  AND CAST(@andromeda_schema AS BINARY) = CAST(@andromeda_expected_schema AS BINARY)
+  AND TABLE_NAME = 'users'
+  AND COLUMN_NAME = 'cloak_active';
+
+SET @andromeda_cloak_compatible := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(@andromeda_schema AS BINARY)
+      AND CAST(@andromeda_schema AS BINARY) = CAST(@andromeda_expected_schema AS BINARY)
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'cloak_active'
+      AND DATA_TYPE = 'tinyint'
+      AND IS_NULLABLE = 'NO'
+      AND REPLACE(COALESCE(COLUMN_DEFAULT, ''), CHAR(39), '') = '0'
+      AND COALESCE(EXTRA, '') = ''
+);
+
+SET @andromeda_verify_sql := CASE
+    WHEN @andromeda_cloak_compatible = 1 THEN
+        CONCAT('SELECT COUNT(*) AS comptes_total, ',
+               'COALESCE(SUM(`cloak_active` = 0), 0) AS visibles, ',
+               'COALESCE(SUM(`cloak_active` = 1), 0) AS invisibles, ',
+               'COALESCE(SUM(`cloak_active` IS NULL OR `cloak_active` NOT IN (0, 1)), 0) AS valeurs_hors_contrat ',
+               'FROM `', REPLACE(@andromeda_schema, '`', '``'), '`.`users`')
+    ELSE
+        'SELECT ''STOP : colonne absente/incompatible ou base non concordante ; controle donnees non execute'' AS resultat'
+END;
+
+PREPARE andromeda_cloak_statement FROM @andromeda_verify_sql;
+EXECUTE andromeda_cloak_statement;
+DEALLOCATE PREPARE andromeda_cloak_statement;
+
+-- Résultat requis : une colonne compatible et valeurs_hors_contrat = 0.
+-- Lors d'un PREMIER ajout, les anciennes lignes reçoivent la nouvelle valeur par
+-- défaut 0 (visibles). Aucune ancienne colonne n'est remise à zéro.
+-- Si la colonne existait, des invisibles = 1 sont légitimes : ne pas les réinitialiser.
+-- Si valeurs_hors_contrat > 0 : STOP et diagnostic des lignes concernées après backup,
+-- pas d'UPDATE global automatique dans ce fichier.
+-- Vérifier que le nombre total de comptes est inchangé par rapport à la sauvegarde.
+-- Conserver les sorties A/B/C et le fichier export dans votre stockage privé.
+--
+-- INSTALLATION DU CODE APRÈS VALIDATION SQL
+-- 1. Déployer manuellement les seuls fichiers approuvés sur la base source exacte.
+-- 2. Recompiler Release avec les dépendances prévues et configuration de VOTRE instance.
+-- 3. Démarrer le nouveau C# seulement après le contrôle C réussi ; ne pas laisser
+--    tourner deux émulateurs concurrents contre la même base pendant la migration.
+-- 4. Tester sur un compte de test : visibilité au login, activation du camouflage,
+--    changement de configuration, logout normal/reconnexion, tir qui décloque.
+--    Les résultats de ce test local doivent être observés, pas déduits de ce fichier.
+--
+-- ROLLBACK RECOMMANDÉ — CODE D'ABORD, COLONNE CONSERVÉE
+-- 1. Suspendre les écritures et arrêter proprement le nouvel émulateur.
+-- 2. Revenir à la copie complète du code/binaire/configuration précédente (base3048
+--    ou autre version précédente explicitement sauvegardée), puis recompiler si requis.
+-- 3. Laisser cloak_active en place : l'ancien code ne l'utilise pas. Cette colonne
+--    additive évite une perte de ses valeurs et n'impose pas un rollback SQL.
+--    L'ancien code peut à nouveau rendre le héros visible au login : ancien comportement.
+-- 4. Ne restaurer un export complet QUE si une restauration des données est réellement
+--    nécessaire, avec écritures arrêtées et administrateur : restaurer l'export écrase
+--    les modifications de comptes survenues depuis sa date. Ce n'est pas requis pour
+--    un simple rollback du code qui conserve la colonne.
+-- 5. La suppression facultative de cloak_active serait DESTRUCTIVE pour ses valeurs.
+--    Elle est déconseillée ici, n'est pas nécessaire au rollback et n'est pas fournie
+--    sous forme de commande exécutable. Elle exigerait une décision distincte,
+--    sauvegarde des valeurs et retour de TOUS les lecteurs/écrivains à l'ancien code.
+--    Ne jamais supprimer la colonne tant qu'un nouveau C# peut encore la lire/écrire.
+--
+-- SOURCES DE SYNTAXE / LIMITES
+-- MariaDB PREPARE (ALTER TABLE autorisé avant10.6.2, notamment10.4) :
+-- https://mariadb.com/docs/server/reference/sql-statements/prepared-statements/prepare-statement
+-- MariaDB information_schema.COLUMNS (type, défaut, nullabilité) :
+-- https://mariadb.com/docs/server/reference/system-tables/information-schema/information-schema-tables/information-schema-columns-table
+-- MariaDB : ALTER TABLE provoque un commit implicite :
+-- https://mariadb.com/docs/server/reference/sql-statements/transactions/sql-statements-that-cause-an-implicit-commit
+-- MySQL8.0 PREPARE et commits implicites :
+-- https://dev.mysql.com/doc/refman/8.0/en/prepare.html
+-- https://dev.mysql.com/doc/refman/8.0/en/implicit-commit.html
+-- MySQL : une colonne INVISIBLE n'est pas incluse dans SELECT * :
+-- https://dev.mysql.com/doc/refman/8.0/en/invisible-columns.html
+-- phpMyAdmin : export/import SQL de structure et données :
+-- https://docs.phpmyadmin.net/en/master/import_export.html
+-- Le contrôle d'existence rend une réexécution séquentielle sans effet si la colonne
+-- est compatible. Ce n'est pas une migration concurrente universellement atomique.
+-- Aucun test SQL runtime de ces blocs n'est revendiqué par le préparateur.

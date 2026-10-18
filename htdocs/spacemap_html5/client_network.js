@@ -4376,6 +4376,7 @@ function handlePacket_RDY(parts, i) {
     const ggRings = nextInt();
     nextStr();
     const invisible = nextStr();
+    heroCloaked = parseInt(invisible, 10) === 1;
     const isInitialRdyI = !window.__ANDRO_HAS_INITIAL_RDY_I;
     if (isInitialRdyI) window.__ANDRO_HAS_INITIAL_RDY_I = true;
     const mapChanged = mapId !== null && mapId !== currentMapId;
