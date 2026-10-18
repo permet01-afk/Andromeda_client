@@ -1,9 +1,7 @@
 ﻿
 
-using OrbitReborn_Emulator.Config;
 using OrbitReborn_Emulator.Game.Moderation;
 using OrbitReborn_Emulator.Storage;
-using System;
 using System.Data;
 
 namespace OrbitReborn_Emulator.Game.Sessions
@@ -12,7 +10,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
     {
         private static int mSuccessfulLoginCount;
         private static int mFailedLoginCount;
-        private static object mAuthSyncRoot;
 
         public static int SuccessfulLoginCount
         {
@@ -42,7 +39,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             SingleSignOnAuthenticator.mSuccessfulLoginCount = 0;
             SingleSignOnAuthenticator.mFailedLoginCount = 0;
-            SingleSignOnAuthenticator.mAuthSyncRoot = new object();
         }
 
         public static int TryAuthenticate(SqlDatabaseClient MySqlClient, string Ticket, string RemoteAddress)
@@ -55,9 +51,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 Output.WriteLine((object)("Login from " + RemoteAddress + " rejected: SSO ticket too short."));
                 return 0;
             }
-            string str = (string)ConfigManager.GetValue("debug.sso");
-            if (str.Length > 0 && Ticket == str)
-                return 1;
             int num = 0;
             string empty = string.Empty;
             MySqlClient.ClearParameters();

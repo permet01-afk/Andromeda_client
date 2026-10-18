@@ -216,20 +216,6 @@ class AuctionService
         );
 
         $this->db->exec(
-            "CREATE TABLE IF NOT EXISTS auction_bids (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                lot_id INT NOT NULL,
-                player_id INT NOT NULL,
-                bid_credits BIGINT NOT NULL,
-                previous_bidder_id INT DEFAULT NULL,
-                previous_bid_credits BIGINT NOT NULL DEFAULT 0,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                KEY idx_lot_created (lot_id, created_at),
-                KEY idx_player_created (player_id, created_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
-        );
-
-        $this->db->exec(
             "CREATE TABLE IF NOT EXISTS auction_wins (
                 id BIGINT AUTO_INCREMENT PRIMARY KEY,
                 round_id INT NOT NULL,

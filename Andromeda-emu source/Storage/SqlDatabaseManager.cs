@@ -19,7 +19,6 @@ namespace OrbitReborn_Emulator.Storage
     private static int mPoolLifetime;
     private static int mClientIdGenerator;
     private static object mSyncRoot;
-    private static ManualResetEvent mPoolWait;
     private static Timer mMonitorThread;
 
     public static int ClientCount
@@ -56,7 +55,6 @@ namespace OrbitReborn_Emulator.Storage
       SqlDatabaseManager.mMaxPoolSize = (int) ConfigManager.GetValue("mysql.pool.max");
       SqlDatabaseManager.mPoolLifetime = (int) ConfigManager.GetValue("mysql.pool.lifetime");
       SqlDatabaseManager.mSyncRoot = new object();
-      SqlDatabaseManager.mPoolWait = new ManualResetEvent(true);
       double monitorIntervalSeconds = Math.Max(1.0, SqlDatabaseManager.mPoolLifetime / 2.0);
       TimeSpan monitorInterval = TimeSpan.FromSeconds(monitorIntervalSeconds);
       SqlDatabaseManager.mMonitorThread = new Timer(new TimerCallback(SqlDatabaseManager.ProcessMonitorThread), (object) null, monitorInterval, monitorInterval);

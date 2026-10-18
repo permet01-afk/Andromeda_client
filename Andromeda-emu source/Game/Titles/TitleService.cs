@@ -5,6 +5,7 @@ using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Techs;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
 using OrbitReborn_Emulator.Util;
@@ -296,6 +297,7 @@ namespace OrbitReborn_Emulator.Game.Titles
         public static void EnsureMostWantedHolder()
         {
             long perfStart = PerformanceProfiler.Start();
+            bool reconcileRemovedPlayerTitles = false;
             try
             {
                 using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("MostWanted"))
@@ -326,6 +328,11 @@ namespace OrbitReborn_Emulator.Game.Titles
                         if (string.Equals(holderType, "npc", StringComparison.OrdinalIgnoreCase))
                         {
                             Npc npc = FindNpcById(GetInt(state, "holder_npc_id"));
+                            // Death admission precedes OnNpcDestroyed; let that hook settle its title transfer.
+                            if (npc != null && npc.IsDestroying)
+                            {
+                                return;
+                            }
                             if (IsEligibleMostWantedNpc(npc))
                             {
                                 SetNpcTitle(npc, MostWantedTitleKey, true);
@@ -333,6 +340,7 @@ namespace OrbitReborn_Emulator.Game.Titles
                             }
                         }
 
+                        reconcileRemovedPlayerTitles = string.Equals(holderType, "none", StringComparison.OrdinalIgnoreCase);
                         AssignMostWantedToRandomNpc(client);
                     }
                 }
@@ -342,7 +350,39 @@ namespace OrbitReborn_Emulator.Game.Titles
             }
             finally
             {
+                // PHP has already revoked the temporary title before clearing its holder.
+                // Reconcile outside the SQL lease and MostWantedLock to keep lifecycle -> title lock order.
+                if (reconcileRemovedPlayerTitles)
+                {
+                    try { ReconcileRemovedMostWantedPlayers(); }
+                    catch { }
+                }
                 PerformanceProfiler.LogTitle("MostWanted", perfStart);
+            }
+        }
+
+        private static void ReconcileRemovedMostWantedPlayers()
+        {
+            foreach (Session session in (IEnumerable<Session>)SessionManager.SessionsUser.Keys)
+            {
+                CharacterInfo information = session == null ? null : session.CharacterInfo;
+                if (information == null || !string.Equals(information.GameTitle, MostWantedTitleKey, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                lock (TechInventoryService.SyncRoot(information.Id))
+                lock (MostWantedLock)
+                {
+                    if (!session.GameplayReady || session.IsChat || !object.ReferenceEquals(session.CharacterInfo, information)
+                        || !object.ReferenceEquals(SessionManager.GetSessionByCharacterId(information.Id), session)
+                        || !string.Equals(information.GameTitle, MostWantedTitleKey, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    RefreshDisplayedTitle(session, false);
+                }
             }
         }
 
@@ -548,7 +588,7 @@ namespace OrbitReborn_Emulator.Game.Titles
 
         private static bool IsEligibleMostWantedNpc(Npc npc)
         {
-            if (npc == null || npc.IsDestroying || npc.ParentNpcId > 0 || npc.MapId <= 0)
+            if (npc == null || npc.IsDestroying || npc.ParentNpcId != 0 || npc.MapId <= 0)
             {
                 return false;
             }
@@ -574,7 +614,7 @@ namespace OrbitReborn_Emulator.Game.Titles
 
         private static Npc FindNpcById(int npcId)
         {
-            if (npcId <= 0)
+            if (npcId == 0)
             {
                 return null;
             }

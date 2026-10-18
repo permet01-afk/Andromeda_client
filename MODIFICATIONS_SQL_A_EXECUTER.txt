@@ -1,3 +1,20 @@
+-- LOT NETTOYAGE EXPERIMENTAL — BASE ddd0751076b69d724b6e26677b57ba46aa79ad90
+-- Aucun ajout/modification/suppression SQL obligatoire SUPPLEMENTAIRE pour ce lot.
+-- Aucune table ne doit etre supprimee pour installer le nettoyage du code.
+-- Les propositions facultatives sont dans SUPPRESSIONS_SQL_OPTIONNELLES_A_VALIDER.txt,
+-- livre separement pour examen : aucune suppression n'est actuellement qualifiee D.
+-- Ne pas executer de DROP/TRUNCATE/DELETE sur la base principale pour ce nettoyage.
+--
+-- PRE-REQUIS GLOBAL CONSERVE CI-DESSOUS
+-- Le manuel cloak du correctif Global + Chat Closure reste integralement conserve.
+-- Si ce prerequis est deja installe et verifie, ne pas le refaire par principe.
+-- Pour une installation neuve ou une colonne absente, suivre les blocs A/B/C
+-- ci-dessous apres sauvegarde et confirmation de l'instance, du port et du schema.
+-- Ce fichier n'a pas ete execute sur la base principale pendant cet audit.
+-- Rollback du nettoyage : restaurer le code de base ddd075... ; aucun rollback SQL.
+-- Un rollback plus ancien du cloak est detaille dans le manuel conserve ci-dessous.
+-- ============================================================================
+
 -- ANDROMEDA — MODIFICATIONS SQL À EXÉCUTER MANUELLEMENT
 -- Référence source : 3048de7d47c1a15e74793bdecb1aa64fd20585cb + candidat de clôture.
 -- Ce fichier est une procédure préparée. AUCUNE requête n'a été exécutée par son auteur.

@@ -49,7 +49,6 @@ namespace OrbitReborn_Emulator.Config
       ConfigManager.mConfigData.Add("net.backlog", new ConfigElement("net.backlog", ConfigElementType.Integer, (object) 50));
       ConfigManager.mConfigData.Add("net.bind.ip", new ConfigElement("net.bind.ip", ConfigElementType.IpAddress, (object) IPAddress.Any));
       ConfigManager.mConfigData.Add("net.bind.port", new ConfigElement("net.bind.port", ConfigElementType.Integer, (object) 8080));
-      ConfigManager.mConfigData.Add("debug.sso", new ConfigElement("debug.sso", ConfigElementType.Text, (object) string.Empty));
       ConfigManager.mConfigData.Add("lang", new ConfigElement("lang", ConfigElementType.Text, (object) "en"));
       if (System.IO.File.Exists(ConfigManager.mConfigPath))
       {

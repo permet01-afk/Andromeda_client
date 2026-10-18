@@ -183,9 +183,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         return;
                     PvpManager.PvpEnabled = false;
                     return;
-                case "/test":
-                    _1v1.initMatch(21147, 1);
-                    return;
                 case "/enable_pvp":
                     if (!Session.CharacterInfo.IsAdmin)
                         return;

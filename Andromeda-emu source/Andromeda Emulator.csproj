@@ -102,7 +102,6 @@
     <Compile Include="Game\GalaxyGates\GalaxyGateRewardStore.cs" />
     <Compile Include="Game\GalaxyGates\GalaxyGateWaveService.cs" />
     <Compile Include="Game\GalaxyGates\GalaxyGateProtection.cs" />
-    <Compile Include="Game\Handlers\AutoEvent.cs" />
     <Compile Include="Game\Handlers\GroupManager.cs" />
     <Compile Include="Game\Handlers\Groupsystem.cs" />
     <Compile Include="Game\Maps\Collectables\ApocalypseBox.cs" />

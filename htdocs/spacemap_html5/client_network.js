@@ -913,7 +913,6 @@ function __drainRxQueue() {
     const plan = __getRxDrainPlan(gameBacklogBefore, chatBacklogBefore);
     let processed = 0;
     let processedChat = 0;
-    let processedGame = 0;
     while (processed < plan.maxLines && __rxNowMs() - startedAt < plan.budgetMs) {
         let item = null;
         if (__getRxBacklog("game") > 0) {
@@ -930,7 +929,7 @@ function __drainRxQueue() {
         const applied = __processQueuedRxLine(item);
         if (applied) {
             processed++;
-            if (item.channel === "chat") processedChat++; else processedGame++;
+            if (item.channel === "chat") processedChat++;
         }
     }
     __compactRxQueueIfNeeded("game");

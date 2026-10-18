@@ -121,7 +121,6 @@ wss.on("connection", (ws, req) => {
     let wsResumeTimer = null;
     let tcpProcessScheduled = false;
     let tcpProcessing = false;
-    let tcpBackpressured = false;
     const scheduleTcpBufferProcessing = () => {
         if (closed || tcpProcessScheduled) return;
         tcpProcessScheduled = true;
@@ -289,10 +288,7 @@ wss.on("connection", (ws, req) => {
                 const preview = payload.length > 200 ? payload.slice(0, 200).toString("utf8") + "..." : payload.toString("utf8");
                 console.log("[WS -> TCP]", JSON.stringify(preview));
             }
-            const writeOk = tcp.write(payload);
-            if (!writeOk) {
-                tcpBackpressured = true;
-            }
+            tcp.write(payload);
             ensureTcpWriteRoom();
         } catch (e) {
             console.error("[WS -> TCP] error:", e.message);
@@ -311,11 +307,6 @@ wss.on("connection", (ws, req) => {
         } catch (e) {
             console.error("[TCP -> WS] error:", e.message);
             closeBoth("TCP->WS error", 1011, "tcp_to_ws_error");
-        }
-    });
-    tcp.on("drain", () => {
-        if (tcpBackpressured) {
-            tcpBackpressured = false;
         }
     });
     ws.on("close", (code, reasonBuffer) => {
