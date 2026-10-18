@@ -4361,7 +4361,13 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 lock (player.CharacterInfo.DroneImpactSyncRoot)
                 {
                     if (!DroneWearService.IsPendingDeath(player, context)) return;
-                    if (TeamDeathMatch.TryDeath(player, context)) return;
+                    // Finish prior earnings before advancing the life epoch.
+                    LocalRewardOperations.CloseAndDrain(player);
+                    if (TeamDeathMatch.TryDeath(player, context))
+                    {
+                        LocalRewardOperations.Open(player);
+                        return;
+                    }
                     result = ShipLifecycleService.AdmitDeath(player.CharacterId,context);
                     if (result == null) throw new InvalidOperationException("Death owner or life no longer matches.");
                     player.CharacterInfo.Destroy = true;

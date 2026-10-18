@@ -67,7 +67,12 @@ namespace OrbitReborn_Emulator.Game.Sessions
             {
                 num = (int)dataRow["id"];
                 empty = (string)dataRow["username"];
-                SingleSignOnAuthenticator.RemoveTicket(MySqlClient, (int)dataRow["id"], RemoteAddress);
+                if (!SingleSignOnAuthenticator.TryConsumeTicket(MySqlClient, num, Ticket, RemoteAddress))
+                {
+                    ++SingleSignOnAuthenticator.mFailedLoginCount;
+                    Output.WriteLine((object)("Login from " + RemoteAddress + " rejected: SSO ticket claim failed."));
+                    return 0;
+                }
             }
             if (num <= 0)
             {
@@ -81,35 +86,21 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 Output.WriteLine((object)("Login from " + RemoteAddress + " rejected: blacklisted ID."));
                 return 0;
             }
-            if (SessionManager.ContainsCharacterId(num))
-            {
-                Session sessionByCharacterId = SessionManager.GetSessionByCharacterId(num);
-                if (sessionByCharacterId != null)
-                {
-                    try
-                    {
-                        if (sessionByCharacterId.CharacterInfo != null)
-                            sessionByCharacterId.CharacterInfo.SynchronizeShipSkillCooldowns(MySqlClient);
-                    }
-                    catch (Exception ex)
-                    {
-                        Output.WriteLine((object)("SSO ship skill cooldown sync failed before reconnect handoff: " + ex.ToString()), OutputLevel.Warning);
-                    }
-                }
-                Output.WriteLine((object)"SSO existing gameplay session found; keeping ship on map for reconnect handoff.");
-            }
             Output.WriteLine((object)("User " + empty + " (ID " + (object)num + ") has logged in from " + RemoteAddress + "."));
             ++SingleSignOnAuthenticator.mSuccessfulLoginCount;
             return num;
         }
 
-        private static void RemoveTicket(SqlDatabaseClient MySqlClient, int UserId, string AddressToLog)
+        private static bool TryConsumeTicket(SqlDatabaseClient MySqlClient, int UserId, string Ticket, string AddressToLog)
         {
             MySqlClient.ClearParameters();
             MySqlClient.SetParameter("id", (object)UserId);
+            MySqlClient.SetParameter("ticket", (object)Ticket);
             MySqlClient.SetParameter("lastip", (object)AddressToLog);
             MySqlClient.SetParameter("lastonline", (object)UnixTimestamp.GetCurrent());
-            MySqlClient.ExecuteNonQuery("UPDATE users SET AuthTicket = '', ip = @lastip, lastlogin = @lastonline, online = 1 WHERE id = @id LIMIT 1");
+            // This conditional write is the one-use claim, including against web issuance.
+            // Zero (lost/stale claim) and -1 (the wrapper's error result) both fail closed.
+            return MySqlClient.ExecuteNonQuery("UPDATE users SET AuthTicket = '', ip = @lastip, lastlogin = @lastonline, online = 1 WHERE id = @id AND AuthTicket = @ticket LIMIT 1") == 1;
         }
     }
 }

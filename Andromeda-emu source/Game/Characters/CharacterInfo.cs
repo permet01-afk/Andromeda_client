@@ -80,6 +80,9 @@ namespace OrbitReborn_Emulator.Game.Characters
 };
         private int mId;
         private int mSessionId;
+        private volatile bool mRuntimeDataLoaded;
+        internal bool RuntimeDataLoaded { get { return this.mRuntimeDataLoaded; } }
+        internal void MarkRuntimeDataLoaded() { this.mRuntimeDataLoaded = true; }
         private string mAuthTicket;
         private string mUsername;
         private string mGameTitle;
@@ -2506,7 +2509,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public void SynchronizeShipSkillCooldowns(SqlDatabaseClient MySqlClient)
         {
-            if (MySqlClient == null)
+            if (!this.mRuntimeDataLoaded || MySqlClient == null)
                 return;
 
             CharacterInfo.EnsureShipSkillCooldownColumns(MySqlClient);
@@ -2521,7 +2524,8 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("cdSB", (object)this.GetShipSkillCooldown(6));
             MySqlClient.SetParameter("cdISH", this.CoolDownISH);
             MySqlClient.SetParameter("cdSMB", this.CoolDownSMB);
-            MySqlClient.ExecuteNonQuery("UPDATE users SET cooldown_ISH=@cdISH, cooldown_SMB=@cdSMB, cooldown_IH = @cdIH, cooldown_WS = @cdWS, cooldown_PS = @cdPS, cooldown_FOR = @cdFOR, cooldown_SIN = @cdSIN, cooldown_SB = @cdSB WHERE id = @id" + ShipLifecycleService.OwnerFence(MySqlClient, GameplayLease) + " LIMIT 1");
+            int affectedRows = MySqlClient.ExecuteNonQuery("UPDATE users SET cooldown_ISH=@cdISH, cooldown_SMB=@cdSMB, cooldown_IH = @cdIH, cooldown_WS = @cdWS, cooldown_PS = @cdPS, cooldown_FOR = @cdFOR, cooldown_SIN = @cdSIN, cooldown_SB = @cdSB WHERE id = @id" + ShipLifecycleService.OwnerFence(MySqlClient, GameplayLease) + " LIMIT 1");
+            if (affectedRows != 1) throw new InvalidOperationException("Runtime cooldown persistence failed or ownership was lost.");
         }
 
         public CharacterInfo(SqlDatabaseClient MySqlClient, int SessionId, int Id, string AuthTicket)
@@ -2883,6 +2887,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         private void SynchronizeStatisticsCore(SqlDatabaseClient MySqlClient, int online)
         {
+            if (!this.mRuntimeDataLoaded) return;
             if (DeadCommitted || DroneWearPersistenceBlocked || DroneDeathPublishing || PendingDroneDeath != null) return; // An uncertain death must not overwrite its durable respawn.
             this.SynchronizeShipSkillCooldowns(MySqlClient);
             CharacterInfo.EnsureRuntimeStateColumns(MySqlClient);
@@ -2922,7 +2927,8 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("current_shield2", (object)ClampRuntimeValue(this.Config2.Shield, 0, this.Config2.MaxShield));
             MySqlClient.SetParameter("active_config", (object)(this.ActiveConfig == 2 ? 2 : 1));
             // A web purchase/design switch must not inherit runtime vitals/config from the retired ship.
-            MySqlClient.ExecuteNonQuery("UPDATE users SET lastlogin = @lastlogin, locx = @locx, locy = @locy, cooldown_ISH = @cdISH, cooldown_SMB = @cdSMB, mapid = @mapid, online = @online, current_hp = IF(shipid = @runtime_shipid, @current_hp, current_hp), current_shield1 = IF(shipid = @runtime_shipid, @current_shield1, current_shield1), current_shield2 = IF(shipid = @runtime_shipid, @current_shield2, current_shield2), active_config = IF(shipid = @runtime_shipid, @active_config, active_config) WHERE id = @id" + ShipLifecycleService.SaveFence(MySqlClient, GameplayLease) + " LIMIT 1");
+            int affectedRows = MySqlClient.ExecuteNonQuery("UPDATE users SET lastlogin = @lastlogin, locx = @locx, locy = @locy, cooldown_ISH = @cdISH, cooldown_SMB = @cdSMB, mapid = @mapid, online = @online, current_hp = IF(shipid = @runtime_shipid, @current_hp, current_hp), current_shield1 = IF(shipid = @runtime_shipid, @current_shield1, current_shield1), current_shield2 = IF(shipid = @runtime_shipid, @current_shield2, current_shield2), active_config = IF(shipid = @runtime_shipid, @active_config, active_config) WHERE id = @id" + ShipLifecycleService.SaveFence(MySqlClient, GameplayLease) + " LIMIT 1");
+            if (affectedRows != 1) throw new InvalidOperationException("Runtime snapshot persistence failed or ownership was lost.");
         }
 
         public void addTdmVictory(SqlDatabaseClient MySqlClient, int amount = 1)
@@ -3327,6 +3333,9 @@ namespace OrbitReborn_Emulator.Game.Characters
                 int oldHp = this.ShipHp;
                 int oldShield1 = this.Config1.Shield;
                 int oldShield2 = this.Config2.Shield;
+                int oldMaxHp = this.ShipMaxHp;
+                CharacterConfig oldConfig1 = new CharacterConfig(this.Config1.Shield, this.Config1.MaxShield, this.Config1.ShipSpeed, this.Config1.MinDamage) { Equipment = this.Config1.Equipment };
+                CharacterConfig oldConfig2 = new CharacterConfig(this.Config2.Shield, this.Config2.MaxShield, this.Config2.ShipSpeed, this.Config2.MinDamage) { Equipment = this.Config2.Equipment };
                 int oldActiveConfig = this.ActiveConfig == 2 ? 2 : 1;
                 int oldMapId = this.MapId;
                 int oldLocX = this.LocX;
@@ -3336,19 +3345,32 @@ namespace OrbitReborn_Emulator.Game.Characters
                 int oldOldLocX = this.OldLocX;
                 int oldOldLocY = this.OldLocY;
 
-                this.RefreshUserData(MySqlClient);
-
-                if (preserveActiveConfig) this.ActiveConfig = oldActiveConfig;
-                this.MapId = oldMapId;
-                this.LocX = oldLocX;
-                this.LocY = oldLocY;
-                this.NewLocX = oldNewLocX;
-                this.NewLocY = oldNewLocY;
-                this.OldLocX = oldOldLocX;
-                this.OldLocY = oldOldLocY;
-                this.ShipHp = ClampRuntimeValue(oldHp, 0, this.ShipOverhealMaxHp);
-                this.Config1.Shield = ClampRuntimeValue(oldShield1, 0, this.Config1.MaxShield);
-                this.Config2.Shield = ClampRuntimeValue(oldShield2, 0, this.Config2.MaxShield);
+                bool refreshSucceeded = false;
+                try
+                {
+                    this.RefreshUserData(MySqlClient);
+                    refreshSucceeded = true;
+                }
+                finally
+                {
+                    if (!refreshSucceeded)
+                    {
+                        this.mShipMaxHp = oldMaxHp;
+                        this.mConfig1 = oldConfig1;
+                        this.mConfig2 = oldConfig2;
+                    }
+                    if (preserveActiveConfig || !refreshSucceeded) this.ActiveConfig = oldActiveConfig;
+                    this.MapId = oldMapId;
+                    this.LocX = oldLocX;
+                    this.LocY = oldLocY;
+                    this.NewLocX = oldNewLocX;
+                    this.NewLocY = oldNewLocY;
+                    this.OldLocX = oldOldLocX;
+                    this.OldLocY = oldOldLocY;
+                    this.ShipHp = refreshSucceeded ? ClampRuntimeValue(oldHp, 0, this.ShipOverhealMaxHp) : oldHp;
+                    this.Config1.Shield = refreshSucceeded ? ClampRuntimeValue(oldShield1, 0, this.Config1.MaxShield) : oldShield1;
+                    this.Config2.Shield = refreshSucceeded ? ClampRuntimeValue(oldShield2, 0, this.Config2.MaxShield) : oldShield2;
+                }
 
                 // A website refresh must not write its older active_config over a newer web save.
                 if (preserveActiveConfig) this.SynchronizeStatistics(MySqlClient, 1);
@@ -3374,7 +3396,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("id", (object)this.mId);
             DataRow dataRow1 = MySqlClient.ExecuteQueryRow("SELECT * FROM users WHERE id = @id LIMIT 1");
             if (dataRow1 == null)
-                return;
+                throw new InvalidOperationException("Cannot load missing gameplay character.");
 
             Func<string, object> getValue = (columnName) =>
             {
@@ -5885,6 +5907,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool FlushPendingPrimaryAmmoToDb()
         {
+            if (!this.mRuntimeDataLoaded) return false;
             // This gate also serializes secondary flushes, credits and DB refreshes.
             // Timer, stop-combat and logout must not persist the same delta twice.
             // Keep the short stock lock separate: shots may continue during database I/O.
@@ -6043,6 +6066,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool FlushPendingSecondaryAmmoToDb()
         {
+            if (!this.mRuntimeDataLoaded) return false;
             lock (this.mSecondaryAmmoSyncLock)
                 if (!this.mSecondaryAmmoDirty) return false;
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("AmmoSyncTick.SecondaryAmmoFlush"))

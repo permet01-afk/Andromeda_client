@@ -59,22 +59,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
         private static void GetUserInfo(Session Session, ClientMessage Message)
         {
             string nextString = Message.GetNextString(2);
-            Session.TryAuthenticate(nextString, Session.RemoteAddress);
-
-            if (Session.ReconnectHandoffTarget != null)
-                Session = Session.ReconnectHandoffTarget;
-
-            if (!Session.Authenticated)
-                return;
-
-            // Authentication may hand off to another Session. Take its lifecycle
-            // before borrowing SQL; the incoming anonymous receive lock is not it.
-            lock (TechInventoryService.SyncRoot(Session.CharacterId))
-            {
-                if (Session.Stopped || Session.StoppedPlayer || Session.HasPendingGameplayDeath)
-                    return;
-                CompleteUserInfo(Session, Message, nextString);
-            }
+            Session.TryAuthenticate(nextString, Session.RemoteAddress,
+                admittedSession => CompleteUserInfo(admittedSession, Message, nextString));
         }
 
         private static void CompleteUserInfo(Session Session, ClientMessage Message, string nextString)
@@ -88,11 +74,15 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.CharacterInfo.RefreshSettings(client);
 
                 if (reconnectHandoff)
+                {
+                    // Save the loaded runtime cooldowns before reloading web data.
+                    // SSO no longer writes the old session outside its lifecycle.
+                    Session.CharacterInfo.SynchronizeShipSkillCooldowns(client);
                     Session.CharacterInfo.RefreshUserDataPreservingRuntime(client);
+                }
                 else
                     Session.CharacterInfo.RefreshUserData(client);
 
-                Session.CharacterInfo.StartBoosterAutoRefresh();
                 Session.CharacterInfo.RefreshClan(client);
                 Output.WriteLine("[LOGIN_FLOW] DB refresh completed for " + Session.CharacterId, OutputLevel.DebugInformation);
 
@@ -118,6 +108,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             SyncSelectedWeaponsFromFlashSettings(Session, Session.CharacterInfo.Settings != null ? Session.CharacterInfo.Settings.Set : null);
             Session.CharacterInfo.AuthTicket = nextString;
             Session.CharacterInfo.Disconnected = false;
+            Session.MarkGameplayReady();
+            Session.CharacterInfo.StartBoosterAutoRefresh();
             if (!reconnectHandoff)
                 MapManager.RemoveUserFromMap(Session);
             Output.WriteLine("[LOGIN_FLOW] Sending settings/init packets for " + Session.CharacterId, OutputLevel.DebugInformation);
@@ -297,7 +289,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             try
             {
                 Session s = (Session)state;
-                if (s == null || s.CharacterInfo == null || !s.Authenticated || s.Stopped)
+                if (s == null || s.CharacterInfo == null || !s.GameplayReady || s.Stopped)
                     return;
 
                 perfUserId = s.CharacterId;
@@ -359,7 +351,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             try
             {
                 Session s = (Session)state;
-                if (s == null || s.CharacterInfo == null || !s.Authenticated || s.Stopped)
+                if (s == null || s.CharacterInfo == null || !s.GameplayReady || s.Stopped)
                     return;
 
                 lock (TechInventoryService.SyncRoot(s.CharacterId))

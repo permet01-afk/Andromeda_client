@@ -38,7 +38,9 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (points <= 0 || owner == null || owner.CharacterInfo == null) return;
             lock (TechInventoryService.SyncRoot(owner.CharacterId))
             {
-                if (!TechInventoryService.IsCurrent(owner) || owner.CharacterInfo.Disconnected) return;
+                bool admitted = LocalRewardOperations.IsSettlingFor(owner);
+                if (admitted ? !LocalRewardOperations.CanApplyReservedProgression(owner)
+                    : (!TechInventoryService.IsCurrent(owner) || owner.CharacterInfo.Disconnected)) return;
                 try
                 {
                     // Ownership is read from committed DB state for this kill, never from the
@@ -59,6 +61,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 }
                 catch (Exception ex)
                 {
+                    SqlFailureScope.Record(ex, "DroneProgressionService.Award");
                     Output.WriteLine("[Drone progression] player=" + owner.CharacterId + " award=" + points + ": " + ex.Message, OutputLevel.Warning);
                 }
             }
@@ -90,7 +93,7 @@ namespace OrbitReborn_Emulator.Game.Characters
         public static DroneEquipmentState Load(int playerId)
         {
             try { return Change(playerId, 0, true); }
-            catch (MySql.Data.MySqlClient.MySqlException ex)
+            catch (MySqlConnector.MySqlException ex)
             {
                 if (ex.Number == 1054 || ex.Number == 1146)
                     throw new InvalidOperationException("SQL MANUAL ACTION REQUIRED: PHASE3_DRONE_LEVELS_SQL.txt (equipment schema missing).", ex);

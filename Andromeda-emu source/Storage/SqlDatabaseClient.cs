@@ -1,6 +1,6 @@
-﻿
 
-using MySql.Data.MySqlClient;
+
+using MySqlConnector;
 using System;
 using System.Data;
 
@@ -90,6 +90,7 @@ namespace OrbitReborn_Emulator.Storage
 
     public int ExecuteNonQuery(string CommandText)
     {
+            SqlFailureScope.ThrowIfCurrentFailed();
             try
             {
                 this.mCommand.CommandText = CommandText;
@@ -98,19 +99,31 @@ namespace OrbitReborn_Emulator.Storage
                 return num;
             } catch (Exception error)
             {
-                Console.WriteLine("ERROR :", error);
+                this.ResetCommand();
+                if (SqlFailureScope.Record(error, "SqlDatabaseClient.ExecuteNonQuery")) throw;
+                Console.WriteLine("SQL operation failed: " + error);
                 return -1;
             }
     }
 
     public DataSet ExecuteQuerySet(string CommandText)
     {
-      DataSet dataSet = new DataSet();
-      this.mCommand.CommandText = CommandText;
-      using (MySqlDataAdapter mySqlDataAdapter = new MySqlDataAdapter(this.mCommand))
-        mySqlDataAdapter.Fill(dataSet);
-      this.ResetCommand();
-      return dataSet;
+      SqlFailureScope.ThrowIfCurrentFailed();
+      try
+      {
+        DataSet dataSet = new DataSet();
+        this.mCommand.CommandText = CommandText;
+        using (MySqlDataAdapter mySqlDataAdapter = new MySqlDataAdapter(this.mCommand))
+          mySqlDataAdapter.Fill(dataSet);
+        this.ResetCommand();
+        return dataSet;
+      }
+      catch (Exception error)
+      {
+        SqlFailureScope.Record(error, "SqlDatabaseClient.ExecuteQuerySet");
+        this.ResetCommand();
+        throw;
+      }
     }
 
     public DataTable ExecuteQueryTable(string CommandText)
@@ -133,10 +146,20 @@ namespace OrbitReborn_Emulator.Storage
 
         public object ExecuteScalar(string CommandText)
     {
-      this.mCommand.CommandText = CommandText;
-      object obj = this.mCommand.ExecuteScalar();
-      this.ResetCommand();
-      return obj;
+      SqlFailureScope.ThrowIfCurrentFailed();
+      try
+      {
+        this.mCommand.CommandText = CommandText;
+        object obj = this.mCommand.ExecuteScalar();
+        this.ResetCommand();
+        return obj;
+      }
+      catch (Exception error)
+      {
+        SqlFailureScope.Record(error, "SqlDatabaseClient.ExecuteScalar");
+        this.ResetCommand();
+        throw;
+      }
     }
   }
 }

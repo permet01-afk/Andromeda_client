@@ -309,25 +309,77 @@ namespace OrbitReborn_Emulator.Game.Event
             }
         }
 
-        public static bool HandleNpcDestroyed(Npc npc, MapInstance map)
+        internal sealed class NpcRewardShare
         {
-            if (npc == null)
-                return false;
+            internal Session Owner;
+            internal int BeneficiaryId;
+            internal int Damage;
+            internal double Share;
+        }
 
-            InvasionRun run;
-            lock (SyncRoot)
+        internal sealed class NpcRewardAdmission
+        {
+            internal readonly List<NpcRewardShare> Shares = new List<NpcRewardShare>();
+            internal Action CompleteWorld;
+        }
+
+        internal sealed class NpcRewardContext
+        {
+            internal readonly int MapId;
+            internal readonly int FactionId;
+            internal readonly Action<NpcRewardAdmission, bool> Complete;
+            internal NpcRewardContext(int mapId, int factionId, Action<NpcRewardAdmission, bool> complete)
+            { MapId = mapId; FactionId = factionId; Complete = complete; }
+        }
+
+        // Created while spawning, BEFORE exposing the NPC to combat. Reading
+        // this immutable context at death does not acquire the event lock under
+        // a packet's player lifecycle. Event/world mutation stays deferred.
+        private static NpcRewardContext CreateNpcRewardContext(InvasionRun run, Npc npc)
+        {
+            return new NpcRewardContext(run.MapId, run.FactionId, (admission, createCargo) =>
             {
-                if (!RunsByNpcId.TryGetValue(npc.Id, out run))
-                    return false;
+                lock (SyncRoot)
+                {
+                    BroadcastInvaderLockClear(npc);
+                    foreach (NpcRewardShare share in admission.Shares)
+                        AddRunDamage(run, share.BeneficiaryId, share.Damage);
+                    if (createCargo) SpawnInvaderCargoBox(run, npc);
+                    RunsByNpcId.Remove(npc.Id);
+                    run.Npcs.Remove(npc.Id);
+                    SendMarkerHide(run, npc.Id);
+                }
+            });
+        }
 
-                BroadcastInvaderLockClear(npc);
-                GrantInvaderReward(run, npc);
-                RunsByNpcId.Remove(npc.Id);
-                run.Npcs.Remove(npc.Id);
-                SendMarkerHide(run, npc.Id);
+        // Caller owns AdmissionGate; eligibility and damage are captured at the
+        // same admission point as ordinary NPCs. Never take SyncRoot here.
+        internal static NpcRewardAdmission CaptureNpcRewardAdmission(Npc npc, Dictionary<int, int> damage)
+        {
+            NpcRewardContext context = npc == null ? null : npc.InvasionRewardContext;
+            if (context == null) return null;
+            var admission = new NpcRewardAdmission();
+            long totalDamage = 0;
+            foreach (KeyValuePair<int, int> hit in damage)
+            {
+                if (hit.Value > 0) totalDamage += hit.Value;
+                if (hit.Value <= 0) continue;
+                Session owner = SessionManager.GetSessionByCharacterId(hit.Key);
+                if (owner == null || owner.CharacterInfo == null || owner.CharacterInfo.Destroy
+                    || owner.CharacterInfo.MapId != context.MapId || owner.CharacterInfo.FactionId != context.FactionId)
+                    continue;
+                admission.Shares.Add(new NpcRewardShare { Owner = owner, BeneficiaryId = hit.Key, Damage = hit.Value });
             }
+            bool createCargo = totalDamage > 0;
+            admission.CompleteWorld = () => context.Complete(admission, createCargo);
+            return admission;
+        }
 
-            return true;
+        // Receipt settlement is deliberately OUTSIDE the event lock and never
+        // recomputes eligibility against a newer/disconnected gameplay session.
+        internal static void SettleAdmittedNpcReward(Session owner, double share)
+        {
+            GrantRewardShare(owner, share, false);
         }
 
         private static void AnnouncementTick(object state)
@@ -482,6 +534,7 @@ namespace OrbitReborn_Emulator.Game.Event
                 npc.DamageMin = InvaderDamageMin;
                 npc.DamageMax = InvaderDamageMax;
                 npc.Respawn = false;
+                npc.InvasionRewardContext = CreateNpcRewardContext(run, npc);
 
                 if (!instance.AddNpcToMap(npc))
                 {
@@ -668,55 +721,6 @@ namespace OrbitReborn_Emulator.Game.Event
             RunsByMapId.Remove(run.MapId);
         }
 
-        private static void GrantInvaderReward(InvasionRun run, Npc npc)
-        {
-            if (run == null || npc == null || npc.Attackers == null)
-                return;
-
-            ConcurrentDictionary<int, int> attackers = (ConcurrentDictionary<int, int>)npc.Attackers;
-            long totalDamage = 0;
-            long totalEligibleDamage = 0;
-            Dictionary<int, int> eligibleDamageByCharacter = new Dictionary<int, int>();
-            Dictionary<int, Session> eligibleSessions = new Dictionary<int, Session>();
-
-            foreach (KeyValuePair<int, int> kvp in attackers)
-            {
-                if (kvp.Value > 0)
-                    totalDamage += (long)kvp.Value;
-
-                if (kvp.Value <= 0)
-                    continue;
-
-                Session session = SessionManager.GetSessionByCharacterId(kvp.Key);
-                if (!IsEligibleRewardSession(session, run))
-                    continue;
-
-                eligibleDamageByCharacter[kvp.Key] = kvp.Value;
-                eligibleSessions[kvp.Key] = session;
-                totalEligibleDamage += (long)kvp.Value;
-            }
-
-            if (totalDamage <= 0)
-                return;
-
-            foreach (KeyValuePair<int, int> kvp in eligibleDamageByCharacter)
-            {
-                AddRunDamage(run, kvp.Key, kvp.Value);
-
-                Session session;
-                if (!eligibleSessions.TryGetValue(kvp.Key, out session))
-                    continue;
-
-                if (totalEligibleDamage <= 0)
-                    continue;
-
-                double share = (double)kvp.Value / (double)totalEligibleDamage;
-                GrantRewardShare(session, share, false);
-            }
-
-            SpawnInvaderCargoBox(run, npc);
-        }
-
         private static void AddRunDamage(InvasionRun run, int characterId, int damage)
         {
             if (run == null || characterId <= 0 || damage <= 0)
@@ -848,6 +852,7 @@ namespace OrbitReborn_Emulator.Game.Event
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
                 leveledUp = session.CharacterInfo.ApplyNpcKillRewardBatch(client, credits, uridium, 0, 0, xp, honor, 1);
+                SqlFailureScope.ThrowIfCurrentFailed();
 
                 if (ucb > 0 || rsb > 0)
                 {
@@ -862,15 +867,21 @@ namespace OrbitReborn_Emulator.Game.Event
                     });
                 }
 
+                if (!ammoPersisted)
+                    SqlFailureScope.Record(new InvalidOperationException("Admitted Invasion ammunition credit was not persisted."), "Invasion.ammunition");
+                SqlFailureScope.ThrowIfCurrentFailed();
                 if (ammoPersisted)
                     session.CharacterInfo.AddLog(client, logMessage);
+                SqlFailureScope.ThrowIfCurrentFailed();
             }
 
             if (seprom > 0)
                 session.CharacterInfo.AddCargo(14L, seprom);
+            SqlFailureScope.ThrowIfCurrentFailed();
 
             if (promerium > 0)
                 session.CharacterInfo.AddCargo(13L, promerium);
+            SqlFailureScope.ThrowIfCurrentFailed();
 
             if (credits > 0)
                 session.SendData(PacketComposer.Compose("y", "CRE|" + credits + "|" + session.CharacterInfo.Credits));

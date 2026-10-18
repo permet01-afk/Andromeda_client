@@ -1,6 +1,6 @@
 ﻿
 
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using OrbitReborn_Emulator.Config;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Util;
@@ -232,7 +232,14 @@ namespace OrbitReborn_Emulator.Storage
         Password = ((string) ConfigManager.GetValue("mysql.pass")),
         Database = ((string) ConfigManager.GetValue("mysql.dbname")),
         MinimumPoolSize = ((uint) (int) ConfigManager.GetValue("mysql.pool.min")),
-        MaximumPoolSize = ((uint) (int) ConfigManager.GetValue("mysql.pool.max"))
+        MaximumPoolSize = ((uint) (int) ConfigManager.GetValue("mysql.pool.max")),
+        // Preserve Connector/NET 6.8.3 defaults explicitly. The existing dedicated
+        // transaction scope still overrides reset=true and 5/10 second timeouts.
+        Pooling = true, ConnectionReset = false,
+        ConnectionTimeout = 15, DefaultCommandTimeout = 30,
+        UseAffectedRows = false, TreatTinyAsBoolean = true,
+        DateTimeKind = MySqlDateTimeKind.Unspecified,
+        IgnoreCommandTransaction = false
       }.ToString();
     }
   }

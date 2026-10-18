@@ -54,9 +54,43 @@
     <Reference Include="WindowsBase" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
-    <Reference Include="MySql.Data">
-      <HintPath>lib\MySql.Data.dll</HintPath>
+    <Reference Include="MySqlConnector">
+      <HintPath>lib\MySqlConnector.dll</HintPath>
+      <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions">
+      <HintPath>lib\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+      <HintPath>lib\Microsoft.Extensions.DependencyInjection.Abstractions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Diagnostics.DiagnosticSource">
+      <HintPath>lib\System.Diagnostics.DiagnosticSource.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions">
+      <HintPath>lib\System.Threading.Tasks.Extensions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>lib\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Buffers">
+      <HintPath>lib\System.Buffers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Memory">
+      <HintPath>lib\System.Memory.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>lib\System.Numerics.Vectors.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Transactions" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Communication\Outgoing\MapHeroInitComposer.cs" />
@@ -168,6 +202,8 @@
     <Compile Include="Game\Portal\PortalInfo.cs" />
     <Compile Include="Game\Portal\PortalManager.cs" />
     <Compile Include="Game\Sessions\Session.cs" />
+    <Compile Include="Game\Sessions\LocalRewardOperations.cs" />
+    <Compile Include="Storage\SqlFailureScope.cs" />
     <Compile Include="Game\Sessions\SessionManager.cs" />
     <Compile Include="Game\Sessions\SingleSignOnAuthenticator.cs" />
     <Compile Include="Util\CharacterResolverCache.cs" />

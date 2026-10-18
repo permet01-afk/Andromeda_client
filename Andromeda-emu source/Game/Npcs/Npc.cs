@@ -9,6 +9,7 @@ using OrbitReborn_Emulator.Game.Maps.Collectables;
 using OrbitReborn_Emulator.Game.Misc;
 using OrbitReborn_Emulator.Game.Quests;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Techs;
 using OrbitReborn_Emulator.Game.Titles;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Specialized;
@@ -28,6 +29,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
         public double CubikonLastSpawnTick = 0.0;
 
         internal long LaserVisualEpoch;
+        internal Invasion.NpcRewardContext InvasionRewardContext;
         public int ParentNpcId = 0;
 
         public GalaxyGateProtection GalaxyGateProtection;
@@ -2052,20 +2054,166 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 && System.Threading.Interlocked.CompareExchange(ref this.mDeathRewardAdmission, 1, 0) == 0;
         }
 
-        public void Destroy(MapInstance map)
+        private sealed class NpcRewardValues
         {
-            if (IsGalaxyGateProtected || !TryAdmitDeathReward()) return;
-
-            this.IsDestroying = true;
-            if (Session.IsDispatchingPacket)
-            {
-                Session.CompleteAfterPacket(() => DestroyAdmitted(map));
-                return;
-            }
-            DestroyAdmitted(map);
+            internal int Credits, Uridium, NpcPoints, RankPoints, Experience, Honor, DronePoints;
+            internal int NpcId, MapId;
+            internal string NpcName;
         }
 
-        private void DestroyAdmitted(MapInstance map)
+        private sealed class NpcRewardPlan
+        {
+            internal Invasion.NpcRewardAdmission Invasion;
+            internal readonly List<LocalRewardOperations.Receipt> Receipts = new List<LocalRewardOperations.Receipt>();
+        }
+
+        public void Destroy(MapInstance map)
+        {
+            NpcRewardPlan rewards = null;
+            // Seal the death and reserve every recipient before packet deferral.
+            // Admission reads a single damage snapshot and takes no player/event
+            // lock, SQL connection, or world callback while holding this gate.
+            lock (LocalRewardOperations.AdmissionGate)
+            {
+                if (IsGalaxyGateProtected || !TryAdmitDeathReward()) return;
+                this.IsDestroying = true;
+                var damage = new Dictionary<int, int>();
+                foreach (var hit in ((ConcurrentDictionary<int, int>)this.Attackers).ToArray())
+                    damage.Add(hit.Key, hit.Value);
+                Invasion.NpcRewardAdmission invasion = Invasion.CaptureNpcRewardAdmission(this, damage);
+                rewards = PrepareAdmittedRewards(invasion, damage);
+            }
+
+            if (Session.IsDispatchingPacket)
+            {
+                Session.CompleteAfterPacket(() => DestroyAdmitted(map, rewards));
+                return;
+            }
+            DestroyAdmitted(map, rewards);
+        }
+
+        private bool CanReceiveAdmittedReward(Session owner)
+        {
+            return IsSessionValidOnMap(owner) && LocalRewardOperations.CanReserveUnderGate(owner);
+        }
+
+        // Called only under AdmissionGate. Freeze the existing owner/group/share
+        // rules, not a later connection's map, ship, group or bonuses.
+        private NpcRewardPlan PrepareAdmittedRewards(Invasion.NpcRewardAdmission invasion, Dictionary<int, int> damage)
+        {
+            var plan = new NpcRewardPlan { Invasion = invasion };
+            int ownerId = this.mRewardOwnerId;
+            if (ownerId <= 0 && damage.Count > 0)
+                foreach (var hit in damage) { ownerId = hit.Key; break; }
+            Session owner = ownerId > 0 ? SessionManager.GetSessionByCharacterId(ownerId) : null;
+            if (!CanReceiveAdmittedReward(owner))
+            {
+                owner = null;
+                int bestDamage = -1;
+                foreach (var hit in damage)
+                {
+                    Session possible = SessionManager.GetSessionByCharacterId(hit.Key);
+                    if (CanReceiveAdmittedReward(possible) && hit.Value > bestDamage)
+                    { owner = possible; bestDamage = hit.Value; }
+                }
+            }
+
+            if (invasion != null)
+            {
+                invasion.Shares.RemoveAll(x => !CanReceiveAdmittedReward(x.Owner));
+                Session droneOwner = null;
+                foreach (var entry in invasion.Shares)
+                    if (entry.Owner == owner && entry.Damage > 0) droneOwner = owner;
+                if (droneOwner == null)
+                {
+                    int bestDamage = 0;
+                    foreach (var entry in invasion.Shares)
+                        if (entry.Damage > bestDamage) { droneOwner = entry.Owner; bestDamage = entry.Damage; }
+                }
+                long total = 0;
+                foreach (var entry in invasion.Shares) total += entry.Damage;
+                foreach (var entry in invasion.Shares)
+                {
+                    entry.Share = total > 0 ? (double)entry.Damage / total : 0.0;
+                    if (entry.Share <= 0.0) continue;
+                    double share = entry.Share;
+                    int dronePoints = entry.Owner == droneOwner
+                        ? DroneRules.NpcAward(entry.Owner.CharacterInfo.ShipId, this.Name, true) : 0;
+                    var receipt = LocalRewardOperations.TryReserveUnderGate(entry.Owner, recipient =>
+                    {
+                        if (dronePoints > 0) DroneProgressionService.Award(recipient, dronePoints);
+                        SqlFailureScope.ThrowIfCurrentFailed();
+                        Invasion.SettleAdmittedNpcReward(recipient, share);
+                    }, "npc:" + this.VisualLifeToken);
+                    if (receipt == null) throw new InvalidOperationException("NPC recipient changed inside admission gate.");
+                    plan.Receipts.Add(receipt);
+                }
+                return plan;
+            }
+
+            bool gate = GalaxyGateWaveService.IsGateMap(this.MapId);
+            bool shared = !gate && UsesCubikonRewardModel();
+            var recipients = new Dictionary<int, Session>();
+            if (shared)
+            {
+                foreach (var hit in damage)
+                {
+                    Session possible = SessionManager.GetSessionByCharacterId(hit.Key);
+                    if (hit.Value > 0 && CanReceiveAdmittedReward(possible)) recipients[hit.Key] = possible;
+                }
+            }
+            else if (owner != null)
+            {
+                recipients[owner.CharacterId] = owner;
+                if (!gate && owner.CharacterInfo.Members != null)
+                    foreach (int memberId in owner.CharacterInfo.Members.Keys)
+                    {
+                        Session possible = SessionManager.GetSessionByCharacterId(memberId);
+                        if (CanReceiveAdmittedReward(possible)) recipients[memberId] = possible;
+                    }
+            }
+            long totalDamage = 0;
+            if (shared)
+                foreach (int id in recipients.Keys) totalDamage += damage[id];
+            foreach (var recipient in recipients.Values)
+            {
+                double share = shared ? (totalDamage > 0 ? (double)(damage.ContainsKey(recipient.CharacterId) ? damage[recipient.CharacterId] : 0) / totalDamage : 0.0)
+                    : (recipients.Count > 0 ? 1.0 / recipients.Count : 0.0);
+                if (share <= 0.0) continue;
+                NpcRewardValues values = CaptureRewardValues(recipient, Math.Min(1.0, share));
+                values.DronePoints = recipient == owner && (damage.ContainsKey(recipient.CharacterId) ? damage[recipient.CharacterId] : 0) > 0
+                    ? DroneRules.NpcAward(recipient.CharacterInfo.ShipId, this.Name, false) : 0;
+                var receipt = LocalRewardOperations.TryReserveUnderGate(recipient,
+                    admittedOwner => SettleAdmittedReward(admittedOwner, values), "npc:" + this.VisualLifeToken);
+                if (receipt == null) throw new InvalidOperationException("NPC recipient changed inside admission gate.");
+                plan.Receipts.Add(receipt);
+            }
+            return plan;
+        }
+
+        private NpcRewardValues CaptureRewardValues(Session owner, double share)
+        {
+            int credits = Convert.ToInt32((double)this.Credits * share);
+            int uridium = Convert.ToInt32((double)this.Uridium * share);
+            int points = Convert.ToInt32((double)this.NpcPoints * share);
+            if (HappyHour.Enabled) { credits *= 2; uridium *= 2; points *= 2; }
+            credits *= NPC_KILL_ECONOMY_MULTIPLIER;
+            uridium *= NPC_KILL_ECONOMY_MULTIPLIER;
+            int rank = points;
+            if (owner.CharacterInfo.KillStrek >= 10) points *= 2;
+            int xpBase = this.ExperienceReward > 0 ? this.ExperienceReward : points;
+            int honorBase = this.HonorReward > 0 ? this.HonorReward : Math.Max(0, points / 10);
+            return new NpcRewardValues {
+                NpcId = this.Id, MapId = this.MapId, NpcName = this.Name,
+                Credits = owner.CharacterInfo.ApplyPilotBioAlienCreditBonus(credits),
+                Uridium = uridium, NpcPoints = points, RankPoints = rank,
+                Experience = owner.CharacterInfo.ApplyPilotBioAlienXpBonus(Convert.ToInt32(xpBase * share)),
+                Honor = owner.CharacterInfo.ApplyPilotBioAlienHonorBonus(Convert.ToInt32(honorBase * share))
+            };
+        }
+
+        private void DestroyAdmitted(MapInstance map, NpcRewardPlan rewards)
+
         {
             LaserVisualService.Remove(this);
 
@@ -2140,47 +2288,10 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             TitleService.OnNpcDestroyed(this);
 
-            int ownerId = this.mRewardOwnerId;
-
-            if (ownerId <= 0 && this.Attackers != null && this.Attackers.Count > 0)
+            if (rewards.Invasion != null)
             {
-                foreach (var kvp in (ConcurrentDictionary<int, int>)this.Attackers)
-                {
-                    ownerId = kvp.Key;
-                    break;
-                }
-            }
-
-            Session ownerSession = (ownerId > 0) ? SessionManager.GetSessionByCharacterId(ownerId) : null;
-
-            if (!IsSessionValidOnMap(ownerSession))
-            {
-                int bestId = 0;
-                int bestDmg = -1;
-
-                foreach (var kvp in (ConcurrentDictionary<int, int>)this.Attackers)
-                {
-                    Session s = SessionManager.GetSessionByCharacterId(kvp.Key);
-                    if (!IsSessionValidOnMap(s)) continue;
-
-                    if (kvp.Value > bestDmg)
-                    {
-                        bestDmg = kvp.Value;
-                        bestId = kvp.Key;
-                    }
-                }
-
-                ownerId = bestId;
-                ownerSession = (ownerId > 0) ? SessionManager.GetSessionByCharacterId(ownerId) : null;
-            }
-
-            bool invasionDroneKill = Invasion.IsInvasionNpc(this);
-            Session droneBeneficiary = invasionDroneKill ? Invasion.ResolveDroneRewardOwner(this, ownerSession) : ownerSession;
-            if (IsSessionValidOnMap(droneBeneficiary) && GetTrackedDamage(droneBeneficiary.CharacterId) > 0)
-                DroneProgressionService.Award(droneBeneficiary, DroneRules.NpcAward(droneBeneficiary.CharacterInfo.ShipId, this.Name, invasionDroneKill));
-
-            if (Invasion.HandleNpcDestroyed(this, map))
-            {
+                CompleteAdmittedRewards(rewards);
+                rewards.Invasion.CompleteWorld();
                 StopNpcAttack();
 
                 this.LocX = -100;
@@ -2219,194 +2330,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 return;
             }
 
-            bool isGalaxyGateReward = GalaxyGateWaveService.IsGateMap(this.MapId);
-            bool useSharedDamageRewards = !isGalaxyGateReward && UsesCubikonRewardModel();
-            HashSet<int> eligible = new HashSet<int>();
-
-            if (useSharedDamageRewards)
-            {
-                foreach (var kvp in (ConcurrentDictionary<int, int>)this.Attackers)
-                {
-                    if (kvp.Value <= 0)
-                        continue;
-
-                    Session s = SessionManager.GetSessionByCharacterId(kvp.Key);
-                    if (IsSessionValidOnMap(s))
-                        eligible.Add(kvp.Key);
-                }
-            }
-            else if (ownerId > 0 && IsSessionValidOnMap(ownerSession))
-            {
-                eligible.Add(ownerId);
-
-                if (!isGalaxyGateReward)
-                {
-                    try
-                    {
-                        if (ownerSession.CharacterInfo.Members != null)
-                        {
-                            foreach (int memberId in ownerSession.CharacterInfo.Members.Keys)
-                            {
-                                Session ms = SessionManager.GetSessionByCharacterId(memberId);
-                                if (IsSessionValidOnMap(ms))
-                                    eligible.Add(memberId);
-                            }
-                        }
-                    }
-                    catch { }
-                }
-            }
-
-            long totalEligibleDamage = 0;
-            List<int> rewardCharacterIds = new List<int>();
-
-            if (useSharedDamageRewards)
-            {
-                foreach (var kvp in (ConcurrentDictionary<int, int>)this.Attackers)
-                {
-                    if (!eligible.Contains(kvp.Key)) continue;
-                    if (kvp.Value <= 0) continue;
-                    totalEligibleDamage += kvp.Value;
-                    rewardCharacterIds.Add(kvp.Key);
-                }
-            }
-            else
-            {
-                foreach (int eligibleId in eligible)
-                    rewardCharacterIds.Add(eligibleId);
-            }
-
-            foreach (int charId in rewardCharacterIds)
-            {
-                int dmg = GetTrackedDamage(charId);
-
-                Session sessionByCharacterId = SessionManager.GetSessionByCharacterId(charId);
-                if (!IsSessionValidOnMap(sessionByCharacterId))
-                    continue;
-
-                double share;
-
-                if (useSharedDamageRewards)
-                {
-                    if (totalEligibleDamage <= 0 || dmg <= 0)
-                        continue;
-
-                    share = (double)Math.Max(0, dmg) / (double)totalEligibleDamage;
-                }
-                else
-                {
-                    if (eligible.Count <= 0)
-                        continue;
-
-                    share = 1.0 / (double)eligible.Count;
-                }
-
-                if (share <= 0.0)
-                    continue;
-
-                int num1 = dmg;
-                double num2 = share;
-                if (num2 > 1.0) num2 = 1.0;
-
-                int int32_1 = Convert.ToInt32((double)this.Credits * num2);
-                int int32_2 = Convert.ToInt32((double)this.Uridium * num2);
-                int int32_3 = Convert.ToInt32((double)this.NpcPoints * num2);
-
-                if (HappyHour.Enabled)
-                {
-                    int32_1 *= 2;
-                    int32_2 *= 2;
-                    int32_3 *= 2;
-                }
-
-                int32_1 *= NPC_KILL_ECONOMY_MULTIPLIER;
-                int32_2 *= NPC_KILL_ECONOMY_MULTIPLIER;
-
-                int rankpoints = int32_3;
-                if (sessionByCharacterId.CharacterInfo.KillStrek >= 10)
-                    int32_3 *= 2;
-
-                int npcPoints = int32_3;
-
-                int xpBase = (this.ExperienceReward > 0) ? this.ExperienceReward : npcPoints;
-                int honorBase = (this.HonorReward > 0) ? this.HonorReward : Math.Max(0, npcPoints / 10);
-
-                int xpGain = Convert.ToInt32(xpBase * num2);
-                int honorGain = Convert.ToInt32(honorBase * num2);
-                int32_1 = sessionByCharacterId.CharacterInfo.ApplyPilotBioAlienCreditBonus(int32_1);
-                xpGain = sessionByCharacterId.CharacterInfo.ApplyPilotBioAlienXpBonus(xpGain);
-                honorGain = sessionByCharacterId.CharacterInfo.ApplyPilotBioAlienHonorBonus(honorGain);
-
-                bool leveledUp = false;
-                bool questProgressChanged = false;
-                long perfRewardStart = PerformanceProfiler.Start();
-                long perfRewardDbMs = 0L;
-                long perfLogDbMs = 0L;
-                long perfNpcCountDbMs = 0L;
-                long perfQuestMs = 0L;
-                long perfTitleMs = 0L;
-
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("NpcReward"))
-                {
-                    long perfStepStart = PerformanceProfiler.Start();
-                    leveledUp = sessionByCharacterId.CharacterInfo.ApplyNpcKillRewardBatch(client, int32_1, int32_2, npcPoints, rankpoints, xpGain, honorGain, 1);
-                    perfRewardDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
-
-                    string _Message =
-                        "You have detroyed " + this.Name + ".<br/>" +
-                        "You received " + int32_1 + " credits.<br/>" +
-                        "You received " + int32_2 + " uridium.<br/>" +
-                        "You received " + npcPoints + " npc point(s).<br/>" +
-                        "You received " + rankpoints + " rankpoint(s).<br/>" +
-                        "You received " + xpGain + " experience.<br/>" +
-                        "You received " + honorGain + " honor.";
-
-                    perfStepStart = PerformanceProfiler.Start();
-                    sessionByCharacterId.CharacterInfo.AddLog(client, _Message);
-                    perfLogDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
-
-                    perfStepStart = PerformanceProfiler.Start();
-                    sessionByCharacterId.CharacterInfo.AddNpcCount(client, this.Name);
-                    perfNpcCountDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
-                }
-
-                long perfQuestStart = PerformanceProfiler.Start();
-                questProgressChanged = QuestObjectiveProgress.AddNpcKillProgress(sessionByCharacterId.CharacterInfo.Id, this.Name, this.MapId);
-                perfQuestMs += PerformanceProfiler.ElapsedMilliseconds(perfQuestStart);
-
-                long perfTitleStart = PerformanceProfiler.Start();
-                bool titleProgressChanged = TitleService.TrackNpcKill(sessionByCharacterId, this.Name, this.MapId);
-                perfTitleMs += PerformanceProfiler.ElapsedMilliseconds(perfTitleStart);
-                PerformanceProfiler.LogNpcReward(this.Name, sessionByCharacterId.CharacterInfo.Id, perfRewardStart, perfRewardDbMs, perfLogDbMs, perfNpcCountDbMs, perfQuestMs, perfTitleMs);
-
-                sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|Target destroyed."));
-
-                if (questProgressChanged || titleProgressChanged)
-                    sessionByCharacterId.SendData(PacketComposer.Compose("QST", "UPD"));
-
-                if (sessionByCharacterId.CharacterInfo.SelectedPlayer == this.Id)
-                    Fight.StopLaserForTarget(sessionByCharacterId, null, this.Id);
-
-                if (int32_1 != 0)
-                    sessionByCharacterId.SendData(PacketComposer.Compose("y", "CRE|" + (object)int32_1 + "|" + (object)sessionByCharacterId.CharacterInfo.Credits));
-
-                if (int32_2 != 0)
-                    sessionByCharacterId.SendData(PacketComposer.Compose("y", "URI|" + (object)int32_2 + "|" + (object)sessionByCharacterId.CharacterInfo.Uridium));
-
-                sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|You received " + (object)npcPoints + " npc point(s)."));
-                sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|You received " + (object)rankpoints + " rankpoint(s)."));
-
-                long xpTotal = sessionByCharacterId.CharacterInfo.Experience;
-                int levelNow = sessionByCharacterId.CharacterInfo.Level;
-                sessionByCharacterId.SendData(PacketComposer.Compose("y", $"EP|{xpGain}|{xpTotal}|{levelNow}"));
-
-                long honorTotal = sessionByCharacterId.CharacterInfo.Honor;
-                if (honorGain != 0)
-                    sessionByCharacterId.SendData(PacketComposer.Compose("y", $"HON|{honorGain}|{honorTotal}"));
-
-                if (leveledUp)
-                    sessionByCharacterId.SendData(PacketComposer.Compose("A", $"LUP|{levelNow}|1"));
-            }
+            CompleteAdmittedRewards(rewards);
 
             StopNpcAttack();
             this.Loot();
@@ -2440,6 +2364,107 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
                 NpcAI.NpcToRemove.Add(this);
             }
+        }
+
+        private static void CompleteAdmittedRewards(NpcRewardPlan rewards)
+        {
+            List<Exception> failures = null;
+            foreach (var receipt in rewards.Receipts)
+            {
+                try { receipt.Complete(); }
+                catch (Exception error)
+                {
+                    if (failures == null) failures = new List<Exception>();
+                    failures.Add(error);
+                }
+            }
+            if (failures != null)
+                throw new AggregateException("One or more admitted NPC rewards could not be settled.", failures);
+        }
+
+        private void SettleAdmittedReward(Session sessionByCharacterId, NpcRewardValues values)
+        {
+            // Called with only this player's lifecycle/impact locks held.
+            if (values.DronePoints > 0) DroneProgressionService.Award(sessionByCharacterId, values.DronePoints);
+            SqlFailureScope.ThrowIfCurrentFailed();
+            int int32_1 = values.Credits, int32_2 = values.Uridium;
+            int npcPoints = values.NpcPoints, rankpoints = values.RankPoints;
+            int xpGain = values.Experience, honorGain = values.Honor;
+            bool leveledUp = false;
+            bool questProgressChanged = false;
+            long perfRewardStart = PerformanceProfiler.Start();
+            long perfRewardDbMs = 0L;
+            long perfLogDbMs = 0L;
+            long perfNpcCountDbMs = 0L;
+            long perfQuestMs = 0L;
+            long perfTitleMs = 0L;
+
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("NpcReward"))
+            {
+                long perfStepStart = PerformanceProfiler.Start();
+                leveledUp = sessionByCharacterId.CharacterInfo.ApplyNpcKillRewardBatch(client, int32_1, int32_2, npcPoints, rankpoints, xpGain, honorGain, 1);
+                SqlFailureScope.ThrowIfCurrentFailed();
+                perfRewardDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
+
+                string _Message =
+                    "You have detroyed " + values.NpcName + ".<br/>" +
+                    "You received " + int32_1 + " credits.<br/>" +
+                    "You received " + int32_2 + " uridium.<br/>" +
+                    "You received " + npcPoints + " npc point(s).<br/>" +
+                    "You received " + rankpoints + " rankpoint(s).<br/>" +
+                    "You received " + xpGain + " experience.<br/>" +
+                    "You received " + honorGain + " honor.";
+
+                perfStepStart = PerformanceProfiler.Start();
+                sessionByCharacterId.CharacterInfo.AddLog(client, _Message);
+                SqlFailureScope.ThrowIfCurrentFailed();
+                perfLogDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
+
+                perfStepStart = PerformanceProfiler.Start();
+                sessionByCharacterId.CharacterInfo.AddNpcCount(client, values.NpcName);
+                SqlFailureScope.ThrowIfCurrentFailed();
+                perfNpcCountDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
+            }
+
+            long perfQuestStart = PerformanceProfiler.Start();
+            questProgressChanged = QuestObjectiveProgress.AddNpcKillProgress(sessionByCharacterId.CharacterInfo.Id, values.NpcName, values.MapId);
+            SqlFailureScope.ThrowIfCurrentFailed();
+            perfQuestMs += PerformanceProfiler.ElapsedMilliseconds(perfQuestStart);
+
+            long perfTitleStart = PerformanceProfiler.Start();
+            bool titleProgressChanged = TitleService.TrackNpcKill(sessionByCharacterId, values.NpcName, values.MapId);
+            SqlFailureScope.ThrowIfCurrentFailed();
+            perfTitleMs += PerformanceProfiler.ElapsedMilliseconds(perfTitleStart);
+            PerformanceProfiler.LogNpcReward(values.NpcName, sessionByCharacterId.CharacterInfo.Id, perfRewardStart, perfRewardDbMs, perfLogDbMs, perfNpcCountDbMs, perfQuestMs, perfTitleMs);
+
+            sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|Target destroyed."));
+
+            if (questProgressChanged || titleProgressChanged)
+                sessionByCharacterId.SendData(PacketComposer.Compose("QST", "UPD"));
+
+            if (sessionByCharacterId.CharacterInfo.SelectedPlayer == values.NpcId)
+                Fight.StopLaserForTarget(sessionByCharacterId, null, values.NpcId);
+
+            if (int32_1 != 0)
+                sessionByCharacterId.SendData(PacketComposer.Compose("y", "CRE|" + (object)int32_1 + "|" + (object)sessionByCharacterId.CharacterInfo.Credits));
+
+            if (int32_2 != 0)
+                sessionByCharacterId.SendData(PacketComposer.Compose("y", "URI|" + (object)int32_2 + "|" + (object)sessionByCharacterId.CharacterInfo.Uridium));
+
+            sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|You received " + (object)npcPoints + " npc point(s)."));
+            sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|You received " + (object)rankpoints + " rankpoint(s)."));
+
+            long xpTotal = sessionByCharacterId.CharacterInfo.Experience;
+            int levelNow = sessionByCharacterId.CharacterInfo.Level;
+            sessionByCharacterId.SendData(PacketComposer.Compose("y", $"EP|{xpGain}|{xpTotal}|{levelNow}"));
+
+            long honorTotal = sessionByCharacterId.CharacterInfo.Honor;
+            if (honorGain != 0)
+                sessionByCharacterId.SendData(PacketComposer.Compose("y", $"HON|{honorGain}|{honorTotal}"));
+
+            if (leveledUp)
+                sessionByCharacterId.SendData(PacketComposer.Compose("A", $"LUP|{levelNow}|1"));
+
         }
 
         public void StopNpcAttack()

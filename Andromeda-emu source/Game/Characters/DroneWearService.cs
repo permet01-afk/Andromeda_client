@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading;
-using MySql.Data.MySqlClient;
+using MySqlConnector;
 using OrbitReborn_Emulator.Game.Event;
 using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Maps;

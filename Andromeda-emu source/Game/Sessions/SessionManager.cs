@@ -1,4 +1,4 @@
-﻿using OrbitReborn_Emulator.Game.Techs;
+using OrbitReborn_Emulator.Game.Techs;
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Handlers;
@@ -19,7 +19,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
     {
         private static ConcurrentDictionary<int, Session> mSessions;
         private static int mCounter;
-        private static CList<int> mSessionsToStop;
+        private static Dictionary<int, Socket> mSessionsToStop;
         private static ConcurrentDictionary<int, int> mCharacterSessionIndex;
         private static Timer mMonitorThread;
         private static Timer mNoFightThread;
@@ -112,7 +112,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 CList<Session> clist = new CList<Session>();
                 foreach (Session key in (IEnumerable<Session>)SessionManager.mSessions.Values)
                 {
-                    if (key != null && !key.Stopped && key.Authenticated && !key.IsChat)
+                    if (key != null && !key.Stopped && key.GameplayReady && !key.IsChat)
                         clist.Add(key);
                 }
                 return clist;
@@ -126,7 +126,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 CDictionnary<int, string> cdictionnary = new CDictionnary<int, string>();
                 foreach (Session session in (IEnumerable<Session>)SessionManager.mSessions.Values)
                 {
-                    if (session.Authenticated && !cdictionnary.ContainsKey(session.CharacterId))
+                    if (session.GameplayReady && !cdictionnary.ContainsKey(session.CharacterId))
                         cdictionnary.Add(session.CharacterId, session.CharacterInfo.Username);
                 }
                 return cdictionnary;
@@ -147,7 +147,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             SessionManager.mActiveDispatches = 0;
             SessionManager.mSessions = new ConcurrentDictionary<int, Session>();
-            SessionManager.mSessionsToStop = new CList<int>();
+            SessionManager.mSessionsToStop = new Dictionary<int, Socket>();
             SessionManager.mCharacterSessionIndex = new ConcurrentDictionary<int, int>();
             SessionManager.mCounter = 1;
             SessionManager.mMonitorThread = new Timer(new TimerCallback(SessionManager.ExecuteMonitor), (object)null, TimeSpan.FromMilliseconds(300.0), TimeSpan.FromMilliseconds(300.0));
@@ -162,7 +162,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         public static void RegisterAuthenticatedSession(Session session)
         {
-            if (session == null || session.CharacterInfo == null || session.IsChat)
+            if (session == null || !session.GameplayReady || session.CharacterInfo == null || session.IsChat)
                 return;
 
             int characterId = session.CharacterId;
@@ -182,9 +182,18 @@ namespace OrbitReborn_Emulator.Game.Sessions
             if (characterId <= 0)
                 return;
 
-            int mappedSessionId;
-            if (SessionManager.mCharacterSessionIndex.TryGetValue(characterId, out mappedSessionId) && mappedSessionId == session.Id)
-                SessionManager.mCharacterSessionIndex.TryRemove(characterId, out mappedSessionId);
+            // Atomic conditional removal cannot discard a newer session's mapping.
+            ((ICollection<KeyValuePair<int, int>>)mCharacterSessionIndex)
+                .Remove(new KeyValuePair<int, int>(characterId, session.Id));
+        }
+
+        internal static Session GetSessionForAdmission(int characterId)
+        {
+            foreach (Session session in mSessions.Values)
+                if (session != null && !session.IsChat && session.CharacterId == characterId
+                    && session.CharacterInfo != null && session.RetirementIncomplete)
+                    return session;
+            return GetSessionByCharacterId(characterId);
         }
 
         private static Session TryGetIndexedCharacterSession(int characterId, bool allowDisconnected)
@@ -197,7 +206,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
             if (SessionManager.mCharacterSessionIndex.TryGetValue(characterId, out sessionId)
                 && SessionManager.mSessions.TryGetValue(sessionId, out session)
                 && session != null
-                && !session.StoppedPlayer
+                && session.GameplayReady
                 && !session.IsChat
                 && session.CharacterId == characterId
                 && session.CharacterInfo != null
@@ -209,7 +218,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
             foreach (Session item in (IEnumerable<Session>)SessionManager.mSessions.Values)
             {
                 if (item != null
-                    && !item.StoppedPlayer
+                    && item.GameplayReady
                     && !item.IsChat
                     && item.CharacterId == characterId
                     && item.CharacterInfo != null
@@ -221,7 +230,8 @@ namespace OrbitReborn_Emulator.Game.Sessions
             }
 
             if (sessionId != 0)
-                SessionManager.mCharacterSessionIndex.TryRemove(characterId, out sessionId);
+                ((ICollection<KeyValuePair<int, int>>)mCharacterSessionIndex)
+                    .Remove(new KeyValuePair<int, int>(characterId, sessionId));
 
             return (Session)null;
         }
@@ -237,9 +247,12 @@ namespace OrbitReborn_Emulator.Game.Sessions
             {
                 foreach (Session Session in (IEnumerable<Session>)SessionManager.mSessions.Values)
                 {
+                    object lifecycle = Session == null ? null : TechInventoryService.SyncRoot(Session.CharacterId);
+                    bool entered = false;
                     try
                     {
-                        if (Session == null || Session.CharacterInfo == null || Session.IsChat)
+                        if (lifecycle == null || !(entered = Monitor.TryEnter(lifecycle))) continue;
+                        if (!Session.GameplayReady || Session.CharacterInfo == null || Session.IsChat)
                             continue;
 
                         if (Session.StoppedPlayer || Session.CharacterInfo.Destroy)
@@ -327,6 +340,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     {
                         Output.WriteLine((object)("[SessionMgr] ExecuteNoFightMonitor session loop failed: " + ex.ToString()), OutputLevel.Warning);
                     }
+                    finally { if (entered) Monitor.Exit(lifecycle); }
                 }
             }
             catch (Exception ex)
@@ -388,41 +402,6 @@ namespace OrbitReborn_Emulator.Game.Sessions
             return HasRecentIncomingAttackActivity(session, now);
         }
 
-        private static void SynchronizeStoppedGameplayBeforeAutoLogout(Session session)
-        {
-            if (session == null || session.CharacterInfo == null || !session.Authenticated)
-                return;
-
-            try
-            {
-                session.CharacterInfo.FlushPendingPrimaryAmmoToDb();
-            }
-            catch { }
-
-            try
-            {
-                session.CharacterInfo.FlushPendingSecondaryAmmoToDb();
-            }
-            catch { }
-
-            try
-            {
-                // The caller owns lifecycle/impact. Flushes above borrow their
-                // own clients; do not retain this save lease during Dispose.
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("SessionManager.ExecuteMonitor.AutoLogout"))
-                {
-                    session.CharacterInfo.SynchronizeShipSkillCooldowns(client);
-                    session.CharacterInfo.SynchronizeStatistics(client, 0);
-                }
-            }
-            catch (Exception ex)
-            {
-                Output.WriteLine((object)("[SessionMgr] Auto-logout sync failed for charId=" + session.CharacterId + ": " + ex.ToString()), OutputLevel.Warning);
-            }
-
-            session.CharacterInfo.Disconnected = true;
-        }
-
         private static void ExecuteMonitor(object state)
         {
             const int SESSION_MONITOR_PERIOD_MS = 300;
@@ -430,20 +409,20 @@ namespace OrbitReborn_Emulator.Game.Sessions
             try
             {
                 CList<Session> clist1 = new CList<Session>();
-                CList<Session> clist2 = new CList<Session>();
+                var clist2 = new Dictionary<Session, Socket>();
                 lock (SessionManager.mSessionsToStop)
                 {
-                    foreach (int item_0 in (IEnumerable<int>)SessionManager.mSessionsToStop.Keys)
+                    foreach (var request in SessionManager.mSessionsToStop)
                     {
                         Session session;
-                        if (SessionManager.mSessions.TryGetValue(item_0, out session))
-                            clist2.Add(session);
+                        if (SessionManager.mSessions.TryGetValue(request.Key, out session))
+                            clist2[session] = request.Value;
                     }
                     SessionManager.mSessionsToStop.Clear();
                 }
                 foreach (Session key in (IEnumerable<Session>)SessionManager.mSessions.Values)
                 {
-                    if (!clist2.Contains(key) && ((key.StoppedPlayer && (key.Stopped || key.TimeStopped > STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS))
+                    if (!clist2.ContainsKey(key) && ((key.StoppedPlayer && (key.Stopped || key.TimeStopped > STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS))
                         || (key.Stopped && key.TimeStopped > STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS)))
                     {
                         if (ShouldKeepStoppedGameplaySessionAlive(key))
@@ -458,7 +437,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     {
                         try
                         {
-                            key.Stop();
+                            key.StopTransport(clist2[key]);
                         }
                         catch (Exception ex)
                         {
@@ -479,6 +458,11 @@ namespace OrbitReborn_Emulator.Game.Sessions
                             lock (key.CharacterInfo != null ? key.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(key.CharacterId))
                             {
                                 if (key.HasPendingGameplayDeath) continue;
+                                if (key.RetirementIncomplete)
+                                {
+                                    key.EndGameplay(false);
+                                    continue;
+                                }
                                 if (key.StoppedPlayer)
                                 {
                                     key.Stop(); // Transport only; terminal sessions never persist twice.
@@ -486,9 +470,13 @@ namespace OrbitReborn_Emulator.Game.Sessions
                                     continue;
                                 }
                                 if (!key.Stopped || ShouldKeepStoppedGameplaySessionAlive(key)) continue;
-                                SynchronizeStoppedGameplayBeforeAutoLogout(key);
-                                key.Dispose();
-                                ForgetSession(key);
+                                if (key.IsChat || key.CharacterInfo == null)
+                                {
+                                    key.Dispose();
+                                    ForgetSession(key);
+                                    continue;
+                                }
+                                key.EndGameplay(false);
                             }
                         }
                         catch (Exception ex)
@@ -519,15 +507,25 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         public static void StopSession(int SessionId)
         {
+            Session session = GetSessionById(SessionId);
+            if (session != null) StopSession(SessionId, session.CurrentTransport);
+        }
+
+        internal static void StopSession(int SessionId, Socket expectedSocket)
+        {
             lock (SessionManager.mSessionsToStop)
-                SessionManager.mSessionsToStop.Add(SessionId);
+            {
+                Session session = GetSessionById(SessionId);
+                if (session != null && object.ReferenceEquals(session.CurrentTransport, expectedSocket))
+                    SessionManager.mSessionsToStop[SessionId] = expectedSocket;
+            }
         }
 
         public static void CancelStopSession(int SessionId)
         {
             lock (SessionManager.mSessionsToStop)
             {
-                if (SessionManager.mSessionsToStop.Contains(SessionId))
+                if (SessionManager.mSessionsToStop.ContainsKey(SessionId))
                     SessionManager.mSessionsToStop.Remove(SessionId);
             }
         }
@@ -599,7 +597,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             foreach (Session session in (IEnumerable<Session>)SessionManager.mSessions.Values)
             {
-                if (session != null && !session.Stopped && session.Authenticated && !session.IsChat)
+                if (session != null && !session.Stopped && session.GameplayReady && !session.IsChat)
                     session.SendData(Message);
             }
         }
@@ -608,7 +606,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             foreach (Session session in (IEnumerable<Session>)SessionManager.mSessions.Values)
             {
-                if (session != null && !session.Stopped && session.Authenticated && !session.IsChat)
+                if (session != null && !session.Stopped && session.GameplayReady && !session.IsChat)
                     session.SendData(Message);
             }
         }

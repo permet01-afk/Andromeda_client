@@ -39,7 +39,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 if (engines.Rows.Count != 2 || engines.Rows.Cast<DataRow>().Any(r => !string.Equals(Convert.ToString(r[0]),"InnoDB",StringComparison.OrdinalIgnoreCase)))
                     throw new InvalidOperationException(SchemaMessage);
             }
-            catch (MySql.Data.MySqlClient.MySqlException ex) { throw new InvalidOperationException(SchemaMessage, ex); }
+            catch (MySqlConnector.MySqlException ex) { throw new InvalidOperationException(SchemaMessage, ex); }
         }
         internal static DataRow LockState(SqlDatabaseTransaction db, int id, int shipId)
         {
