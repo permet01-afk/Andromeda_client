@@ -1,0 +1,428 @@
+/* REV5 activities. DoPs Gatebuilder/QuestTree AS is recovered and cited in
+   activities-audit.json. The external Gatebuilder common/gates/main_bg art is
+   absent: CSS fallback is deliberately not described as native library art. */
+body.historical-site .gg-page.hist-gg-ready{width:804px;min-width:804px;max-width:804px;margin:0;padding:9px;border:0;border-image:none;background:none;box-shadow:none;font:11px/1.35 Verdana,Arial,sans-serif}
+body.historical-site .hist-gg-ready .gg-heading{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0;padding:0}
+body.historical-site .hist-gg-ready .lottery-wrapper{width:786px;margin:0}
+body.historical-site .hist-gg-ready .lottery-card{box-sizing:border-box;display:grid;grid-template-columns:130px 358px 282px;gap:0;width:786px;height:395px;min-height:395px;margin:0;padding:0;border:8px solid transparent;border-image:url('dops/global/events/frame.png') 8 fill stretch;background:none;box-shadow:none}
+body.historical-site .hist-gg-ready .gate-tabs{display:flex;flex-direction:column;gap:5px;width:130px;padding:7px 0;align-self:stretch}
+body.historical-site .hist-gg-ready .gate-tab{position:relative;display:block;box-sizing:border-box;width:130px;height:66px;min-height:66px;padding:0;border:0;box-shadow:none;background:transparent url('pk/do/global/bg_subnav_standard.gif') left top no-repeat!important;color:#b5c3cc;text-align:left;font:12px/18px Verdana,Arial,sans-serif;letter-spacing:0}
+body.historical-site .hist-gg-ready .hist-gate-label{position:absolute;top:7px;left:26px;right:5px;display:block;height:20px;line-height:20px;color:inherit;text-align:left;white-space:nowrap}
+body.historical-site .hist-gg-ready .gate-tab.active,body.historical-site .hist-gg-ready .gate-tab:hover{background-image:url('pk/do/global/bg_subnav_selected.gif')!important;box-shadow:none;color:#ede5be}
+body.historical-site .hist-gg-ready .gate-tab small{position:absolute;top:39px;left:8px;right:4px;margin:0;color:#8dabbc;font:9px/13px Verdana,Arial,sans-serif;letter-spacing:0;white-space:normal;text-align:left}
+body.historical-site .hist-gg-ready .left-zone{position:relative;height:363px;margin:8px;padding:0;border:0;border-radius:0;background:none;overflow:visible}
+body.historical-site .hist-gg-ready .gate-title{height:22px;box-sizing:border-box;padding:2px 0;text-align:center;font-size:12px;line-height:18px;letter-spacing:1px;border:0;background:none;color:#d5d3bf}
+body.historical-site .hist-gg-ready .visual-container{height:264px;background:none;overflow:visible}
+body.historical-site .hist-gg-ready .gate-art-stage{width:211px;height:261px;filter:none}
+body.historical-site .hist-gg-ready .gate-art-bg{filter:none;opacity:.35}
+body.historical-site .hist-gg-ready .gate-art-empty{bottom:0;font:9px/13px Verdana,Arial,sans-serif;color:#8ca4b2}
+body.historical-site .hist-gg-ready .gate-info-overlay{padding:0 8px;border:0;background:none}
+body.historical-site .hist-gg-ready .progress-text{justify-content:center;font-size:11px;line-height:15px}
+body.historical-site .hist-gg-ready #uiGateName{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+body.historical-site .hist-gg-ready .progress-bar-bg{height:5px;margin:3px 0;border:1px solid #405360;border-radius:0;background:#050a0d}
+body.historical-site .hist-gg-ready .progress-bar-fill{background:#8da9ba;transition:none}
+body.historical-site .hist-gg-ready .status-msg{margin:4px 0;color:#bdc9d0;font:9px/12px Verdana,Arial,sans-serif;text-align:center;min-height:12px}
+body.historical-site .hist-gg-ready .gg-facts{gap:12px;justify-content:center;margin:3px 0}
+body.historical-site .hist-gg-ready .gg-facts span{display:flex;align-items:baseline;justify-content:center;gap:6px;flex:0 1 auto;border:0;background:none;padding:0;font-size:9px}
+body.historical-site .hist-gg-ready .gg-facts b{display:inline;margin:0;font-size:11px;color:#d5d3bf}
+body.historical-site .hist-gg-ready .gate-life-actions{margin:2px 0;justify-content:center}
+body.historical-site .hist-gg-ready .btn-prepare{margin:3px auto 0}
+body.historical-site .hist-gg-ready .controls-zone{box-sizing:border-box;width:266px;height:363px;margin:8px;padding:7px 8px 6px;border:0;border-left:1px solid #3c4e59;border-radius:0;background:none;display:flex;flex-direction:column;gap:5px;overflow:visible}
+body.historical-site .hist-gg-ready .shop-title{margin:0 0 2px;text-align:center;font-size:12px;line-height:18px;letter-spacing:0;color:#d8d2b5}
+body.historical-site .hist-gg-ready .gg-row{font:10px/17px Verdana,Arial,sans-serif}
+body.historical-site .hist-gg-ready .multiplier-badge{font-size:14px;color:#d5cf9d}
+body.historical-site .hist-gg-ready .cost-box{margin:0;padding:0;border:0}
+body.historical-site .hist-gg-ready .amount-selector{display:flex;gap:2px;min-height:23px;margin:2px 0}
+body.historical-site .hist-gg-ready .amt-btn{flex:1;width:auto;height:23px;min-width:0;padding:2px 0;border:1px solid #425766;background:#102331!important;font:10px/17px Verdana,Arial,sans-serif;color:#aebec8;box-shadow:none;border-radius:0}
+body.historical-site .hist-gg-ready .amt-btn.active,body.historical-site .hist-gg-ready .amt-btn:hover{background:#304c5d!important;border-color:#8caaac;color:#eee9c9}
+body.historical-site .hist-gg-ready .result-panel{box-sizing:border-box;flex:1;height:201px;min-height:150px;max-height:201px;width:100%;padding:5px;background:url('dops/global/hangar/item-info_background_cycle.png') repeat;border:1px solid #3f5563;border-radius:0;gap:5px;overflow:auto}
+body.historical-site .hist-gg-ready .result-empty{min-height:0;font:10px/16px Verdana,Arial,sans-serif;letter-spacing:0;text-transform:none;color:#879ca8}
+body.historical-site .hist-gg-ready .result-group{gap:3px;padding-bottom:4px;border-color:#344852}
+body.historical-site .hist-gg-ready .result-group-header{font-size:9px;line-height:12px;letter-spacing:0;text-transform:none;color:#b7c9d2}
+body.historical-site .hist-gg-ready .result-group-time{font-size:8px}
+body.historical-site .hist-gg-ready .result-card{display:grid;grid-template-columns:30px minmax(0,1fr);gap:5px;min-height:38px;padding:3px;border:0;border-bottom:1px solid #2c414e;background:none;box-shadow:none;border-radius:0}
+body.historical-site .hist-gg-ready .result-icon{grid-row:1/3;width:30px;height:30px;border:0;background:none;border-radius:0}
+body.historical-site .hist-gg-ready .result-name{font-size:10px;line-height:12px;font-weight:normal;color:#c9d3d8}
+body.historical-site .hist-gg-ready .result-desc{font-size:9px;line-height:12px;color:#91a5b2}
+body.historical-site .hist-gg-ready .result-qty{grid-column:2;font-size:11px;line-height:13px;font-weight:normal;color:#d5cc9f}
+body.historical-site .hist-gg-ready .btn-action,body.historical-site .hist-gg-ready .btn-buy-life{box-sizing:border-box;flex:0 0 auto;width:200px;max-width:200px;height:33px;min-height:33px;padding:5px 7px;margin-left:auto;margin-right:auto;background:url('pk/do/pilotSheet/profilePage/rework/button_sprite_200x33px.png') center top no-repeat!important;border:0;border-radius:0;box-shadow:none;color:#c8d6de;font:10px/18px Verdana,Arial,sans-serif;letter-spacing:0}
+body.historical-site .hist-gg-ready .btn-action:hover,body.historical-site .hist-gg-ready .btn-buy-life:hover{background-position:center -33px!important}
+body.historical-site .hist-gg-ready .btn-action:disabled,body.historical-site .hist-gg-ready .btn-buy-life:disabled{opacity:.5}
+body.historical-site .hist-activity-notes{display:grid;grid-template-columns:1fr 1fr;align-items:start;gap:8px;margin-top:6px;font:10px/15px Verdana,Arial,sans-serif}
+body.historical-site .hist-gate-run-actions{display:flex;justify-content:center}
+body.historical-site .hist-gate-run-actions .gate-life-actions{margin:4px 0 0}
+body.historical-site .hist-activity-details{border:0;padding:0;color:#a8bdc9;background:none}
+body.historical-site .hist-activity-details>summary{cursor:pointer;min-height:20px;padding:2px 5px;font-size:10px;color:#c6cbb3;list-style-position:inside}
+body.historical-site .hist-activity-details[open]>summary{color:#eee4b1}
+body.historical-site .hist-activity-details>.gg-note{padding:5px;font:10px/15px Verdana,Arial,sans-serif;color:#a8bbc6}
+body.historical-site .hist-activity-details>.gg-row{padding:3px 5px}
+body.historical-site .hist-activity-details .drop-overview{padding:5px;border:0;background:none}
+body.historical-site .hist-activity-details .drop-title{display:none}
+body.historical-site .hist-activity-details .drop-row{grid-template-columns:70px 1fr 30px;font-size:10px}
+body.historical-site .hist-gg-ready .modal-box{border:8px solid transparent;border-image:url('dops/global/events/frame.png') 8 fill stretch;width:440px;padding:22px;background:none;border-radius:0;box-shadow:none}
+body.historical-site .hist-gg-ready .modal-title{font:13px/20px Verdana,Arial,sans-serif;color:#d7d0ae}
+body.historical-site .hist-gg-ready .modal-text{font:11px/17px Verdana,Arial,sans-serif;color:#bbcad2}
+
+/* Quests: a real list/detail route using the original section tabs and forms. */
+body.historical-site .quest-page.hist-q-ready{box-sizing:border-box;width:772px;max-width:772px;margin:0 auto;padding:0;background:none;border:0;color:#bbccd5;font:11px/1.4 Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .quest-page__header{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0;margin:0}
+body.historical-site .hist-q-ready .quest-tabs{display:flex;justify-content:center;gap:1px;margin:0;padding:0;min-height:35px;flex-wrap:nowrap;background:none;border:0}
+body.historical-site .hist-q-ready .quest-tab{box-sizing:border-box;flex:0 0 130px;min-width:130px;width:130px;height:35px;padding:9px 3px;font:10px/16px Verdana,Arial,sans-serif;letter-spacing:0;text-align:center}
+body.historical-site .hist-q-ready .quest-panels,body.historical-site .hist-q-ready .quest-panel,body.historical-site .hist-q-ready .quest-section{width:772px;margin:0;padding:0;border:0;border-image:none;background:none!important;border-radius:0;box-shadow:none}
+body.historical-site .hist-q-ready [data-quest-section][hidden],body.historical-site .hist-q-ready .hist-q-content[hidden]{display:none!important}
+body.historical-site .hist-q-ready .quest-section__intro{height:auto;min-height:20px;margin:0;padding:2px 7px;text-align:right;border:0;background:none;color:#9fb4c1}
+body.historical-site .hist-q-ready .quest-section__intro h3{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);margin:0}
+body.historical-site .hist-q-ready .quest-section__intro p{margin:0;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready [data-quest-section=contracts] .quest-section__intro{display:none}
+body.historical-site .hist-q-ready .quest-section__intro--weekly{text-align:left}
+body.historical-site .hist-q-ready .quest-section__intro--weekly .hist-activity-details>p{padding:4px 7px;color:#a8bdc9}
+body.historical-site .hist-q-ready .hist-q-console{box-sizing:border-box;display:grid;grid-template-columns:226px minmax(0,1fr);width:772px;height:414px;margin:0;padding:0;border:8px solid transparent;border-image:url('dops/global/events/frame.png') 8 fill stretch;background:none;box-shadow:none}
+body.historical-site .hist-q-ready .hist-q-list{box-sizing:border-box;height:398px;overflow:auto;border-right:1px solid #405764;background:url('dops/global/hangar/item-info_background_cycle.png') repeat;padding:2px}
+body.historical-site .hist-q-ready .hist-q-list>.quest-basic-list,body.historical-site .hist-q-ready .hist-q-list>.quest-card-grid{display:flex;flex-direction:column;gap:0;margin:0;padding:0;width:100%;border:0;background:none}
+body.historical-site .hist-q-ready .hist-q-list .basic-quest-card,body.historical-site .hist-q-ready .hist-q-list .quest-card{display:block;flex:none;min-height:0;margin:0;padding:0;border:0!important;border-bottom:1px solid #344c5b!important;border-image:none;background:none!important;box-shadow:none;border-radius:0}
+body.historical-site .hist-q-ready .hist-q-list .basic-quest-card__header,body.historical-site .hist-q-ready .hist-q-list .quest-card__header{display:block;min-height:58px;padding:0;margin:0;border:0;background:none}
+body.historical-site .hist-q-ready .hist-q-list .hist-q-selected{background:#1b3343!important;box-shadow:inset 2px 0 #b6c1a2}
+body.historical-site .hist-q-ready .quest-card-toggle,body.historical-site .hist-q-ready .hist-q-contract-choice{display:block;box-sizing:border-box;width:100%;min-width:0;max-width:none;min-height:40px;height:auto;margin:0;padding:6px 7px 2px;background:none!important;border:0;border-radius:0;box-shadow:none;text-align:left;color:#c2d0d6;font:11px/15px Verdana,Arial,sans-serif;cursor:pointer}
+body.historical-site .hist-q-ready .quest-card-toggle__text{display:block;min-width:0}
+body.historical-site .hist-q-ready .quest-card-toggle__icon{display:none}
+body.historical-site .hist-q-ready .quest-card-title,body.historical-site .hist-q-ready .quest-card__header h4{display:block;margin:0;color:#d1d5c4;font:11px/15px Verdana,Arial,sans-serif;white-space:normal}
+body.historical-site .hist-q-ready .basic-quest-card__category{display:none}
+body.historical-site .hist-q-ready .quest-card-summary,body.historical-site .hist-q-ready .quest-card__meta{display:block;margin:3px 0 0;color:#8fa7b8;font:9px/12px Verdana,Arial,sans-serif;white-space:normal}
+body.historical-site .hist-q-ready .quest-status{display:inline-block;margin:1px 7px 5px;padding:0;border:0;background:none;color:#a6bac7;font:9px/12px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .quest-status--ready{color:#bed498}
+body.historical-site .hist-q-ready .quest-status--completed{color:#83969e}
+body.historical-site .hist-q-ready .hist-q-detail{box-sizing:border-box;height:398px;overflow:auto;padding:10px 13px;background:url('dops/global/hangar/item-info_background_cycle.png') repeat;color:#c2cdd2}
+body.historical-site .hist-q-ready .hist-q-detail-heading{margin:0 0 9px;padding:0 0 7px;border-bottom:1px solid #425b6b;color:#d9d4b6;font:13px/18px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .hist-q-detail .basic-quest-card__category{display:block;margin:0 0 7px;color:#8fa7b8;font:9px/13px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .hist-q-content{display:block;padding:0;margin:0;border:0;background:none;box-shadow:none;font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .basic-quest-card__main,body.historical-site .hist-q-ready .basic-quest-card__side{display:block;margin:0;padding:0;border:0;background:none;box-shadow:none}
+body.historical-site .hist-q-ready .quest-description{margin:0 0 13px;color:#b2c4ce;font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .basic-objectives{display:block;margin:0 0 12px;padding:0;border:0;background:none}
+body.historical-site .hist-q-ready .basic-objective{margin:0 0 10px;padding:0;border:0;background:none}
+body.historical-site .hist-q-ready .basic-objective__labels,body.historical-site .hist-q-ready .quest-progress__labels{display:flex;justify-content:space-between;gap:10px;color:#adbec9;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .quest-progress{margin:10px 0 13px}
+body.historical-site .hist-q-ready .quest-progress__track{height:5px;border:1px solid #405767;background:#080e12;border-radius:0;box-shadow:none}
+body.historical-site .hist-q-ready .quest-progress__fill{height:100%;background:#89a5b2;border-radius:0;box-shadow:none}
+body.historical-site .hist-q-ready .quest-rewards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 13px;margin:13px 0;padding:9px 0;border-top:1px solid #405866;border-bottom:1px solid #405866;background:none}
+body.historical-site .hist-q-ready .quest-rewards>div{display:flex;align-items:baseline;justify-content:space-between;gap:8px;min-height:22px;padding:2px 0;border:0;background:none;border-radius:0;color:#aabecb;font:10px/17px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .quest-rewards strong{color:#d2caa4;font-weight:normal}
+body.historical-site .hist-q-ready .quest-action-form{margin:9px 0 0;padding:0;border:0;background:none}
+body.historical-site .hist-q-ready .quest-button{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:200px;max-width:200px;height:33px;min-height:33px;margin:0 auto;padding:5px 8px;border:0;border-radius:0;box-shadow:none;background:url('pk/do/pilotSheet/profilePage/rework/button_sprite_200x33px.png') center top no-repeat!important;color:#cbd6dc;font:10px/18px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready button.quest-button:hover{background-position:center -33px!important}
+body.historical-site .hist-q-ready .quest-button--locked,body.historical-site .hist-q-ready .quest-button--completed{color:#8098a6;opacity:.65}
+body.historical-site .hist-q-ready .quest-feedback{padding:7px 10px;margin:3px 0;color:#c3cda8;border:1px solid #4a606d;border-radius:0;background:#152735;font:11px/16px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .quest-feedback--error{color:#e2af9c}
+body.historical-site .hist-q-ready .weekly-quest-meta{display:block;margin-top:6px;font-size:9px;color:#8da6b8}
+body.historical-site .hist-q-ready button:focus-visible,body.historical-site .hist-gg-ready button:focus-visible{outline:1px solid #bacba8;outline-offset:-1px}
+
+/* Gatebuilder Main.as native regions: selector0 / gate180 / stats524.
+   The image-library skins are unavailable; preserve the live Andromeda portal
+   layers at their own native211x261 instead of manufacturing replacement art. */
+body.historical-site .hist-gg-ready .lottery-card{position:relative;display:grid;grid-template-columns:180px 344px 262px;border:0;border-image:none;background:#05090c;width:786px;height:395px;min-height:395px;outline:1px solid #283e49}
+body.historical-site .hist-gg-ready .gate-tabs{width:180px;gap:3px;padding:8px 5px 0 0;border-right:1px solid #273e4b}
+body.historical-site .hist-gg-ready .hist-gate-shared{padding:7px 0 9px;border-bottom:1px solid #405563;margin-bottom:3px;background:url('dops/global/hangar/item-info_background_cycle.png') repeat}
+body.historical-site .hist-gate-group-name{display:block;color:#7e96a5;font:9px/15px Verdana,Arial,sans-serif;text-align:center;margin-bottom:3px}
+body.historical-site .hist-gg-ready .gate-tab{width:170px;min-height:50px;height:50px;margin:0 2px;background-position:center top!important;background-color:transparent!important}
+body.historical-site .hist-gg-ready .hist-gate-label{top:7px;left:44px;width:120px;font-size:11px}
+body.historical-site .hist-gg-ready .gate-tab small{top:33px;left:44px;width:120px;font-size:9px;line-height:12px}
+body.historical-site .hist-gg-ready .left-zone{position:relative;width:344px;height:395px;margin:0;padding:0;background:none}
+body.historical-site .hist-gg-ready .gate-title{position:absolute;top:14px;left:40px;width:250px;height:25px;font-size:13px;text-align:center}
+body.historical-site .hist-gg-ready .visual-container{position:absolute;left:0;top:50px;width:344px;height:263px;display:flex;justify-content:center;align-items:flex-start}
+body.historical-site .hist-gg-ready .gate-info-overlay{position:absolute;left:10px;right:10px;top:315px;height:73px;padding:0}
+body.historical-site .hist-gg-ready .progress-text{justify-content:flex-end;margin-right:6px;font-size:13px;line-height:18px}
+body.historical-site .hist-gg-ready .progress-bar-bg{height:3px;width:124px;margin:3px 6px 3px auto}
+body.historical-site .hist-gg-ready .status-msg{position:absolute;left:0;right:135px;top:1px;text-align:left;font-size:9px;line-height:13px;margin:0}
+body.historical-site .hist-gg-ready .gg-facts{position:absolute;left:0;top:24px;display:flex;justify-content:flex-start;gap:12px;margin:0}
+body.historical-site .hist-gg-ready .gg-facts[hidden]{display:none!important}
+body.historical-site .hist-gg-ready .gg-facts span{gap:4px}
+body.historical-site .hist-gg-ready .btn-prepare{position:absolute;right:0;top:37px;width:155px;max-width:155px;margin:0;background-size:155px auto!important;font-size:9px;height:26px;min-height:26px;line-height:16px;padding:4px}
+body.historical-site .hist-gg-ready .btn-prepare:hover{background-position:center -25.5px!important}
+body.historical-site .hist-gg-ready #gateLifeActions{position:absolute;left:7px;bottom:7px;margin:0;padding:0;max-width:165px}
+body.historical-site .hist-gg-ready #btnBuyLife{width:163px;max-width:163px;height:27px;min-height:27px;background-size:163px auto!important;white-space:normal;font-size:8px;line-height:11px;padding:2px 6px}
+body.historical-site .hist-gg-ready #btnBuyLife:hover{background-position:center -27px!important}
+body.historical-site .hist-gg-ready .controls-zone{position:relative;display:block;width:262px;height:395px;margin:0;padding:0;border-left:1px solid #304955}
+body.historical-site .hist-gg-ready .hist-gate-wallet{position:absolute;left:20px;right:15px;top:8px;display:flex;justify-content:space-between;font-size:10px;line-height:20px;border-bottom:1px solid #233a46;padding-bottom:5px}
+body.historical-site .hist-gg-ready .hist-gate-multiplier{position:absolute;left:20px;right:15px;top:43px;display:flex;justify-content:space-between;align-items:center;height:45px;border-bottom:1px solid #304955;padding-bottom:6px}
+body.historical-site .hist-gg-ready .multiplier-badge{font-size:22px;line-height:32px;min-width:44px;text-align:center;color:#ddc67e}
+body.historical-site .hist-gg-ready .shop-title{position:absolute;top:101px;left:15px;right:10px;margin:0;font-size:11px;text-align:left}
+body.historical-site .hist-gg-ready .cost-box{position:absolute;top:158px;left:133px;right:12px;margin:0;display:block;font-size:8px;line-height:13px;text-align:right;max-width:115px}
+body.historical-site .hist-gg-ready .cost-box>span{display:block}
+body.historical-site .hist-gg-ready #uiTotalCost{font-size:11px;white-space:nowrap}
+body.historical-site .hist-gg-ready .amount-selector{position:absolute;top:159px;left:15px;width:112px;min-height:24px;margin:0;display:block}
+body.historical-site .hist-gg-ready .amount-selector .amt-btn{display:none!important}
+body.historical-site #hist-gate-energy-amount{box-sizing:border-box;width:112px;height:24px;padding:2px 5px;background:#112432;color:#b7cbd7;border:1px solid #566b78;border-radius:0;font:10px Verdana,Arial,sans-serif}
+body.historical-site .hist-gg-ready #btnSpin{position:absolute;top:128px;left:37px;width:188px;height:27px;min-height:27px;margin:0;background-size:188px auto!important;font-size:10px;line-height:17px;padding:4px}
+body.historical-site .hist-gg-ready #btnSpin:hover{background-position:center -31px!important}
+body.historical-site .hist-gg-ready .hist-gate-log-heading{position:absolute;left:8px;right:8px;top:190px;height:25px;margin:0;padding:3px 8px;text-align:center;font:12px/18px Verdana,Arial,sans-serif;background:url('dops/global/hangar/item-info_background_cycle.png') repeat;color:#c7d2d7;border-top:1px solid #3b5666;border-bottom:1px solid #3b5666}
+body.historical-site .hist-gg-ready #resultPanel{position:absolute;top:222px;left:5px;right:6px;width:auto;height:164px;min-height:164px;max-height:164px;display:flex;flex-direction:column;padding:3px;border:0;background:none;gap:1px;overflow:auto}
+body.historical-site .hist-gg-ready .result-card{min-height:28px;grid-template-columns:22px minmax(0,1fr);gap:2px 5px;padding:2px 0}
+body.historical-site .hist-gg-ready .result-icon{width:22px;height:22px}
+body.historical-site .hist-gg-ready .result-name{font-size:9px;line-height:12px}
+body.historical-site .hist-gg-ready .result-desc{font-size:8px;line-height:10px}
+body.historical-site .hist-gg-ready .result-qty{font-size:10px;line-height:12px}
+body.historical-site .hist-gg-ready .hist-activity-notes{margin:5px 0 0;display:flex;justify-content:flex-end;gap:10px;align-items:start;min-height:22px}
+body.historical-site .hist-gg-ready .hist-activity-details{max-width:380px}
+
+/* Five Andromeda mission families integrated into one catalogue selector.
+   Native QuestTree condition states are10px bitmaps; full webQuest layout is
+   absent from the snapshot, so this catalogue remains an explicit adaptation. */
+body.historical-site .hist-q-family-picker{position:relative;width:226px;margin:1px 0 6px;z-index:5;font:11px/22px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-family-picker>summary{box-sizing:border-box;cursor:pointer;list-style-position:inside;height:26px;padding:1px 10px;border:1px solid #4d6370;color:#ccd5d6;background:url('dops/global/hangar/item-info_background_cycle.png') repeat}
+body.historical-site .hist-q-ready .hist-q-family-picker .quest-tabs{position:absolute;top:25px;left:0;width:226px;display:flex;flex-direction:column;gap:0;margin:0;padding:3px;background:#0c1b25;border:1px solid #526976;min-height:0;box-shadow:2px 3px 4px #0009}
+body.historical-site .hist-q-ready .hist-q-family-picker .quest-tab{flex:none;display:block;width:218px;min-width:0;height:29px;padding:6px 9px;text-align:left;background:none!important;border:0;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site .hist-q-ready .hist-q-family-picker .quest-tab:hover,body.historical-site .hist-q-ready .hist-q-family-picker .quest-tab.is-active{background:#26404e!important;color:#e1dbbd}
+body.historical-site .hist-q-ready .hist-q-console{height:368px;grid-template-columns:226px minmax(0,1fr);border:1px solid #354d5b;border-image:none;background:url('dops/global/hangar/item-info_background_cycle.png') repeat}
+body.historical-site .hist-q-ready .hist-q-list,body.historical-site .hist-q-ready .hist-q-detail{height:366px;background:none}
+body.historical-site .hist-q-ready .hist-q-list{padding:1px 0}
+body.historical-site .hist-q-ready .hist-q-list .basic-quest-card__header,body.historical-site .hist-q-ready .hist-q-list .quest-card__header{min-height:51px}
+body.historical-site .hist-q-ready .hist-q-list .quest-card-toggle,body.historical-site .hist-q-ready .hist-q-list .hist-q-contract-choice{min-height:31px;padding-left:22px;position:relative}
+body.historical-site .hist-q-ready .hist-q-list .basic-quest-card,body.historical-site .hist-q-ready .hist-q-list .quest-card{background-image:url('dops/quest-native/condition-upcoming.png')!important;background-repeat:no-repeat!important;background-position:7px 10px!important}
+body.historical-site .hist-q-ready .hist-q-list [data-hist-quest-state=running]{background-image:url('dops/quest-native/condition-running.png')!important}
+body.historical-site .hist-q-ready .hist-q-list [data-hist-quest-state=completed]{background-image:url('dops/quest-native/condition-completed.png')!important}
+body.historical-site .hist-q-ready .hist-q-detail{padding:10px 15px}
+body.historical-site .hist-q-ready .hist-q-detail-heading{font-size:12px;margin-bottom:9px;padding-bottom:5px}
+body.historical-site .hist-q-ready .quest-status{margin-left:22px;font-size:9px}
+body.historical-site .hist-q-ready .quest-description{font-size:11px;line-height:17px;margin-bottom:10px}
+body.historical-site .hist-q-ready .basic-objectives{margin-left:5px;padding-left:12px;border-left:1px dotted #62727b}
+body.historical-site .hist-q-ready .basic-objective{position:relative;padding-left:16px;background:url('dops/quest-native/subcondition-running.png') left 3px no-repeat;min-height:20px}
+body.historical-site .hist-q-ready .basic-objective.is-complete{background-image:url('dops/quest-native/subcondition-completed.png')}
+body.historical-site .hist-q-ready [data-hist-quest-state=upcoming] .basic-objective{background-image:url('dops/quest-native/subcondition-upcoming.png')}
+body.historical-site .hist-q-ready .basic-objective:before{content:'';position:absolute;left:-13px;top:7px;width:12px;border-top:1px dotted #62727b}
+body.historical-site .hist-q-ready .quest-rewards{display:flex;flex-direction:column;gap:0;padding:6px 0;margin:10px 0;border-color:#314a59}
+body.historical-site .hist-q-ready .quest-rewards>div{min-height:19px;line-height:16px;padding:0}
+body.historical-site .hist-q-ready .quest-rewards strong{min-width:100px;text-align:right}
+body.historical-site .hist-q-ready .quest-progress__track{height:3px}
+body.historical-site .hist-q-ready .hist-q-detail .quest-action-form{margin-top:11px}
+
+/* Skylab: native module/map workflow and original live popup. Healthy prose is
+   omitted; errors, upgrades, net production and transport messages stay live. */
+body.historical-site .hist-routine-status,body.historical-site .hist-equivalent-control{display:none!important}
+body.historical-site .hist-skylab-ready .skylab-head:has(.skylab-subtitle.hist-routine-status){display:none!important}
+body.historical-site .hist-skylab-ready .skylab-head{height:auto;min-height:0;padding:0;background:none;border:0}
+body.historical-site .hist-skylab-ready .skylab-head h1{display:none}
+body.historical-site .hist-skylab-ready .skylab-subtitle:not(.hist-routine-status){padding:5px 9px;color:#e2b19e}
+body.historical-site .hist-skylab-ready .skylab-status-line:not(.hist-routine-status){height:auto;min-height:0;margin:3px 0;padding:4px 8px;font:10px/15px Verdana,Arial,sans-serif;background:#111e26;border-color:#344d5c}
+body.historical-site .hist-skylab-ready .skylab-module{background-color:transparent;color:#b8c9d3;padding:5px 7px;height:43px;box-shadow:none}
+body.historical-site .hist-skylab-ready .skylab-module-name{font:10px/13px Verdana,Arial,sans-serif;font-weight:bold;color:#c5d3da}
+body.historical-site .hist-skylab-ready .skylab-module-meta{font:10px/14px Verdana,Arial,sans-serif;margin-top:3px;gap:8px}
+body.historical-site .hist-skylab-ready .skylab-module:hover,body.historical-site .hist-skylab-ready .skylab-module.is-selected{filter:brightness(1.18);box-shadow:inset 0 0 0 1px #617d8b;background-color:#10263366}
+body.historical-site .hist-skylab-ready .skylab-module.is-upgrading{box-shadow:inset 0 0 0 1px #9e8d56}
+body.historical-site .hist-skylab-ready .skylab-resource-name{font:9px/11px Verdana,Arial,sans-serif}
+body.historical-site .hist-skylab-ready .skylab-resource-value{font:9px/12px Verdana,Arial,sans-serif}
+body.historical-site .hist-skylab-ready .skylab-popup-actions{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}
+body.historical-site .hist-skylab-ready .skylab-popup-action{font-size:9px!important;line-height:14px!important;width:138px!important;max-width:138px!important;height:25px!important;min-height:25px!important;background-size:138px auto!important;padding:3px 5px!important}
+body.historical-site .hist-skylab-ready .skylab-popup-action:hover{background-position:center -22.77px!important}
+body.historical-site .hist-skylab-ready .skylab-popup-tab{font-size:10px}
+body.historical-site .hist-skylab-ready .skylab-popup-row{font:10px/15px Verdana,Arial,sans-serif;min-height:20px}
+body.historical-site .hist-skylab-ready .skylab-popup-content{padding-top:7px}
+
+/* Factory: selection left, detail centre, production halls right. The hidden
+   recipes table is a duplicate renderer target, never an extra source of data. */
+body.historical-site .hist-factory-ready .tf-head,body.historical-site .hist-factory-ready .tf-table-wrap,body.historical-site .hist-factory-ready .tf-note{display:none!important}
+body.historical-site .hist-factory-ready .tf-scene-wrap{padding:0;background:none;overflow-x:auto}
+body.historical-site .hist-factory-ready .tf-scene{height:434px;margin:0 auto;overflow:hidden}
+body.historical-site .hist-factory-ready .tf-left{top:20px;height:394px}
+body.historical-site .hist-factory-ready .tf-right{top:20px;height:394px}
+body.historical-site .hist-factory-ready .tf-left h2{margin:9px 0 12px;font-size:12px}
+body.historical-site .hist-factory-ready .tf-left>p{display:none}
+body.historical-site .hist-factory-ready .tf-catalog{padding:10px 9px;gap:11px 1px}
+body.historical-site .hist-factory-ready .tf-catalog button{height:89px;font:8px/11px Verdana,Arial,sans-serif;padding:0 0 2px;overflow:visible;outline:none;background:none}
+body.historical-site .hist-factory-ready .tf-catalog button>span:not(.tf-icon){display:block;margin-top:3px}
+body.historical-site .hist-factory-ready .tf-catalog .picked .tf-icon{outline:1px solid #b8cbd6;outline-offset:1px}
+body.historical-site .hist-factory-ready .tf-detail{top:42px;height:362px;padding:12px 18px;color:#c5d1d8}
+body.historical-site .hist-factory-ready .tf-detail h2{font:11px/16px Verdana,Arial,sans-serif;color:#c9d8de;margin:0 0 7px;padding:0 0 5px;border-bottom:1px solid #2c4451}
+body.historical-site .hist-factory-ready .tf-detail-top{min-height:80px;gap:9px;margin-bottom:4px}
+body.historical-site .hist-factory-ready .tf-effect{font:10px/15px Verdana,Arial,sans-serif}
+body.historical-site .hist-factory-ready .tf-effect small{font:9px/13px Verdana,Arial,sans-serif;color:#91a7b3;margin-top:4px}
+body.historical-site .hist-factory-ready .tf-cost{font:10px/15px Verdana,Arial,sans-serif;padding:3px 0}
+body.historical-site .hist-factory-ready .tf-choice{font:10px/15px Verdana,Arial,sans-serif;margin-top:6px}
+body.historical-site .hist-factory-ready .tf-choice select{font:10px Verdana,Arial,sans-serif;height:23px;padding:2px 4px;max-width:170px;border-radius:0}
+body.historical-site .hist-factory-ready .tf-build{font:10px/16px Verdana,Arial,sans-serif;margin-top:7px;height:30px;min-height:30px}
+body.historical-site .hist-factory-ready .tf-foot{font:9px/14px Verdana,Arial,sans-serif}
+body.historical-site .hist-factory-ready .tf-resources{position:absolute;z-index:2;top:7px;left:174px;right:166px;display:flex;justify-content:center;gap:7px;margin:0;padding:0;border:0;background:none;font:9px/14px Verdana,Arial,sans-serif;min-height:15px;white-space:nowrap}
+body.historical-site .hist-factory-ready .tf-resources>span:nth-child(-n+2){display:none}
+body.historical-site .hist-factory-ready .tf-resources b{font:9px/14px Verdana,Arial,sans-serif;margin-left:3px;color:#c8d9df}
+body.historical-site .hist-factory-ready .tf-status:not(.hist-routine-status){min-height:0;height:auto;padding:4px 8px;margin:2px 0;background:#0e1c26;font:10px/15px Verdana,Arial,sans-serif}
+body.historical-site .hist-factory-ready .tf-hall{height:110px;padding-top:4px}
+body.historical-site .hist-factory-ready .tf-hall-info{font:9px/12px Verdana,Arial,sans-serif}
+
+/* REV6 GG: the same live summary nodes belong to the construction context,
+   not below selector buttons. Vies/waves use the original server UI state. */
+body.historical-site .rev6-gates .hist-gate-group-name{display:none}
+body.historical-site .rev6-gates .hist-gate-shared{padding:8px 0 9px}
+body.historical-site .rev6-gates .gate-tab{height:35px;min-height:35px;margin-top:1px;margin-bottom:1px}
+body.historical-site .rev6-gates .gate-tab small{display:none!important}
+body.historical-site .rev6-gate-context-summary{position:absolute;left:10px;right:10px;top:39px;text-align:center;color:#93aab9;font:9px/12px Verdana,Arial,sans-serif}
+body.historical-site .rev6-gate-context-summary small{display:block;margin:0;padding:0;font:9px/12px Verdana,Arial,sans-serif;color:inherit}
+body.historical-site .rev6-gate-context-summary small[hidden]{display:none!important}
+body.historical-site .rev6-gates .visual-container{top:54px}
+body.historical-site .rev6-gates .gate-info-overlay{top:315px;height:75px}
+body.historical-site .rev6-gates .status-msg{position:absolute;left:0;right:0;top:0;width:auto;min-height:0;margin:0;padding:0;font:9px/12px Verdana,Arial,sans-serif;text-align:center;color:#bbc9cf}
+body.historical-site .rev6-gates .progress-text{position:absolute;right:0;top:24px;width:120px;margin:0;justify-content:flex-end;line-height:17px}
+body.historical-site .rev6-gates .progress-bar-bg{position:absolute;right:0;top:44px;margin:0;width:120px}
+body.historical-site .rev6-gates #gateFacts{position:absolute;left:8px;right:auto;top:auto;bottom:40px;width:173px;height:auto;margin:0;gap:10px;justify-content:flex-start;align-items:baseline}
+body.historical-site .rev6-gates #gateFacts span{font:9px/13px Verdana,Arial,sans-serif;gap:4px;white-space:nowrap}
+body.historical-site .rev6-gates #gateFacts b{font:11px/14px Verdana,Arial,sans-serif}
+body.historical-site .rev6-gates #gateLifeActions{left:7px;bottom:7px}
+body.historical-site .rev6-gates .btn-prepare{top:50px}
+
+/* Same five custom families, rendered within the verified PilotSheet tab
+   hierarchy. Full web Quest catalogue remains an explicit source limitation. */
+body.historical-site .rev6-quest-hub .quest-page{font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site .rev6-quest-hub .hist-q-console{height:340px;min-height:340px}
+body.historical-site .rev6-quest-hub .hist-q-list,body.historical-site .rev6-quest-hub .hist-q-detail{height:338px;scrollbar-width:thin;scrollbar-color:#5e727e #101b23}
+body.historical-site .rev6-quest-hub .hist-q-list::-webkit-scrollbar,body.historical-site .rev6-quest-hub .hist-q-detail::-webkit-scrollbar{width:7px;height:7px}
+body.historical-site .rev6-quest-hub .hist-q-list::-webkit-scrollbar-track,body.historical-site .rev6-quest-hub .hist-q-detail::-webkit-scrollbar-track{background:#101b23}
+body.historical-site .rev6-quest-hub .hist-q-list::-webkit-scrollbar-thumb,body.historical-site .rev6-quest-hub .hist-q-detail::-webkit-scrollbar-thumb{background:#5e727e;border:1px solid #243f50}
+body.historical-site .rev6-quest-hub .quest-button:not(button){display:block;box-sizing:border-box;width:auto;max-width:none;height:auto;min-height:0;margin:8px 0;padding:0;border:0;box-shadow:none;background:none!important;font:10px/16px Verdana,Arial,sans-serif;text-align:left;color:#98afbd;opacity:1}
+body.historical-site .rev6-quest-hub .hist-q-list .quest-card,body.historical-site .rev6-quest-hub .hist-q-list .basic-quest-card{border-image:none!important}
+body.historical-site .rev6-quest-hub .hist-q-detail .quest-progress{margin-top:7px;margin-bottom:10px}
+body.historical-site .rev6-quest-hub .hist-q-detail .quest-rewards{font-size:10px;margin-top:10px}
+
+/* REV7: GateView/MachineView coordinates refer to their own source containers.
+   Removing the modern one-pixel border avoids shifting x524 +37 to x562.
+   REV8 recovered candidates remain outside the application pending rights:
+   no exact native button artwork, beam or complete background is claimed. */
+body.historical-site .rev7-gates .controls-zone{border-left:0;box-shadow:inset 1px 0 #304955}
+body.historical-site .rev7-gates .gate-info-overlay,body.historical-site .rev7-gates .progress-container{display:contents}
+body.historical-site .rev7-gates .rev6-gate-context-summary{display:none!important}
+body.historical-site .rev7-gates .gate-title{left:65px;top:14px;width:220px}
+body.historical-site .rev7-gates .progress-text{left:210px;right:auto;top:300px;width:120px;height:22px;margin:0;padding:0;justify-content:flex-end;font:13px/20px Verdana,Arial,sans-serif}
+body.historical-site .rev7-gates .progress-bar-bg{display:none}
+body.historical-site .rev7-gates #uiGateMsg{left:18px;right:auto;top:60px;width:300px;height:auto;max-height:none;margin:0;padding:0;text-align:left;font:10px/14px Verdana,Arial,sans-serif;white-space:normal}
+body.historical-site .rev7-gates #gateFacts{left:18px;right:auto;top:280px;bottom:auto;width:180px;height:40px;margin:0;padding:0;flex-direction:column;gap:3px;align-items:flex-start;justify-content:flex-start}
+body.historical-site .rev7-gates #gateFacts span{height:17px;min-height:17px;line-height:17px;font-size:10px;gap:5px}
+body.historical-site .rev7-gates #gateLifeActions{left:8px;right:auto;top:328px;bottom:auto;width:165px;height:auto;margin:0;padding:0}
+body.historical-site .rev7-gates #btnPrepare{left:220px;right:auto;top:328px;bottom:auto;width:114px;max-width:114px;min-width:0;height:25px;min-height:25px;padding:3px 5px;margin:0;background:url('dops/global/popups/popup_button_left.png') left center no-repeat,url('dops/global/popups/popup_button_right.png') right center no-repeat,url('dops/global/popups/popup_button_mid.png') center center repeat-x!important;background-size:auto!important;font:9px/17px Verdana,Arial,sans-serif;color:#ddd;letter-spacing:0}
+body.historical-site .rev7-gates #btnPrepare:hover{color:white;text-decoration:underline;background-position:left center,right center,center center!important}
+body.historical-site .rev7-gates #btnSpin{left:37px;top:128px}
+body.historical-site .rev7-gates .amount-selector{left:15px;top:159px}
+
+/* function.js: questDetailToggle switches original description/task regions.
+   The four web toggle bitmaps are absent, so text and existing native popup
+   slices are explicit fallbacks, not invented historic images or animation. */
+body.historical-site .rev7-quests .hist-q-console{border-color:#505050;background:none}
+body.historical-site .rev7-quests .hist-q-list{border-right-color:#505050}
+body.historical-site .rev7-quests .hist-q-list .hist-q-selected{background-color:#454545!important;box-shadow:inset 2px 0 #c6c6b6!important}
+body.historical-site .rev7-quests .hist-q-detail-heading{color:#cccdb7;border-bottom-color:#505050;margin-bottom:8px}
+body.historical-site .rev7-quests .rev7-q-description[hidden],body.historical-site .rev7-quests .rev7-q-tasks[hidden]{display:none!important}
+body.historical-site .rev7-quests .rev7-q-view-toggle{display:block;width:auto;min-width:99px;max-width:200px;height:20px;min-height:20px;margin:0 0 11px auto;padding:1px 8px;border:0;border-radius:0;box-shadow:none;background:url('dops/global/popups/popup_button_left.png') left center no-repeat,url('dops/global/popups/popup_button_right.png') right center no-repeat,url('dops/global/popups/popup_button_mid.png') center center repeat-x!important;color:#ccc;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site .rev7-quests .rev7-q-view-toggle:hover{color:white;text-decoration:underline}
+body.historical-site .rev7-quests .rev7-q-description,body.historical-site .rev7-quests .rev7-q-tasks{min-height:56px;margin:0 0 10px;padding:0;background:none;border:0;color:#ccc;font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site .rev7-quests .basic-quest-card__main:empty{display:none}
+body.historical-site .rev7-quests .quest-progress__track{display:none}
+body.historical-site .rev7-quests .quest-rewards{border-color:#505050;color:#bcbcbc}
+body.historical-site .rev7-quests .quest-rewards>div{font:10px/17px Verdana,Arial,sans-serif;color:#bbb}
+body.historical-site .rev7-quests .quest-rewards strong{color:#d6d2bb}
+body.historical-site .rev7-quests button.quest-button{display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:99px;max-width:200px;height:20px;min-height:20px;margin:0 7px 0 0;padding:1px 8px;border:0;border-radius:0;box-shadow:none;background:url('dops/global/popups/popup_button_left.png') left center no-repeat,url('dops/global/popups/popup_button_right.png') right center no-repeat,url('dops/global/popups/popup_button_mid.png') center center repeat-x!important;background-size:auto!important;color:#ddd;font:10px/16px Verdana,Arial,sans-serif;text-transform:none;letter-spacing:0}
+body.historical-site .rev7-quests button.quest-button:hover{color:white;text-decoration:underline;background-position:left center,right center,center center!important}
+body.historical-site .rev7-quests button.quest-button:disabled{opacity:.45;cursor:default}
+
+/* Existing closed family picker: 26px + its 7px margins; mission region:340px.
+   One 373px budget also includes result feedback, Active Quests / Mission reset,
+   rather than adding each above another fixed-height catalogue. The same list,
+   full messages, objectives, rewards and action forms remain scrollable. */
+body.historical-site .quest-page.hist-q-ready.rev7-quests{display:flex;flex-direction:column;height:373px;min-height:0}
+body.historical-site .rev7-quests>.hist-q-family-picker{flex:0 0 auto;min-height:26px}
+body.historical-site .rev7-quests>.quest-feedback{box-sizing:border-box;flex:0 0 auto;max-height:60px;overflow:auto}
+body.historical-site .rev7-quests .quest-panels{flex:1 1 0;height:auto;min-height:0}
+body.historical-site .rev7-quests .quest-panel,
+body.historical-site .rev7-quests .quest-section{box-sizing:border-box;height:100%;min-height:0}
+body.historical-site .rev7-quests .quest-section{display:flex;flex-direction:column}
+body.historical-site .rev7-quests .quest-section__intro{box-sizing:border-box;flex:0 0 auto;min-height:0;max-height:110px;overflow:auto}
+body.historical-site .rev7-quests .hist-q-console{flex:1 1 0;height:auto;min-height:0;grid-template-rows:minmax(0,1fr)}
+body.historical-site .rev7-quests .hist-q-list,
+body.historical-site .rev7-quests .hist-q-detail{height:100%;min-height:0;min-width:0;overflow:auto}
+body.historical-site .rev7-quests .quest-card-title,
+body.historical-site .rev7-quests .quest-card-summary,
+body.historical-site .rev7-quests .hist-q-detail-heading,
+body.historical-site .rev7-quests .quest-description,
+body.historical-site .rev7-quests .rev7-q-tasks{min-width:0;overflow-wrap:anywhere}
+body.historical-site .rev7-quests .basic-objective__labels>span,
+body.historical-site .rev7-quests .quest-rewards>div>span{min-width:0;overflow-wrap:anywhere}
+body.historical-site .rev7-quests .quest-rewards strong{min-width:0;max-width:100%;overflow-wrap:anywhere}
+
+/* REV9 PRIVATE ONLY. Recovered common21 bitmaps, linked by native symbols;
+   pinned DoPs10 AS coordinates. No CMS gatebuilder/SWF is loaded. */
+body.historical-site .rev9-gates .lottery-card{background:#000 url('rev9-gg/main-bg.png') no-repeat 0 0;outline:0}
+body.historical-site .rev9-gates .gate-tabs{position:relative;padding:0;border:0;display:block}
+body.historical-site .rev9-gates .hist-gate-shared{position:absolute;left:0;top:8px;width:180px;height:84px;padding:0;margin:0;border:0;background:url('rev9-gg/group-bg-std.png') no-repeat}
+body.historical-site .rev9-gates .hist-gate-shared:has(.active){background-image:url('rev9-gg/group-bg-active.png')}
+body.historical-site .rev9-gates .hist-gate-shared:after{content:'';position:absolute;left:0;top:87px;width:180px;height:3px;background:url('rev9-gg/separator.png') 0 0/180px 3px no-repeat;pointer-events:none}
+body.historical-site .rev9-gates .hist-gate-shared .gate-tab{position:absolute;left:0;width:180px;height:22px;min-height:22px;margin:0;padding:0;background:url('rev9-gg/group-btn-std.png') 0 0 no-repeat!important}
+body.historical-site .rev9-gates .hist-gate-shared .gate-tab:nth-of-type(1){top:8px}
+body.historical-site .rev9-gates .hist-gate-shared .gate-tab:nth-of-type(2){top:31px}
+body.historical-site .rev9-gates .hist-gate-shared .gate-tab:nth-of-type(3){top:54px}
+body.historical-site .rev9-gates .hist-gate-shared .gate-tab:hover{background-image:url('rev9-gg/group-btn-hover.png')!important}
+body.historical-site .rev9-gates .hist-gate-shared .gate-tab.active{background-image:url('rev9-gg/group-btn-active.png')!important}
+body.historical-site .rev9-gates .hist-gate-shared .hist-gate-label{left:22px;top:4px;width:150px;height:16px;line-height:16px;font-size:11px}
+body.historical-site .rev9-gates .gate-tabs>.gate-tab{position:absolute;left:0;top:98px;width:180px;height:38px;min-height:38px;margin:0;padding:0;background:url('rev9-gg/single-btn-std.png') 0 0 no-repeat!important}
+body.historical-site .rev9-gates .gate-tabs>.gate-tab:hover{background-image:url('rev9-gg/single-btn-hover.png')!important}
+body.historical-site .rev9-gates .gate-tabs>.gate-tab.active{background-image:url('rev9-gg/single-btn-active.png')!important}
+body.historical-site .rev9-gates .gate-tabs>.gate-tab .hist-gate-label{left:22px;top:11px;width:150px;height:17px;line-height:17px}
+body.historical-site .rev9-gates .visual-container{left:10px;top:54px;width:329px;height:290px;display:block;background-position:0 0;background-repeat:no-repeat}
+body.historical-site .rev9-gates .left-zone[data-gate="1"] .visual-container{background-image:url('rev9-gg/space-1.png')}
+body.historical-site .rev9-gates .left-zone[data-gate="2"] .visual-container{background-image:url('rev9-gg/space-2.png')}
+body.historical-site .rev9-gates .left-zone[data-gate="3"] .visual-container{background-image:url('rev9-gg/space-3.png')}
+body.historical-site .rev9-gates .left-zone[data-gate="4"] .visual-container{background-image:url('rev9-gg/space-4.png')}
+body.historical-site .rev9-gates .gate-art-stage{position:absolute;left:50px;top:0;width:235px;height:290px}
+body.historical-site .rev9-gates .gate-art-bg,body.historical-site .rev9-gates .gate-art-spin{display:none}
+body.historical-site .rev9-gates .rev9-native-gate-effect{position:absolute;left:0;top:0;width:236px;height:290px;max-width:none;pointer-events:none;opacity:0;z-index:3}
+body.historical-site .rev9-gates .gate-art-stage.complete .rev9-native-gate-effect{opacity:1}
+body.historical-site .rev9-gates .gate-art-stage:has(.gate-part-layer[aria-busy=true]) .rev9-native-gate-effect{opacity:0}
+body.historical-site .rev9-gates .controls-zone{border:0;box-shadow:none;background:url('rev9-gg/stats-bg.png') no-repeat 0 0,url('rev9-gg/multiplier-bg.png') no-repeat 0 43px,url('rev9-gg/machine-bg.png') no-repeat 0 119px}
+body.historical-site .rev9-gates .hist-gate-wallet{left:20px;right:15px;top:8px;border:0;padding:0}
+body.historical-site .rev9-gates .hist-gate-multiplier{left:20px;right:15px;top:43px;height:70px;border:0;padding:0}
+body.historical-site .rev9-gates .shop-title{display:none}
+body.historical-site .rev9-gates #btnSpin{left:37px;top:128px;width:178px;max-width:178px;height:40px;min-height:40px;padding:2px 10px 8px;border:0;border-radius:0;background:url('rev9-gg/materialize-std.png') no-repeat!important;background-size:178px 40px!important;font:12px/25px Verdana,Arial,sans-serif;color:#cfcfcf;letter-spacing:0;z-index:2}
+body.historical-site .rev9-gates #btnSpin:hover{background-image:url('rev9-gg/materialize-hover.png')!important;background-position:0 0!important}
+body.historical-site .rev9-gates #btnSpin:active{background-image:url('rev9-gg/materialize-click.png')!important}
+body.historical-site .rev9-gates #btnSpin:disabled{background-image:url('rev9-gg/materialize-disabled.png')!important;opacity:1}
+body.historical-site .rev9-gates #btnPrepare,body.historical-site .rev9-gates #btnBuyLife{width:118px;max-width:118px;height:52px;min-height:52px;border:0;border-radius:0;background-size:118px 52px!important;padding:10px 12px 6px;font:10px/13px Verdana,Arial,sans-serif;letter-spacing:0;color:#ddd}
+body.historical-site .rev9-gates #btnPrepare{left:220px;top:328px;background:url('rev9-gg/prepare-std.png') no-repeat!important}
+body.historical-site .rev9-gates #btnPrepare:hover{background-image:url('rev9-gg/prepare-hover.png')!important;background-position:0 0!important}
+body.historical-site .rev9-gates #btnPrepare:active{background-image:url('rev9-gg/prepare-click.png')!important}
+body.historical-site .rev9-gates #btnPrepare:disabled{background-image:url('rev9-gg/prepare-disabled.png')!important;opacity:1}
+body.historical-site .rev9-gates #btnBuyLife{background:url('rev9-gg/life-std.png') no-repeat!important}
+body.historical-site .rev9-gates #btnBuyLife:hover{background-image:url('rev9-gg/life-hover.png')!important;background-position:0 0!important}
+body.historical-site .rev9-gates #btnBuyLife:active{background-image:url('rev9-gg/life-click.png')!important}
+body.historical-site .rev9-gates #btnBuyLife:disabled{background-image:url('rev9-gg/life-disabled.png')!important;opacity:1}
+body.historical-site .rev9-gates .amount-selector{left:15px;top:159px;width:215px;height:40px;z-index:4}
+body.historical-site .rev9-gates #hist-gate-energy-amount[hidden]{display:none!important}
+body.historical-site .rev9-gates .rev9-energy-picker{position:relative;width:215px;margin:0;padding:0;background:none;border:0;font:10px/17px Verdana,Arial,sans-serif}
+body.historical-site .rev9-gates .rev9-energy-picker>summary{position:relative;box-sizing:border-box;list-style:none;cursor:pointer;width:215px;height:40px;margin:0;padding:9px 10px 9px 44px;background:url('rev9-gg/amount-label-bg.png') no-repeat;color:#ccc}
+body.historical-site .rev9-gates .rev9-energy-picker>summary::-webkit-details-marker{display:none}
+body.historical-site .rev9-gates .rev9-energy-picker>summary:before{content:'';position:absolute;left:0;top:7px;width:21px;height:16px;background:url('rev9-gg/amount-arrow-std.png') no-repeat}
+body.historical-site .rev9-gates .rev9-energy-picker>summary:hover:before,body.historical-site .rev9-gates .rev9-energy-picker[open]>summary:before{background-image:url('rev9-gg/amount-arrow-hover.png')}
+body.historical-site .rev9-gates .rev9-energy-list{position:absolute;left:26px;top:21px;width:180px;padding:3px 0;border:1px solid #62737e;background:#05090e;z-index:10}
+body.historical-site .rev9-gates .rev9-energy-list button{display:block;width:178px;height:22px;min-height:22px;max-width:none;padding:2px 8px;margin:0;border:0;border-radius:0;background:url('rev9-gg/group-btn-std.png') no-repeat!important;color:#ccc;font:10px/17px Verdana,Arial,sans-serif;text-align:left}
+body.historical-site .rev9-gates .rev9-energy-list button:hover,body.historical-site .rev9-gates .rev9-energy-list button[aria-pressed=true]{background-image:url('rev9-gg/group-btn-hover.png')!important}
+body.historical-site .rev9-gates .cost-box{top:168px;left:125px;right:17px;z-index:5;pointer-events:none;font-size:8px;line-height:12px;max-width:120px}
+body.historical-site .rev9-gates .cost-box{display:none!important}
+body.historical-site .rev9-gates #uiTotalCost{font-size:10px}
+/* Cost is now in the original Materialize button, as MachineView's verbose
+   energy label. The hidden original cost node remains the sole live source. */
+body.historical-site .rev9-gates #btnSpin{font-family:'DoPsShopHeavy',Verdana,Arial,sans-serif;font-size:14px;font-weight:700;white-space:nowrap;letter-spacing:0;padding-left:7px;padding-right:7px}
+body.historical-site .rev9-gates .hist-gate-label,body.historical-site .rev9-gates .rev9-energy-picker{font-family:'DoPsShopHeavy',Verdana,Arial,sans-serif}
+body.historical-site .rev9-gates #gateFacts{height:auto;gap:3px}
+body.historical-site .rev9-gates #gateFacts span{font:14px/17px 'DoPsShopHeavy',Verdana,Arial,sans-serif}
+body.historical-site .rev9-gates #gateFacts b{font:14px/17px 'DoPsShopHeavy',Verdana,Arial,sans-serif}
+body.historical-site .rev9-gates #btnBuyLife{font:11px/13px 'DoPsShopHeavy',Verdana,Arial,sans-serif;white-space:pre-line;padding:10px 11px 12px;text-align:center}
+body.historical-site .rev9-gates .hist-gate-log-heading{left:66px;right:auto;top:192px;width:130px;height:22px;padding:2px 0;margin:0;border:0;background:url('rev9-gg/log-headline.png') 0 0/130px 22px no-repeat;color:#83878a;font:12px/18px 'DoPsShopHeavy',Verdana,Arial,sans-serif}
+body.historical-site .rev9-gates #resultPanel{font-family:'DoPsShopHeavy',Verdana,Arial,sans-serif}
+body.historical-site .rev9-gates .result-card{grid-template-columns:20px minmax(0,1fr) auto;grid-template-rows:16px;align-items:center;min-height:16px;padding:0;gap:0 4px;border:0}
+body.historical-site .rev9-gates .result-card>div:nth-child(2){min-width:0}
+body.historical-site .rev9-gates .result-icon{grid-row:1;width:16px;height:16px}
+body.historical-site .rev9-gates .result-name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:10px/16px 'DoPsShopHeavy',Verdana,Arial,sans-serif}
+body.historical-site .rev9-gates .result-desc{display:none}
+body.historical-site .rev9-gates .result-qty{grid-column:3;grid-row:1;white-space:nowrap;font:10px/16px 'DoPsShopHeavy',Verdana,Arial,sans-serif}
+/* SpinAmountList/Item is a vector menu, not a gate-selector bitmap. */
+body.historical-site .rev9-gates .rev9-energy-list{width:175px;padding:6px 0 0;border:1px solid #666;background:rgba(0,0,0,.8);transform-origin:top}
+body.historical-site .rev9-gates .rev9-energy-list button,body.historical-site .rev9-gates .rev9-energy-list button[aria-pressed=true]{width:173px;height:19px;min-height:19px;padding:1px 10px;color:#808080;background:none!important;font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site .rev9-gates .rev9-energy-list button:hover,body.historical-site .rev9-gates .rev9-energy-list button:focus-visible{background:#2f4d65!important;color:#fff}
+body.historical-site .rev9-gates .rev9-energy-picker[open] .rev9-energy-list{animation:rev9-gg-amount-open .2s ease-out both}
+@keyframes rev9-gg-amount-open{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+/* Main.as places LogView at524,190; listMaximizedPosY34, historyList.x4,
+   visibleScrollContent239x160. Original result nodes and callbacks retained. */
+body.historical-site .rev9-gates #resultPanel{top:224px;left:4px;right:auto;width:239px;height:160px;min-height:160px;max-height:160px;padding:0}

@@ -3,6 +3,7 @@
 class DailyLoginBonusService
 {
     const TIMEZONE = 'Europe/Zurich';
+    const CYCLE_DAYS = 5;
 
     private $db;
     private $playerId;
@@ -38,8 +39,6 @@ class DailyLoginBonusService
             throw new Exception('Daily Login Bonus is not installed yet.');
         }
 
-        $meta = $this->getWeekMeta();
-
         try {
             $this->db->beginTransaction();
 
@@ -55,6 +54,9 @@ class DailyLoginBonusService
             if (!$userRow) {
                 throw new Exception('Player account not found.');
             }
+
+            // Decide the civil day after any wait for this player's row lock.
+            $meta = $this->getWeekMeta();
 
             $claimStmt = $this->db->prepare(
                 'SELECT day_number, claim_date
@@ -142,27 +144,6 @@ class DailyLoginBonusService
                 'promerium' => 1000,
                 'lines' => ['17,500 Uridium', '15,000 RSB-75', '1,000 Promerium'],
             ],
-            6 => [
-                'uridium' => 20000,
-                'seprom' => 1800,
-                'lines' => ['20,000 Uridium', '1,800 Seprom'],
-            ],
-            7 => [
-                'seprom' => 1000,
-                'booster_dmg_hours' => 5,
-                'booster_shd_hours' => 5,
-                'booster_hp_hours' => 5,
-                'ammo_ucb100' => 15000,
-                'ammo_rsb75' => 20000,
-                'lines' => [
-                    '1,000 Seprom',
-                    '5h Damage Booster',
-                    '5h Shield Booster',
-                    '5h HP Booster',
-                    '15,000 UCB-100',
-                    '20,000 RSB-75',
-                ],
-            ],
         ];
     }
 
@@ -181,9 +162,16 @@ class DailyLoginBonusService
             }
         }
 
-        $claimedCount = count($claimedDays);
-        $weekCompleted = $claimedCount >= 7;
-        $nextDay = min(7, $claimedCount + 1);
+        $claimedCount = 0;
+        for ($day = 1; $day <= self::CYCLE_DAYS; $day++) {
+            if (isset($claimedDays[$day])) {
+                $claimedCount++;
+            }
+        }
+        // Old day 6/7 receipts remain historical proof of a completed cycle.
+        $legacyCycleCompleted = isset($claimedDays[6]) || isset($claimedDays[7]);
+        $weekCompleted = $claimedCount >= self::CYCLE_DAYS || $legacyCycleCompleted;
+        $nextDay = min(self::CYCLE_DAYS, $claimedCount + 1);
         $canClaim = $schemaReady && !$claimedToday && !$weekCompleted;
         $claimMessage = 'Day ' . $nextDay . ' reward is ready to claim.';
 
@@ -217,6 +205,7 @@ class DailyLoginBonusService
 
         return [
             'schema_ready' => $schemaReady,
+            'cycle_days' => self::CYCLE_DAYS,
             'week_key' => $meta['week_key'],
             'today_key' => $meta['today_key'],
             'week_reset_label' => 'Monday 00:00 Europe/Zurich',
@@ -321,10 +310,16 @@ class DailyLoginBonusService
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Internal clock seam for private tests; no HTTP-controlled date is accepted.
+    protected function getClockNow(): DateTimeImmutable
+    {
+        return new DateTimeImmutable('now', new DateTimeZone(self::TIMEZONE));
+    }
+
     private function getWeekMeta(): array
     {
         $timezone = new DateTimeZone(self::TIMEZONE);
-        $now = new DateTimeImmutable('now', $timezone);
+        $now = $this->getClockNow()->setTimezone($timezone);
         $daysSinceMonday = ((int)$now->format('N')) - 1;
         $weekStart = $now->setTime(0, 0, 0)->modify('-' . $daysSinceMonday . ' days');
         $nextReset = $weekStart->modify('+7 days');

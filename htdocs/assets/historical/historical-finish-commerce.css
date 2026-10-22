@@ -1,0 +1,188 @@
+/* REV4 — actual DoPs shop regions and auction table; private visual copy only. */
+body.historical-site.finish-commerce-shop .hist-shop-catalog{box-sizing:border-box;padding:15px 2px 18px;gap:2px 0;grid-template-columns:100px 100px;scrollbar-width:thin;overflow-x:hidden;align-content:start}
+body.historical-site.finish-commerce-shop .hist-catalog-choice{width:100px;min-width:100px;height:100px;min-height:100px;padding:0;display:flex;align-items:center;justify-content:center;transform:none}
+body.historical-site.finish-commerce-shop .hist-catalog-choice img{width:100px;height:100px;object-fit:contain}
+body.historical-site.finish-commerce-shop .hist-catalog-choice img.finish-original-design-thumb{width:60px;height:60px}
+body.historical-site.finish-commerce-shop .hist-catalog-choice:before{left:-2px;top:-2px}
+body.historical-site.finish-commerce-shop .hist-catalog-choice>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* DoPs internalDock.css47–52: price line is100×18px at the tile bottom
+ * (margin-top:-18), not another tall catalogue row. Full Andromeda currency
+ * and unit labels may need two9px lines; no unit price is recalculated. */
+body.historical-site.finish-commerce-shop .hist-catalog-choice>.finish-catalog-price{position:absolute;box-sizing:border-box;left:0;bottom:0;width:100px;max-width:100px;height:18px;min-height:18px;margin:0;padding:0 1px;display:flex;align-items:center;justify-content:center;color:#fff;background:none;border:0;font:bold 9px/9px Verdana,Arial,sans-serif;text-align:center;white-space:normal;overflow-wrap:anywhere;pointer-events:none;z-index:1}
+body.historical-site.finish-commerce-shop .hist-shop-detail>:is(.ship-row,.design-row,.item-tile,.item-row){grid-template-rows:264px 127px;min-height:395px;height:395px;gap:4px 8px;transform:none!important}
+body.historical-site.finish-commerce-shop .hist-shop-detail :is(.ship-info,.design-info,.item-info){height:127px;min-height:127px;max-height:127px;padding:7px 9px;margin:0 8px;overflow:auto;scrollbar-width:thin;display:block}
+body.historical-site.finish-commerce-shop .hist-shop-detail :is(.ship-stats,.design-meta,.design-bonus,.item-desc){font:10px/16px Verdana,Arial,sans-serif;display:block;white-space:normal;margin:0 0 4px;color:#c3c3c3}
+body.historical-site.finish-commerce-shop .hist-shop-detail :is(.ship-action,.design-action,.item-action){position:relative;box-sizing:border-box;width:157px;min-width:157px;max-width:157px;height:394px;min-height:394px;margin:0;padding:0;border:0;display:block;overflow:hidden;background:url('dops/global/hangar/buy-item_background_157x394.png') left top no-repeat!important}
+body.historical-site.finish-commerce-shop .finish-product-name{position:absolute;left:13px;top:10px;width:132px;min-height:20px;max-height:51px;padding:0;margin:0;text-align:center;display:block;font:bold 11px/15px Verdana,Arial,sans-serif;color:#ddd;white-space:normal;overflow-wrap:normal;letter-spacing:0;text-transform:none}
+body.historical-site.finish-commerce-shop .hist-shop-detail .finish-purchase-price{position:absolute;left:8px;top:265px;display:block;width:141px;min-height:24px;margin:0!important;padding:0!important;border:0!important;text-align:center;font:10px/12px Verdana,Arial,sans-serif;color:#dfca7e!important;white-space:normal}
+body.historical-site.finish-commerce-shop .hist-shop-detail :is(.action-form,.qty-form){display:contents!important}
+body.historical-site.finish-commerce-shop .finish-quantity-label{position:absolute;top:63px;left:13px;width:132px;display:block;text-align:center;font:11px/17px Verdana,Arial,sans-serif;color:#c3c3c3}
+body.historical-site.finish-commerce-shop .hist-shop-detail .qty-input{position:absolute;top:88px;left:27px;width:104px;height:23px;min-height:23px;margin:0;padding:2px 6px;border:1px solid #69665e;border-radius:0;background:#111;color:#eee;font:12px/17px Verdana,Arial,sans-serif;text-align:center}
+body.historical-site.finish-commerce-shop .hist-shop-detail .btn-buy{position:absolute;left:7px;top:292px;width:142px;min-width:142px;max-width:142px;height:48px;min-height:48px;margin:0;padding:0;border:0;display:flex;align-items:center;justify-content:center;background:url('dops/global/hangar/buy-item_buy-button_576x48.png') -144px 0 no-repeat!important;font:11px/16px Verdana,Arial,sans-serif;color:#eee;transform:none;box-shadow:none;text-shadow:0 1px #000}
+body.historical-site.finish-commerce-shop .hist-shop-detail .btn-buy:hover{background-position:-288px 0!important;opacity:1;box-shadow:none;transform:none}
+body.historical-site.finish-commerce-shop .hist-shop-detail .btn-buy:active{background-position:-432px 0!important;transform:none}
+body.historical-site.finish-commerce-shop .hist-shop-detail :is(.equipped-label,.owned-label){position:absolute;left:8px;top:302px;width:141px;margin:0;padding:3px;text-align:center;font:11px/17px Verdana,Arial,sans-serif;color:#c5c5ad;background:none;border:0}
+body.historical-site.finish-commerce-shop .hist-shop-detail img.finish-native-design-preview{width:auto!important;height:auto!important;max-width:200px!important;max-height:201px!important;object-fit:contain;image-rendering:auto;filter:none}
+body.historical-site.finish-commerce-shop .hist-shop-detail img.finish-original-design-preview{width:60px!important;height:60px!important;max-width:60px!important;max-height:60px!important;image-rendering:auto;filter:none}
+body.historical-site.finish-commerce-shop .design-row.has-ability::after,body.historical-site.finish-commerce-shop .design-row.has-ability::before{display:none!important}
+body.historical-site.finish-commerce-shop .finish-ability-description{margin:5px 0 0;padding:0;font:10px/15px Verdana,Arial,sans-serif;color:#c3c3c3}
+body.historical-site.finish-commerce-shop .msg-box{font:11px/16px Verdana,Arial,sans-serif;padding:6px 9px;margin:0 0 6px;border-radius:0;box-shadow:none}
+/* Source-derived253x206 presentation contract. No catalogue thumbnail is used
+ * as fallback scenery; old ship backdrop was not the shopdetails background. */
+body.historical-site.finish-commerce-shop .hist-shop-detail :is(.ship-img-container,.design-img,.item-img-container){position:relative;display:block}
+body.historical-site.finish-commerce-shop .hist-shop-detail :is(.ship-img-container,.design-img,.item-img-container)::before{display:none!important;content:none!important}
+body.historical-site.finish-commerce-shop .finish-preview-stage{position:absolute;left:12px;top:25px;width:253px;height:206px;overflow:hidden;background:none}
+body.historical-site.finish-commerce-shop .finish-preview-stage>.rocket-tooltip-wrap{position:absolute;inset:0;display:block;width:253px;height:206px}
+body.historical-site.finish-commerce-shop .finish-preview-stage .finish-source-frame{position:absolute!important;left:0!important;top:0!important;width:253px!important;height:206px!important;min-width:253px!important;max-width:253px!important;max-height:206px!important;object-fit:fill;transform:none!important;filter:none!important;image-rendering:auto}
+body.historical-site.finish-commerce-shop .finish-preview-stage .finish-specific-media{position:absolute!important;left:50%!important;top:50%!important;width:auto!important;height:auto!important;transform:translate(-50%,-50%)!important;filter:none!important;image-rendering:auto}
+body.historical-site.finish-commerce-shop .finish-preview-stage .finish-specific-media.hist-native-ship-model{width:160px!important;height:124px!important;max-width:160px!important;max-height:124px!important}
+body.historical-site.finish-commerce-shop .finish-preview-title{position:absolute;left:0;top:0;width:253px;height:31px;z-index:2;text-align:center;color:#fff;font:bold 22px/31px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+body.historical-site.finish-commerce-shop .finish-preview-caption{position:absolute;left:0;top:28px;width:253px;height:27px;z-index:2;text-align:center;background:rgba(0,0,0,.6);color:#fff;font:16px/27px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+body.historical-site.finish-commerce-shop .finish-preview-price{position:absolute;left:0;top:182px;width:253px;height:27px;z-index:2;text-align:center;color:#fff;font:15px/24px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+body.historical-site.finish-commerce-shop .finish-preview-stage .finish-technical-facts{position:absolute;left:0;top:55px;width:253px;height:127px;max-height:127px;min-height:0;box-sizing:border-box;margin:0;padding:9px;overflow:auto;background:url('dops/global/hangar/item-info_background_cycle.png') repeat;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-shop .finish-hull-stats{width:240px;margin:0;border:0;border-collapse:collapse;font:10px/18px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-shop .finish-hull-stats td{padding:0 3px;border:0;background:none}
+body.historical-site.finish-commerce-shop .finish-hull-stats td:first-child{color:#929292}
+body.historical-site.finish-commerce-shop .finish-hull-stats td:last-child{color:#bcd3e3;text-align:right}
+body.historical-site.finish-commerce-shop .finish-amount-presets{position:absolute;left:48px;top:85px;width:60px;display:flex;flex-direction:column;gap:8px;align-items:center}
+body.historical-site.finish-commerce-shop .finish-amount-preset{box-sizing:border-box;width:60px;min-width:60px;max-width:60px;height:18px;min-height:18px;max-height:18px;padding:0;margin:0;border:0;box-shadow:none;border-radius:0;background:none!important;color:#c3d7e2;font:11px/18px Verdana,Arial,sans-serif;text-align:center;text-decoration:underline;cursor:pointer;transform:none}
+body.historical-site.finish-commerce-shop .finish-amount-preset:hover{color:#fff}
+body.historical-site.finish-commerce-shop .finish-amount-preset.has-native-amount-art{font-size:0!important;background-image:url('dops-rev4/preview/buy-item_amount_240x71.png')!important;background-repeat:no-repeat!important;text-decoration:none}
+body.historical-site.finish-commerce-shop .finish-amount-preset[data-native-amount='10']{background-position:-60px 0!important}
+body.historical-site.finish-commerce-shop .finish-amount-preset[data-native-amount='100']{background-position:-60px -18px!important}
+body.historical-site.finish-commerce-shop .finish-amount-preset[data-native-amount='1000']{background-position:-60px -36px!important}
+body.historical-site.finish-commerce-shop .finish-amount-preset[data-native-amount='max']{background-position:-60px -54px!important}
+body.historical-site.finish-commerce-shop .finish-amount-preset.has-native-amount-art:hover{background-position-x:-120px!important}
+body.historical-site.finish-commerce-shop .hist-shop-detail .qty-input.finish-stepped-quantity{left:40px;width:75px}
+/* DoPs uses its own minus/input/plus stepper (Laser template1027–1031).
+ * Hide only browser-native spinner chrome; the real number input and all
+ * Andromeda min/max/step/value validation/POST contracts remain untouched. */
+body.historical-site.finish-commerce-shop .hist-shop-detail input.qty-input.finish-stepped-quantity[type=number]{appearance:textfield;-moz-appearance:textfield}
+body.historical-site.finish-commerce-shop .hist-shop-detail input.qty-input.finish-stepped-quantity[type=number]::-webkit-inner-spin-button,body.historical-site.finish-commerce-shop .hist-shop-detail input.qty-input.finish-stepped-quantity[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+body.historical-site.finish-commerce-shop .finish-amount-step{position:absolute;box-sizing:border-box;width:23px;min-width:23px;max-width:23px;height:23px;min-height:23px;max-height:23px;padding:0;margin:0;border:0;border-radius:0;box-shadow:none;background-image:url('dops-rev4/preview/buy-item_plus-minus_100x5.png')!important;background-repeat:no-repeat!important;transform:none;font-size:0!important;cursor:pointer}
+body.historical-site.finish-commerce-shop .finish-amount-step.is-minus{left:12px;background-position:-25px 0!important}
+body.historical-site.finish-commerce-shop .finish-amount-step.is-plus{left:120px;background-position:-25px -25px!important}
+body.historical-site.finish-commerce-shop .finish-amount-step:hover{background-position-x:-50px!important}
+
+/* The actual historical trade composition: counter, bounded scroll list and
+ * compact bid column. No giant closed-state overlay or repeated Rules panel. */
+body.historical-site.finish-commerce-auction .auction-page{grid-template-columns:125px 679px;row-gap:0}
+body.historical-site.finish-commerce-auction .auction-page>.auction-hero,body.historical-site.finish-commerce-auction .auction-sidebar{display:none!important}
+body.historical-site.finish-commerce-auction .auction-page>.auction-alert{grid-column:2;margin:0 0 5px;padding:5px 8px;min-height:0;font:10px/15px Verdana,Arial,sans-serif;border-radius:0;box-shadow:none}
+body.historical-site.finish-commerce-auction .auction-page>.auction-category-tabs{margin-top:0}
+body.historical-site.finish-commerce-auction .auction-category-tab{box-sizing:border-box;gap:2px;padding:3px 4px 3px 9px;justify-content:flex-start}
+body.historical-site.finish-commerce-auction .auction-category-tab span{flex:1 1 0;min-width:0;overflow:visible;text-overflow:clip;white-space:normal;font:9px/11px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-auction .auction-category-tab b{flex:0 0 10px;width:10px;min-width:10px;padding:0;text-align:center;font:8px/11px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-auction .auction-board{height:439px;background:url('pk/do/trade/bg_auktion.png') left top no-repeat!important}
+body.historical-site.finish-commerce-auction .finish-auction-counter{position:absolute;left:110px;top:43px;width:477px;max-width:477px;height:20px;text-align:center;display:block;margin:0;padding:0;background:none;border:0;font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-auction .finish-auction-counter :is(strong,em){font:11px/17px Verdana,Arial,sans-serif;letter-spacing:0;color:#ddd}
+body.historical-site.finish-commerce-auction .auction-board-head{left:110px;top:78px;width:477px;height:18px;text-align:left}
+body.historical-site.finish-commerce-auction .auction-board-head h2{font:10px/15px Verdana,Arial,sans-serif;color:#c3c3c3;margin:0}
+body.historical-site.finish-commerce-auction .finish-auction-status{position:absolute;inset:auto;left:110px;top:63px;width:477px;max-width:477px;height:15px;min-height:15px;margin:0;padding:0;border:0;border-radius:0;transform:none;box-shadow:none;background:none;z-index:1;text-align:center;display:block;font:9px/14px Verdana,Arial,sans-serif;color:#c8bc93;overflow:hidden}
+body.historical-site.finish-commerce-auction .finish-auction-status strong{display:inline;font:9px/14px Verdana,Arial,sans-serif;margin:0}
+body.historical-site.finish-commerce-auction .finish-auction-status>span{display:none}
+body.historical-site.finish-commerce-auction .auction-table-wrap{left:110px;top:99px;width:477px;height:275px;max-height:275px;margin:0;padding:0;border:0;background:none;overflow:auto;scrollbar-width:thin}
+body.historical-site.finish-commerce-auction .auction-page.is-closed .auction-table{filter:none!important;opacity:1!important}
+body.historical-site.finish-commerce-auction .auction-page.is-closed .auction-table-wrap::before{display:none!important;content:none!important}
+body.historical-site.finish-commerce-auction .auction-table,body.historical-site.finish-commerce-auction .auction-table tbody{width:448px;min-width:448px;max-width:448px;border:0}
+body.historical-site.finish-commerce-auction .auction-row{display:grid;grid-template-columns:64px 173px 106px 100px;grid-template-rows:auto auto auto auto;width:443px;min-height:84px;padding:4px 0;margin:0;border:0;border-bottom:2px solid transparent;border-image:url('pk/do/trade/trennerw1.gif') 0 0 2 0 repeat;background:none;column-gap:0;row-gap:0}
+body.historical-site.finish-commerce-auction .auction-table .auction-row td{margin:0;padding:1px 3px;font:9px/12px Verdana,Arial,sans-serif;min-width:0;height:auto;vertical-align:top;color:#c3c3c3;overflow-wrap:anywhere}
+body.historical-site.finish-commerce-auction .auction-row .auction-item-cell{grid-column:1/3;grid-row:1/4;padding:0}
+body.historical-site.finish-commerce-auction .auction-item{gap:0;align-items:flex-start}
+body.historical-site.finish-commerce-auction .auction-item-image{width:64px;min-width:64px;height:64px;padding:0}
+body.historical-site.finish-commerce-auction .auction-item-image img{max-width:63px;max-height:63px}
+body.historical-site.finish-commerce-auction .auction-item-text{width:173px;max-width:173px;min-width:0;padding:0 3px}
+body.historical-site.finish-commerce-auction .auction-item-text strong{font:bold 10px/13px Verdana,Arial,sans-serif;color:#ddd}
+body.historical-site.finish-commerce-auction .auction-item-text>span{font:9px/12px Verdana,Arial,sans-serif;color:#c3c3c3}
+body.historical-site.finish-commerce-auction .auction-item-text>small:not(.auction-row-warning){display:none}
+body.historical-site.finish-commerce-auction .auction-item-text .auction-row-warning{display:block;color:#d3b577;font:9px/12px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-auction .auction-row .auction-owner{grid-column:3;grid-row:1}
+body.historical-site.finish-commerce-auction .auction-row .auction-current-bid{grid-column:3;grid-row:2;color:#dfca7e}
+body.historical-site.finish-commerce-auction .auction-row td[data-label='Starting bid']{grid-column:3;grid-row:3;font-size:8px}
+body.historical-site.finish-commerce-auction .auction-row .auction-qty{grid-column:2;grid-row:4;font-size:8px}
+body.historical-site.finish-commerce-auction .auction-row .auction-bid-cell{grid-column:4;grid-row:1/5;align-self:center;padding:0 3px}
+body.historical-site.finish-commerce-auction .auction-row td:not(.auction-item-cell):before{display:inline;content:attr(data-label) ': ';margin:0;font:8px/12px Verdana,Arial,sans-serif;color:#aaa}
+body.historical-site.finish-commerce-auction .auction-row .auction-bid-cell:before{display:none}
+body.historical-site.finish-commerce-auction .auction-bid-form{width:94px;gap:3px;display:flex;flex-direction:column;align-items:center;margin:0;padding:0}
+body.historical-site.finish-commerce-auction .auction-bid-form input[name=bid_credits]{width:94px;height:19px;min-height:19px;border:0;border-radius:0;padding:1px 3px;background:url('pk/do/trade/bg_text.gif') center top no-repeat #111;color:#dfca7e;font:10px/16px Verdana,Arial,sans-serif;text-align:center}
+body.historical-site.finish-commerce-auction .auction-bid-form button{width:94px;min-width:94px;height:20px;min-height:20px;max-height:20px;padding:0;transform:none;box-shadow:none}
+body.historical-site.finish-commerce-auction .auction-empty-row{width:448px;padding:8px 0;background:none;min-height:0}
+body.historical-site.finish-commerce-auction .finish-auction-schedule{position:absolute;left:110px;top:386px;width:477px;margin:0;padding:0;border:0;z-index:3;font:9px/15px Verdana,Arial,sans-serif;color:#bbb;background:none}
+body.historical-site.finish-commerce-auction .finish-auction-schedule>summary{cursor:pointer;display:block;text-align:right;padding:0 4px;list-style:none}
+body.historical-site.finish-commerce-auction .finish-auction-schedule>summary::before{content:'+';margin-right:5px}
+body.historical-site.finish-commerce-auction .finish-auction-schedule[open]>summary::before{content:'−'}
+body.historical-site.finish-commerce-auction .finish-auction-schedule .auction-schedule-list{padding:5px 9px;border:1px solid #555;background:url('dops/global/hangar/item-info_background_cycle.png') repeat}
+body.historical-site.finish-commerce-auction .finish-auction-schedule .auction-schedule-row{min-height:17px;padding:1px 3px;display:flex;justify-content:space-between;font:9px/15px Verdana,Arial,sans-serif;border-radius:0;box-shadow:none;background:none}
+/* REV5: DoPs has Auctions/Completed, not six left-hand item categories.
+ * The extra Andromeda filters remain in one original-handler selector. */
+body.historical-site.finish-commerce-auction .finish-auction-native-nav{grid-column:1;display:block;width:125px;margin:0;padding:0}
+body.historical-site.finish-commerce-auction .finish-auction-native-nav>a{display:block;width:125px;height:35px;padding:10px 8px;border:0;background:url('pk/do/global/bg_subnav_selected.gif') left top no-repeat;color:#d8d1a8;text-align:center;font:10px/14px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-auction .auction-page>.auction-category-tabs[hidden]{display:none!important}
+body.historical-site.finish-commerce-auction .auction-board-head{top:82px;height:22px;min-height:22px;display:block}
+body.historical-site.finish-commerce-auction .auction-board-head h2{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+body.historical-site.finish-commerce-auction .finish-auction-filter{display:block;appearance:auto;width:196px;height:22px;min-height:22px;margin:0;padding:1px 5px;border:1px solid #677780;border-radius:0;background:#192b35;color:#d0d4d6;font:10px/18px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-auction .auction-table-wrap{top:112px;height:261px;max-height:261px}
+body.historical-site.finish-commerce-auction .auction-row .finish-relocated-cell{display:none!important}
+body.historical-site.finish-commerce-auction .auction-row .auction-current-bid{grid-column:3;grid-row:1;color:#dfca7e}
+body.historical-site.finish-commerce-auction .auction-row td[data-label='Starting bid']{grid-column:3;grid-row:2}
+body.historical-site.finish-commerce-auction .auction-row .auction-item-cell{grid-row:1/5}
+body.historical-site.finish-commerce-auction .finish-auction-owner-line{font:9px/12px Verdana,Arial,sans-serif;color:#bbb;margin-top:3px}
+body.historical-site.finish-commerce-auction .finish-auction-owner-line b{margin-left:4px;color:#dfca7e}
+body.historical-site.finish-commerce-auction .auction-item-text .finish-auction-quantity-line{display:block;font:8px/12px Verdana,Arial,sans-serif;color:#aaa;margin-top:2px}
+body.historical-site.finish-commerce-shop .hist-shop-detail .btn-buy{box-sizing:border-box;right:8px;overflow:hidden;white-space:normal;line-height:15px}
+
+/* REV6 exact native media: catalogue100px when present; original63px fallback
+ * remains63px. Transparent same-variant TOP replaces thumbnail-as-preview.
+ * Missing FLV is an explicit static icon, not a fabricated animation. */
+body.historical-site.finish-commerce-shop .hist-catalog-choice img.finish-rev6-catalogue{object-fit:contain;max-width:100px;max-height:100px;image-rendering:auto;filter:none}
+body.historical-site.finish-commerce-shop .finish-preview-stage img.finish-rev6-specific-top,body.historical-site.finish-commerce-shop .finish-preview-stage img.finish-specific-media.hist-native-ship-model.finish-rev6-specific-top{position:absolute!important;left:50%!important;top:50%!important;width:auto!important;height:auto!important;max-width:253px!important;max-height:206px!important;transform:translate(-50%,-50%)!important;object-fit:contain;image-rendering:auto;filter:none}
+body.historical-site.finish-commerce-shop .finish-preview-stage img.finish-static-product-image{position:absolute!important;left:50%!important;top:61px!important;max-width:100px!important;max-height:100px!important;transform:translateX(-50%)!important;object-fit:contain;image-rendering:auto;filter:none}
+body.historical-site.finish-commerce-shop .finish-static-preview-note{position:absolute;left:0;top:166px;width:253px;height:15px;font:9px/15px Verdana,Arial,sans-serif;color:#8f969c;text-align:center;white-space:nowrap;pointer-events:auto}
+body.historical-site.finish-commerce-shop .hist-shop-detail .btn-buy{box-sizing:border-box;left:7px;right:auto;width:142px;min-width:142px;max-width:142px;height:48px;min-height:48px;padding:0;border:0;transform:none!important;white-space:normal;overflow-wrap:normal}
+
+/* REV7: source-native catalogue controls replace the OS scrollbar.
+ * internalDock.css1163–1203 + DockLaser item_scroll_* markup. Existing product
+ * buttons are moved intact into the318px view; no handler/form is cloned. */
+body.historical-site.finish-commerce-shop .hist-shop-catalog.finish-native-catalogue{position:relative;display:block;padding:0;overflow:hidden;scrollbar-width:none}
+body.historical-site.finish-commerce-shop .finish-catalog-scroll{position:absolute;left:2px;top:37px;box-sizing:border-box;width:214px;height:318px;padding:0 0 0 5px;margin:0;display:grid;grid-template-columns:100px 100px;grid-auto-rows:100px;gap:5px;align-content:start;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;overscroll-behavior:contain}
+body.historical-site.finish-commerce-shop .finish-catalog-scroll::-webkit-scrollbar{display:none;width:0;height:0}
+body.historical-site.finish-commerce-shop .finish-catalog-nav{position:absolute;box-sizing:border-box;display:block;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;transform:none!important;color:transparent;font-size:0!important;line-height:0!important;background-color:transparent!important;background-repeat:no-repeat!important;cursor:pointer;min-width:0;min-height:0;max-height:none;opacity:1}
+body.historical-site.finish-commerce-shop .finish-catalog-nav:focus-visible{outline:1px solid #bcd3e3;outline-offset:1px}
+body.historical-site.finish-commerce-shop :is(.finish-catalog-up,.finish-catalog-down){left:56px;width:107px;max-width:107px;height:21px;background-position:-107px 0!important}
+body.historical-site.finish-commerce-shop .finish-catalog-up{top:2px;background-image:url('dops-rev7/commerce/hangar/item-list_up_428x21.png')!important}
+body.historical-site.finish-commerce-shop .finish-catalog-down{top:371px;background-image:url('dops-rev7/commerce/hangar/item-list_down_428x21.png')!important}
+body.historical-site.finish-commerce-shop :is(.finish-catalog-up,.finish-catalog-down):enabled:hover{background-position:-214px 0!important}
+body.historical-site.finish-commerce-shop :is(.finish-catalog-up,.finish-catalog-down):enabled:active{background-position:-321px 0!important}
+body.historical-site.finish-commerce-shop :is(.finish-catalog-up,.finish-catalog-down):disabled{background-position:0 0!important;cursor:default}
+body.historical-site.finish-commerce-shop :is(.finish-catalog-top,.finish-catalog-bottom){left:174px;width:36px;max-width:36px;height:17px;background-position:0 -20px!important}
+body.historical-site.finish-commerce-shop .finish-catalog-top{top:4px;background-image:url('dops-rev7/commerce/hangar/item-list_up-all_38x80.png')!important}
+body.historical-site.finish-commerce-shop .finish-catalog-bottom{top:370px;background-image:url('dops-rev7/commerce/hangar/item-list_down-all_38x80.png')!important}
+body.historical-site.finish-commerce-shop :is(.finish-catalog-top,.finish-catalog-bottom):enabled:hover{background-position:0 -40px!important}
+body.historical-site.finish-commerce-shop :is(.finish-catalog-top,.finish-catalog-bottom):enabled:active{background-position:0 -60px!important}
+body.historical-site.finish-commerce-shop :is(.finish-catalog-top,.finish-catalog-bottom):disabled{background-position:0 0!important;cursor:default}
+
+/* Source Shop Styles.as: Eurostile heavy24px, regular17px. These TTF files are
+ * byte copies from the same DoPs snapshot, kept private; no system substitute
+ * is described as an extracted SWF font. */
+@font-face{font-family:'DoPsShopRegular';src:url('dops-rev7/commerce/fonts/EurostileT.ttf') format('truetype');font-display:swap;font-weight:400;font-style:normal}
+@font-face{font-family:'DoPsShopHeavy';src:url('dops-rev7/commerce/fonts/EurostileTHea.ttf') format('truetype');font-display:swap;font-weight:700;font-style:normal}
+body.historical-site.finish-commerce-shop .finish-preview-title{font-family:'DoPsShopHeavy',Arial,sans-serif;font-size:24px;font-weight:700;line-height:31px}
+body.historical-site.finish-commerce-shop .finish-preview-caption{font-family:'DoPsShopRegular',Arial,sans-serif;font-size:17px;font-weight:400;line-height:27px}
+body.historical-site.finish-commerce-shop .finish-preview-price{font-family:'DoPsShopRegular',Arial,sans-serif;font-size:17px;font-weight:400;line-height:27px}
+body.historical-site.finish-commerce-shop .hist-shop-detail .finish-historical-info{box-sizing:border-box;padding:3px 5px;text-align:left;overflow-y:auto;scrollbar-color:#56636a #111a20}
+body.historical-site.finish-commerce-shop .finish-info-heading{margin:0 0 4px;padding:3px 0;font:bold 11px/14px Verdana,Arial,sans-serif;color:#bcd3e3;text-align:left}
+body.historical-site.finish-commerce-shop .finish-historical-info :is(.item-desc,.finish-historical-description){display:block;margin:0 0 5px;padding:0;font:11px/14px Verdana,Arial,sans-serif;color:#bcd3e3;text-align:left;white-space:normal}
+body.historical-site.finish-commerce-shop .finish-historical-info :is(.design-meta,.design-bonus,.finish-ability-description){font:11px/14px Verdana,Arial,sans-serif;text-align:left;color:#bcd3e3}
+/* DoPs trade uses the11px body text. Preserve all custom bid/current/start
+ * values and controls; no fictitious Buy-now/Completed actions are added. */
+body.historical-site.finish-commerce-auction .auction-item-text strong{font:bold 11px/14px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-auction .auction-item-text>span,body.historical-site.finish-commerce-auction .finish-auction-owner-line{font:11px/14px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-auction .auction-item-text .finish-auction-quantity-line{font:10px/13px Verdana,Arial,sans-serif}
+body.historical-site.finish-commerce-auction .auction-table .auction-row td{font-size:10px;line-height:14px}
+/* REV9 private local preview: real native VP6Alpha frames, lossless APNG.
+ * Main.as centers video in253x206 without stretching; wider media is clipped.
+ * The original source image remains connected and returns on loading error. */
+body.historical-site.finish-commerce-shop .finish-preview-stage.finish-rev9-animation-stage{background:url('rev9-shop/bg_shopdetails.jpg') center center no-repeat!important}
+body.historical-site.finish-commerce-shop .finish-preview-stage img.finish-rev9-animation{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;width:auto!important;height:auto!important;max-width:none!important;max-height:none!important;min-width:0!important;min-height:0!important;object-fit:none!important;image-rendering:auto;filter:none!important;z-index:1;pointer-events:none}
+body.historical-site.finish-commerce-shop .finish-preview-stage img.finish-rev9-animation[hidden]{display:none!important}
+body.historical-site.finish-commerce-shop .finish-preview-stage.has-rev9-animation>.finish-rev9-static-fallback{visibility:hidden!important}

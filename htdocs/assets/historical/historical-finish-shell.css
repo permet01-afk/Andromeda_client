@@ -1,0 +1,531 @@
+/* REV4 shell only. No bitmap editing or new graphics. Source details are in
+   finition-rev4-20261019/shell.json. Load after historical-site.css. */
+body.historical-site.hist-finish-shell .app-header{background:none!important}
+body.historical-site.hist-finish-shell .app-header::before{content:'';display:block;position:absolute;inset:0;pointer-events:none;z-index:0;background:url('pk/do/header/buttons/header_background_02.png') left top no-repeat;clip-path:inset(18px 0 0 0)}
+body.historical-site.hist-finish-shell .header-actions{position:static;display:block;height:0;width:auto}
+body.historical-site.hist-finish-shell .header-actions>.header-link{position:absolute;top:22px;width:auto;min-width:0;height:19px;padding:0 9px;font-size:9px;line-height:19px}
+body.historical-site.hist-finish-shell .header-actions>.hist-home-link{left:107px;right:auto}
+body.historical-site.hist-finish-shell .header-actions>.hist-finish-logout-link{right:67px;left:auto}
+body.historical-site.hist-finish-shell .header-link:hover::before{background-position:left -19px}
+body.historical-site.hist-finish-shell .header-link:hover::after{background-position:right -19px}
+body.historical-site.hist-finish-shell .header-link:active{background-position:left -38px!important}
+body.historical-site.hist-finish-shell .header-link:active::before{background-position:left -38px}
+body.historical-site.hist-finish-shell .header-link:active::after{background-position:right -38px}
+/* Measured PK positions and native34/56px button geometry remain untouched.
+   The small-button text block now matches the reference12px top inset. */
+body.historical-site.hist-finish-shell .app-nav .nav-item:not(.cta):not(.hist-big)>.nav-link{display:block!important;padding:12px 0 0 5px;line-height:10px;font-size:10px}
+body.historical-site.hist-finish-shell .app-nav .nav-item.hist-big>.nav-link{display:flex!important;padding:0 0 0 5px;line-height:21px}
+body.historical-site.hist-finish-shell .app-nav .submenu,body.historical-site.hist-finish-shell .app-nav .submenu-toggle{display:none!important}
+body.historical-site.hist-finish-shell .app-nav .nav-link:focus-visible{outline:1px solid #c3d6df;outline-offset:-3px}
+body.historical-site.hist-finish-shell .hist-finish-profile-tools{margin:10px 0 0;padding:5px 0 0;border-top:1px solid #4d6370;font-size:10px;text-align:right}
+body.historical-site.hist-finish-shell .hist-finish-profile-link{color:#d5cfa6;text-decoration:underline}
+body.historical-site.hist-finish-shell .hist-finish-explanatory-copy{display:none}
+/* Home keeps the real four native compartments, rather than a second dashboard. */
+body.historical-site.hist-finish-shell .hist-dashboard-extensions{display:block;padding:4px 0 0;width:679px}
+body.historical-site.hist-finish-shell .hist-finish-home-more{display:block;width:679px;margin:0;padding:0;border:0;background:none;box-shadow:none}
+body.historical-site.hist-finish-shell .hist-finish-home-more>summary{width:max-content;min-height:22px;padding:3px 8px;color:#bfc7ae;font:10px/16px Verdana,Arial,sans-serif;cursor:pointer;text-decoration:underline;list-style:disclosure-closed}
+body.historical-site.hist-finish-shell .hist-finish-home-more[open]>summary{list-style:disclosure-open}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:3px 0 8px}
+body.historical-site.hist-finish-shell .hist-finish-home-more:not([open])>.hist-finish-home-more-content{display:none!important}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content>.dashboard-card,body.historical-site.hist-finish-shell .hist-finish-home-more-content>.hist-discord-preserved{min-height:0;margin:0;padding:8px 10px;border:1px solid #4c606c;border-radius:0;background:url('dops/global/hangar/item-info_background_cycle.png') repeat;box-shadow:none}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content>.events-card{grid-column:2;grid-row:1/span 2}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content>.system-card{grid-column:1;grid-row:1}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content>.hist-discord-preserved{grid-column:1;grid-row:2}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content .card-header{display:block;position:static;width:auto;height:auto;padding:0 0 5px;margin:0;border:0;clip:auto;overflow:visible}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content .card-title,body.historical-site.hist-finish-shell .hist-finish-home-more-content h2{font-size:10px;line-height:14px;letter-spacing:0;margin:0}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content .stat-summary li{padding:4px 0;min-height:0;background:none;border:0;border-bottom:1px solid #304550;font-size:9px}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content .event-panel{margin:0;padding:6px 0;background:none;border-top:1px solid #3e535f;box-shadow:none}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content .event-name{font-size:10px}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content .event-details dt,body.historical-site.hist-finish-shell .hist-finish-home-more-content .event-details dd{font-size:9px;line-height:13px}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content .discord-copy p,body.historical-site.hist-finish-shell .hist-finish-home-more-content .discord-link{display:none}
+body.historical-site.hist-finish-shell .hist-finish-home-more-content .discord-cta{display:inline;width:auto;min-width:0;height:auto;min-height:0;margin:0;padding:0;background:none!important;color:#c7d1b4;text-shadow:none;text-decoration:underline;font-size:10px}
+body.historical-site.hist-finish-shell .hist-finish-server-time{position:absolute;z-index:2;top:20px;left:36px;width:130px;display:block;list-style:none;margin:0;padding:0;color:#d7d4ab;text-align:center;background:none;border:0;font-size:10px;line-height:16px}
+body.historical-site.hist-finish-shell .hist-finish-server-time .summary-label{display:none}
+body.historical-site.hist-finish-shell .hist-finish-server-time .summary-value{display:inline;font-size:10px;font-weight:normal;background:none}
+body.historical-site.hist-finish-shell .hist-finish-server-time img{display:none}
+body.historical-site.hist-finish-shell .hist-dashboard-native .hof-card .tab-controls{display:none!important}
+body.historical-site.hist-finish-shell .hist-dashboard-native .hof-card .tab-group{height:124px;padding:0;margin:0}
+body.historical-site.hist-finish-shell .hist-dashboard-native .hof-card .tab-panel{padding:0;margin:0}
+body.historical-site.hist-finish-shell .hist-dashboard-native .hof-card .leaderboard{height:108px;max-height:108px;overflow:auto;padding:0;margin:0}
+body.historical-site.hist-finish-shell .hist-dashboard-native .hof-card .leaderboard-row{min-height:12px;height:12px;line-height:12px;padding:0;margin:0;font-size:9px}
+body.historical-site.hist-finish-shell .hist-dashboard-native .hof-card .leaderboard-row img{max-width:11px;max-height:11px}
+body.historical-site.hist-finish-shell .hist-native-top100{height:16px;line-height:16px;text-decoration:underline}
+body.historical-site.hist-finish-shell .hist-finish-home-profile-tools{position:absolute;left:0;bottom:0;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:17px;background:none}
+body.historical-site.hist-finish-shell .hist-finish-home-profile-tools a,body.historical-site.hist-finish-shell .hist-finish-home-profile-tools button{display:inline;min-width:0;min-height:0;width:auto;height:auto;margin:0;padding:0;border:0;background:none!important;color:#d6d0a6;font:9px/14px Verdana,Arial,sans-serif;box-shadow:none;text-shadow:none;text-transform:none;text-decoration:underline;cursor:pointer}
+body.historical-site.hist-finish-shell .hist-dashboard-native .user-card .pilot-card-layout{padding-bottom:18px}
+/* The statically decompiled DoPs inventory uses real dropdowns and numbered
+   config controls. The Andromeda category set and explicit Save remain its own
+   backend contract; no automatic business request is introduced. */
+body.historical-site.hist-finish-shell.hist-equipment .invTabs{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-inventory-selector{display:flex;flex-direction:column;gap:0;flex:none;padding:1px 0 8px;min-height:31px;border-bottom:1px solid #415b6c;margin:0 0 6px}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-inventory-selector label{display:none}
+body.historical-site.hist-finish-shell.hist-equipment #hist-finish-inventory-filter{appearance:none;width:196px;height:22px;min-height:22px;padding:2px 4px 2px 26px;border:0;border-radius:0;background:url('dops/inventory-ui/filter-dropdown-normal.png') left top no-repeat;color:#d0d0d0;font:10px/18px Verdana,Arial,sans-serif;text-transform:uppercase}
+body.historical-site.hist-finish-shell.hist-equipment #hist-finish-inventory-filter:hover,body.historical-site.hist-finish-shell.hist-equipment #hist-finish-inventory-filter:focus{background-image:url('dops/inventory-ui/filter-dropdown-hover.png');color:#fff}
+body.historical-site.hist-finish-shell.hist-equipment #hist-finish-inventory-filter option{background:#172a39;color:#e0e0e0;text-transform:none}
+body.historical-site.hist-finish-shell.hist-equipment .doTopBar{min-height:27px;padding-bottom:3px}
+body.historical-site.hist-finish-shell.hist-equipment .doTabs{display:flex;flex:1;gap:6px;align-items:center}
+body.historical-site.hist-finish-shell.hist-equipment .doTabs>.tab{flex:none;width:24px;min-width:24px;max-width:24px;height:23px;min-height:23px;padding:3px 0;border:0;background:url('dops/inventory-ui/config-normal.png') left top no-repeat!important;color:#b1b6b7;font:11px/17px Verdana,Arial,sans-serif;text-align:center}
+body.historical-site.hist-finish-shell.hist-equipment .doTabs>.tab:hover{background-image:url('dops/inventory-ui/config-hover.png')!important}
+body.historical-site.hist-finish-shell.hist-equipment .doTabs>.tab.active{background-image:url('dops/inventory-ui/config-active.png')!important;color:#ffcc00}
+body.historical-site.hist-finish-shell.hist-equipment .doTabs>.tab[aria-disabled=true],body.historical-site.hist-finish-shell.hist-equipment .doTabs>.tab:disabled{background-image:url('dops/inventory-ui/config-disabled.png')!important;color:#777}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-configuration-label{display:block;margin-left:4px;color:#757575;font:10px/20px Verdana,Arial,sans-serif;text-transform:uppercase}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-design-selector{display:block;flex:0 0 196px;width:196px;height:22px}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-design-selector[hidden]{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment #btnDesign.hist-finish-design-control{position:static;display:block;width:196px;min-width:196px;height:22px;min-height:22px;padding:3px 4px 3px 26px;border:0;border-radius:0;background:url('dops/inventory-ui/filter-dropdown-normal.png') left top no-repeat!important;color:#d0d0d0;font:10.7px/16px Verdana,Arial,sans-serif;box-shadow:none;text-transform:uppercase;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.historical-site.hist-finish-shell.hist-equipment #btnDesign.hist-finish-design-control:hover,body.historical-site.hist-finish-shell.hist-equipment #btnDesign.hist-finish-design-control:focus-visible{background-image:url('dops/inventory-ui/filter-dropdown-hover.png')!important;color:#fff}
+body.historical-site.hist-finish-shell.hist-equipment #btnDesign.hist-finish-design-control:active{background-image:url('dops/inventory-ui/filter-dropdown-pressed.png')!important}
+body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu{display:none;position:fixed;inset:auto;width:196px;height:auto;margin:0;padding:0;background:none;z-index:10000;overflow:visible}
+body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu.open{display:block}
+body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu #designModalBox{display:block;position:relative;width:196px;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:none!important;box-shadow:none;overflow:visible}
+body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu #designModalHead{display:none}
+body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu #designList{position:relative;display:block;width:196px;max-height:220px;overflow-x:hidden;overflow-y:auto;margin:0;padding:0;background:url('dops/inventory-ui/dropdown-background.png') 21px top/173px 3px repeat-y;scrollbar-width:thin;scrollbar-color:#738b9a #162533;filter:drop-shadow(4px 5px 5px #000)}
+body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu .designItem{display:block;box-sizing:border-box;position:relative;width:172px;height:22px;min-height:22px;margin:0 0 0 22px;padding:4px 5px;border:0;border-radius:0;background:none;color:#808080;cursor:pointer;font:10.7px/14px Verdana,Arial,sans-serif;outline-offset:-1px}
+body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu .designItem:hover,body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu .designItem:focus{background:#2f4d65;color:#fff}
+body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu .designItem>.meta>div:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu .designItem img,body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu .designItem .bonus,body.historical-site.hist-finish-shell.hist-equipment #designModal.hist-finish-design-menu .hist-current-design-option{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-design-preview{position:absolute;left:196px;top:-25px;width:89px;height:80px;pointer-events:none;background:url('dops/inventory-ui/design-selection-popup.png') left top no-repeat;opacity:0;transition:top .2s ease,opacity .2s ease}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-design-preview.is-visible{opacity:1}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-design-preview>img{position:absolute;left:20px;top:5px;display:block;width:63px;height:63px;object-fit:contain;margin:0;padding:0;border:0;border-radius:0;background:none}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-design-preview-bonus{position:absolute;left:14px;top:80px;width:130px;color:#c6c6c6;background:#000;padding:2px 3px;font:9px/12px Verdana,Arial,sans-serif;white-space:normal}
+body.historical-site.hist-finish-shell.hist-equipment .hist-finish-design-preview-bonus:empty{display:none}
+/* No exact63px equivalence is established for these two Andromeda extras.
+   Keep their original30px artwork at its real size rather than upscale it. */
+body.historical-site.hist-finish-shell.hist-equipment .token img[src$='/autorocket.png'],body.historical-site.hist-finish-shell.hist-equipment .slot img[src$='/autorocket.png'],body.historical-site.hist-finish-shell.hist-equipment .token img[src$='/cargoexp.png'],body.historical-site.hist-finish-shell.hist-equipment .slot img[src$='/cargoexp.png']{width:30px;height:30px;max-width:30px;max-height:30px}
+body.historical-site.hist-finish-shell.hist-equipment .configHelp{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment .bar{display:flex;justify-content:flex-end;align-items:center;gap:0;height:31px;min-height:31px;max-height:31px;flex:0 0 31px;margin:0;padding:4px 2px;background:none;border-top:1px solid #506875}
+body.historical-site.hist-finish-shell.hist-equipment #saveAll{display:block;width:91px;min-width:91px;max-width:91px;height:23px;min-height:23px;padding:3px 4px;border:0;border-radius:0;background:url('dops/global/hangar/overview/small_tabs_inactive.png') left top no-repeat!important;color:#d1d9c1;font:10px/16px Verdana,Arial,sans-serif!important;text-shadow:none;box-shadow:none;text-transform:none}
+body.historical-site.hist-finish-shell.hist-equipment #saveAll:hover:not(:disabled){background-image:url('dops/global/hangar/overview/small_tabs_active.png')!important;filter:none}
+/* REV5: internalDock source overview: stats left279x358, media right253x208.
+ * Original update nodes and repair callback are moved, not reconstructed. */
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview{position:relative;width:772px;height:390px;min-height:390px;margin:0;padding:0;border:0;background:url('dops/global/hangar/overview/bg_ship.jpg') left 22px no-repeat}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-heading{position:absolute;left:5px;top:0;width:599px;height:23px;padding:0;display:flex;gap:0;background:url('dops/global/hangar/overview/tab_line.png') left bottom no-repeat;align-items:flex-start}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-heading h2{display:block;width:94px;height:23px;min-height:23px;padding:0;margin:0;border:0;color:#d5c98b;text-align:center;font:10px/21px Verdana,Arial,sans-serif;background:url('dops/global/hangar/overview/small_tabs_active.png') left top no-repeat}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-body{display:block;position:static;width:772px;height:390px;min-height:390px;margin:0;padding:0;background:none}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-details{position:absolute;left:5px;top:25px;width:279px;height:358px;min-height:358px;margin:0;padding:8px 10px;overflow:hidden;background:url('dops/global/hangar/overview/stats_bg.png') left top no-repeat}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-portrait{position:absolute;left:404px;top:140px;width:253px;height:208px;min-height:208px;margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:none}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-portrait img{width:auto;height:auto;max-width:253px;max-height:208px;object-fit:contain;filter:none}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-portrait>span{display:none}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview>.ship-lifecycle-name{position:absolute;left:404px;top:84px;width:253px;height:44px;display:block;margin:0;padding:0;text-align:center;background:none;border:0}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview>.ship-lifecycle-name h3{font:18px/24px Verdana,Arial,sans-serif;letter-spacing:0;margin:0;color:#ddd}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview>.ship-lifecycle-badge{position:absolute;left:510px;top:121px;height:18px;padding:0;border:0;background:none;font:10px/18px Verdana,Arial,sans-serif;color:#d3bc77}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview #ship-panel-stats{display:block;padding:0;margin:0;border:0;background:none}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table{border-collapse:collapse;table-layout:fixed;width:259px;margin:0;padding:0;font:10px/19px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table tr:nth-child(odd){background:url('dops/global/hangar/overview/text_bg.png') repeat-x}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table td{padding:4px 3px;border:0;vertical-align:top;background:none;width:50%;font:10px/17px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table td:first-child{color:#b7c4cc}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table td:last-child{text-align:right;color:#d2c98b}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table strong,body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table strong b{font:10px/17px Verdana,Arial,sans-serif;white-space:normal}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table strong small{font:9px/17px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table .ship-lifecycle-stat{display:block;min-height:0;margin:0;padding:0;border:0;background:none}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-track{display:none}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-config-field{display:block;margin:17px 0 0;padding:0;font:10px/18px Verdana,Arial,sans-serif;color:#a8b5bc}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-config-field>span{display:block}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-config-field select{appearance:auto;width:190px;height:23px;min-height:23px;margin:3px 0 0;padding:2px 6px;border:1px solid #657078;border-radius:0;background:#14232c;color:#d6d6ca;font:10px/18px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-footer{margin:12px 0 0;padding:0;border:0;background:none;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview #ship-panel-message,body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview #ship-panel-phoenix{margin:0;padding:0;background:none;border:0;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview>#ship-panel-repair{position:absolute;left:286px;top:25px;width:201px;min-width:201px;max-width:201px;height:56px;min-height:56px;margin:0;padding:8px 5px 8px 58px;border:0;border-radius:0;box-shadow:none;background:url('dops-rev5/overview/repair_201x53.png') left top no-repeat!important;white-space:normal;font:11px/17px Verdana,Arial,sans-serif;color:#e4d49a;text-align:center;transform:none}
+body.historical-site.hist-finish-shell .app-shell{min-height:0}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview #ship-panel-message.hist-finish-explanatory-copy{display:block}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview:not(.is-destroyed) #ship-panel-message.hist-finish-explanatory-copy{display:none}
+
+/* REV6. DoPs 770x395 Inventory, 221px entity zone, native34px cells.
+   The only extra vertical strip is Andromeda's existing explicit Save contract. */
+body.historical-site.hist-finish-shell.hist-rev6-shell .andromeda-config-frameWrap{height:440px;max-height:440px}
+body.historical-site.hist-finish-shell.hist-rev6-shell #andromedaEquipFrame{height:440px!important;min-height:440px;max-height:440px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory{width:772px;min-width:772px;max-width:772px;height:440px;min-height:440px;max-height:440px;overflow:hidden;background:#000!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .wrap{display:block;width:772px;min-width:772px;max-width:772px;height:440px;max-height:440px;min-height:0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .cols{display:grid;position:relative;width:772px;height:438px;max-height:438px;grid-template-columns:605px 150px;gap:17px;align-items:start;overflow:visible}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #rightPanel{display:block;position:relative;width:605px;height:438px;max-height:438px;min-height:0;margin:0;padding:0;border:0;background:url('dops-rev6/inventory/client-bg.png') 0 0 no-repeat!important;overflow:visible}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel{display:block;position:relative;width:150px;min-width:150px;height:400px;max-height:400px;min-height:0;margin:0;padding:66px 4px 4px;border:0;background:#0b1419;overflow:visible}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .doTopBar{display:flex;position:absolute;left:8px;top:8px;width:409px;height:24px;min-height:24px;margin:0;padding:0;z-index:8;background:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .doTabs{display:flex;flex:none;width:213px;gap:6px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-finish-configuration-label{font-size:9px;margin-left:2px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-finish-design-selector{flex:none;width:196px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-finish-inventory-selector{display:block;position:absolute;left:550px;top:9px;width:196px;height:22px;min-height:22px;margin:0;padding:0;border:0;z-index:9}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .modeTabs{display:flex;position:absolute;left:22px;top:364px;width:188px;height:23px;margin:0;padding:0;z-index:5}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #shipPreview{display:flex;position:absolute;left:0;top:35px;width:221px;height:315px;min-height:315px;max-height:315px;margin:0;padding:0;align-items:center;justify-content:center;overflow:hidden;background:none;border:0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #shipPreviewImg{display:block;width:auto;height:auto;max-width:213px;max-height:290px;margin:0;object-fit:contain;filter:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #shipSection,body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #dronesSection{position:absolute;left:221px;top:67px;width:365px;height:330px;max-height:330px;min-height:0;flex:none;margin:0;padding:0;border:0;background:none!important;overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#536b79 #0c1a23}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .cfgView{width:365px;min-height:0;padding:0;margin:0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .cfgView>.sectionHead{display:flex;align-items:center;width:365px;height:26px;min-height:26px;margin:0;padding:0 27px;background:url('dops-rev6/inventory/accordion-normal.png') left top no-repeat;border:0;color:#a6a6a6;font:10px/26px Verdana,Arial,sans-serif;text-transform:uppercase}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .cfgView>.sectionHead label{margin:0;padding:0;font:10px/26px Verdana,Arial,sans-serif;color:inherit}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .grid{display:grid;grid-template-columns:repeat(10,34px);grid-auto-rows:34px;gap:0;width:340px;margin:3px 0 8px 25px;padding:0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .slot,body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .token:not(.drone-token){box-sizing:border-box;display:flex;flex:none;align-items:center;justify-content:center;width:34px;min-width:34px;max-width:34px;height:34px;min-height:34px;max-height:34px;margin:0;padding:2px;border:0;border-radius:0;background:url('dops-rev6/inventory/slot-empty.png') left top no-repeat;box-shadow:none;overflow:visible}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .slot.filled{background-image:url('dops-rev6/inventory/slot-equipped.png')}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .slot:hover,body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .token:not(.drone-token):hover{background-image:url('dops-rev6/inventory/slot-hover.png')}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .slot.selected,body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .token.selected:not(.drone-token){outline:1px solid #ffd900;outline-offset:-2px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .slot img,body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .token:not(.drone-token) img{display:block;width:30px!important;height:30px!important;max-width:30px;max-height:30px;object-fit:contain;margin:0;padding:0;border:0;background:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .token .qty{right:1px;bottom:0;font-size:8px;line-height:9px;padding:0;background:#000b}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .invWrap{display:block;height:330px;max-height:330px;overflow-y:auto;overflow-x:hidden;padding:0;scrollbar-width:thin}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .inv{display:grid;grid-template-columns:repeat(4,34px);grid-auto-rows:34px;gap:0;width:136px;margin:0;padding:0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .sectionHead{position:relative;display:flex;align-items:center;justify-content:space-between;width:136px;min-height:22px;height:22px;padding:0;margin:0;border:0;background:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .sectionHead label{font-size:8px;line-height:11px;max-width:108px;color:#a0a6a8}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .hist-equipment-action-toggle{width:24px;min-width:24px;height:18px;min-height:18px;padding:0;font-size:0!important;line-height:18px;background:none!important;border:1px solid #3e596c;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .hist-equipment-action-toggle::after{content:'…';font:14px/13px Verdana,Arial,sans-serif;color:#c6ced3}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .hist-equipment-action-menu{z-index:50;right:0;left:auto;min-width:112px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .bar{position:absolute;left:0;top:405px;width:755px;height:31px;min-height:31px;max-height:31px;margin:0;padding:3px 0;border:0;background:none;z-index:5}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #dronesWrap{height:auto;max-height:none;min-height:0;overflow:visible;padding:0;margin:0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .havok-summary{height:auto;min-height:20px;margin:0;padding:2px 5px;border:0;background:none;color:#bc9f83;font:9px/14px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #droneList{display:block;width:365px;gap:0;margin:0;padding:0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .droneBlock{position:relative;display:block;width:365px;min-height:26px;height:26px;margin:0;padding:0;border:0;border-radius:0;background:none!important;box-shadow:none;overflow:hidden}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .droneBlock.hist-rev6-drone-open{height:150px;min-height:150px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .droneBlock:not(.hist-rev6-drone-open)>:not(.hist-rev6-drone-toggle){display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-drone-toggle{display:block;width:365px;min-width:365px;height:26px;min-height:26px;margin:0;padding:0 27px;border:0;border-radius:0;box-shadow:none;background:url('dops-rev6/inventory/accordion-normal.png') 0 0 no-repeat!important;color:#aaa;text-align:left;text-transform:uppercase;font:10px/26px Verdana,Arial,sans-serif;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-drone-toggle:hover{background-image:url('dops-rev6/inventory/accordion-hover.png')!important;color:#fff}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-drone-open>.hist-rev6-drone-toggle{background-image:url('dops-rev6/inventory/accordion-active.png')!important;color:#d0d0d0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-heading{position:absolute;left:5px;top:32px;display:flex;align-items:flex-start;gap:50px;width:345px;height:63px;margin:0;padding:0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-token{display:flex;flex:none;align-items:center;justify-content:center;position:relative;width:63px;min-width:63px;height:63px;min-height:63px;padding:0;margin:0;border:0!important;background:none;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-identity{width:200px;gap:0;padding:0;margin:0}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-name{display:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-level,body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-design-label{font:9px/15px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-damage{position:absolute;left:118px;top:62px;display:block;margin:0;padding:0;border:0;background:none;color:#a7a7a7;font:9px/15px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-row{position:absolute;left:118px;top:82px;display:flex;gap:0;margin:0;padding:0;justify-content:flex-start;width:68px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-progress{position:absolute;left:118px;top:122px;width:194px;height:3px;margin:0;padding:0;background:#15222c}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .drone-progress-text{position:absolute;left:118px;top:128px;width:194px;margin:0;padding:0;text-align:left;font:9px/14px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-drone-entity{display:none;position:absolute;left:20px;top:80px;align-items:center;justify-content:center;flex-direction:column;gap:15px;width:181px;height:220px;color:#b6b6b6;font:10px/15px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-drones-open #shipPreview{display:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-drones-open .hist-rev6-drone-entity{display:flex}
+/* The original 16x13 counter icons and 34x22 PK action sprite complement the
+   recovered DoPs header markup. Values are real existing PHP data. */
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-header-stats{position:absolute;inset:0;pointer-events:none;z-index:5}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-header-stat{position:absolute;top:0;display:flex;gap:4px;align-items:center;justify-content:center;height:15px;color:#b7c7d2;font:9px/13px Verdana,Arial,sans-serif;white-space:nowrap}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-header-stat img{display:block;width:16px;height:13px;object-fit:contain;margin:0}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-header-id{left:55px;width:130px}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-header-level{left:198px;width:110px}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-header-honor{left:565px;width:105px}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-header-xp{left:686px;width:120px}
+body.historical-site.hist-finish-shell.hist-rev6-shell .app-header .header-actions{position:absolute;right:19px;top:22px;width:68px;height:22px;display:flex;gap:0;z-index:8}
+body.historical-site.hist-finish-shell.hist-rev6-shell .app-header .hist-rev6-icon-action{display:block;position:static;flex:none;width:34px;min-width:34px;max-width:34px;height:22px;min-height:22px;max-height:22px;margin:0;padding:0;border:0;box-shadow:none;background:url('pk/do/header/global_header_icon_sprite_34x22.png') 0 0 no-repeat!important;color:transparent;font-size:0!important;overflow:hidden}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-icon-action::before,body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-icon-action::after{display:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .app-header .hist-rev6-logout{background-position:-102px 0!important}
+body.historical-site.hist-finish-shell.hist-rev6-shell .app-header .hist-rev6-home:hover{background-position:0 -22px!important}
+body.historical-site.hist-finish-shell.hist-rev6-shell .app-header .hist-rev6-logout:hover{background-position:-102px -22px!important}
+body.historical-site.hist-finish-shell.hist-rev6-shell .app-header .hist-rev6-home:active{background-position:0 -44px!important}
+body.historical-site.hist-finish-shell.hist-rev6-shell .app-header .hist-rev6-logout:active{background-position:-102px -44px!important}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-header-discord{position:absolute;left:53px;top:23px;display:flex;align-items:center;gap:3px;width:86px;height:22px;margin:0;padding:0;border:0;background:none!important;color:#b2c6d2;font:10px/18px Verdana,Arial,sans-serif;text-decoration:underline;z-index:8}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-header-discord svg{width:19px;height:19px;fill:#b2c6d2}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-header-ship{object-fit:contain;max-width:160px;max-height:124px}
+/* Home retains the actual four painted compartments, with native compact rows
+   and explicit access to complete loaded details instead of clipped data. */
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .news-card,body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card,body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .log-card{overflow:hidden}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .pilot-card-layout{display:block;padding:0 0 17px;background:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .stat-list{display:block;margin:0;padding:0;gap:0;background:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .stat-row{display:flex;align-items:center;justify-content:space-between;width:100%;height:15px;min-height:15px;margin:0;padding:0 2px;border:0;border-radius:0;background:none!important;box-shadow:none;font:9px/15px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .stat-row dt{margin:0;padding:0;color:#b8b8b8;font:9px/15px Verdana,Arial,sans-serif;background:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .stat-row dd{margin:0;padding:0;color:#d3d3b0;max-width:164px;font:9px/15px Verdana,Arial,sans-serif;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;background:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .stat-media{display:flex;align-items:center;gap:4px;justify-content:flex-end}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .hof-card .leaderboard{height:108px;max-height:108px;overflow:hidden;scrollbar-width:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .hof-card .leaderboard>li:nth-child(n+10){display:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-news-current{display:flex;flex-direction:column;gap:7px;min-height:82px;padding:3px 2px 0;color:#bec8ce;font:10px/15px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-news-current .hist-rev6-news-title{font-size:12px;color:#d6d1ab}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-news-current small{font-size:9px;color:#a2b1b8}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-news-choices{display:flex;gap:4px;position:absolute;left:0;bottom:5px}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-news-choices button{display:block;min-width:18px;width:18px;height:18px;min-height:18px;margin:0;padding:0;border:1px solid #475c68;border-radius:0;background:#12212c;color:#a9bbc6;box-shadow:none;font:9px/16px Verdana,Arial,sans-serif;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-news-choices button[aria-pressed=true]{border-color:#c3bc8d;color:#e2d7a1}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-news-details,body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-history{position:absolute;right:0;bottom:4px;display:block;width:auto;height:17px;min-width:0;min-height:17px;margin:0;padding:0;border:0;border-radius:0;background:none!important;color:#c4c4a4;font:9px/15px Verdana,Arial,sans-serif;text-decoration:underline;box-shadow:none;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-home{width:230px;height:102px;overflow:hidden}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-home .log-list{height:auto;max-height:none;overflow:visible}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-home .log-entry{height:auto;max-height:none;min-height:0;margin:0;padding:2px 0;border-bottom:1px solid #2f424e;font:9px/12px Verdana,Arial,sans-serif;overflow:hidden}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-home .hist-rev6-welcome{height:21px;max-height:21px;min-height:21px;padding:3px 0}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-home .log-entry:nth-child(n+3){display:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-home .log-time{display:block;font:8px/12px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-home .log-message{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;max-height:36px;overflow:hidden;font:9px/12px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-finish-home-more-content{display:block}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog[hidden]{display:none!important}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog{display:flex;position:fixed;inset:0;z-index:20000;align-items:center;justify-content:center;padding:20px;background:#000b;color:#bcc8cf}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog-box{position:relative;width:480px;max-width:calc(100vw - 40px);max-height:calc(100vh - 40px);margin:0;padding:0;border:1px solid #566a76;background:#0b141b url('dops/global/hangar/item-info_background_cycle.png') repeat;box-shadow:0 5px 20px #000}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog-head{display:flex;align-items:center;justify-content:space-between;height:29px;padding:0 9px;border-bottom:1px solid #536a75;background:#132634}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog-head h2{margin:0;padding:0;font:12px/25px Verdana,Arial,sans-serif;color:#d6d1b0}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog-close{min-width:20px;width:20px;height:20px;min-height:20px;margin:0;padding:0;border:0;background:none;color:#c4c9c9;font:19px/20px Arial,sans-serif;cursor:pointer;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog-content{padding:10px 12px;max-height:calc(100vh - 90px);overflow:auto}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog .events-card{margin:0;padding:0;border:0;background:none;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog .events-card>.card-header{display:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog .events-stack{display:block;padding:0;margin:0}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog .event-panel{margin:0;padding:8px 0;border:0;border-bottom:1px solid #3d535f;border-radius:0;background:none;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog .event-name{color:#d0cfac;font:12px/18px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog .event-details{display:block;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog .event-details>div{display:flex;justify-content:space-between;gap:15px}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog .event-details dt{margin:0;padding:0;color:#8dabb9;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-dialog .event-details dd{margin:0;padding:0;text-align:right;color:#c3c5bb;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-full .log-list{display:block;margin:0;padding:0;list-style:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-full .log-entry{display:block;margin:0;padding:8px 0;border:0;border-bottom:1px solid #334852;background:none;overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-full .log-time{display:block;font:9px/14px Verdana,Arial,sans-serif;color:#8ba0aa}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-full .log-message{font:10px/15px Verdana,Arial,sans-serif;color:#c3c7bf}
+/* REV6 owner QA: abbreviations in .badge are Andromeda DOM overlays.
+   Hide only that visual overlay; exact DoPs bitmap lettering is preserved.
+   Item alt text, original tooltip/data and every item/drop node stay intact. */
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .slot .badge,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .token .badge{position:absolute!important;width:1px!important;height:1px!important;min-width:0!important;max-width:1px!important;margin:-1px!important;padding:0!important;border:0!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;pointer-events:none!important}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-profile-identity .company-icon{width:12px;height:12px;min-width:12px;min-height:12px;max-width:12px;max-height:12px;object-fit:none}
+body.historical-site.hist-finish-shell.hist-rev6-shell .profile-card .rank-icon{width:auto;height:16px;min-height:16px;max-height:16px;object-fit:contain}
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card img[src*='ranks/company/']{width:12px;height:12px;min-width:12px;min-height:12px;max-width:12px;max-height:12px;object-fit:none}
+/* ScrollBar.as uses16px bg/bar strips and16px arrow buttons, not the white
+   operating-system scrollbar. Keep native scrolling and hit testing. */
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel{position:absolute;left:602px;top:35px;width:168px;min-width:168px;height:365px;max-height:365px;padding:34px 0 4px 12px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .invWrap{width:152px;height:330px;max-height:330px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .invWrap,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #shipSection,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #dronesSection{scrollbar-width:thin;scrollbar-color:#60676d #22262b}
+@supports selector(::-webkit-scrollbar){
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .invWrap,
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #shipSection,
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #dronesSection{scrollbar-width:auto;scrollbar-color:auto}
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory :is(.invWrap,#shipSection,#dronesSection)::-webkit-scrollbar{width:16px;height:16px;background:#22262b}
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory :is(.invWrap,#shipSection,#dronesSection)::-webkit-scrollbar-track{background:url('dops-rev6/inventory/scroll-track.png') left top repeat-y}
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory :is(.invWrap,#shipSection,#dronesSection)::-webkit-scrollbar-thumb{min-height:20px;border:0;border-radius:0;background-image:url('dops-rev6/inventory/scroll-thumb-top.png'),url('dops-rev6/inventory/scroll-thumb-bottom.png'),url('dops-rev6/inventory/scroll-thumb.png');background-position:left top,left bottom,left top;background-repeat:no-repeat,no-repeat,repeat-y;background-color:#60676d}
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory :is(.invWrap,#shipSection,#dronesSection)::-webkit-scrollbar-button{display:none;width:16px;height:16px;border:0;background:none}
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory :is(.invWrap,#shipSection,#dronesSection)::-webkit-scrollbar-button:vertical:single-button:start:decrement{display:block;background:url('dops-rev6/inventory/scroll-up.png') center no-repeat}
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory :is(.invWrap,#shipSection,#dronesSection)::-webkit-scrollbar-button:vertical:single-button:end:increment{display:block;background:url('dops-rev6/inventory/scroll-down.png') center no-repeat}
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory :is(.invWrap,#shipSection,#dronesSection)::-webkit-scrollbar-button:vertical:single-button:start:decrement:hover{background-image:url('dops-rev6/inventory/scroll-up-hover.png')}
+ body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory :is(.invWrap,#shipSection,#dronesSection)::-webkit-scrollbar-button:vertical:single-button:end:increment:hover{background-image:url('dops-rev6/inventory/scroll-down-hover.png')}
+}
+/* The real InventoryView is one four-column item grid. Keep Andromeda's
+   category ancestors for filtering/drop contracts, but remove their boxes and
+   headings. Existing action nodes move into this one small toolbar. */
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .invWrap{display:grid;grid-template-columns:repeat(4,34px);grid-auto-rows:34px;grid-auto-flow:row;gap:0;align-content:start}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .invCat,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .inv{display:contents!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .invCat[style*='display: none']{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .sectionHead,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .invCat[data-cat='generators']>div[style]{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-inventory-context[hidden]{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-inventory-context{position:fixed;display:flex;flex-direction:column;gap:0;z-index:30000;box-sizing:border-box;width:190px;min-width:190px;max-width:190px;height:auto;margin:0;padding:4px;border:1px solid #697f8c;background:url('dops/global/hangar/item-info_background_cycle.png') repeat #0a1823;box-shadow:0 3px 8px #000;overflow:visible}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-inventory-context>button{display:block;box-sizing:border-box;width:180px;min-width:180px;max-width:180px;height:25px;min-height:25px;margin:0;padding:4px 7px;border:0;border-radius:0;background:none!important;color:#c4cfd4;text-align:left;text-transform:none;font:10px/17px Verdana,Arial,sans-serif;box-shadow:none;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-inventory-context>button:hover,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-inventory-context>button:focus-visible{background:#294252!important;outline:1px solid #6f8da0;outline-offset:-2px;color:#fff}
+/* ToolTipHook is a text field, not the Shop item-info bitmap. Its historical
+   hover styling/timing is distinct from Andromeda's retained pinned actions. */
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #customTooltip{box-sizing:border-box;display:flex;flex-direction:column;gap:2px;width:max-content;min-width:0;max-width:min(300px,calc(100vw - 4px));max-height:calc(100vh - 4px);padding:3px;border:1px solid #1c95bd;border-radius:0;background:#000;box-shadow:none;color:#ccc;font:12px/15px Tahoma,Arial,sans-serif;transform:none;transition:opacity 0s linear .1s;overflow-wrap:anywhere;overflow:auto}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #customTooltip.visible:not(.locked){transform:none;transition:opacity .2s ease .25s}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #customTooltip.locked{border-color:#1c95bd;background:#000;box-shadow:none;transform:none;transition:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #customTooltip .tooltip-header{margin:0;padding:0;border:0;background:none;color:#ccc;font:12px/15px Tahoma,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #customTooltip .tooltip-body,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #customTooltip .tooltip-price{margin:0;padding:0;border:0;color:#ccc;font:12px/15px Tahoma,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #customTooltip .tooltip-bonus{margin:0;padding:0;border:0;white-space:pre-line;color:#ccc;font:12px/15px Tahoma,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #customTooltip .tooltip-actions{margin:4px 0 0;padding:4px 0 0;border-top:1px solid #1c95bd;background:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #customTooltip .tooltip-actions button{min-height:22px;margin:2px 0;padding:2px 7px;border:1px solid #536976;border-radius:0;background:#13212b;color:#c4cfd4;font:10px/16px Tahoma,Arial,sans-serif;box-shadow:none;text-shadow:none}
+/* InventoryView.as: the design and item filter belong to mutually exclusive
+   MINI/FULL states. x221 is only AccordionView's menu offset. */
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .doTopBar{width:574px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-finish-design-selector{position:absolute;left:378px;top:1px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-finish-inventory-selector{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel{left:602px;top:0;width:170px;min-width:170px;max-width:772px;height:400px;max-height:400px;padding:0;background-image:url('dops-rev6/inventory/title-bar.png'),url('dops-rev6/inventory/full-background.png');background-position:0 0,0 35px;background-repeat:repeat-x,no-repeat;background-color:transparent;overflow:hidden;transition:left .5s cubic-bezier(.165,.84,.44,1),width .5s cubic-bezier(.165,.84,.44,1);z-index:12}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel::before{content:'';position:absolute;left:0;top:0;width:170px;height:8px;background:url('dops-rev6/inventory/tab-top.png') no-repeat;pointer-events:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-inventory-tab{position:absolute;left:21px;top:3px;display:block;width:130px;min-width:130px;max-width:130px;height:48px;min-height:48px;margin:0;padding:12px 8px 14px;border:0;border-radius:0;background:url('dops-rev6/inventory/tab-button.png') left top no-repeat!important;box-shadow:none;color:#aeb9c0;text-align:center;text-transform:uppercase;font:11px/21px Tahoma,Arial,sans-serif;cursor:pointer;z-index:5}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-inventory-tab:hover{color:#fff;filter:brightness(1.15)}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-inventory-tab:focus-visible{outline:1px solid #7eb6d4;outline-offset:-7px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-inventory-mask{position:absolute;left:12px;top:69px;width:156px;height:205px;overflow:hidden}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #invPanel .invWrap{position:absolute;left:0;top:0;display:grid;grid-template-columns:repeat(4,34px);width:152px;height:205px;max-height:205px;padding:0;margin:0;align-content:start}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .bar{z-index:25}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #invPanel{left:0;width:772px;min-width:772px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory .doTopBar,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #shipSection,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #dronesSection,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #shipPreview,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory .hist-rev6-drone-entity,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory .modeTabs{visibility:hidden;pointer-events:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory .hist-finish-inventory-selector{display:block!important;z-index:20}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory .hist-rev6-inventory-mask{left:10px;width:700px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #invPanel .invWrap{left:90px;width:590px;grid-template-columns:repeat(4,34px) 10px repeat(4,34px) 10px repeat(4,34px) 10px repeat(4,34px)}
+/* Same original category SELECT and change handler, one native-looking listbox
+   instead of the operating-system popup. No duplicate visible filter. */
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory #hist-finish-inventory-filter[hidden]{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-filter-button{display:block;width:196px;min-width:196px;height:22px;min-height:22px;padding:3px 4px 3px 26px;margin:0;border:0;border-radius:0;background:url('dops/inventory-ui/filter-dropdown-normal.png') left top no-repeat!important;color:#d0d0d0;text-transform:uppercase;text-align:left;font:10px/16px Verdana,Arial,sans-serif;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-filter-button:hover,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-filter-button:focus-visible{background-image:url('dops/inventory-ui/filter-dropdown-hover.png')!important;color:#fff}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-filter-menu[hidden]{display:none!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-filter-menu{display:block;position:fixed;z-index:20000;width:196px;max-height:220px;padding:0;margin:0;background:url('dops/inventory-ui/dropdown-background.png') 21px top/173px 3px repeat-y;filter:drop-shadow(4px 5px 5px #000);overflow-x:hidden;overflow-y:auto}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-filter-menu>button{display:block;width:172px;min-width:172px;height:22px;min-height:22px;padding:4px 5px;margin:0 0 0 22px;border:0;border-radius:0;background:none!important;color:#aaa;text-align:left;text-transform:uppercase;font:10px/14px Verdana,Arial,sans-serif;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-filter-menu>button:hover,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-filter-menu>button:focus-visible{background:#2f4d65!important;color:#fff;outline:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-selected-icon{display:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-selected-fields,
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory .hist-rev6-selected-description{display:contents}
+/* FULL selected-item fields use the recovered bottom coordinates. The same
+   live tooltip fields/actions move by layout; no cloned price or second pin. */
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.visible.locked{position:fixed;left:12px!important;top:310px!important;display:block;width:748px;min-width:748px;max-width:748px;height:88px;min-height:88px;max-height:88px;margin:0;padding:0;border:0;background:none;box-shadow:none;transform:none;overflow:visible;transition:none;z-index:24}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked .hist-rev6-selected-icon{display:flex;position:absolute;left:8px;top:9px;align-items:center;justify-content:center;width:63px;height:63px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked .hist-rev6-selected-icon img{display:block;width:auto;height:auto;max-width:63px;max-height:63px;border:0;background:none;object-fit:contain}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked .hist-rev6-selected-fields{display:block;position:absolute;left:78px;top:7px;width:174px;height:70px;overflow:auto;scrollbar-width:thin}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked .hist-rev6-selected-description{display:block;position:absolute;left:274px;top:9px;width:318px;height:70px;overflow:auto;scrollbar-width:thin}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked :is(.tooltip-header,.tooltip-body,.tooltip-price,.tooltip-bonus){font:10px/15px Verdana,Arial,sans-serif;color:#fff}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked .tooltip-actions{display:block;position:absolute;left:602px;top:1px;width:136px;height:84px;min-height:0;margin:0;padding:0;border:0;overflow:auto}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked .tooltip-actions button{display:block;width:122px;min-width:122px;max-width:122px;height:19px;min-height:19px;margin:2px 0 4px;padding:1px 6px;border:0;border-radius:0;background:url('dops-rev6/inventory/sell-normal.png') left top no-repeat!important;color:#fff;font:9px/16px Verdana,Arial,sans-serif;text-align:center;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked .tooltip-actions button:hover{background-image:url('dops-rev6/inventory/sell-hover.png')!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked .tooltip-actions button:active{background-image:url('dops-rev6/inventory/sell-active.png')!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev6-inventory.hist-rev6-full-inventory #customTooltip.locked .tooltip-actions button:disabled{background-image:url('dops-rev6/inventory/sell-disabled.png')!important;color:#666}
+
+/* REV7: DoPs native source first. Discord is a modern destination inside the
+   recovered PK community/globe icon, not an invented 2012 Discord asset. */
+@font-face{font-family:DoPsInventoryTBla;src:url('dops-rev7/shell/fonts/Inventory-EurostileTBla.ttf') format('truetype');font-style:normal;font-weight:normal;font-display:swap}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-header-discord{left:53px;top:22px;display:block;width:34px;min-width:34px;max-width:34px;height:22px;min-height:22px;max-height:22px;margin:0;padding:0;border:0;border-radius:0;background:transparent url('complement-rev9/discord-symbol.svg') center/22px 16.5px no-repeat!important;color:transparent;font-size:0!important;text-decoration:none;overflow:hidden;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-header-discord:hover,body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-header-discord:focus-visible{background-position:center!important;outline:1px solid #628799}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-header-discord:active{background-position:center!important}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-header-discord svg{display:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-header-ship{width:160px;height:124px;max-width:160px;max-height:124px;object-fit:none;pointer-events:none;z-index:1}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-header-stat>span{display:block;min-width:0;max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-header-stat{overflow:hidden}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-header-stat{pointer-events:auto}
+/* Compact source rows stay single-line; full original values remain in DOM,
+   title and accessible label. Override only the old Home flex-wrap rules. */
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .user-card .stat-row dd{flex-wrap:nowrap;min-width:0;max-height:15px}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .user-card .stat-row:first-child dd{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:15px}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .user-card .stat-row:first-child dd>span{display:inline;white-space:nowrap;overflow-wrap:normal}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .hof-card .leaderboard-row{height:12px;min-height:12px;max-height:12px;align-items:center;overflow:hidden}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .hof-card .leaderboard-name{display:block;flex:1 1 0;min-width:0;height:12px;line-height:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .hof-card .leaderboard-score{flex:0 0 auto;max-width:64px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+
+/* Original Start uses image news icons; the three Andromeda schedule entries
+   have no equivalent DoPs event illustration. Use actual native57x16 teaser
+   tabs with truthful event labels, not unrelated promotional thumbnails. */
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-news-current{height:81px;min-height:81px;max-height:81px;padding:3px 2px 0;gap:5px;overflow:hidden}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-news-choices{left:0;right:0;bottom:22px;display:flex;justify-content:center;gap:8px;width:100%;height:16px}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-news-choices button{display:block;box-sizing:border-box;width:57px;min-width:57px;max-width:57px;height:16px;min-height:16px;max-height:16px;margin:0;padding:0 2px;border:0;border-radius:0;background:url('rev9-social/clan/bg_button.gif') center/57px 16px no-repeat;color:#c7c9bc;text-transform:none;font:8px/16px Verdana,Arial,sans-serif;box-shadow:none;text-shadow:none;overflow:hidden;white-space:nowrap;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-news-choices button[aria-pressed=true],body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-news-choices button:hover,body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-news-choices button:focus-visible{background-image:url('rev9-social/clan/bg_button.gif');color:#fff;box-shadow:inset 0 -1px #a8a27c}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-news-details,body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-log-history{left:0;right:0;bottom:2px;width:100%;height:17px;min-height:17px;text-align:center;font:9px/17px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-extensions:empty{display:none}
+
+/* Native News window: internalNews.php, source680px components, no rounded
+   card, coloured pills or modern event panels. Same Andromeda content nodes. */
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog-box{box-sizing:content-box;width:680px;max-width:680px;max-height:calc(100vh - 40px);margin:0;padding:0;border:2px solid #d7d7d7;border-radius:0;background:none;box-shadow:none;color:#ddd;font:11px/16px Verdana,Arial,sans-serif;overflow:hidden}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog-head{position:relative;display:block;box-sizing:border-box;width:680px;height:40px;min-height:40px;margin:0;padding:0;border:0;background:url('dops-rev7/shell/popup/popup2_top_bg.jpg') 0 0 no-repeat}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog-head h2{position:absolute;left:10px;top:6px;display:block;width:620px;height:23px;margin:0;padding:0;color:#ddd;font:11px/23px Verdana,Arial,sans-serif;text-align:left;text-transform:none;letter-spacing:0}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog-close{position:absolute;right:0;top:0;display:block;width:30px;min-width:30px;height:29px;min-height:29px;margin:0;padding:0;border:0;border-radius:0;background:url('dops-rev7/shell/popup/popup2_closebutton.jpg') no-repeat;color:transparent;font-size:0;box-shadow:none;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog-content{box-sizing:border-box;width:680px;height:auto;min-height:150px;max-height:min(460px,calc(100vh - 148px));margin:0;padding:20px 35px;border:0;border-radius:0;background:url('dops-rev7/shell/popup/popup2_mid_bg.jpg') repeat-y;overflow:auto;scrollbar-width:thin;scrollbar-color:#565f61 #151717}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev7-dialog-foot{display:block;box-sizing:border-box;width:680px;height:64px;min-height:64px;margin:0;padding:15px 0 0;border:0;background:url('dops-rev7/shell/popup/popup2_bottom_bg.jpg') no-repeat;text-align:center}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev7-dialog-close-bottom{display:block;box-sizing:border-box;width:160px;min-width:160px;height:19px;min-height:19px;margin:0 auto;padding:0;border:0;border-radius:0;background:url('dops-rev7/shell/popup/popup2_button_bg.png') no-repeat;color:#ddd;font:bold 11px/19px Verdana,Arial,sans-serif;box-shadow:none;text-transform:none;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .events-card{display:block;width:100%;min-width:0;max-width:100%;margin:0;padding:0;border:0;border-radius:0;background:none!important;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .events-stack{display:block;width:100%;min-width:0;max-width:100%;margin:0;padding:0;border:0;background:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .event-panel{display:block;margin:0 0 18px;padding:0 0 15px;border:0;border-bottom:1px solid #555;border-radius:0;background:none!important;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .event-title-row{display:flex;align-items:center;justify-content:space-between;margin:0 0 7px;padding:0;border:0;background:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .event-name{font:bold 12px/18px Verdana,Arial,sans-serif;color:#ddd}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .event-status{display:inline;margin:0;padding:0;border:0;border-radius:0;background:none;color:#d2d7b2;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .event-details{display:block;margin:0;padding:0;border:0;background:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .event-details>div{display:flex;justify-content:space-between;gap:20px;min-height:18px;margin:0;padding:0;border:0;border-radius:0;background:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .event-details dt,body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .event-details dd{margin:0;padding:0;color:#ccc;font:11px/18px Verdana,Arial,sans-serif;background:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-dialog .event-details dd{max-width:450px;overflow-wrap:anywhere;text-align:right}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev7-server-statistics{padding:0;border:0;color:#ccc;font:10px/18px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev7-server-statistics>summary{padding:0;cursor:pointer;text-decoration:underline}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev7-server-statistics .system-card{margin:8px 0 0;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev7-server-statistics .card-header{display:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev7-server-statistics .stat-summary{display:block;margin:0;padding:0}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev7-server-statistics .stat-summary li{display:flex;justify-content:space-between;padding:3px 0;border:0;border-radius:0;background:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev7-server-statistics .stat-summary img{width:auto;height:12px;vertical-align:middle}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-log-full .log-time{color:#ccc;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-log-full .log-message{color:#ddd;font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-log-full .log-entry{margin:0 0 12px;padding:0 0 12px;border-bottom:1px solid #555}
+
+/* True Inventory tab: one timeline frame130x48, dynamic text at8.5/12.2.
+   Its source hover changes the TEXT colour matrix, not brightness of the art.
+   Source arrow controls are distinct normal/hover/inactive three-frame sprites. */
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev6-inventory-tab{padding:12.2px 4.5px 14.5px 8.5px;font:14px/21.3px DoPsInventoryTBla,Verdana,Arial,sans-serif;letter-spacing:0;color:#e7b307;text-align:center}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev6-inventory-tab:hover{filter:none;color:#fff}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell #invPanel{overflow:visible}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev7-inventory-arrow{position:absolute;top:7px;display:block;width:36px;min-width:36px;max-width:36px;height:26px;min-height:26px;max-height:26px;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;z-index:3;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev7-inventory-open{left:-5px;background:url('dops-rev7/shell/inventory/open-normal.png') no-repeat!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev7-inventory-close{left:135px;background:url('dops-rev7/shell/inventory/close-inactive.png') no-repeat!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev7-inventory-open:hover:not(:disabled){background-image:url('dops-rev7/shell/inventory/open-hover.png')!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev7-inventory-close:hover:not(:disabled){background-image:url('dops-rev7/shell/inventory/close-hover.png')!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev7-inventory-open:disabled{background-image:url('dops-rev7/shell/inventory/open-inactive.png')!important;cursor:default;opacity:1}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev7-inventory-close:disabled{cursor:default;opacity:1}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell.hist-rev6-full-inventory .hist-rev7-inventory-open{left:2px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell.hist-rev6-full-inventory .hist-rev7-inventory-close{left:144px;background-image:url('dops-rev7/shell/inventory/close-normal.png')!important}
+/* Distinct roles: native normal TOP, or an equipped Havok atlas crop on the
+   left; original action token inside the accordion. No callbacks are cloned. */
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-rev6-drone-entity{display:none!important;position:absolute;left:0;top:0;width:221px;height:360px;margin:0;padding:0;pointer-events:none;background:none;overflow:visible}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell.hist-rev6-drones-open:not(.hist-rev6-full-inventory) .hist-rev6-drone-entity:not([hidden]){display:block!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .hist-complement-drone-top{display:block;position:absolute;margin:0;padding:0;border:0;max-width:none;max-height:none;background-repeat:no-repeat;pointer-events:none;filter:none}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .drone-heading{top:26px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .drone-design-label{display:block;position:absolute;left:228px;top:0;width:112px;min-width:0;margin:0;padding:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:9px/15px Verdana,Arial,sans-serif;color:#b5b5b5}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .drone-token{background:none!important;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .drone-token:focus-visible{outline:1px solid #1c95bd;outline-offset:1px}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .drone-token .drone-portrait:not([data-hist-portrait-kind="havok-atlas"]){width:63px!important;height:63px!important;max-width:63px;max-height:63px;background-size:63px 63px!important;background-position:0 0!important}
+body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .drone-token .drone-portrait[data-hist-portrait-kind="havok-atlas"]{max-width:none;max-height:none;background-repeat:no-repeat}
+
+/* Root QA: the original fourTop100 controls were still flat modern buttons.
+   DoPs hallOfFame.css58..89 proves these category sprites42x49, including
+   normal/active y0/-49. Native historical files supplied by PK complement.
+   TopUser artwork maps to Andromeda Rankpoints without changing its score. */
+body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-controls{display:flex;justify-content:center;align-items:start;flex-wrap:nowrap;width:100%;height:49px;min-height:49px;max-height:49px;gap:3px;margin:0 0 6px;padding:0;border:0;background:none}
+body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-control{display:block;box-sizing:border-box;flex:0 0 42px;width:42px;min-width:42px;max-width:42px;height:49px;min-height:49px;max-height:49px;margin:0;padding:0;border:0;border-radius:0;background-color:transparent!important;background-repeat:no-repeat!important;background-position:0 0!important;color:transparent!important;font-size:0!important;line-height:0;box-shadow:none;text-shadow:none;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-rev7-shell #modal-tab-rankpoints{background-image:url('pk/do/hof/navigation_icon_start_42x49.png')!important}
+body.historical-site.hist-finish-shell.hist-rev7-shell #modal-tab-experience{background-image:url('pk/do/hof/navigation_icon_experience_42x49.png')!important}
+body.historical-site.hist-finish-shell.hist-rev7-shell #modal-tab-honor{background-image:url('pk/do/hof/navigation_icon_honor_42x49.png')!important}
+body.historical-site.hist-finish-shell.hist-rev7-shell #modal-tab-clan{background-image:url('pk/do/hof/navigation_icon_clan_42x49.png')!important}
+body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-control.is-active,body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-control:hover,body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-control:focus-visible{background-position:0 -49px!important}
+body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .modal-body{height:200px;max-height:200px;overflow:auto}
+body.historical-site.hist-finish-shell.hist-rev7-shell #top100Close{display:block;box-sizing:border-box;width:24px;min-width:24px;max-width:24px;height:24px;min-height:24px;max-height:24px;margin:0;padding:0;border:0;border-radius:0;background:url('dops-rev7/shell/popup/close_button_sprite.png') 0 0 no-repeat!important;color:transparent;font-size:0!important;box-shadow:none;cursor:pointer}
+body.historical-site.hist-finish-shell.hist-rev7-shell #top100Close:hover,body.historical-site.hist-finish-shell.hist-rev7-shell #top100Close:focus-visible{background-position:0 -48px!important}
+
+/* Original automatic Home dialog inside the native DoPs standard News window.
+   Source: internalDockBooster_Body145-202, darkorbit.css306-311.
+   Five-day reward calendar/content/responsive sizing are Andromeda adaptations,
+   not a recovered original DoPs Daily calendar. No Home content is replaced. */
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal{position:fixed;inset:0;z-index:10000;display:flex;box-sizing:border-box;width:100%;min-width:0;max-width:none;height:100%;min-height:0;margin:0;padding:24px 16px;background:rgba(0,0,0,.78);backdrop-filter:none;overflow:auto;align-items:center;justify-content:center}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal[hidden]{display:none!important}
+body.historical-site .hist-rev7-bonus-nav{box-sizing:border-box;display:block;width:826px;height:25px;margin:0;padding:0 28px;border:0;background:none}
+body.historical-site .hist-rev7-bonus-menu{display:flex!important;flex-direction:row;flex-wrap:nowrap!important;gap:0!important;box-sizing:border-box;width:770px;height:25px;margin:0;padding:0;list-style:none}
+body.historical-site .hist-rev7-bonus-menu .user-hub__menu-item{box-sizing:border-box;flex:0 0 154px!important;width:154px!important;min-width:154px!important;max-width:154px!important;height:25px;margin:0;padding:0}
+body.historical-site .hist-rev7-bonus-menu .user-hub__menu-item[hidden]{display:none!important}
+body.historical-site .hist-rev7-bonus-menu .user-hub__menu-link{box-sizing:border-box;display:flex;align-items:center;justify-content:center;width:154px!important;min-width:154px!important;max-width:154px!important;height:25px!important;min-height:25px!important;margin:0;padding:0 3px!important;border:0;border-radius:0;background:transparent url('pk/do/pilotSheet/profilePage/tab_inactive1.jpg') 0 0/154px 25px no-repeat!important;box-shadow:none;color:#d1d7da;font:10px/15px Verdana,Arial,sans-serif;text-decoration:none;text-transform:none}
+body.historical-site .hist-rev7-bonus-menu .is-active>.user-hub__menu-link,body.historical-site .hist-rev7-bonus-menu .user-hub__menu-link:hover,body.historical-site .hist-rev7-bonus-menu .user-hub__menu-link:focus-visible{background-image:url('pk/do/pilotSheet/profilePage/tab_active.jpg')!important;color:#111}
+body.historical-site .hist-rev7-bonus-menu .user-hub__menu-title{font:10px/15px Verdana,Arial,sans-serif}
+body.historical-site .hist-rev7-bonus-menu .user-hub__menu-subtitle{display:none}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-card{box-sizing:border-box;display:block;position:relative;width:680px;min-width:0;max-width:100%;min-height:0;height:auto;max-height:calc(100vh - 48px);margin:0;padding:0;border:0;border-radius:0;border-image:none;background:transparent!important;box-shadow:none;overflow:auto;color:#fff;font:11px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-hero{box-sizing:border-box;display:block;position:relative;min-height:40px;height:40px;margin:0;padding:6px 42px 0 10px;gap:0;border:0;background:transparent url('dops-rev7/shell/popup/popup2_top_bg.jpg') left top/100% 80px no-repeat!important;box-shadow:none}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-hero:after{display:none}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-copy{display:block;margin:0;padding:0}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-kicker{display:none!important}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal #dailyLoginTitle{margin:0;padding:0;color:#fff;font:bold 12px/20px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-body{box-sizing:border-box;display:block;width:100%;margin:0;padding:16px 35px 0;overflow:visible;gap:0;background:transparent url('dops-rev7/shell/popup/popup2_mid_bg.jpg') left top/100% 32px repeat-y!important;border:0}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-body>p{margin:0 0 6px;padding:0;max-width:none;color:#ddd;font:11px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-reset{display:block;width:auto;min-width:0;max-width:none;min-height:0;height:auto;margin:0 0 10px;padding:0;border:0;border-radius:0;background:none!important;box-shadow:none;color:#aeb5b9;font:11px/16px Verdana,Arial,sans-serif;white-space:normal}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-status{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:5px 10px;min-height:25px;margin:0 0 12px;padding:5px 0;border:0;border-top:1px solid #474747;border-bottom:1px solid #474747;border-radius:0;background:none!important;box-shadow:none;color:#ddd;font:11px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-status>div:first-child{display:flex;flex-wrap:wrap;gap:3px 10px;min-width:0}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-status strong{color:#fff;font-size:11px}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-status span{color:#ccc}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-status.is-error{border-color:#b75c56;color:#edc1bc}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-claimed{display:flex;flex:0 0 auto;gap:8px;min-height:0;margin:0;padding:0;white-space:nowrap;border:0;background:none;box-shadow:none}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-grid{box-sizing:border-box;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;width:100%;min-height:210px;margin:0 0 12px;padding:0;background:none;border:0}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card{box-sizing:border-box;display:block;min-width:0;min-height:210px;height:auto;margin:0;padding:0 7px;border:0;border-right:1px solid #474747;border-radius:0;background:none!important;box-shadow:none!important;opacity:1;filter:none}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card:last-child{border-right:0}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card:before{display:none}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card-top{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px;min-height:41px;margin:0 0 8px;padding:0;border-bottom:1px solid #394b56}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-day{color:#ddd;font:bold 11px/17px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-state{display:block;max-width:100%;margin:0;padding:0;border:0;border-radius:0;background:none!important;color:#aeb5b9!important;font:10px/15px Verdana,Arial,sans-serif;letter-spacing:0;white-space:normal;text-align:center}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-lines{display:flex;flex-direction:column;gap:8px;margin:0;padding:0}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-line{display:flex;align-items:center;gap:4px;min-height:32px;min-width:0;margin:0;padding:0;color:#ddd;font:11px/16px Verdana,Arial,sans-serif;white-space:normal;overflow-wrap:normal;word-break:normal}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-dot{display:none}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card.is-claimed .daily-reward-day,body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card.is-claimed .daily-reward-state{color:#b4c7a0!important}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card.is-today .daily-reward-day,body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card.is-today .daily-reward-state{color:#f0d666!important}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-note{margin:0 0 14px;padding:0;color:#aeb5b9;font:11px/16px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-footer{box-sizing:border-box;display:block;width:calc(100% + 70px);min-height:64px;height:auto;margin:0 -35px;padding:15px 12px 24px;border:0;background:transparent url('dops-rev7/shell/popup/popup2_bottom_bg.jpg') left bottom/100% 64px no-repeat!important;box-shadow:none}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 22px;margin:0;padding:0}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-button{box-sizing:border-box;display:block;flex:0 0 160px;width:160px;min-width:160px;max-width:160px;height:19px;min-height:19px;max-height:19px;margin:0;padding:0;border:0;border-radius:0;background:transparent url('dops-rev7/shell/popup/popup2_button_bg.png') 0 0 no-repeat!important;box-shadow:none;color:#ddd;font:bold 10px/19px Verdana,Arial,sans-serif;text-transform:none;text-shadow:0 1px #000;letter-spacing:0}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-button:hover:not(:disabled),body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-button:focus-visible:not(:disabled){color:#fff}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-button:disabled{opacity:.55;filter:none;cursor:default}
+
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .hist-daily-native-close{position:absolute;right:0;top:0;box-sizing:border-box;display:block;width:30px;min-width:30px;max-width:30px;height:29px;min-height:29px;margin:0;padding:0;border:0;border-radius:0;background:transparent url('dops-rev7/shell/popup/popup2_closebutton.jpg') 0 0 no-repeat!important;box-shadow:none;cursor:pointer}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal button:focus-visible{outline:1px solid #ddd;outline-offset:2px}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-native-icon{display:block;flex:0 0 30px;width:30px!important;min-width:30px;max-width:30px;height:30px!important;min-height:30px;max-height:30px;margin:0;padding:0;border:0;object-fit:contain;filter:none;opacity:1}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-line>span:last-child{min-width:0;overflow-wrap:break-word}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-unit{white-space:nowrap;overflow-wrap:normal;word-break:normal}
+@media(max-width:560px){body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-body{padding-left:22px;padding-right:22px}body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-login-footer{width:calc(100% + 44px);margin-left:-22px;margin-right:-22px}body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 0}body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card{min-height:0}body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card:nth-child(even){border-right:0}}
+
+/* REV8 header order from DoPs: Home / Logout / Help. The question-mark cell
+   reuses the already present complementary PK sprite, without a new bitmap. */
+body.historical-site.hist-finish-shell.hist-rev6-shell.rev8-header-help .app-header .header-actions{width:102px}
+body.historical-site.hist-finish-shell.hist-rev6-shell.rev8-header-help .app-header .hist-rev8-help{background-position:-68px 0!important}
+body.historical-site.hist-finish-shell.hist-rev6-shell.rev8-header-help .app-header .hist-rev8-help:hover,
+body.historical-site.hist-finish-shell.hist-rev6-shell.rev8-header-help .app-header .hist-rev8-help:focus-visible{background-position:-68px -22px!important}
+body.historical-site.hist-finish-shell.hist-rev6-shell.rev8-header-help .app-header .hist-rev8-help:active,
+body.historical-site.hist-finish-shell.hist-rev6-shell.rev8-header-help .app-header .hist-rev8-help[aria-expanded=true]{background-position:-68px -44px!important}
+
+/* Andromeda reward-state accents; not original calendar artwork. */
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card-top:after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:3px;background:#354851}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card.is-claimed .daily-reward-card-top:after{background:#8f9b70}
+body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .daily-reward-card.is-today .daily-reward-card-top:after{background:#d3c18e}
+
+/* The approved Havok atlas has transparent pixels. Remove the first-layer
+   RGB fill without replacing its image, crop, size or original action token. */
+body.historical-site.hist-equipment.hist-rev7-shell .droneBlock .drone-portrait[data-hist-portrait-kind="havok-atlas"]{background-color:transparent}

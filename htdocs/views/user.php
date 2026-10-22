@@ -81,7 +81,7 @@ if (isset($buymessage)) {
                 <a id="popupBoxClose"  >Close</a>
         </div>
 
-        <script src="http://jqueryjs.googlecode.com/files/jquery-1.2.6.min.js" type="text/javascript"></script>
+        <script src="/views/userTabs/jquery.min.js" type="text/javascript"></script>
         <script type="text/javascript">
 
                 $(document).ready( function() {

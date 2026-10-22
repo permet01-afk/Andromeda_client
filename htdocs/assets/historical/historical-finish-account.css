@@ -1,0 +1,565 @@
+/* Native 480px DoPs generic information-window artwork, not a recovered account bitmap. */
+body.historical-site.hist-page-settings .CMSContent.settings-wrapper,
+body.historical-site.hist-page-contact .CMSContent {
+  width:480px!important;min-width:480px!important;max-width:480px!important;
+  margin:0 auto!important;padding:0!important;border:0!important;border-image:none!important;
+  min-height:0!important;background:none!important;box-shadow:none!important;
+}
+body.historical-site .rev4-native-window {
+  position:relative;width:480px;min-height:155px;margin:0;padding:62px 24px 55px;
+  border:0;background:#191919 url('dops/global/popups/popup_middle_cont_bg.jpg') center top repeat-y;
+  color:#d8d8d8;box-shadow:none;border-radius:0;
+}
+body.historical-site .rev4-native-window:before {
+  content:'';position:absolute;top:0;left:0;width:480px;height:65px;
+  background:url('dops/global/popups/popup_middle_top_bg.jpg') no-repeat;pointer-events:none;
+}
+body.historical-site .rev4-native-window:after {
+  content:'';position:absolute;bottom:0;left:0;width:480px;height:60px;
+  background:url('dops/global/popups/popup_middle_foot_bg.jpg') no-repeat;pointer-events:none;
+}
+body.historical-site .rev4-native-window h1.rev4-native-window-title {
+  position:absolute;z-index:1;left:24px;top:15px;margin:0;font:bold 12px/20px Verdana,Arial,sans-serif;
+  color:#d6d6bc;letter-spacing:0;text-transform:none;
+}
+body.historical-site .rev4-native-window-content {position:relative;z-index:1;min-height:32px}
+body.historical-site .rev4-account-layout {display:grid;grid-template-columns:148px minmax(0,1fr);gap:18px;align-items:start}
+body.historical-site .rev4-account-details .profile-stats {display:block}
+body.historical-site .rev4-account-details .p-stat-item {padding:0;margin:0 0 15px;border:0;gap:2px}
+body.historical-site .rev4-account-details .p-label {font:9px/14px Verdana,sans-serif;color:#9da2a5;text-transform:none}
+body.historical-site .rev4-account-details .p-val {font:10px/15px Verdana,sans-serif;color:#d8d8ce;overflow-wrap:anywhere}
+body.historical-site .rev4-account-choice {display:block;font:10px/16px Verdana,sans-serif;margin:0 0 4px}
+body.historical-site #rev4-account-section {width:100%;height:25px;padding:3px 5px;margin:0 0 14px;font:10px/18px Verdana,sans-serif}
+body.historical-site .rev4-account-forms .set-card {border:0!important;border-image:none!important;padding:0;margin:0;background:none!important;box-shadow:none;transition:none}
+body.historical-site .rev4-account-forms .set-header {display:none!important}
+body.historical-site .rev4-account-forms .set-body {padding:0;display:block}
+body.historical-site .rev4-account-forms .set-form {gap:10px;display:flex;align-items:stretch}
+body.historical-site .rev4-account-field {display:block;font:10px/15px Verdana,sans-serif}
+body.historical-site .rev4-account-field span {display:block;margin:0 0 3px;color:#c3c3bd}
+body.historical-site .rev4-account-field input {display:block;height:23px;width:100%;padding:3px 5px;font:10px/15px Verdana,sans-serif}
+body.historical-site .rev4-account-field input::placeholder {color:transparent}
+body.historical-site .rev4-account-forms input[type=submit] {margin:3px auto 0;align-self:center;font-size:10px!important}
+body.historical-site.hist-page-settings .error-box {width:480px;margin:0 0 10px;padding:8px;font-size:11px;border-radius:0;box-shadow:none}
+body.historical-site .rev4-contact-organized .contact-item {
+  display:block;padding:4px 0 2px;border:0!important;border-image:none!important;background:none!important;
+  box-shadow:none!important;border-radius:0;transform:none!important;text-align:left;transition:none!important;
+}
+body.historical-site .rev4-contact-organized .contact-label {display:block;margin:0 0 8px;font:bold 11px/16px Verdana,sans-serif;color:#cecfbd;text-transform:none}
+body.historical-site .rev4-contact-organized .contact-value {font:11px/18px Verdana,sans-serif;color:#aec5ce;word-break:normal}
+body.historical-site .rev4-contact-organized .contact-item:hover .contact-value {color:white;text-decoration:underline}
+
+/* REV5. DoPs internalClan.css supplies the panel geometry. Custom Andromeda
+   permissions/actions remain the original form nodes, grouped in native dialogs. */
+body.historical-site .rev5-social-button{display:inline-flex;align-items:center;justify-content:center;width:144px;min-width:0;height:25px;min-height:25px;padding:2px 7px;border:0;border-radius:0;box-shadow:none;background:url('dops/global/popups/popup_button_left.png') left center no-repeat,url('dops/global/popups/popup_button_right.png') right center no-repeat,url('dops/global/popups/popup_button_mid.png') center center repeat-x;color:#ccd3d2;font:10px/15px Verdana,Arial,sans-serif;cursor:pointer}
+body.historical-site .rev5-social-button:hover,body.historical-site .rev5-social-button[aria-selected=true]{color:#fff;text-shadow:0 0 4px #9cbdc8}
+body.historical-site .rev5-social-button:disabled{cursor:default;opacity:.55}
+body.historical-site .rev5-social-overlay[hidden],body.historical-site .rev5-clan-console [hidden],body.historical-site .rev5-title-stage [hidden],body.historical-site .rev5-company [hidden]{display:none!important}
+body.historical-site .rev5-social-overlay{position:fixed;inset:0;z-index:32000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.72);padding:12px;overflow:auto}
+body.historical-site .rev5-social-dialog{flex:none;max-height:calc(100vh - 24px);overflow:auto;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site .rev5-social-dialog h2.rev4-native-window-title{position:absolute;z-index:1;left:24px;top:15px;margin:0;color:#d6d6bc;font:bold 12px/20px Verdana,Arial,sans-serif}
+body.historical-site .rev5-social-close{position:absolute;z-index:2;right:21px;top:18px;width:65px;height:20px;font-size:9px}
+body.historical-site .rev5-social-dialog .clan-card,body.historical-site .rev5-social-dialog .clan-row,body.historical-site .rev5-social-dialog .clan-row dt,body.historical-site .rev5-social-dialog .clan-row dd{display:block;min-width:0;width:auto;max-width:none;margin:0 0 8px;padding:0;border:0;border-image:none;border-radius:0;background:none;box-shadow:none;font-size:10px;line-height:16px}
+body.historical-site .rev5-social-dialog .clan-form{display:flex;flex-direction:column;gap:8px;align-items:stretch;width:auto;margin:0}
+body.historical-site .rev5-social-dialog input:not([type=hidden]):not([type=checkbox]):not([type=radio]),body.historical-site .rev5-social-dialog select,body.historical-site .rev5-social-dialog textarea{max-width:100%;min-width:0;padding:5px;height:27px;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site .rev5-social-dialog textarea{min-height:80px;height:105px;resize:vertical}
+body.historical-site .rev5-social-dialog fieldset{display:block;margin:0;padding:5px 0;border:0;background:none}
+body.historical-site .rev5-social-dialog label{font:10px/17px Verdana,Arial,sans-serif}
+body.historical-site .rev5-social-dialog .clan-section-title{margin:0 0 9px;font:bold 11px/16px Verdana,Arial,sans-serif}
+body.historical-site .rev5-clan-organized>.hist-clan-scene,body.historical-site .rev5-clan-organized>.hist-clan-extensions{display:none!important}
+body.historical-site .rev5-clan-console{grid-column:2;grid-row:1;position:relative;width:679px;height:439px;margin:0;padding:0;background:url('dops/global/clan/bg_main_noMember.jpg') no-repeat;color:#c7ccca;font:10px/15px Verdana,Arial,sans-serif;overflow:visible}
+body.historical-site .rev5-clan-claninfos{background-image:url('dops/global/clan/bg_main_info.jpg')}
+body.historical-site .rev5-clan-clanmembers,body.historical-site .rev5-clan-clanroles{background-image:url('dops/global/clan/bg_main_member.jpg')}
+body.historical-site .rev5-clan-diplomacy{background-image:url('dops/global/clan/bg_diplomacy.jpg')}
+body.historical-site .rev5-clan-treasury{background-image:url('dops/global/clan/bg_balance.jpg')}
+body.historical-site .rev5-clan-clanlog{background-image:url('dops/global/clan/bg_mail.jpg')}
+body.historical-site .rev5-clan-heading{position:absolute;left:76px;top:13px;width:527px;margin:0;padding:0;color:#d8dbc4;font:bold 11px/19px Verdana,Arial,sans-serif}
+body.historical-site .rev5-clan-console>section,body.historical-site .rev5-clan-description{position:absolute;margin:0;padding:4px 7px;overflow:auto;box-sizing:border-box;background:none;border:0;box-shadow:none;border-radius:0}
+body.historical-site .rev5-clan-console h2{margin:0 0 4px;padding:0;color:#d8d3ad;font:bold 10px/15px Verdana,Arial,sans-serif;letter-spacing:0}
+body.historical-site .rev5-clan-console .clan-card,body.historical-site .rev5-clan-console .clan-messages-box,body.historical-site .rev5-clan-console .clan-grid,body.historical-site .rev5-clan-console .box{display:block;min-width:0;max-width:none;width:auto;margin:0;padding:0;border:0;border-image:none;background:none;box-shadow:none;border-radius:0;max-height:none}
+body.historical-site .rev5-clan-console :is(#clan-members,#clan-members-requests,#clan-wars,#clan-alliances,#clan-pending-alliance,#clan-logs,#clan-create,#clan-request,#clan-pending-request){display:block;width:100%;min-width:0;max-width:100%;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
+body.historical-site .rev5-social-dialog #clan-new-diplomacy{display:block;width:auto;min-width:0;max-width:100%;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+body.historical-site .rev5-clan-console .clan-section-title,body.historical-site .rev5-clan-console .title{display:none}
+body.historical-site .rev5-clan-summary{left:76px;top:48px;width:415px;height:153px}
+body.historical-site .rev5-clan-emblem{left:507px;top:48px;width:96px;height:97px;text-align:center}
+body.historical-site .rev5-clan-description{left:76px;top:226px;width:527px;height:54px}
+body.historical-site .rev5-clan-description p{margin:0;font:10px/15px Verdana,Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}
+body.historical-site .rev5-clan-news{left:76px;top:304px;width:527px;height:55px}
+body.historical-site .rev5-clan-console .clan-row{display:flex;justify-content:space-between;gap:8px;margin:0;padding:1px 0;border:0;min-height:0;line-height:16px}
+body.historical-site .rev5-clan-console .clan-row dt,body.historical-site .rev5-clan-console .clan-row dd{display:block;min-height:0;max-width:100%;height:auto;margin:0;padding:0;border:0;background:none;border-radius:0;font:10px/16px Verdana,Arial,sans-serif;overflow-wrap:anywhere}
+body.historical-site .rev5-clan-summary .clan-row{height:18px;align-items:center}
+body.historical-site .rev5-clan-summary dd{text-align:right}
+body.historical-site .rev5-clan-emblem .clan-row{display:block}
+body.historical-site .rev5-clan-emblem .clan-row dd{margin:5px 0;text-align:center}
+body.historical-site .rev5-clan-emblem img{max-width:32px;max-height:32px}
+body.historical-site .rev5-clan-emblem.has-company-logo{left:506px;top:47px;width:100px;height:100px;padding:0;overflow:visible}
+body.historical-site .rev5-clan-emblem.has-company-logo .clan-row{margin:0;padding:0;height:100px}
+body.historical-site .rev5-clan-emblem.has-company-logo .clan-row dt{position:absolute;width:1px;height:1px;margin:0;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body.historical-site .rev5-clan-emblem.has-company-logo .clan-row dd{margin:0;padding:0;line-height:100px}
+body.historical-site .rev5-clan-emblem.has-company-logo img.rev5-company-logo{display:block;width:100px;height:100px;min-width:100px;min-height:100px;max-width:100px;max-height:100px;margin:0;padding:0;object-fit:none}
+body.historical-site .rev5-clan-news .clan-message{margin:0;padding:3px 0;border:0;border-bottom:1px solid #293741;background:none;font:9px/14px Verdana,sans-serif}
+body.historical-site .rev5-clan-news .msg-header{font-size:9px}
+body.historical-site .rev5-clan-news .msg-body{font:9px/14px Verdana,sans-serif}
+body.historical-site .rev5-clan-footer{position:absolute;left:76px;top:374px;width:527px;height:32px;display:flex;justify-content:center;align-items:center;gap:9px}
+body.historical-site .rev5-clan-footer .rev5-social-button{height:25px;width:160px}
+body.historical-site .rev5-clan-members,body.historical-site .rev5-clan-role-list{left:76px;top:48px;width:527px;height:239px}
+body.historical-site .rev5-clan-candidates{left:76px;top:314px;width:527px;height:93px}
+body.historical-site .rev5-clan-console .stat{display:flex;align-items:center;gap:5px;min-height:23px;margin:0!important;padding:3px 0;border:0;border-bottom:1px solid #34434b;background:none;font:10px/16px Verdana,sans-serif}
+body.historical-site .rev5-clan-console .stat-left{flex:none;width:42px;min-width:42px;font-size:10px}
+body.historical-site .rev5-clan-console .stat-left img{max-width:22px;max-height:22px}
+body.historical-site .rev5-clan-console .stat-right,body.historical-site .rev5-clan-console .stat-rightbis{flex:1;min-width:0;font-size:10px}
+body.historical-site .rev5-clan-console .leftbutton{height:22px;min-height:22px;min-width:65px;font:9px/14px Verdana,sans-serif;padding:3px 5px;margin:0 0 0 4px}
+body.historical-site .rev5-clan-role-list{width:155px}
+body.historical-site .rev5-clan-role-editor{left:239px;top:48px;width:364px;height:359px;overflow:auto;padding-left:12px;border-left:1px solid #4f5d64;background:url('dops/global/hangar/item-info_background_cycle.png') repeat}
+body.historical-site .rev5-clan-role-list .rev5-list-choice{display:block;width:100%;height:auto;min-height:26px;padding:6px 4px;text-align:left;border-bottom:1px solid #354650;background:none}
+body.historical-site .rev5-role-detail form{display:block!important;gap:0!important;margin:0;padding:0;max-width:100%;font-size:10px}
+body.historical-site .rev5-role-name{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:10px}
+body.historical-site .rev5-role-name input{width:135px;min-width:0;height:24px;padding:4px;font-size:10px}
+body.historical-site .rev5-role-detail .inline-perms{display:grid;grid-template-columns:1fr 1fr;gap:7px 8px;margin:0 0 10px;padding:0;border:0;background:none;font:10px/15px Verdana,sans-serif}
+body.historical-site .rev5-role-detail .inline-perms>label{display:flex;align-items:center;gap:5px;margin:0;font-size:10px;white-space:normal}
+body.historical-site .rev5-role-detail input[type=checkbox]{flex:none;margin:0;width:13px;height:13px}
+body.historical-site .rev5-permission-details{grid-column:1 / -1;border-top:1px solid #465761;padding-top:7px}
+body.historical-site .rev5-permission-details summary{cursor:pointer;color:#c5c7a6;font-size:10px}
+body.historical-site .rev5-role-detail .hidden-perms{display:grid!important;grid-template-columns:1fr 1fr;gap:6px 7px;padding-top:7px}
+body.historical-site .rev5-role-detail .hidden-perms label{display:flex;align-items:flex-start;gap:5px;font:9px/13px Verdana,sans-serif}
+body.historical-site .rev5-role-detail .inline-perms.disabled{pointer-events:none;opacity:.65}
+body.historical-site .rev5-clan-relations{left:76px;top:48px;width:527px;height:150px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+body.historical-site .rev5-clan-diplo-requests{left:76px;top:225px;width:527px;height:109px}
+body.historical-site .rev5-clan-wallet{left:76px;top:48px;width:527px;height:40px}
+body.historical-site .rev5-clan-wallet>.clan-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+body.historical-site .rev5-clan-wallet .clan-row{display:block}
+body.historical-site .rev5-clan-wallet .clan-row dt{font-size:9px;line-height:12px}
+body.historical-site .rev5-clan-wallet .clan-row dd{line-height:15px}
+body.historical-site .rev5-clan-cashflow{left:76px;top:113px;width:527px;height:198px}
+body.historical-site .rev5-clan-cashflow table{width:100%;min-width:0;max-width:100%;margin:0;border-collapse:collapse;border-spacing:0;table-layout:fixed;font:9px/14px Verdana,sans-serif}
+body.historical-site .rev5-clan-cashflow th,body.historical-site .rev5-clan-cashflow td{min-width:0;padding:3px;text-align:left;border:0;border-bottom:1px solid #34444e;border-radius:0;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal;vertical-align:top}
+body.historical-site .rev5-clan-cashflow .treasury-col-date{width:20%}
+body.historical-site .rev5-clan-cashflow .treasury-col-from,body.historical-site .rev5-clan-cashflow .treasury-col-to{width:20%}
+body.historical-site .rev5-clan-cashflow .treasury-col-amount{width:16%;text-align:right}
+body.historical-site .rev5-clan-cashflow .treasury-col-note{width:24%}
+body.historical-site .rev5-clan-cashflow .treasury-row{border:0;border-radius:0;background:none}
+body.historical-site .rev5-clan-log-list{left:76px;top:48px;width:527px;height:192px}
+body.historical-site .rev5-clan-log-detail{left:76px;top:267px;width:527px;height:139px}
+body.historical-site .rev5-clan-log-list .clan-message{padding:0;margin:0;border:0;background:none}
+body.historical-site .rev5-clan-log-list .msg-time{display:none}
+body.historical-site .rev5-clan-log-list .rev5-list-choice{display:block;width:100%;height:auto;min-height:24px;padding:4px 3px;text-align:left;font:9px/14px Verdana,sans-serif;border-bottom:1px solid #33414a;background:none}
+body.historical-site .rev5-clan-log-detail .msg-body{font:10px/16px Verdana,sans-serif;overflow-wrap:anywhere}
+body.historical-site .rev5-clan-single-list{left:76px;top:48px;width:527px;height:358px}
+body.historical-site .rev5-clan-feedback{z-index:3;left:76px;top:407px;width:527px;max-height:90px;padding:0;overflow:auto}
+body.historical-site .rev5-clan-feedback .flash{margin:0;padding:4px;font:10px/14px Verdana,sans-serif;border-radius:0}
+
+/* PilotSheet hierarchy comes from internalPilotSheet_Body.php. The native PK
+   PilotSheet frame complements missing DoPs page media; custom skills and titles
+   are not an assertion that a complete historical skill-tree/title UI survived. */
+body.historical-site .rev5-pilot-hub{width:826px;min-width:826px;max-width:826px;margin-left:-11px;padding:0}
+body.historical-site .rev5-pilot-hub .user-hub__content{position:relative;box-sizing:border-box;width:826px;min-width:826px;max-width:826px;min-height:447px;margin:0;padding:23px 28px;background:url('pk/do/pilotSheet/profilePage/Pilotsheet_bg.jpg') top left no-repeat;border:0;box-shadow:none}
+body.historical-site .rev5-pilot-hub .user-hub__nav{width:826px;margin:0;padding:0 0 0 28px;height:25px}
+body.historical-site .rev5-pilot-hub .user-hub__menu{flex-wrap:nowrap;gap:0;height:25px}
+body.historical-site .rev5-pilot-hub .user-hub__menu-item{flex:0 0 185px;width:185px;height:25px}
+body.historical-site .rev5-pilot-hub .user-hub__menu-link{width:185px;min-width:185px;height:25px;min-height:25px;padding:0 4px;background:url('pk/do/pilotSheet/profilePage/tab_inactive1.jpg') left top no-repeat!important;font-size:10px;line-height:15px}
+body.historical-site .rev5-pilot-hub .user-hub__menu-item.is-active .user-hub__menu-link,body.historical-site .rev5-pilot-hub .user-hub__menu-link:hover{background-image:url('pk/do/pilotSheet/profilePage/tab_active.jpg')!important}
+body.historical-site .rev5-pilot-hub .user-hub__menu-title{font-size:10px}
+body.historical-site .rev5-profile{padding:0!important;margin:0!important;border:0!important;border-image:none!important;background:none!important;box-shadow:none;min-height:390px}
+body.historical-site .rev5-profile>.card-body{display:none}
+body.historical-site .rev5-profile-layout{display:grid;grid-template-columns:203px 337px 194px;gap:12px;min-height:390px}
+body.historical-site .rev5-profile-layout>section{min-width:0;padding:10px 9px;border-right:1px solid #354653;overflow-wrap:anywhere}
+body.historical-site .rev5-profile-layout>section:last-child{border:0}
+body.historical-site .rev5-profile-layout h2{font:bold 11px/18px Verdana,sans-serif;color:#c5c7ad;margin:0 0 12px}
+body.historical-site .rev5-profile-layout .pilot-header{display:block;padding:0;margin:0 0 20px;border:0}
+body.historical-site .rev5-profile-layout .pilot-header .pilot-avatar{margin:0 auto 12px}
+body.historical-site .rev5-profile-layout .card-header{display:block;margin:0;padding:0;background:none;border:0}
+body.historical-site .rev5-profile-layout .card-title{font:bold 12px/18px Verdana,sans-serif;color:#c9d0d0}
+body.historical-site .rev5-profile-layout .pilot-rank-row{font:10px/16px Verdana,sans-serif;white-space:normal}
+body.historical-site .rev5-profile-layout .stats-list{display:block!important;margin:0;padding:0}
+body.historical-site .rev5-profile-layout .stat-row{display:flex;justify-content:space-between;gap:8px;margin:0;padding:8px 0!important;background:none;border:0;border-bottom:1px solid #263944;font:10px/16px Verdana,sans-serif}
+body.historical-site .rev5-profile-layout .stat-label,body.historical-site .rev5-profile-layout .stat-val{font-size:10px}
+body.historical-site .rev5-profile-company .hist-finish-profile-tools{display:block;margin:0;padding:0;border:0;background:none}
+body.historical-site .rev5-profile-company .hist-finish-profile-tools a{display:inline-flex;max-width:175px;min-width:0;font-size:10px}
+
+body.historical-site .rev5-bio{display:block;width:770px;gap:0;margin:0;padding:0;background:none}
+body.historical-site .rev5-bio .pilot-bio-hero{display:none}
+body.historical-site .rev5-bio-header{display:flex;justify-content:space-between;gap:10px;align-items:center;height:44px;border-bottom:1px solid #3b505c}
+body.historical-site .rev5-bio-header .pilot-bio-title{font:bold 12px/18px Verdana,sans-serif;white-space:nowrap;margin:0}
+body.historical-site .rev5-bio-header .pilot-bio-resources{display:flex;gap:18px;margin:0;min-width:0}
+body.historical-site .rev5-bio-header .pilot-bio-resource{min-width:0;padding:0;border:0;background:none;border-radius:0}
+body.historical-site .rev5-bio-header .pilot-bio-resource span{font:9px/13px Verdana,sans-serif}
+body.historical-site .rev5-bio-header .pilot-bio-resource strong{font:bold 11px/15px Verdana,sans-serif}
+body.historical-site .rev5-bio .pilot-bio-card{margin:0;padding:0;border:0;background:none;box-shadow:none}
+body.historical-site .rev5-bio .pilot-bio-toolbar{display:none}
+body.historical-site .rev5-bio .pilot-bio-tree{box-sizing:border-box;height:289px;overflow:auto;margin:8px 0;padding:0 0 6px;overscroll-behavior:contain}
+body.historical-site .rev5-bio .pilot-bio-tree-grid{display:grid;grid-template-columns:repeat(3,390px);gap:14px;min-width:1198px;max-width:none;margin:0;padding:0}
+body.historical-site .rev5-bio .pilot-bio-track{margin:0;padding:0 9px;border:0;border-right:1px solid #3b505c;background:none;box-shadow:none;min-width:0}
+body.historical-site .rev5-bio .pilot-bio-track-title{margin:0 0 8px;padding:0;font:bold 10px/16px Verdana,sans-serif;color:#c3c6ae}
+body.historical-site .rev5-bio .pilot-bio-track-grid{display:grid;grid-template-columns:repeat(4,82px);gap:10px 9px;align-items:start}
+body.historical-site .rev5-bio .pilot-bio-node{min-width:0;width:82px;margin:0;padding:0;overflow:visible;transform:none}
+body.historical-site .rev5-bio .pilot-bio-node-button{display:block;width:74px;height:85px;min-width:74px;margin:0 auto;padding:0;transform:none;background:none!important}
+body.historical-site .rev5-bio .pilot-bio-node-name{font:9px/12px Verdana,sans-serif;min-height:24px;max-width:82px;margin:3px 0 0}
+body.historical-site .rev5-bio .pilot-bio-node-status{font:9px/12px Verdana,sans-serif;min-height:12px}
+body.historical-site .rev5-bio-tooltip{position:fixed!important;right:auto!important;bottom:auto!important;width:285px!important;max-height:330px;overflow:auto;transform:none!important;z-index:31000!important;padding:10px!important;border:1px solid #72818b!important;background:#101a22!important;font:10px/15px Verdana,sans-serif;box-shadow:0 4px 12px #000}
+body.historical-site .rev5-bio-footer{display:flex;justify-content:space-between;align-items:center;gap:7px;min-height:33px;border-top:1px solid #3b505c;padding-top:6px}
+body.historical-site .rev5-bio-footer .pilot-bio-actions{display:flex;align-items:center;gap:7px;flex-wrap:nowrap}
+body.historical-site .rev5-bio-footer .pilot-bio-button{height:25px;min-height:25px;min-width:108px;padding:3px 5px;font-size:9px}
+body.historical-site .rev5-bio .pilot-bio-message{margin:5px 0;padding:4px 7px;font-size:10px}
+body.historical-site .rev5-social-dialog .pilot-bio-exchange{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+body.historical-site .rev5-social-dialog .pilot-bio-next-point{padding:8px;background:none;border:0;font:10px/18px Verdana,sans-serif}
+
+body.historical-site .rev5-titles{display:block;margin:0;padding:0;background:none}
+body.historical-site .rev5-titles .titles-hero{box-sizing:border-box;display:block;margin:0 0 4px;padding:0;height:auto;min-height:20px}
+body.historical-site .rev5-titles .titles-hero__copy{padding:0}
+body.historical-site .rev5-titles .titles-hero h2{margin:0;font:bold 12px/18px Verdana,sans-serif}
+body.historical-site .rev5-titles .titles-kicker,body.historical-site .rev5-titles .titles-hero p,body.historical-site .rev5-titles>.titles-section{display:none}
+body.historical-site .rev5-titles .titles-summary-grid{display:block;margin:5px 0}
+body.historical-site .rev5-titles .titles-summary-card{display:flex;align-items:center;gap:8px;margin:0;padding:3px 0;border:0!important;background:none!important;min-height:29px}
+body.historical-site .rev5-titles .titles-summary-card__icon{display:none}
+body.historical-site .rev5-titles .titles-summary-card>div{display:flex;align-items:center;gap:10px}
+body.historical-site .rev5-titles .titles-summary-card strong{font:bold 11px/17px Verdana,sans-serif}
+body.historical-site .rev5-titles .titles-summary-card p{display:none}
+body.historical-site .rev5-titles .titles-temporary-warning,body.historical-site .rev5-titles .titles-alert{margin:4px 0;padding:4px 7px;font:9px/13px Verdana,sans-serif;border-radius:0}
+body.historical-site .rev5-title-stage{display:grid;grid-template-columns:273px minmax(0,1fr);gap:14px;min-height:247px;height:247px;margin:6px 0;border-top:1px solid #3c515e;border-bottom:1px solid #3c515e}
+body.historical-site .rev5-title-list{overflow:auto;padding:7px 8px 7px 0;border-right:1px solid #3c515e}
+body.historical-site .rev5-title-list .titles-card-grid{display:block;gap:0;margin:0}
+body.historical-site .rev5-title-list .titles-section{margin:0 0 7px;padding:0}
+body.historical-site .rev5-title-list .titles-section__header{display:block;margin:0 0 4px;padding:0}
+body.historical-site .rev5-title-list .titles-section__header h3{margin:0;font:10px/15px Verdana,sans-serif}
+body.historical-site .rev5-title-list .titles-section__header span{display:none}
+body.historical-site .rev5-title-list .title-card-option{display:block;margin:0;padding:0;cursor:pointer}
+body.historical-site .rev5-title-list .title-card{display:flex;gap:8px;min-height:44px;margin:0;padding:5px 4px;border:0!important;border-bottom:1px solid #30434f!important;background:none!important;transform:none!important;box-shadow:none!important}
+body.historical-site .rev5-title-list .rev5-title-current-detail .title-card,body.historical-site .rev5-title-list .title-card.rev5-title-current-detail{background:#162b36!important}
+body.historical-site .rev5-title-list .title-card__emblem{flex:none;width:27px;height:27px;margin:0;padding:0;background:none;border:0}
+body.historical-site .rev5-title-list .title-card__emblem img{width:27px;height:27px;object-fit:contain}
+body.historical-site .rev5-title-list .title-card__content{min-width:0;padding:0}
+body.historical-site .rev5-title-list .title-card h3{margin:0;font:bold 10px/14px Verdana,sans-serif}
+body.historical-site .rev5-title-list .titles-badge{padding:0 3px;font:8px/12px Verdana,sans-serif;border:0;background:none}
+body.historical-site .rev5-title-list .title-card__topline{display:flex;gap:4px;margin:0 0 2px}
+body.historical-site .rev5-title-list .title-card__radio{position:static;width:13px;height:13px;opacity:1;margin:0 4px 0 0;clip:auto;clip-path:none;pointer-events:auto}
+body.historical-site .rev5-title-details{overflow:auto;padding:10px 8px 10px 0;font:10px/16px Verdana,sans-serif}
+body.historical-site .rev5-title-detail h3{margin:0 0 12px;color:#d4d1ae;font:bold 12px/18px Verdana,sans-serif}
+body.historical-site .rev5-title-detail p,body.historical-site .rev5-title-detail .title-card__progress-text{margin:0 0 8px;font:10px/16px Verdana,sans-serif}
+body.historical-site .rev5-titles .titles-action-bar{display:flex;justify-content:space-between;gap:12px;margin:0;padding:4px 0;border:0;background:none}
+body.historical-site .rev5-titles .titles-action-bar__buttons{display:flex;gap:8px}
+body.historical-site .rev5-titles .titles-action-bar strong{font:10px/15px Verdana,sans-serif}
+body.historical-site .rev5-titles .titles-action-bar span{font:9px/13px Verdana,sans-serif}
+body.historical-site .rev5-titles .titles-button{height:25px;min-height:25px;min-width:100px;padding:3px 5px;font-size:9px}
+
+/* Secondary pages use compact source information/dialog frames, never copied
+   foreign account/firm rules. All confirmation handlers remain untouched. */
+body.historical-site.rev5-social.hist-page-rules .CMSContent.rev5-rules{width:679px;min-width:679px;max-width:679px;min-height:439px;margin:0 auto;padding:0;border:0;border-image:none;background:url('dops/global/clan/bg_main_noMember.jpg') no-repeat}
+body.historical-site .rev5-rules-document{position:relative;margin:0!important;padding:47px 76px 30px!important;width:679px;min-height:439px;border:0!important;border-image:none!important;background:none!important;box-shadow:none}
+body.historical-site .rev5-rules-document>.title{position:absolute;left:76px;top:14px;margin:0;font:bold 11px/19px Verdana,sans-serif;color:#d3d6c4}
+body.historical-site .rev5-rules-document .rules-content{height:357px;overflow:auto;padding:0 7px 0 0;margin:0;font:10px/16px Verdana,sans-serif}
+body.historical-site .rev5-rules-document .rule-grid,body.historical-site .rev5-rules-document .chat-rules-container{display:block;margin:0}
+body.historical-site .rev5-rules-document .rule-card,body.historical-site .rev5-rules-document .rules-section{display:block;margin:0 0 10px;padding:0 0 8px;border:0;border-bottom:1px solid #3b4d57;border-radius:0;background:none;box-shadow:none;transform:none}
+body.historical-site .rev5-rules-document h2,body.historical-site .rev5-rules-document h3{margin:0 0 5px;color:#c5c8ae;font:bold 11px/17px Verdana,sans-serif}
+body.historical-site .rev5-rules-document p,body.historical-site .rev5-rules-document li{font:10px/16px Verdana,sans-serif;margin-top:0}
+body.historical-site .rev5-rules-document h3,body.historical-site .rev5-rules-document h4{border:0;padding:0;letter-spacing:0;text-transform:none;font:bold 11px/17px Verdana,sans-serif}
+body.historical-site .rev5-rules-document .rule-list{margin:0;padding-left:17px}
+body.historical-site .rev5-rules-document .rule-list li{list-style:disc;margin:0 0 6px;padding:0;border:0;background:none}
+body.historical-site.rev5-social.hist-page-company .CMSContent{width:679px;min-width:679px;max-width:679px;min-height:439px;padding:0;margin:0 auto;border:0;border-image:none;background:url('dops/global/clan/bg_main_noMember.jpg') no-repeat}
+body.historical-site.rev5-social.hist-page-company .shop-card{position:relative;padding:47px 76px 28px;margin:0;border:0;border-image:none;background:none;box-shadow:none;min-height:439px}
+body.historical-site.rev5-social.hist-page-company .shop-title{position:absolute;top:14px;left:76px;margin:0;padding:0;border:0;font:bold 11px/19px Verdana,sans-serif;color:#d1d4bd}
+body.historical-site .rev5-company{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;min-height:265px;margin:0}
+body.historical-site .rev5-company-plans{border-right:1px solid #4c5d67;padding-right:8px}
+body.historical-site .rev5-company-plans .rev5-list-choice{display:block;width:100%;height:auto;min-height:32px;padding:7px 4px;margin:0;text-align:left;background:none;border-bottom:1px solid #354750}
+body.historical-site .rev5-company>.plan-card{padding:4px 0;border:0;background:none;box-shadow:none;transform:none;transition:none;overflow:visible}
+body.historical-site .rev5-company .plan-header{margin:0 0 14px;padding:0 0 9px;border-bottom:1px solid #40545f;text-align:left}
+body.historical-site .rev5-company .plan-title{font:bold 11px/17px Verdana,sans-serif;margin:0 0 5px}
+body.historical-site .rev5-company .plan-cost{font:10px/15px Verdana,sans-serif;color:#d8cb9b}
+body.historical-site .rev5-company .plan-body{margin:0 0 15px;text-align:left}
+body.historical-site .rev5-company .stat-row{font:10px/16px Verdana,sans-serif;margin:0 0 7px}
+body.historical-site .rev5-company .btn-company{padding:6px 3px;border:1px solid #526774;background:none;border-radius:0}
+body.historical-site .rev5-company .company-selector{gap:7px}
+body.historical-site.rev5-social.hist-page-company .warning-note{margin:8px 0 0;padding:7px 0;border:0;border-top:1px solid #4d5961;background:none;font:9px/14px Verdana,sans-serif;color:#c6bf9b}
+body.historical-site.rev5-social.hist-page-company .modal-box{border:8px solid transparent;border-image:url('dops/global/events/frame.png') 8 fill stretch;border-radius:0;background:url('dops/global/hangar/item-info_background_cycle.png') repeat #14202b;box-shadow:none;padding:17px;width:400px}
+body.historical-site.rev5-social.hist-page-company .modal-title{font:bold 12px/18px Verdana,sans-serif;margin:0 0 10px}
+body.historical-site.rev5-social.hist-page-company .modal-msg{font:10px/17px Verdana,sans-serif;margin:0 0 15px}
+body.historical-site.rev5-social.hist-page-company .btn-modal{font:10px/15px Verdana,sans-serif;border-radius:0;box-shadow:none;background:#1d303c;padding:5px 10px}
+body.historical-site .rev5-hof .top100-table th,body.historical-site .rev5-hof .top100-table td{padding:4px 6px;font:10px/16px Verdana,sans-serif;border-radius:0;box-shadow:none}
+
+/* REV6: account-only scopes. No global Clan/Skylab/Factory rules are changed.
+   The native generic480px window is an explicit adaptation for Rules/Support;
+   a complete DoPs Rules/Support page is not present in the pinned snapshot. */
+body.historical-site.rev6-rules-page .CMSContent.rev6-rules{width:480px!important;min-width:480px!important;max-width:480px!important;margin:0 auto!important;min-height:0!important;background:none!important;border:0!important;border-image:none!important;padding:0!important}
+body.historical-site.rev6-rules-page .rules-container.rev5-rules-document{box-sizing:border-box;width:480px!important;min-height:0!important;height:auto!important;margin:0!important;padding:62px 24px 55px!important;border:0!important;border-image:none!important;background:#191919 url('dops/global/popups/popup_middle_cont_bg.jpg') left top repeat-y!important;box-shadow:none!important}
+body.historical-site.rev6-rules-page .rules-container>.title{left:24px;top:15px;font:bold 12px/20px Verdana,Arial,sans-serif}
+body.historical-site.rev6-rules-page .rules-content{height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important;padding:0!important;margin:0!important;border:0!important;border-image:none!important;background:none!important;font:11px/18px Verdana,Arial,sans-serif}
+body.historical-site.rev6-rules-page .rules-content .rules-section,body.historical-site.rev6-rules-page .rules-content .rule-card,body.historical-site.rev6-rules-page .rules-content .chat-column,body.historical-site.rev6-rules-page .rules-content .rule-item{box-sizing:border-box;display:block;width:auto;min-height:0;max-height:none;overflow:visible;margin:0 0 12px!important;padding:0!important;border:0!important;border-image:none!important;background:none!important;border-radius:0!important;box-shadow:none!important;transform:none!important}
+body.historical-site.rev6-rules-page .rules-content .rules-section{padding-bottom:9px!important;border-bottom:1px solid #3f484d!important}
+body.historical-site.rev6-rules-page .rules-content .rule-grid,body.historical-site.rev6-rules-page .rules-content .chat-rules-container{display:block;gap:0;margin:0;padding:0;border:0;border-image:none;background:none}
+body.historical-site.rev6-rules-page .rules-content h3{margin:0 0 8px;padding:0;border:0;background:none;font:bold 12px/18px Verdana,Arial,sans-serif;color:#cccdb5}
+body.historical-site.rev6-rules-page .rules-content h4{margin:0 0 4px;font:bold 11px/18px Verdana,Arial,sans-serif;color:#c4c8c8}
+body.historical-site.rev6-rules-page .rules-content p,body.historical-site.rev6-rules-page .rules-content li{font:11px/18px Verdana,Arial,sans-serif;color:#bec8ce;margin:0 0 8px}
+body.historical-site.rev6-rules-page .rules-content .rule-list{margin:0 0 10px;padding-left:18px}
+body.historical-site .rev6-rules-index{display:flex;flex-wrap:wrap;gap:5px 12px;margin:0 0 17px;padding:0 0 10px;border-bottom:1px solid #4b5357;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site .rev6-rules-index a{color:#c3cdb6;text-decoration:underline;text-underline-offset:2px}
+body.historical-site.rev6-rules-page .rules-section{scroll-margin-top:20px}
+
+body.historical-site.rev6-settings-page .rev4-account-layout{display:block}
+body.historical-site.rev6-settings-page .rev4-account-details{margin:0 0 12px;padding:0 0 10px;border-bottom:1px solid #4a5359}
+body.historical-site.rev6-settings-page .rev4-account-details .profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:9px 18px}
+body.historical-site.rev6-settings-page .rev4-account-details .p-stat-item{display:flex;flex-direction:column;gap:2px;margin:0;padding:0;min-width:0;border:0;background:none}
+body.historical-site.rev6-settings-page .rev4-account-details .p-label{font:9px/13px Verdana,Arial,sans-serif}
+body.historical-site.rev6-settings-page .rev4-account-details .p-val{font:10px/15px Verdana,Arial,sans-serif;overflow-wrap:anywhere;min-width:0}
+body.historical-site.rev6-settings-page .rev4-account-forms{max-width:100%;margin:0;padding:0}
+body.historical-site.rev6-settings-page .rev4-account-choice{display:inline-block;margin:0 10px 8px 0;font:10px/20px Verdana,Arial,sans-serif}
+body.historical-site.rev6-settings-page #rev4-account-section{display:inline-block;width:calc(100% - 65px);margin:0 0 12px;height:25px}
+body.historical-site.rev6-settings-page .rev4-account-forms .set-form{gap:9px}
+body.historical-site.rev6-settings-page .rev4-account-forms .rev4-account-field{display:grid;grid-template-columns:130px minmax(0,1fr);gap:9px;align-items:center;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.rev6-settings-page .rev4-account-field span{margin:0}
+body.historical-site.rev6-settings-page .rev4-account-forms input[type=submit]{margin:8px auto 0}
+body.historical-site.rev6-contact-page .rev4-native-window{min-height:0;padding-top:56px;padding-bottom:43px}
+body.historical-site.rev6-contact-page .rev4-native-window-content{min-height:0}
+body.historical-site.rev6-contact-page .contact-item{display:flex;flex-direction:column;gap:7px;padding:2px 0!important;min-height:0;border:0!important;border-image:none!important;background:none!important}
+body.historical-site.rev6-contact-page .contact-label{margin:0;font:bold 11px/17px Verdana,Arial,sans-serif}
+body.historical-site.rev6-contact-page .contact-value{font:12px/19px Verdana,Arial,sans-serif;overflow-wrap:anywhere}
+
+/* The same actual profile fields become one flat stats sheet. DoPs ppLeft
+   proves identity/player-stat tables; absent personal data is not fabricated. */
+body.historical-site.rev6-profile-page .rev6-profile{min-height:0!important}
+body.historical-site.rev6-profile-page .rev5-profile-layout[hidden]{display:none!important}
+body.historical-site .rev6-profile-sheet{box-sizing:border-box;display:block;margin:0;padding:7px 16px 12px;color:#c1ccd2;min-height:0}
+body.historical-site .rev6-profile-identity{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;min-height:66px;margin:0 0 8px;padding:0 0 12px;border-bottom:1px solid #3d505b}
+body.historical-site .rev6-profile-identity .pilot-header{display:block;margin:0;padding:0;border:0;background:none;min-height:0}
+body.historical-site .rev6-profile-identity .pilot-name-row{font:12px/19px Verdana,Arial,sans-serif;color:#d1d6c5;gap:8px}
+body.historical-site .rev6-profile-identity .pilot-rank-row{margin-top:8px;font:10px/17px Verdana,Arial,sans-serif}
+body.historical-site .rev6-profile-identity .card-header{display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin:0;padding:0;border:0;background:none}
+body.historical-site .rev6-profile-identity .card-header .card-title{font:bold 11px/18px Verdana,Arial,sans-serif;color:#c4c8af;margin:0}
+body.historical-site .rev6-profile-identity .card-header>span{font:10px/16px Verdana,Arial,sans-serif!important;color:#aebfc8!important}
+body.historical-site .rev6-profile-sheet .stats-list{display:table!important;table-layout:fixed;width:100%;margin:0;padding:0;border:0;background:none}
+body.historical-site .rev6-profile-sheet .stat-row{display:table-row!important;min-height:0;margin:0!important;padding:0!important;border:0!important;border-image:none!important;background:none!important}
+body.historical-site .rev6-profile-sheet .stat-label,body.historical-site .rev6-profile-sheet .stat-val{display:table-cell;padding:7px 0!important;border-bottom:1px solid #283e4b;background:none;font:11px/17px Verdana,Arial,sans-serif;text-transform:none;letter-spacing:0}
+body.historical-site .rev6-profile-sheet .stat-label{width:50%;color:#aebdc7}
+body.historical-site .rev6-profile-sheet .stat-val{text-align:right;color:#d0d6c0}
+body.historical-site .rev6-profile-links{margin:11px 0 0;padding:4px 0;text-align:right}
+body.historical-site .rev6-profile-links .hist-finish-profile-tools{margin:0;padding:0;background:none;border:0}
+
+/* Skill slots stay the existing74x85 texture. Remove the invented counter bar,
+   not pixels from the source. All rows fit vertically; local x-pan is explicit. */
+body.historical-site.rev6-bio-page .rev5-bio-header{height:40px}
+body.historical-site.rev6-bio-page .pilot-bio-resource{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+body.historical-site.rev6-bio-page .pilot-bio-resources{gap:20px}
+body.historical-site.rev6-bio-page .pilot-bio-tree{height:305px;min-height:305px;max-height:305px;overflow-x:auto;overflow-y:hidden;padding:0 0 6px;scrollbar-width:thin;scrollbar-color:#5e727e #101b23}
+body.historical-site.rev6-bio-page .pilot-bio-tree-grid{align-items:start;min-height:0;padding-bottom:0}
+body.historical-site.rev6-bio-page .pilot-bio-track-grid{gap:9px 9px;align-items:start}
+body.historical-site.rev6-bio-page .pilot-bio-node{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:0}
+body.historical-site.rev6-bio-page .pilot-bio-node-button{position:relative;flex:none;width:74px;height:85px;padding:0;margin:0 auto}
+body.historical-site.rev6-bio-page .pilot-bio-points{position:absolute;left:0;right:0;top:66px;bottom:auto;display:block;width:74px;height:15px;margin:0;padding:0;line-height:15px;font-size:10px;text-align:center;background:none!important;border:0;box-shadow:none;color:#e2dfbd;pointer-events:none}
+body.historical-site.rev6-bio-page .pilot-bio-node-name{font:9px/11px Verdana,Arial,sans-serif;min-height:22px;max-width:82px;margin:1px 0 0;padding:0;text-align:center}
+body.historical-site.rev6-bio-page .pilot-bio-node-status{font:8px/12px Verdana,Arial,sans-serif;min-height:12px;margin:0;padding:0}
+body.historical-site.rev6-bio-page .pilot-bio-tree::-webkit-scrollbar{height:7px;width:7px}
+body.historical-site.rev6-bio-page .pilot-bio-tree::-webkit-scrollbar-track{background:#101b23}
+body.historical-site.rev6-bio-page .pilot-bio-tree::-webkit-scrollbar-thumb{background:#5e727e;border:1px solid #243f50}
+
+/* Title ownership/priority is still server data. A row's focus/detail state is
+   intentionally distinct from equipped, available or locked status. */
+body.historical-site.rev6-titles-page .titles-summary-grid{margin:3px 0 7px}
+body.historical-site.rev6-titles-page .titles-summary-card{min-height:29px;padding:2px 0}
+body.historical-site.rev6-titles-page .titles-summary-card__icon{display:block;flex:none;width:25px;height:25px;margin:0;padding:0;background:none;border:0;box-shadow:none}
+body.historical-site.rev6-titles-page .titles-summary-card__icon img{width:25px;height:25px;object-fit:contain}
+body.historical-site.rev6-titles-page .rev5-title-stage{height:283px;min-height:283px;grid-template-columns:255px minmax(0,1fr);gap:13px;margin:4px 0 8px}
+body.historical-site.rev6-titles-page .rev5-title-list{padding:5px 7px 5px 0;scrollbar-width:thin;scrollbar-color:#5e727e #101b23}
+body.historical-site.rev6-titles-page .rev5-title-list .title-card-option{display:flex!important;align-items:center;gap:3px;min-width:0}
+body.historical-site.rev6-titles-page .rev5-title-list .title-card{display:flex!important;flex-direction:row!important;align-items:center;flex:1;gap:7px;min-height:47px;height:auto;padding:5px 4px;margin:0;border:0!important;border-image:none!important;border-bottom:1px solid #30434f!important;background:none!important;box-shadow:none!important}
+body.historical-site.rev6-titles-page .rev5-title-list .title-card__content{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+body.historical-site.rev6-titles-page .rev5-title-list .title-card__topline{display:flex;gap:5px;flex-wrap:wrap;margin:0;font:8px/11px Verdana,Arial,sans-serif}
+body.historical-site.rev6-titles-page .rev5-title-list .title-card h3{font:10px/14px Verdana,Arial,sans-serif;color:#c9d2d5;margin:0}
+body.historical-site.rev6-titles-page .rev5-title-list .title-card__radio{flex:none;position:static!important;width:13px;height:13px;margin:0 0 0 3px;opacity:1}
+body.historical-site.rev6-titles-page .rev5-title-list .title-card.is-locked h3{color:#8295a0}
+body.historical-site.rev6-titles-page .rev5-title-list .rev5-title-current-detail .title-card,body.historical-site.rev6-titles-page .rev5-title-list .title-card.rev5-title-current-detail{background-color:#203643!important}
+body.historical-site.rev6-titles-page .rev5-title-details{padding:9px 7px 9px 0;scrollbar-width:thin;scrollbar-color:#5e727e #101b23}
+body.historical-site.rev6-titles-page .title-progress{height:3px;border-radius:0;background:#0a141c;border:1px solid #3b5361}
+body.historical-site.rev6-titles-page .title-progress>span{height:100%;border-radius:0;background:#819ca9}
+body.historical-site.rev6-titles-page .titles-action-bar{min-height:30px;padding:1px 0}
+
+/* REV7. internalClan.css supplies the compact table/field language and native
+   panel regions. Its missing row/button bitmaps are not fabricated. The three
+   actual DoPs popup-button slices already present are the explicit fallback. */
+body.historical-site.rev7-account .rev5-clan-console :is(.stat-left,.stat-right,.stat-rightbis){box-sizing:border-box;min-height:0!important;height:auto!important;margin:0!important;padding:1px 3px!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;color:#ccc;font:10px/16px Verdana,Arial,sans-serif;font-weight:normal;text-align:left}
+body.historical-site.rev7-account .rev5-clan-console .stat{box-sizing:border-box;width:100%;min-height:19px;margin:0!important;padding:1px 0!important;gap:5px;border:0!important;border-bottom:1px solid #414141!important;border-radius:0;background:none!important;box-shadow:none!important}
+body.historical-site.rev7-account .rev5-clan-console .stat-left{flex:none;width:60px;min-width:0;color:#b9b9ad}
+body.historical-site.rev7-account .rev5-clan-members .stat-left{width:23px}
+body.historical-site.rev7-account .rev5-clan-console .stat-left img{display:block;max-width:16px;max-height:16px}
+body.historical-site.rev7-account .rev5-clan-console .stat-right,body.historical-site.rev7-account .rev5-clan-console .stat-rightbis{flex:1;min-width:0;overflow-wrap:anywhere}
+body.historical-site.rev7-account .rev5-clan-console :is(.btn-primary,.btn-danger,.leftbutton),
+body.historical-site.rev7-account .rev5-clan-console .clan-form input[type=submit],
+body.historical-site.rev7-account .rev5-social-dialog :is(.btn-primary,.btn-danger,.leftbutton,input[type=submit]),
+body.historical-site.rev7-account .rev4-account-forms input[type=submit],
+body.historical-site.rev7-account .titles-button{display:inline-flex;box-sizing:border-box;align-items:center;justify-content:center;flex:none;width:auto;min-width:74px;max-width:200px;min-height:20px;height:20px;margin:3px 0;padding:1px 8px;border:0!important;border-radius:0!important;background:url('dops/global/popups/popup_button_left.png') left center no-repeat,url('dops/global/popups/popup_button_right.png') right center no-repeat,url('dops/global/popups/popup_button_mid.png') center center repeat-x!important;background-size:auto!important;box-shadow:none!important;color:#d0d0d0!important;text-shadow:none!important;filter:none!important;font:10px/16px Verdana,Arial,sans-serif!important;text-transform:none;letter-spacing:0;text-decoration:none;opacity:1}
+body.historical-site.rev7-account .rev5-clan-console .leftbutton{min-width:62px;max-width:120px;height:18px;min-height:18px;padding:0 5px;margin:0 0 0 4px;font-size:9px!important;vertical-align:middle}
+body.historical-site.rev7-account :is(.rev5-clan-console,.rev5-social-dialog,.rev4-account-forms) :is(button,input[type=submit],a.leftbutton):hover:not(:disabled){color:white!important;text-decoration:underline;filter:none!important}
+body.historical-site.rev7-account :is(.rev5-clan-console,.rev5-social-dialog,.rev4-account-forms,.rev5-titles) :is(button,input[type=submit]):disabled{opacity:.45!important;cursor:default}
+body.historical-site.rev7-account :is(.rev5-clan-console,.rev5-social-dialog) :is(input[type=text],input[type=number],select,textarea){box-sizing:border-box;min-height:17px;height:21px;padding:1px 4px;margin:0;border:1px dotted #151515;border-radius:0;background:#565656;color:#eee;box-shadow:none;outline-offset:1px;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.rev7-account :is(.rev5-clan-console,.rev5-social-dialog) textarea{height:80px;min-height:50px;resize:vertical}
+body.historical-site.rev7-account :is(.rev5-clan-console,.rev5-social-dialog) fieldset{border:0!important;background:none!important;box-shadow:none!important;border-radius:0!important}
+body.historical-site.rev7-account :is(.rev5-clan-console,.rev5-social-dialog) input[type=checkbox]{accent-color:#868686}
+body.historical-site.rev7-account .rev5-clan-console :is(th,td){color:#ccc!important;border:0!important;border-bottom:1px solid #494949!important;border-radius:0!important;background:none!important;box-shadow:none!important}
+body.historical-site.rev7-account .rev5-clan-console thead th{font-weight:normal!important;color:#d0d0bd!important;line-height:17px}
+body.historical-site.rev7-account .rev5-clan-console :is(tbody tr,tbody tr:nth-child(even),tbody tr:hover){background:none!important;box-shadow:none!important}
+body.historical-site.rev7-account .rev5-clan-role-editor{background:none;border-left:1px solid #565656}
+body.historical-site.rev7-account .rev5-role-detail .role-name-input{width:133px;height:20px}
+body.historical-site.rev7-account .rev5-role-name{margin-bottom:9px}
+body.historical-site.rev7-account .rev5-role-detail .inline-perms{gap:5px 9px}
+body.historical-site.rev7-account .rev5-role-detail .hidden-perms{gap:4px 8px}
+body.historical-site.rev7-account .rev5-role-detail form>.btn-primary{float:right;min-width:85px;margin:10px 0 0}
+body.historical-site.rev7-account .rev5-clan-cashflow .treasury-table :is(th,td){font:9px/14px Verdana,Arial,sans-serif;padding:3px 4px!important}
+body.historical-site.rev7-account .rev5-clan-diplo-requests .stat{align-items:flex-start}
+body.historical-site.rev7-account .rev5-clan-footer{top:374px;height:32px;gap:8px}
+body.historical-site.rev7-account .rev5-clan-footer .rev5-social-button{width:auto;min-width:99px;max-width:164px;height:20px;min-height:20px;padding:1px 10px;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.rev7-account .rev5-social-dialog .clan-card{padding:0!important;background:none!important;border:0!important;border-image:none!important}
+body.historical-site.rev7-account .rev5-social-dialog .clan-card hr{border:0;border-top:1px solid #545454;margin:13px 0}
+body.historical-site.rev7-account .rev5-social-dialog :is(.clan-row dt,.clan-label,label){color:#c5c5bd}
+body.historical-site.rev7-account .rev5-social-dialog .clan-form{gap:7px}
+body.historical-site.rev7-account .rev5-social-dialog .clan-form :is(button,input[type=submit]){align-self:flex-end}
+body.historical-site.rev7-account .rev5-social-dialog fieldset:has(select[name=to_user_id])>label{display:grid;grid-template-columns:75px minmax(0,1fr);align-items:center;gap:8px;width:100%;min-width:0;margin:0 0 7px;padding:0;font:10px/17px Verdana,Arial,sans-serif}
+body.historical-site.rev7-account .rev5-social-dialog fieldset:has(select[name=to_user_id])>br{display:none}
+body.historical-site.rev7-account .rev5-social-dialog fieldset:has(select[name=to_user_id])>label :is(input,select){min-width:0;max-width:100%;margin:0;box-sizing:border-box}
+body.historical-site.rev7-account .rev5-clan-single-list .clan-form--stacked{display:flex;flex-direction:column;align-items:stretch;gap:8px;max-width:100%;margin:0;padding:0}
+body.historical-site.rev7-account .rev5-clan-single-list .clan-field{display:block;min-height:0;margin:0;padding:0;color:#ccc;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.rev7-account .rev5-clan-single-list .clan-field-label{display:block;margin:0 0 3px;font:10px/16px Verdana,Arial,sans-serif;color:#ccc}
+body.historical-site.rev7-account .rev5-clan-single-list .clan-form--stacked input[type=submit]{align-self:flex-end;min-width:99px;margin:3px 0}
+body.historical-site.rev7-account .rev5-clan-single-list .clan-section-note{margin:0 0 9px;padding:0;color:#c8c6b6;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site.rev7-account .rev5-clan-single-list .clan-section-note .text-info{color:inherit}
+body.historical-site.rev7-account .rev5-social-close{width:65px;min-width:0;min-height:18px;height:18px;margin:0;padding:0;font:9px/16px Verdana,Arial,sans-serif}
+body.historical-site.rev7-account .rev5-clan-log-list .rev5-list-choice{min-height:18px;height:auto;padding:2px 4px;border-bottom:1px solid #454545;background:none;font:10px/15px Verdana,Arial,sans-serif}
+body.historical-site.rev7-account .rev5-clan-log-list .rev5-list-choice[aria-selected=true],body.historical-site.rev7-account .rev5-clan-role-list .rev5-list-choice[aria-selected=true]{color:#eee9cb;background:#565656}
+body.historical-site.rev7-account :is(.rev5-clan-console>section,.rev5-clan-description,.rev5-social-dialog){scrollbar-width:thin;scrollbar-color:#6d6d6d #222}
+body.historical-site.rev7-account :is(.rev5-clan-console>section,.rev5-clan-description,.rev5-social-dialog)::-webkit-scrollbar{width:8px;height:8px}
+body.historical-site.rev7-account :is(.rev5-clan-console>section,.rev5-clan-description,.rev5-social-dialog)::-webkit-scrollbar-track{background:#222}
+body.historical-site.rev7-account :is(.rev5-clan-console>section,.rev5-clan-description,.rev5-social-dialog)::-webkit-scrollbar-thumb{background:#666;border:1px solid #888}
+
+/* Account retains its three real forms. DoPs' confirmation-email flow is not
+   imported, so no misleading Next/confirmation screen or new field is added. */
+body.historical-site.rev7-settings .rev4-native-window{padding-top:56px;padding-bottom:41px}
+body.historical-site.rev7-settings .rev4-account-details{margin-bottom:10px;padding-bottom:8px}
+body.historical-site.rev7-settings .rev4-account-details .profile-stats{gap:7px 18px}
+body.historical-site.rev7-settings #rev4-account-section{background:#565656;color:#ddd;border:1px dotted #181818;height:21px;font:10px/17px Verdana,Arial,sans-serif;padding:1px 4px;margin-bottom:8px}
+body.historical-site.rev7-settings .rev4-account-field input{height:21px;background:#565656;color:#eee;border:1px dotted #181818;box-shadow:none}
+body.historical-site.rev7-settings .rev4-account-forms .set-form{gap:7px}
+body.historical-site.rev7-settings .rev4-account-forms input[type=submit]{align-self:flex-end;margin:5px 0 0;min-width:99px;height:20px}
+body.historical-site .rev7-support-alternative{margin:10px 0 0;padding:7px 0 0;border-top:1px solid #505050;text-align:right;font:10px/16px Verdana,Arial,sans-serif}
+body.historical-site .rev7-support-alternative a{color:#c9c9b9;text-decoration:underline}
+body.historical-site.rev7-contact .rev4-native-window{padding-top:53px;padding-bottom:36px}
+body.historical-site.rev7-contact .contact-item{padding:0!important;gap:5px}
+body.historical-site.rev7-contact .rev7-contact-return{display:block;margin:11px 0 0;font:10px/17px Verdana,Arial,sans-serif;color:#d0d0bd;text-align:right}
+
+/* Player stats are real Andromeda fields; missing historical avatar, personal
+   fields, activity/ranking and station are documented, never fabricated. */
+body.historical-site.rev7-profile .rev6-profile-sheet{padding:7px 16px 10px}
+body.historical-site.rev7-profile .rev6-profile-identity{min-height:62px;margin-bottom:7px;padding-bottom:9px}
+body.historical-site.rev7-profile .rev6-profile-sheet .stat-label,body.historical-site.rev7-profile .rev6-profile-sheet .stat-val{padding:4px 0!important;font:10px/17px Verdana,Arial,sans-serif}
+body.historical-site.rev7-profile .rev6-profile-sheet .stat-label{width:52%;color:#bbb}
+body.historical-site.rev7-profile .rev6-profile-sheet .stat-val{color:#d1d1c7}
+body.historical-site.rev7-profile .rev7-profile-facts{display:flex;flex-wrap:wrap;gap:8px 22px;padding:2px 0 8px;margin:0 0 4px;border-bottom:1px solid #3e3e3e;font:10px/16px Verdana,Arial,sans-serif;color:#c7c7bb}
+body.historical-site.rev7-profile .rev7-profile-facts b{font-weight:normal;color:#eee}
+
+/* Titles are custom: preserve temporary priority and every radio/form. Rows,
+   detail and action bar get independent boxes so labels cannot collide. */
+body.historical-site.rev7-titles .rev5-titles{box-sizing:border-box;padding:0 8px}
+body.historical-site.rev7-titles .titles-summary-card>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 18px;flex:1;min-width:0}
+body.historical-site.rev7-titles .titles-summary-card>.titles-summary-card__icon{display:block;flex:0 0 25px;width:25px}
+body.historical-site.rev7-titles .titles-summary-label{display:block;font:10px/16px Verdana,Arial,sans-serif;color:#bfc0b3;text-transform:none;letter-spacing:0}
+body.historical-site.rev7-titles .titles-summary-card strong{min-width:0;white-space:normal;overflow-wrap:anywhere;font:11px/16px Verdana,Arial,sans-serif}
+body.historical-site.rev7-titles .titles-summary-grid{padding:1px 0 6px;border-bottom:1px solid #4a4a4a}
+body.historical-site.rev7-titles .rev5-title-stage{box-sizing:border-box;height:269px;min-height:0;margin:5px 0 6px;grid-template-columns:260px minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:16px;border-top:0;border-bottom:1px solid #4a4a4a}
+body.historical-site.rev7-titles .rev5-title-list{min-height:0;padding:0 8px 4px 0}
+body.historical-site.rev7-titles .rev5-title-list .titles-section{gap:4px;margin:0 0 9px}
+body.historical-site.rev7-titles .rev5-title-list .titles-section__header h3{font:10px/15px Verdana,Arial,sans-serif;letter-spacing:0;text-transform:none}
+body.historical-site.rev7-titles .rev5-title-list .title-card{min-height:42px;padding:4px!important}
+body.historical-site.rev7-titles .rev5-title-list .titles-section__header{padding:3px 4px 6px;margin:0;font:10px/15px Verdana,Arial,sans-serif}
+body.historical-site.rev7-titles .rev5-title-list .title-card h3{overflow-wrap:anywhere}
+body.historical-site.rev7-titles .rev5-title-list .title-card__topline{font:8px/11px Verdana,Arial,sans-serif;gap:3px 7px}
+body.historical-site.rev7-titles .rev5-title-list .title-card.is-equipped{box-shadow:inset 2px 0 #b5b9a5!important}
+body.historical-site.rev7-titles .rev5-title-details{min-width:0;min-height:0;padding:7px 8px 8px 0;font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site.rev7-titles .rev5-title-detail h3{margin-bottom:9px}
+body.historical-site.rev7-titles .titles-action-bar{box-sizing:border-box;position:static;bottom:auto;min-height:35px;align-items:center;gap:12px;padding:5px 0 2px;margin:0}
+body.historical-site.rev7-titles .titles-action-bar>div:first-child{display:flex;flex-direction:column;gap:2px;min-width:0;max-width:55%;overflow-wrap:anywhere}
+body.historical-site.rev7-titles .titles-action-bar strong,body.historical-site.rev7-titles .titles-action-bar span{display:block;margin:0;font:10px/14px Verdana,Arial,sans-serif;line-height:14px}
+body.historical-site.rev7-titles .titles-action-bar__buttons{align-items:center;gap:7px;flex:none}
+body.historical-site.rev7-titles .titles-action-bar__buttons form{margin:0;padding:0}
+
+/* REV8 internalHelpLayer.php + darkorbit.css Systempopup. The native Help
+   illustration is not in this webroot: reuse its already present480px frame,
+   without inventing an icon or copying a new third-party bitmap. */
+body.historical-site .rev8-help-overlay{position:fixed;inset:0;z-index:10000;margin:0;padding:0;background:rgba(0,0,0,.7)}
+body.historical-site .rev8-help-overlay[hidden]{display:none!important}
+body.historical-site .rev8-help-dialog{position:absolute;left:50%;top:150px;transform:translateX(-50%);box-sizing:border-box;width:480px;max-height:calc(100vh - 170px);overflow:auto;margin:0;padding:0;border:0;background:#191919;color:#c5c5c5;font:11px/17px Verdana,Arial,sans-serif;box-shadow:none;border-radius:0}
+body.historical-site .rev8-help-head{position:relative;box-sizing:border-box;width:480px;height:65px;margin:0;padding:10px 15px;background:url('dops/global/popups/popup_middle_top_bg.jpg') top left no-repeat}
+body.historical-site .rev8-help-head h2{margin:0;padding:0;color:#ddd;font:bold 12px/20px Verdana,Arial,sans-serif;letter-spacing:0;text-transform:none}
+body.historical-site .rev8-help-close{position:absolute;right:0;top:0;width:34px;height:34px;margin:0;padding:0;border:0;background:transparent url('dops/global/popups/popup_middle_close.jpg') top right no-repeat!important;box-shadow:none;border-radius:0;cursor:pointer}
+body.historical-site .rev8-help-content{box-sizing:border-box;min-height:150px;padding:0 30px 20px;background:url('dops/global/popups/popup_middle_cont_bg.jpg') left top repeat-y;color:#ccc;font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site .rev8-help-content p{margin:0 0 16px;padding:0}
+body.historical-site .rev8-help-content ul{margin:20px 0;padding-left:20px;list-style:disc}
+body.historical-site .rev8-help-content li{margin:5px 0;padding:0}
+body.historical-site .rev8-help-content a{color:#d2d2c0;text-decoration:underline}
+body.historical-site .rev8-help-footer{box-sizing:border-box;width:480px;height:60px;margin:0;padding:12px 0 0;text-align:center;background:url('dops/global/popups/popup_middle_foot_bg.jpg') left top no-repeat}
+body.historical-site .rev8-help-ok,body.historical-site .rev8-account-back{display:inline-flex;box-sizing:border-box;align-items:center;justify-content:center;min-width:136px;height:18px;min-height:18px;margin:0;padding:0 8px;border:0;border-radius:0;box-shadow:none;background:url('dops/global/popups/popup_button_left.png') left center no-repeat,url('dops/global/popups/popup_button_right.png') right center no-repeat,url('dops/global/popups/popup_button_mid.png') center center repeat-x!important;color:#ddd;font:10px/18px Verdana,Arial,sans-serif;text-transform:none;letter-spacing:0;text-decoration:none;cursor:pointer}
+body.historical-site .rev8-help-ok:hover,body.historical-site .rev8-account-back:hover{color:#fff;text-decoration:underline}
+body.historical-site .rev8-help-dialog :focus-visible{outline:1px solid #afc6d4;outline-offset:-2px}
+body.historical-site .rev8-account-back{margin-top:14px}
+
+/* REV9 PRIVATE PREVIEW ONLY: native520x16 Clan row images and99x15 button.
+   New image files are excluded from every future public package. No recovered
+   stylesheet/script is imported. The accented row variant is used only for a
+   real selected Role/Log choice, not alternating fake selected member rows.
+   Native pixels are not scaled; tall custom rows repeat vertically and narrow
+   panes crop the background only. Text, notes and permission actions still wrap. */
+body.historical-site.rev7-account .rev5-clan-members #clan-members>.stat,
+body.historical-site.rev7-account .rev5-clan-cashflow .treasury-table tbody tr,
+body.historical-site.rev7-account .rev5-clan-log-list .rev5-list-choice,
+body.historical-site.rev7-account .rev5-clan-role-list .rev5-list-choice{background:transparent url('rev9-social/clan/bg_member_2.jpg') left top repeat-y!important;background-size:auto!important}
+body.historical-site.rev7-account .rev5-clan-log-list .rev5-list-choice[aria-selected=true],
+body.historical-site.rev7-account .rev5-clan-role-list .rev5-list-choice[aria-selected=true]{background-image:url('rev9-social/clan/bg_member_1.jpg')!important}
+body.historical-site.rev7-account .rev5-clan-footer .rev5-social-button,
+body.historical-site.rev7-account .rev5-social-dialog [name="clan-newmessage-submit"]{box-sizing:border-box;width:99px!important;min-width:99px!important;max-width:99px!important;min-height:20px;height:20px;padding:0!important;border:0;background:transparent url('rev9-social/clan/bg_button.gif') center center no-repeat!important;background-size:auto!important;line-height:15px!important}
+body.historical-site.rev7-account .rev5-clan-footer .rev5-social-button:hover,
+body.historical-site.rev7-account .rev5-clan-log-list .rev5-list-choice:hover,
+body.historical-site.rev7-account .rev5-clan-role-list .rev5-list-choice:hover{text-decoration:underline}
+body.historical-site.rev7-account .rev5-clan-console .rev5-list-choice:focus-visible{outline:1px solid #b8c1c5;outline-offset:-1px}
+
+/* The four retrieved icons are now installed at native dimensions for the
+   authorized local preview. This does not reconstruct the full Web Quest
+   template or establish permission for public redistribution. */
+body.historical-site .quest-page.rev9-objective-disclosures .rev7-q-view-toggle::before{display:inline-block;box-sizing:border-box;width:12px;height:12px;margin-right:5px;content:'';background:transparent url('rev9-social/quests/toggle_list.png') center center no-repeat;vertical-align:-1px}
+body.historical-site .quest-page.rev9-objective-disclosures .rev7-q-view-toggle[aria-pressed=true]::before{background-image:url('rev9-social/quests/toggle_text.png')}
+body.historical-site .quest-page .rev9-objectives-toggle{display:flex;box-sizing:border-box;align-items:center;gap:5px;min-width:0;width:auto;height:18px;min-height:18px;margin:3px 0 4px;padding:0 3px;border:0;border-radius:0;background:none;box-shadow:none;color:#d5d5c8;font:10px/16px Verdana,Arial,sans-serif;letter-spacing:0;text-transform:none;cursor:pointer}
+body.historical-site .quest-page .rev9-objectives-toggle::before{content:'';display:block;box-sizing:border-box;width:10px;height:12px;border:0;background:transparent url('rev9-social/quests/condition_closed.gif') center center no-repeat;transform:none}
+body.historical-site .quest-page .rev9-objectives-toggle[aria-expanded=true]::before{background-image:url('rev9-social/quests/condition_open.gif')}
+body.historical-site .quest-page .rev9-objectives-toggle:focus-visible,
+body.historical-site .quest-page.rev9-objective-disclosures .rev7-q-view-toggle:focus-visible{outline:1px solid #a9b6bd;outline-offset:0}
+body.historical-site .quest-page .rev9-objective-target[hidden]{display:none!important}
+
+/* REV9 final Quest presentation. The complete Web template remains missing.
+   Keep the four verified Web toggle/disclosure icons above; game-only
+   QuestTree status bitmaps are not evidence of the Web page's decoration.
+   Existing server-rendered status/progress text stays authoritative. This
+   scoped compact layout changes no node, form, selection or action handler. */
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-list :is(.basic-quest-card,.quest-card),
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .basic-objective{background-image:none!important}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .basic-objective::before{content:none}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-list :is(.basic-quest-card__header,.quest-card__header){box-sizing:border-box;min-height:44px;height:auto;padding:5px 8px}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-list :is(.quest-card-toggle,.hist-q-contract-choice){box-sizing:border-box;min-height:0;height:auto;width:100%;padding:0;text-align:left}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-list :is(.quest-card-title,h4){margin:0;font:11px/15px Verdana,Arial,sans-serif;letter-spacing:0;white-space:normal;overflow-wrap:anywhere}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-list :is(.quest-card-summary,.quest-card__meta){margin-top:2px;max-width:100%;font:10px/14px Verdana,Arial,sans-serif;letter-spacing:0;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-list .quest-status{display:block;margin:2px 0 0;padding:0;border:0;background:none;font:10px/14px Verdana,Arial,sans-serif;letter-spacing:0;text-transform:none;white-space:normal;overflow-wrap:anywhere}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-detail{box-sizing:border-box;padding:8px 12px;min-width:0;min-height:0;overflow:auto}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-detail-heading{margin-bottom:6px}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures :is(.rev7-q-description,.rev7-q-tasks){min-height:0;margin-bottom:7px}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .rev7-q-view-toggle{margin-bottom:6px}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .basic-objectives{margin:0;padding:0;border-left:0;gap:6px}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .basic-objective{padding-left:0;min-width:0;overflow-wrap:anywhere}
+
+/* One content budget, not percentage-height descendants plus sibling headers.
+   The same server Active quests paragraphs share the family-picker row. */
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures{box-sizing:border-box;display:flex;flex-direction:column;height:373px;min-height:0;gap:0}
+body.historical-site .quest-page.rev9-objective-disclosures .rev9-quest-toolbar{display:flex;flex:0 0 auto;align-items:center;justify-content:space-between;gap:10px;min-width:0;margin:1px 0 6px;min-height:26px}
+body.historical-site .quest-page.rev9-objective-disclosures .rev9-quest-toolbar .hist-q-family-picker{flex:0 1 226px;min-width:0;margin:0}
+body.historical-site .quest-page.rev9-objective-disclosures .rev9-quest-active-counts{flex:0 0 auto;min-width:0;text-align:right;font:10px/16px Verdana,Arial,sans-serif;color:#b9c8cd}
+body.historical-site .quest-page.rev9-objective-disclosures .rev9-quest-active-counts>p{margin:0;padding:0;white-space:normal;overflow-wrap:anywhere}
+body.historical-site .quest-page.rev9-objective-disclosures .rev9-quest-active-counts>p[hidden],
+body.historical-site .quest-page.rev9-objective-disclosures .rev9-quest-empty-intro,
+body.historical-site .quest-page.rev9-objective-disclosures .rev9-mission-reset{display:none!important}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .quest-panels{display:grid;grid-template-rows:minmax(0,1fr);flex:1 1 0;height:auto;min-width:0;min-height:0}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .quest-panel{box-sizing:border-box;height:auto;min-height:0;min-width:0;padding:0}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .quest-panel.is-active{display:flex;flex-direction:column}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .quest-section{flex:1 1 0;display:flex;flex-direction:column;height:auto;min-height:0;min-width:0;gap:0}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-console{box-sizing:border-box;flex:1 1 0;min-height:0;min-width:0;width:100%;height:auto;grid-template-rows:minmax(0,1fr)}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures :is(.hist-q-list,.hist-q-detail){align-self:stretch;height:auto;min-height:0;min-width:0;overflow:auto}
+body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .rev7-q-view-toggle{display:flex;align-items:center;justify-content:flex-end;gap:0;height:auto;min-height:20px;padding:1px 3px;margin:0 0 6px auto;border:0;background:none!important;font:10px/16px Verdana,Arial,sans-serif;cursor:pointer}

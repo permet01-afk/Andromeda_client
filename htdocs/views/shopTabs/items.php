@@ -25,13 +25,24 @@ if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }
 
-$redirectWithShopMessage = function (string $message, string $cat = 'ammo'): void {
+// The private historical presentation groups the original forms differently.
+// This affects rendering and the return URL only; purchase rules stay below.
+$historicalCatalogue = defined('ANDROMEDA_HISTORICAL_CATALOGUE') && ANDROMEDA_HISTORICAL_CATALOGUE === true;
+$historicalShopSection = $historicalCatalogue ? (string)($_GET['hist_shop'] ?? '') : '';
+if (!in_array($historicalShopSection, ['weapons', 'ammo', 'generators', 'extras', 'drones'], true)) {
+    $historicalShopSection = '';
+}
+$redirectWithShopMessage = function (string $message, string $cat = 'ammo') use ($historicalShopSection): void {
     if (session_status() !== PHP_SESSION_ACTIVE) {
         @session_start();
     }
     $_SESSION['shop_flash'] = $message;
     $cat = preg_replace('/[^a-z0-9_-]/i', '', $cat) ?: 'ammo';
-    header('Location: view.php?page=shop&tab=items&cat=' . urlencode($cat));
+    $returnUrl = 'view.php?page=shop&tab=items&cat=' . urlencode($cat);
+    if ($historicalShopSection !== '') {
+        $returnUrl .= '&hist_shop=' . urlencode($historicalShopSection);
+    }
+    header('Location: ' . $returnUrl);
     exit;
 };
 
@@ -351,7 +362,7 @@ if ($currentDroneCountEffective < 8) {
         <a href="view.php?page=shop&tab=items&cat=drones" class="<?= $category == 'drones' ? 'active' : '' ?>">Drones</a>
     </div>
 
-    <?php if($category == 'ammo'): ?>
+    <?php if($category == 'ammo' || $historicalCatalogue): ?>
     <div class="shop-card">
         <h2 class="shop-title">Laser Ammo</h2>
         <div class="items-grid">
@@ -523,7 +534,7 @@ if ($currentDroneCountEffective < 8) {
     </div>
     <?php endif; ?>
 
-    <?php if($category == 'weapons'): ?>
+    <?php if($category == 'weapons' || $historicalCatalogue): ?>
     <div class="shop-card">
         <h2 class="shop-title">Lasers</h2>
         <div class="items-grid">
@@ -613,7 +624,7 @@ if ($currentDroneCountEffective < 8) {
     </div>
     <?php endif; ?>
 
-    <?php if($category == 'extras'): ?>
+    <?php if($category == 'extras' || $historicalCatalogue): ?>
     <div class="shop-card">
         <h2 class="shop-title">CPUs & Extras</h2>
         <div class="items-grid">
@@ -641,7 +652,7 @@ if ($currentDroneCountEffective < 8) {
     </div>
     <?php endif; ?>
 
-    <?php if($category == 'drones'): ?>
+    <?php if($category == 'drones' || $historicalCatalogue): ?>
     <div class="shop-card">
         <h2 class="shop-title">Drones (<?= $currentDroneCount ?> / 8)</h2>
         <div class="items-grid">

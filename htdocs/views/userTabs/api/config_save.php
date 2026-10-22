@@ -130,6 +130,7 @@ try {
     }
 
     $requestedDesignId = isset($payload['design_id']) ? (int)$payload['design_id'] : 0;
+    $equipmentDesignChanged = $requestedDesignId > 0 && $requestedDesignId !== $currentShipId;
 
     if ($requestedDesignId > 0 && $requestedDesignId !== $currentShipId) {
 
@@ -249,6 +250,27 @@ try {
 
         $cfgByName = [];
         foreach ($configs as $c) $cfgByName[$c['name']] = $c;
+
+        // A newly selected design may have no slot rows yet. Seed only empty
+        // positions before applying the existing validated equipment payload.
+        if ($equipmentDesignChanged) {
+            $slotRowsToEnsure = [];
+            $slotRowsParameters = [];
+            foreach ($configs as $slotConfiguration) {
+                foreach (['lasers' => 'lasers_slots', 'generators' => 'gen_slots', 'extras' => 'extras_slots'] as $slotRowName => $slotCapacityColumn) {
+                    for ($slotPosition = 0; $slotPosition < (int)$slotConfiguration[$slotCapacityColumn]; $slotPosition++) {
+                        $slotRowsToEnsure[] = '(?,?,?)';
+                        $slotRowsParameters[] = (int)$slotConfiguration['id'];
+                        $slotRowsParameters[] = $slotRowName;
+                        $slotRowsParameters[] = $slotPosition;
+                    }
+                }
+            }
+            if (!empty($slotRowsToEnsure)) {
+                $db->prepare('INSERT IGNORE INTO ship_slot (ship_config_id, row_name, slot_index) VALUES ' . implode(',', $slotRowsToEnsure))->execute($slotRowsParameters);
+            }
+        }
+
 
         $idsWanted = [];
         foreach ($payload['configs'] as $conf) {

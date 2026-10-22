@@ -1,3 +1,91 @@
+-- ANDROMEDA REBORN — PREMIER PATCH CUMULATIF PRIVE, 21 OCTOBRE 2026
+-- Reference : 2560e606a52931b6b9fba378c7746a4d648dfcb6.
+-- DOCUMENT MANUEL : aucune instruction executee par ce fichier.
+-- Preparation seulement : aucune autorisation de SQL principal ni de deploiement.
+--
+-- 1. SAUVEGARDE ET ORDRE
+-- Avant une installation autorisee : sauvegarde coherente complete structure+donnees,
+-- recus/recompenses et objets SQL, verifiee sur une base separee ; code/config conserves
+-- hors du depot et du webroot. Suspendre proprement les ecritures de CETTE installation.
+-- Identifier instance, port et schema, puis verifier les prerequis ci-dessous.
+-- Le manuel cloak DEJA PUBLIE est conserve INTEGRALEMENT a la fin de ce fichier.
+-- Ses blocs A/B/C donnent la procedure conditionnelle, sauvegardes et gardes.
+--
+-- 2. CHANGEMENTS OBLIGATOIRES NOUVEAUX DU CUMULATIF
+-- AUCUNE NOUVELLE MIGRATION DE SCHEMA OU DE DONNEES IDENTIFIEE.
+-- Aucun CREATE/ALTER/DROP/DELETE/TRUNCATE/UPDATE de calendrier n'est a ajouter.
+-- Pages historiques, firmes, Discord, Havok et loader : pas de migration.
+-- config_save initialise les slots absents dans ship_slot par le chemin applicatif
+-- transactionnel : pas de fixtures ni de slots a injecter manuellement.
+-- Les 20 valeurs legacy typees des deux INSERT d'inscription initialisent UNIQUEMENT
+-- les nouveaux comptes via l'application ; aucun backfill des anciens comptes.
+-- Ne pas modifier andromeda.sql pour ce cumulatif.
+--
+-- 3. PREREQUIS DEJA PUBLIES
+-- users.cloak_active TINYINT(1) NOT NULL DEFAULT 0 est deja exige par la reference.
+-- Si absente : procedure A/B/C conservee plus bas, apres sauvegarde seulement.
+-- Si presente et compatible : ne rien refaire ni remettre ses valeurs a zero.
+-- Si le contrat differe : STOP ; pas de conversion improvisee.
+-- site_daily_login_claims et player_cargo existent deja dans le schema publie.
+-- Garder les clefs uniques des recus Daily et le moteur transactionnel.
+-- Table/clef absente ou divergente : STOP, ne pas improviser de CREATE/ALTER.
+--
+-- 4. DAILY LOGIN CINQ JOURS : CODE, PAS PURGE SQL
+-- Les cinq recompenses actives sont definies en code. Les recus historiques des
+-- jours 6/7 restent intacts. Ne pas les supprimer, renumeroter, recrediter, migrer
+-- vers une nouvelle semaine, ni reinitialiser les soldes ou progressions.
+-- Acteurs synthetiques, fixtures et dates 2030 des tests : PAS des donnees a installer.
+--
+-- 5. VERIFICATIONS FACULTATIVES, LECTURE SEULE
+-- Dans phpMyAdmin, selectionner la base, remplacer la valeur attendue, executer
+-- ce bloc et controler ses resultats avant les blocs cloak A/B/C.
+SET @andromeda_cumulative_expected_schema := 'A_REMPLACER_PAR_BASE_ANDROMEDA';
+SELECT VERSION() AS version_serveur, @@port AS port_SQL, DATABASE() AS base_selectionnee,
+       CASE WHEN CAST(DATABASE() AS BINARY) = CAST(@andromeda_cumulative_expected_schema AS BINARY)
+            THEN 'Nom concordant : verifier encore instance et port'
+            ELSE 'STOP : nom de base non confirme' END AS controle;
+
+SELECT TABLE_NAME, ENGINE
+FROM information_schema.TABLES
+WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(DATABASE() AS BINARY)
+  AND CAST(DATABASE() AS BINARY) = CAST(@andromeda_cumulative_expected_schema AS BINARY)
+  AND TABLE_NAME IN ('users','site_daily_login_claims','player_cargo','ship_slot','drone_slot_config');
+
+SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA
+FROM information_schema.COLUMNS
+WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(DATABASE() AS BINARY)
+  AND CAST(DATABASE() AS BINARY) = CAST(@andromeda_cumulative_expected_schema AS BINARY)
+  AND ((TABLE_NAME = 'users' AND COLUMN_NAME = 'cloak_active')
+       OR TABLE_NAME = 'site_daily_login_claims');
+
+SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE,
+       GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') AS colonnes
+FROM information_schema.STATISTICS
+WHERE CAST(TABLE_SCHEMA AS BINARY) = CAST(DATABASE() AS BINARY)
+  AND CAST(DATABASE() AS BINARY) = CAST(@andromeda_cumulative_expected_schema AS BINARY)
+  AND TABLE_NAME = 'site_daily_login_claims'
+GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE ORDER BY INDEX_NAME;
+-- Requis : PK(id), UNIQUE(player_id,week_key,day_number),
+-- UNIQUE(player_id,claim_date), index(player_id,week_key).
+-- Verifier colonnes/ordre/unicite, pas uniquement les noms des indexes.
+-- Aucune lecture de mot de passe/ticket ni extraction de comptes necessaire.
+--
+-- 6. ROLLBACK SUR
+-- Revenir aux fichiers applicatifs sauvegardes ; aucun nettoyage SQL necessaire.
+-- Conserver cloak_active et ses valeurs : le manuel historique donne les precautions.
+-- Conserver TOUS les recus Daily et recompenses accordees. Revenir au code sept jours
+-- change les regles : ce n'est pas un rollback economique neutre. Si necessaire,
+-- suspendre les reclamations pendant une maintenance autorisee et choisir la politique.
+-- Ne pas restaurer une ancienne DB par-dessus les activites recentes.
+--
+-- 7. OPERATIONS FACULTATIVES / DESTRUCTRICES
+-- Aucune proposee. Ne supprimer aucune table, donnees, recus, encheres ou colonne.
+-- Aucun SQL principal execute ; aucun nouveau SQL produit pour ce cumulatif.
+--
+-- ============================================================================
+-- MANUEL DE REFERENCE : OCTETS ORIGINAUX CONSERVES CI-DESSOUS
+-- Les mentions historiques «cette livraison/audit» appartiennent au manuel publie.
+-- ============================================================================
 -- LOT NETTOYAGE EXPERIMENTAL — BASE ddd0751076b69d724b6e26677b57ba46aa79ad90
 -- Aucun ajout/modification/suppression SQL obligatoire SUPPLEMENTAIRE pour ce lot.
 -- Aucune table ne doit etre supprimee pour installer le nettoyage du code.

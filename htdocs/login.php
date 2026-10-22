@@ -37,8 +37,14 @@ $csrfToken = getCsrfToken();
         <title>Andromeda — Sign in</title>
         <link rel="stylesheet" type="text/css" href="styles/default.css" />
         <link rel="stylesheet" type="text/css" href="styles/login.css" />
-    </head>
-    <body class="auth-body">
+    <link rel="stylesheet" href="/assets/historical/historical-site.css?v=14d04cb6e3184c7d">
+<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=1814ad9fabb275eb">
+<link rel="stylesheet" href="/assets/historical/historical-finish-commerce.css?v=bc47d5e0cf6ac5b8">
+<link rel="stylesheet" href="/assets/historical/historical-finish-activities.css?v=78dc86ba8f9c19d3">
+<link rel="stylesheet" href="/assets/historical/historical-finish-account.css?v=25a37628d4d543f9">
+<link rel="stylesheet" href="/assets/historical/historical-public.css?v=b99e70db7bf19fbc">
+</head>
+    <body class="auth-body historical-site">
         <main class="auth-container">
             <section class="auth-intro">
                 <img src="img/logo.png" alt="Andromeda" class="auth-logo" />
@@ -203,7 +209,14 @@ $csrfToken = getCsrfToken();
                 }
             });
         </script>
-    </body>
+    <script src="/assets/historical/historical-site.js?v=d557af55b311b912" defer></script>
+<script src="/assets/historical/historical-finish-shell.js?v=d7b22eeff856dc21" defer></script>
+<script src="/assets/historical/historical-finish-commerce.js?v=e614bf29de0f1b75" defer></script>
+<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>
+<script src="/assets/historical/historical-finish-account.js?v=68070d839cb48d33" defer></script>
+<script src="/assets/historical/public-legal-copy.js?v=1631579bf9549e0f" defer></script>
+<script src="/assets/historical/historical-public.js?v=9136cc0a94ec6d7b" defer></script>
+</body>
 </html>
 <?php
 ob_end_flush();
@@ -381,6 +394,26 @@ function handleRegisterForm($db)
 
     $db->insert('users', [
         'username' => $formPseudo,
+        // Explicit legacy empty state; keep strict SQL and gameplay defaults.
+        // Real credentials are hashed in users_infos. No game ticket is issued.
+        'sid' => 0,
+        'game_title' => '',
+        'password' => '',
+        'email' => '',
+        'birthday' => '',
+        'AuthTicket' => '',
+        'ip' => '',
+        'oldlocx' => 0,
+        'oldlocy' => 0,
+        'lastlogin' => 0,
+        'FightThreadID' => 0,
+        'ban_reason' => '',
+        'fat_lasers' => 0,
+        'shield_mechanics' => 0,
+        'booster_dmg_time' => 0,
+        'booster_shd_time' => 0,
+        'booster_npc_time' => 0,
+        'message' => '',
     ]);
 
     $sth = $db->prepare('SELECT id FROM users WHERE username = :username');
@@ -401,6 +434,8 @@ function handleRegisterForm($db)
 
     $db->insert('users_settings', [
         'playerid' => $result[0]['id'],
+        'resizable_windows' => '',
+        'mainmenu_position' => '',
     ]);
 
     $db->insert('player_config', [

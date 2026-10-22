@@ -407,21 +407,45 @@ function updateGateVisual(data) {
     const total = GATE_VISUAL_TOTALS[gateId] || parseInt(data.total || 0, 10);
     const showSpin = !!data.on_map && !data.completed;
 
-    gateArtBg.src = `${GATE_VISUAL_BASE}gate_${gateId}_bg.png`;
-    gateSpinVisual.src = `${GATE_VISUAL_BASE}spins/${gateId}.webp`;
-    gatePartLayer.innerHTML = '';
+    const backgroundSrc = `${GATE_VISUAL_BASE}gate_${gateId}_bg.png`;
+    const spinSrc = `${GATE_VISUAL_BASE}spins/${gateId}.webp`;
+    if (gateArtBg.getAttribute('src') !== backgroundSrc) gateArtBg.src = backgroundSrc;
+    if (gateSpinVisual.getAttribute('src') !== spinSrc) gateSpinVisual.src = spinSrc;
 
-    const fragment = document.createDocumentFragment();
-    parts.forEach(partId => {
-        const img = document.createElement('img');
-        img.className = 'gate-art-part';
-        img.alt = '';
-        img.draggable = false;
-        img.loading = 'lazy';
-        img.src = `${GATE_VISUAL_BASE}gate_${gateId}_${partId}.png`;
-        fragment.appendChild(img);
-    });
-    gatePartLayer.appendChild(fragment);
+    // Reuse unchanged artwork at the existing refresh. Publish a new set only
+    // after every piece is decoded, so a loaded gate cannot appear incomplete.
+    const renderKey = `${gateId}:${parts.join(',')}`;
+    if (gatePartLayer.dataset.renderKey !== renderKey) {
+        const requestSeq = String((parseInt(gatePartLayer.dataset.requestSeq || '0', 10) || 0) + 1);
+        gatePartLayer.dataset.requestSeq = requestSeq;
+        gatePartLayer.dataset.renderKey = renderKey;
+        delete gatePartLayer.dataset.renderError;
+        gatePartLayer.setAttribute('aria-busy', 'true');
+        gatePartLayer.replaceChildren();
+        const fragment = document.createDocumentFragment();
+        const images = parts.map(partId => {
+            const img = document.createElement('img');
+            img.className = 'gate-art-part';
+            img.alt = '';
+            img.draggable = false;
+            img.loading = 'eager';
+            img.src = `${GATE_VISUAL_BASE}gate_${gateId}_${partId}.png`;
+            fragment.appendChild(img);
+            return img;
+        });
+        Promise.all(images.map(img => img.decode())).then(() => {
+            if (gatePartLayer.dataset.requestSeq !== requestSeq || gatePartLayer.dataset.renderKey !== renderKey) return;
+            gatePartLayer.replaceChildren(fragment);
+            gatePartLayer.setAttribute('aria-busy', 'false');
+            gateArtStage.removeAttribute('title');
+        }).catch(() => {
+            if (gatePartLayer.dataset.requestSeq !== requestSeq || gatePartLayer.dataset.renderKey !== renderKey) return;
+            delete gatePartLayer.dataset.renderKey; // Retry at the existing refresh.
+            gatePartLayer.dataset.renderError = 'image-decode';
+            gatePartLayer.setAttribute('aria-busy', 'false');
+            gateArtStage.title = 'Portal artwork could not be loaded.';
+        });
+    }
 
     gateArtStage.classList.toggle('empty', parts.length === 0 && !showSpin);
     gateArtStage.classList.toggle('complete', total > 0 && parts.length >= total);

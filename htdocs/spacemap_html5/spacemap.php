@@ -98,64 +98,24 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
             position: relative;
         }
 
-        #loaderOverlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: url("../img/andromeda_spacemap.jpg") no-repeat center center;
-            background-size: cover;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
-
-        .progress-box {
-            width: 50%;
-            max-width: 600px;
-            height: 20px;
-            border: 2px solid #00aaff;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 2px;
-            margin-bottom: 20px;
-            box-shadow: 0 0 15px rgba(0, 170, 255, 0.5);
-        }
-
-        #progressBar {
-            width: 0%;
-            height: 100%;
-            background: #00aaff;
-            transition: width 0.2s;
-        }
-
-        #loadingText {
-            margin-bottom: 10px;
-            font-size: 14px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        #startBtn {
-            display: none;
-            padding: 15px 40px;
-            font-size: 24px;
-            font-weight: bold;
-            color: #fff;
-            background: #2ecc71;
-            border: 2px solid #2ecc71;
-            cursor: pointer;
-            text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(46, 204, 113, 0.6);
-            transition: transform 0.1s, box-shadow 0.1s;
-        }
-        #startBtn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(46, 204, 113, 0.9);
-        }
-        #startBtn:active {
-            transform: scale(0.95);
-        }
+        /* Historical loader presentation only. Existing JS owns all state. */
+        #loaderOverlay{position:fixed;inset:0;width:100%;height:100%;z-index:9999;display:block;background:#03070a;color:#fff}
+        .loader-visual-stage{position:absolute;inset:0;background:#03070a;overflow:hidden}
+        .loader-tutorial-canvas{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:max(100%,calc(100vh * 1.4222222222));aspect-ratio:1280/900;background:url("loader-historical/loader-background.png") center center/100% 100% no-repeat;pointer-events:none}
+        .loader-tutorial-text{position:absolute;margin:0;padding:0;color:#fff;font:clamp(11px,1.09375vw,14px)/1.1 "EurostileFl",Arial,sans-serif;white-space:pre-line;overflow-wrap:break-word;text-shadow:0 1px 2px #000}
+        .loader-tutorial-movement{left:47.4765625%;top:22.4277778%;width:15.07421875%;min-height:16.2234%}
+        .loader-tutorial-attack{left:52.08203125%;top:43.4722222%;width:20.46875%;min-height:15.061%}
+        .loader-tutorial-collect{left:39.5546875%;top:63.7777778%;width:19.5625%;min-height:10.5347%}
+        .loader-wordmark{position:absolute;top:16px;right:26px;width:clamp(220px,25vw,320px);height:auto;pointer-events:none}
+        .loader-dock{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(788px,calc(100% - 24px));aspect-ratio:788/123;background:url("loader-historical/loader-frame.png") center center/100% 100% no-repeat}
+        #loadingText{position:absolute;left:0;right:0;bottom:112%;margin:0;padding:6px 12px;background:rgba(0,0,0,.76);color:#ffe69b;font:20px/1.25 "EurostileFl",Arial,sans-serif;text-align:center;text-shadow:0 1px 2px #000;letter-spacing:.3px;overflow-wrap:anywhere}
+        .progress-box{position:absolute;left:26.1%;top:21.9%;width:46.7%;height:32.5%;padding:0;margin:0;border:0;background:transparent;box-shadow:none;overflow:hidden}
+        #progressBar{position:relative;width:0%;height:100%;background:url("loader-historical/loader-fill.png") left top/368px 40px no-repeat;transition:none}
+        #startBtn{position:absolute;left:26.1%;top:21.9%;width:46.7%;height:32.5%;display:none;padding:0;border:0;background:transparent;box-shadow:none;color:#fff6d4;font:28px/1 "EurostileHeaFl",Arial,sans-serif;text-align:center;text-shadow:0 1px 3px #000;cursor:pointer}
+        #startBtn:hover{transform:none;box-shadow:none;text-shadow:0 0 8px #ffd64e,0 1px 3px #000}
+        #startBtn:active{transform:none;box-shadow:none;color:#ffe17a}
+        #startBtn:focus-visible{outline:2px solid #fff3ac;outline-offset:3px}
+        @media(max-width:812px){.loader-wordmark{right:12px;max-width:40vw}.loader-dock{bottom:8px}#progressBar{background-size:calc((100vw - 24px)*.467) calc((100vw - 24px)*.05076)}#loadingText{font-size:16px}#startBtn{font-size:22px}}
     </style>
 
     <script>
@@ -181,13 +141,23 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
 <body>
 
     <div id="loaderOverlay">
-        <div id="loadingText">Initializing systems...</div>
-        
-        <div class="progress-box">
-            <div id="progressBar"></div>
-        </div>
+        <div class="loader-visual-stage">
+            <div class="loader-tutorial-canvas">
+                <p class="loader-tutorial-text loader-tutorial-movement">Greetings space pilot!
 
-        <button id="startBtn">START</button>
+Your spaceship is located in the center of the space map. Click on the map to move your ship around space and fly by holding down your mouse button.</p>
+                <p class="loader-tutorial-text loader-tutorial-attack">Left-click your mouse to select targets and click on the ammo symbol in the shortcut bar to fire weapons.
+
+Collect experience points by shooting down aliens and enemy ships, but don&#x27;t attack any of your company&#x27;s ships!</p>
+                <p class="loader-tutorial-text loader-tutorial-collect">Collect raw materials in space and exchange them for credits at your space station.</p>
+            </div>
+            <img class="loader-wordmark" src="loader-historical/andromeda-reborn.png" alt="Andromeda Reborn">
+            <div class="loader-dock">
+                <div id="loadingText">Initializing systems...</div>
+                <div class="progress-box"><div id="progressBar"></div></div>
+                <button id="startBtn">START</button>
+            </div>
+        </div>
     </div>
 
     <div id="gameContainer">

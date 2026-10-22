@@ -268,6 +268,7 @@ try {
 } catch (Throwable $e) {
     $dailyLoginState = [
         'schema_ready' => false,
+        'cycle_days' => DailyLoginBonusService::CYCLE_DAYS,
         'week_reset_label' => 'Monday 00:00 Europe/Zurich',
         'next_reset_label' => 'Not available',
         'claimed_count' => 0,
@@ -303,7 +304,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
             <div class="discord-copy">
                 <h2>Join our Discord</h2>
                 <p>Chat with pilots, follow events and server news.</p>
-                <a class="discord-link" href="https://discord.gg/A8nQyxTfWU" target="_blank" rel="noopener noreferrer">discord.gg/BEVpW6H7</a>
+                <a class="discord-link" href="https://discord.gg/A8nQyxTfWU" target="_blank" rel="noopener noreferrer">discord.gg/A8nQyxTfWU</a>
             </div>
             <a class="discord-cta" href="https://discord.gg/A8nQyxTfWU" target="_blank" rel="noopener noreferrer">Join Discord</a>
         </aside>
@@ -458,7 +459,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                 <div class="news-stream">
                     <article class="news-item">
                         <time datetime="2026-02-01">01/02/2026</time>
-                        <p>Welcome to Andromeda Beta by Lefaucheur</p>
+                        <p><?php echo (defined('ANDROMEDA_HISTORICAL_CATALOGUE') && ANDROMEDA_HISTORICAL_CATALOGUE === true) ? 'Welcome to Andromeda' : 'Welcome to Andromeda Beta by Lefaucheur'; ?></p>
                     </article>
                 </div>
             </section>
@@ -491,7 +492,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                 </header>
 
                 <div class="events-stack">
-                    <div class="event-panel <?php echo $spaceballActive ? 'is-active' : 'is-scheduled'; ?>">
+                    <div class="event-panel <?php echo $spaceballActive ? 'is-active' : 'is-scheduled'; ?>"<?php if (defined('ANDROMEDA_HISTORICAL_CATALOGUE') && ANDROMEDA_HISTORICAL_CATALOGUE === true) { ?> data-next-start="<?php echo $spaceballNextStart->getTimestamp(); ?>"<?php } ?>>
                         <div class="event-title-row">
                             <span class="event-name">Spaceball</span>
                             <?php if ($spaceballActive) { ?><span class="event-status">Active</span><?php } ?>
@@ -517,7 +518,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                         </dl>
                     </div>
 
-                    <div class="event-panel <?php echo $invasionActive ? 'is-active' : 'is-scheduled'; ?>">
+                    <div class="event-panel <?php echo $invasionActive ? 'is-active' : 'is-scheduled'; ?>"<?php if (defined('ANDROMEDA_HISTORICAL_CATALOGUE') && ANDROMEDA_HISTORICAL_CATALOGUE === true) { ?> data-next-start="<?php echo $invasionNextStart->getTimestamp(); ?>"<?php } ?>>
                         <div class="event-title-row">
                             <span class="event-name">Invasion</span>
                             <?php if ($invasionActive) { ?><span class="event-status">Active</span><?php } ?>
@@ -547,7 +548,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                         </dl>
                     </div>
 
-                    <div class="event-panel is-scheduled">
+                    <div class="event-panel is-scheduled"<?php if (defined('ANDROMEDA_HISTORICAL_CATALOGUE') && ANDROMEDA_HISTORICAL_CATALOGUE === true) { ?> data-next-start="<?php echo $tdmNextStart->getTimestamp(); ?>"<?php } ?>>
                         <div class="event-title-row">
                             <span class="event-name">Team Deathmatch</span>
                         </div>
@@ -648,7 +649,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                 </div>
                 <div class="daily-login-claimed">
                     <span>Claimed this week:</span>
-                    <strong data-daily-claimed-count><?php echo (int)($dailyLoginState['claimed_count'] ?? 0); ?> / 7</strong>
+                    <strong data-daily-claimed-count><?php echo (int)($dailyLoginState['claimed_count'] ?? 0); ?> / <?php echo (int)($dailyLoginState['cycle_days'] ?? DailyLoginBonusService::CYCLE_DAYS); ?></strong>
                 </div>
             </div>
 
@@ -736,7 +737,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             setStatus(state.claim_message || '', false);
             if (claimedCount) {
-                claimedCount.textContent = String(state.claimed_count || 0) + ' / 7';
+                claimedCount.textContent = String(state.claimed_count || 0) + ' / ' + String(state.cycle_days || 5);
             }
             claimBtn.disabled = !state.can_claim;
 

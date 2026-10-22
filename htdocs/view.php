@@ -35,6 +35,9 @@ $skylabCsrfToken = $_SESSION['skylab_csrf_token'];
 if (empty($_SESSION['ship_repair_csrf'])) $_SESSION['ship_repair_csrf'] = bin2hex(random_bytes(32));
 session_write_close();
 
+// Historical presentation catalogue; existing authentication guards above remain unchanged.
+define('ANDROMEDA_HISTORICAL_CATALOGUE', true);
+
 ob_start();
 
 require_once __DIR__ . '/libs/Database.php';
@@ -100,7 +103,10 @@ if (in_array($displayPage, $allowed, true)) {
 }
 $pageContent = ob_get_clean();
 
-$sth = $db->prepare('SELECT u.username, u.factionid, u.clanid, u.grade, u.experience, u.honor, u.rankpoints, u.credits, u.uridium, c.clan_tag FROM users u LEFT JOIN clan c ON c.id = u.clanid WHERE u.id = :id LIMIT 1');
+$historicalPresentation = defined('ANDROMEDA_HISTORICAL_CATALOGUE') && ANDROMEDA_HISTORICAL_CATALOGUE === true;
+// Private visual preview: extend this existing projection; no additional lookup.
+$historicalHeaderFields = $historicalPresentation ? ', u.level, u.shipid' : '';
+$sth = $db->prepare('SELECT u.username, u.factionid, u.clanid, u.grade, u.experience, u.honor, u.rankpoints, u.credits, u.uridium, c.clan_tag' . $historicalHeaderFields . ' FROM users u LEFT JOIN clan c ON c.id = u.clanid WHERE u.id = :id LIMIT 1');
 $sth->execute([
     ':id' => $sessionPlayerId,
 ]);
@@ -133,7 +139,7 @@ $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
 </div>
 <?php } else { ?>
 <div class="app-shell">
-    <header class="app-header">
+    <header class="app-header"<?php if ($historicalPresentation) { ?> data-pilot-id="<?php echo (int)$sessionPlayerId; ?>" data-pilot-level="<?php echo (int)($pilot['level'] ?? 0); ?>" data-pilot-ship="<?php echo (int)($pilot['shipid'] ?? 0); ?>" data-pilot-xp="<?php echo (int)($pilot['experience'] ?? 0); ?>" data-pilot-honor="<?php echo (int)($pilot['honor'] ?? 0); ?>"<?php } ?>>
         <div class="header-primary">
             <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="app-navigation">
                 <span class="sr-only">Toggle navigation</span>
@@ -317,8 +323,14 @@ function local_entete(bool $mobileEmbed = false)
         '  .nav-item.has-submenu:hover .submenu{display:block;}',
         '}',
         '</style>',
+        '<link rel="stylesheet" href="/assets/historical/historical-site.css?v=14d04cb6e3184c7d">',
+        '<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=1814ad9fabb275eb">',
+        '<link rel="stylesheet" href="/assets/historical/historical-finish-commerce.css?v=bc47d5e0cf6ac5b8">',
+        '<link rel="stylesheet" href="/assets/historical/historical-finish-activities.css?v=78dc86ba8f9c19d3">',
+        '<link rel="stylesheet" href="/assets/historical/historical-finish-account.css?v=25a37628d4d543f9">',
+        '<link rel="stylesheet" href="/assets/historical/historical-public.css?v=b99e70db7bf19fbc">',
         '</head>',
-        $mobileEmbed ? '<body class="mobile-embed">' : '<body>';
+        $mobileEmbed ? '<body class="mobile-embed historical-site">' : '<body class="historical-site">';
 }
 
 function local_pied(bool $mobileEmbed = false)
@@ -334,6 +346,13 @@ function local_pied(bool $mobileEmbed = false)
         'if(!f.querySelector("input[name=mobile_embed]")){const i=document.createElement("input");i.type="hidden";i.name="mobile_embed";i.value="1";f.appendChild(i);}',
         '});',
         '</script>',
+        '<script src="/assets/historical/historical-site.js?v=d557af55b311b912" defer></script>',
+        '<script src="/assets/historical/historical-finish-shell.js?v=d7b22eeff856dc21" defer></script>',
+        '<script src="/assets/historical/historical-finish-commerce.js?v=e614bf29de0f1b75" defer></script>',
+        '<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>',
+        '<script src="/assets/historical/historical-finish-account.js?v=68070d839cb48d33" defer></script>',
+        '<script src="/assets/historical/public-legal-copy.js?v=1631579bf9549e0f" defer></script>',
+        '<script src="/assets/historical/historical-public.js?v=9136cc0a94ec6d7b" defer></script>',
         '</body>',
         '</html>';
         return;
@@ -390,6 +409,13 @@ function local_pied(bool $mobileEmbed = false)
         '}',
         '});',
         '</script>',
+        '<script src="/assets/historical/historical-site.js?v=d557af55b311b912" defer></script>',
+        '<script src="/assets/historical/historical-finish-shell.js?v=d7b22eeff856dc21" defer></script>',
+        '<script src="/assets/historical/historical-finish-commerce.js?v=e614bf29de0f1b75" defer></script>',
+        '<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>',
+        '<script src="/assets/historical/historical-finish-account.js?v=68070d839cb48d33" defer></script>',
+        '<script src="/assets/historical/public-legal-copy.js?v=1631579bf9549e0f" defer></script>',
+        '<script src="/assets/historical/historical-public.js?v=9136cc0a94ec6d7b" defer></script>',
         '</body>',
         '</html>';
 }
