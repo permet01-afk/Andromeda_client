@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Data;
 using System.Linq;
 using System.Security.Cryptography;
@@ -71,7 +71,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                 if (receipt.status == "PAID")
                 {
                     long experience = checked(Convert.ToInt64(player.Rows[0]["experience"]) + receipt.experience);
-                    int updated = db.Execute("UPDATE users SET experience=experience+@x,uridium=uridium+@u,honor=honor+@h,level=@l WHERE id=@p",
+                    int updated = db.Execute("UPDATE users SET experience=experience+@x,uridium=uridium+@u,honor=honor+@h,level=@l,canBeginner=CASE WHEN experience<10240000 THEN 1 ELSE 0 END WHERE id=@p",
                         "@x", receipt.experience, "@u", receipt.uridium, "@h", receipt.honor, "@l", ExperienceSystem.GetLevelFromExperience(experience), "@p", claim.PlayerId);
                     if (updated != 1) throw new InvalidOperationException("TDM payment failed.");
                 }

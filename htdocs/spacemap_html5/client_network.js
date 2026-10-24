@@ -7291,6 +7291,12 @@ function handlePacket_LAB(parts, i) {
         const updates = [];
         const cursorStart = subAction === "UPD" ? i + 1 : i;
         const actionLabel = parts[cursorStart] || "INFO";
+        if (actionLabel === "OK" || actionLabel === "ERROR") {
+            if (typeof onRefiningUpgradeReply === "function") {
+                onRefiningUpgradeReply(actionLabel === "OK", parts[cursorStart + 1] || "");
+            }
+            return;
+        }
         if (actionLabel === "INFO") {
             let cursor = cursorStart + 1;
             while (cursor + 2 < parts.length) {
@@ -7319,6 +7325,7 @@ function handlePacket_LAB(parts, i) {
         if (changed && typeof refreshRefiningWindow === "function") {
             refreshRefiningWindow(true, "upgrade");
         }
+        if (actionLabel === "INFO" && typeof refreshUpgradePromptAvailability === "function") refreshUpgradePromptAvailability();
     }
 }
 

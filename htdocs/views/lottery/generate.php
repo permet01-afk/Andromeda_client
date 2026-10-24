@@ -212,7 +212,7 @@ function gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves) {
 }
 
 function gg_build_pilot_bar($db, $userId) {
-    $stmtPilot = $db->prepare("SELECT credits, uridium, experience, honor, rankpoints FROM users WHERE id = :id LIMIT 1");
+    $stmtPilot = $db->prepare("SELECT credits, uridium, experience, honor FROM users WHERE id = :id LIMIT 1");
     $stmtPilot->execute([':id' => $userId]);
     $freshPilot = $stmtPilot->fetch(PDO::FETCH_ASSOC);
 
@@ -221,7 +221,6 @@ function gg_build_pilot_bar($db, $userId) {
         'uridium' => number_format((int)($freshPilot['uridium'] ?? 0)),
         'experience' => number_format((int)($freshPilot['experience'] ?? 0)),
         'honor' => number_format((int)($freshPilot['honor'] ?? 0)),
-        'rankpoints' => number_format((int)($freshPilot['rankpoints'] ?? 0)),
     ];
 }
 

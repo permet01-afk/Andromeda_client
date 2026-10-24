@@ -2056,7 +2056,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
         private sealed class NpcRewardValues
         {
-            internal int Credits, Uridium, NpcPoints, RankPoints, Experience, Honor, DronePoints;
+            internal int Credits, Uridium, NpcPoints, Experience, Honor, DronePoints;
             internal int NpcId, MapId;
             internal string NpcName;
         }
@@ -2199,14 +2199,13 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (HappyHour.Enabled) { credits *= 2; uridium *= 2; points *= 2; }
             credits *= NPC_KILL_ECONOMY_MULTIPLIER;
             uridium *= NPC_KILL_ECONOMY_MULTIPLIER;
-            int rank = points;
             if (owner.CharacterInfo.KillStrek >= 10) points *= 2;
             int xpBase = this.ExperienceReward > 0 ? this.ExperienceReward : points;
             int honorBase = this.HonorReward > 0 ? this.HonorReward : Math.Max(0, points / 10);
             return new NpcRewardValues {
                 NpcId = this.Id, MapId = this.MapId, NpcName = this.Name,
                 Credits = owner.CharacterInfo.ApplyPilotBioAlienCreditBonus(credits),
-                Uridium = uridium, NpcPoints = points, RankPoints = rank,
+                Uridium = uridium, NpcPoints = points,
                 Experience = owner.CharacterInfo.ApplyPilotBioAlienXpBonus(Convert.ToInt32(xpBase * share)),
                 Honor = owner.CharacterInfo.ApplyPilotBioAlienHonorBonus(Convert.ToInt32(honorBase * share))
             };
@@ -2388,7 +2387,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             if (values.DronePoints > 0) DroneProgressionService.Award(sessionByCharacterId, values.DronePoints);
             SqlFailureScope.ThrowIfCurrentFailed();
             int int32_1 = values.Credits, int32_2 = values.Uridium;
-            int npcPoints = values.NpcPoints, rankpoints = values.RankPoints;
+            int npcPoints = values.NpcPoints;
             int xpGain = values.Experience, honorGain = values.Honor;
             bool leveledUp = false;
             bool questProgressChanged = false;
@@ -2402,7 +2401,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient("NpcReward"))
             {
                 long perfStepStart = PerformanceProfiler.Start();
-                leveledUp = sessionByCharacterId.CharacterInfo.ApplyNpcKillRewardBatch(client, int32_1, int32_2, npcPoints, rankpoints, xpGain, honorGain, 1);
+                leveledUp = sessionByCharacterId.CharacterInfo.ApplyNpcKillRewardBatch(client, int32_1, int32_2, npcPoints, xpGain, honorGain, 1);
                 SqlFailureScope.ThrowIfCurrentFailed();
                 perfRewardDbMs += PerformanceProfiler.ElapsedMilliseconds(perfStepStart);
 
@@ -2411,7 +2410,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     "You received " + int32_1 + " credits.<br/>" +
                     "You received " + int32_2 + " uridium.<br/>" +
                     "You received " + npcPoints + " npc point(s).<br/>" +
-                    "You received " + rankpoints + " rankpoint(s).<br/>" +
                     "You received " + xpGain + " experience.<br/>" +
                     "You received " + honorGain + " honor.";
 
@@ -2452,7 +2450,6 @@ namespace OrbitReborn_Emulator.Game.Npcs
                 sessionByCharacterId.SendData(PacketComposer.Compose("y", "URI|" + (object)int32_2 + "|" + (object)sessionByCharacterId.CharacterInfo.Uridium));
 
             sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|You received " + (object)npcPoints + " npc point(s)."));
-            sessionByCharacterId.SendData(PacketComposer.Compose("A", "STD|You received " + (object)rankpoints + " rankpoint(s)."));
 
             long xpTotal = sessionByCharacterId.CharacterInfo.Experience;
             int levelNow = sessionByCharacterId.CharacterInfo.Level;

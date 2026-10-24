@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../libs/HomeLeaderboardService.php';
+require_once __DIR__ . '/../libs/HallOfFameService.php';
 require_once __DIR__ . '/../libs/DailyLoginBonusService.php';
 require_once __DIR__ . '/../includes/legacy_message_display.php';
 
@@ -182,7 +183,6 @@ $sth = $db->prepare('
            u.clanid,
            u.credits,
            u.uridium,
-           u.rankpoints,
            u.experience,
            u.honor,
            c.clan_tag
@@ -203,7 +203,7 @@ $sth->execute([
 $userlog = $sth->fetchAll(PDO::FETCH_ASSOC);
 
 $leaderboards = HomeLeaderboardService::getLeaderboards($db, 10);
-$top10 = $leaderboards['rankpoints'] ?? [];
+$top10 = $leaderboards['top_user'] ?? [];
 $top10Experience = $leaderboards['experience'] ?? [];
 $top10Honor = $leaderboards['honor'] ?? [];
 $top10Clans = $leaderboards['clans'] ?? [];
@@ -249,7 +249,6 @@ if ((int)($currentUser['clanid'] ?? 0) !== 0 && !empty($currentUser['clan_tag'])
 }
 $credits = number_format((int)($currentUser['credits'] ?? 0));
 $uridium = number_format((int)($currentUser['uridium'] ?? 0));
-$rankpoints = number_format((int)($currentUser['rankpoints'] ?? 0));
 $experience = number_format((int)($currentUser['experience'] ?? 0));
 $honor = number_format((int)($currentUser['honor'] ?? 0));
 $onlinePlayers = number_format(max(0, (int)($serverStats['active_connections'] ?? 0)));
@@ -352,10 +351,6 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                             <dd><?php echo $honor; ?></dd>
                         </div>
 
-                        <div class="stat-row">
-                            <dt>Rank points</dt>
-                            <dd><?php echo $rankpoints; ?></dd>
-                        </div>
 
                         <div class="stat-row">
                             <dt>Credits</dt>
@@ -370,7 +365,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                 </div>
             </section>
 
-            <section class="dashboard-card hof-card">
+            <section class="dashboard-card hof-card" data-hof-category="top_user" data-hof-score-field="score" data-hof-provenance="Official FAQ 2013; exact 2010 formula not independently confirmed">
                 <header class="card-header">
                     <h2>Hall of fame</h2>
                     <a class="card-link" id="open-top100" href="#">View top 100</a>
@@ -378,16 +373,16 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
 
                 <div class="tab-group" data-tabs>
                     <div class="tab-controls" role="tablist" aria-label="Hall of fame leaderboards">
-                        <button class="tab-control is-active" type="button" role="tab" id="tab-rankpoints" aria-controls="panel-rankpoints" aria-selected="true">Rankpoints</button>
+                        <button class="tab-control is-active" type="button" role="tab" id="tab-topuser" aria-controls="panel-topuser" aria-selected="true">Top User</button>
                         <button class="tab-control" type="button" role="tab" id="tab-experience" aria-controls="panel-experience" aria-selected="false">Experience</button>
                         <button class="tab-control" type="button" role="tab" id="tab-honor" aria-controls="panel-honor" aria-selected="false">Honor</button>
                         <button class="tab-control" type="button" role="tab" id="tab-clan" aria-controls="panel-clan" aria-selected="false">Clan</button>
                     </div>
 
                     <div class="tab-panels">
-                        <div class="tab-panel is-active" id="panel-rankpoints" role="tabpanel" aria-labelledby="tab-rankpoints">
+                        <div class="tab-panel is-active" id="panel-topuser" role="tabpanel" aria-labelledby="tab-topuser">
                             <ol class="leaderboard">
-                                <?php homeRenderPilotLeaderboardRows($top10, 'rankpoints', 'No pilots ranked yet.'); ?>
+                                <?php homeRenderPilotLeaderboardRows($top10, 'score', 'No pilots ranked yet.'); ?>
                             </ol>
                         </div>
 
@@ -579,52 +574,6 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
     </div>
 </section>
 
-
-<div class="modal-overlay" id="top100Modal" hidden>
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="top100Title">
-        <header class="modal-header">
-            <h2 id="top100Title">Top 100</h2>
-            <button class="modal-close" type="button" id="top100Close" aria-label="Close">✕</button>
-        </header>
-
-        <div class="modal-status" id="top100Status" hidden aria-live="polite"></div>
-
-        <div class="tab-group" data-tabs>
-            <div class="tab-controls" role="tablist" aria-label="Top 100 leaderboards">
-                <button class="tab-control is-active" type="button" role="tab" id="modal-tab-rankpoints" aria-controls="modal-panel-rankpoints" aria-selected="true">Rankpoints</button>
-                <button class="tab-control" type="button" role="tab" id="modal-tab-experience" aria-controls="modal-panel-experience" aria-selected="false">Experience</button>
-                <button class="tab-control" type="button" role="tab" id="modal-tab-honor" aria-controls="modal-panel-honor" aria-selected="false">Honor</button>
-                <button class="tab-control" type="button" role="tab" id="modal-tab-clan" aria-controls="modal-panel-clan" aria-selected="false">Clan</button>
-            </div>
-
-            <div class="tab-panels modal-body">
-                <div class="tab-panel is-active" id="modal-panel-rankpoints" role="tabpanel" aria-labelledby="modal-tab-rankpoints">
-                    <ol class="leaderboard" id="modal-leaderboard-rankpoints">
-                        <li class="leaderboard-empty">Open the top 100 to load this ranking.</li>
-                    </ol>
-                </div>
-
-                <div class="tab-panel" id="modal-panel-experience" role="tabpanel" aria-labelledby="modal-tab-experience">
-                    <ol class="leaderboard" id="modal-leaderboard-experience">
-                        <li class="leaderboard-empty">Open the top 100 to load this ranking.</li>
-                    </ol>
-                </div>
-
-                <div class="tab-panel" id="modal-panel-honor" role="tabpanel" aria-labelledby="modal-tab-honor">
-                    <ol class="leaderboard" id="modal-leaderboard-honor">
-                        <li class="leaderboard-empty">Open the top 100 to load this ranking.</li>
-                    </ol>
-                </div>
-
-                <div class="tab-panel" id="modal-panel-clan" role="tabpanel" aria-labelledby="modal-tab-clan">
-                    <ol class="leaderboard" id="modal-leaderboard-clans">
-                        <li class="leaderboard-empty">Open the top 100 to load this ranking.</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <div class="modal-overlay daily-login-overlay" id="dailyLoginModal" hidden>
     <div class="daily-login-card" role="dialog" aria-modal="true" aria-labelledby="dailyLoginTitle">
@@ -819,185 +768,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     })();
 
-    (function () {
-        var openBtn = document.getElementById('open-top100');
-        var modal = document.getElementById('top100Modal');
-        var closeBtn = document.getElementById('top100Close');
-        var status = document.getElementById('top100Status');
-        var loaded = false;
-        var loading = false;
-        var numberFormatter = null;
 
-        try {
-            numberFormatter = new Intl.NumberFormat();
-        } catch (e) {
-            numberFormatter = null;
-        }
-
-        if (!openBtn || !modal || !closeBtn) return;
-
-        function escapeHtml(value) {
-            return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;'
-                }[ch];
-            });
-        }
-
-        function formatNumber(value) {
-            var n = Number(value || 0);
-            if (numberFormatter) {
-                return numberFormatter.format(n);
-            }
-            return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
-
-        function setStatus(message, isError) {
-            if (!status) return;
-            status.textContent = message || '';
-            status.hidden = !message;
-            status.classList.toggle('is-error', !!isError);
-        }
-
-        function emptyRow(message) {
-            return '<li class="leaderboard-empty">' + escapeHtml(message) + '</li>';
-        }
-
-        function renderPilotRows(rows, scoreKey) {
-            if (!Array.isArray(rows) || rows.length === 0) {
-                return emptyRow('No pilots ranked yet.');
-            }
-
-            return rows.map(function (player, index) {
-                var factionId = parseInt(player.factionid || 0, 10);
-                var grade = parseInt(player.grade || 0, 10);
-                return '<li class="leaderboard-row">' +
-                    '<span class="leaderboard-rank">#' + (index + 1) + '</span>' +
-                    '<span class="leaderboard-company"><img src="img/ranks/company/' + factionId + '.png" alt="Company ' + factionId + '" /></span>' +
-                    '<span class="leaderboard-grade"><img src="img/ranks/' + grade + '.png" alt="Grade ' + grade + '" /></span>' +
-                    '<span class="leaderboard-name">' + escapeHtml(player.username || '') + '</span>' +
-                    '<span class="leaderboard-score">' + formatNumber(player[scoreKey] || 0) + '</span>' +
-                '</li>';
-            }).join('');
-        }
-
-        function renderClanRows(rows) {
-            if (!Array.isArray(rows) || rows.length === 0) {
-                return emptyRow('No clans ranked yet.');
-            }
-
-            return rows.map(function (clan, index) {
-                var label = '[' + (clan.clan_tag || '') + '] ' + (clan.clan_name || '');
-                return '<li class="leaderboard-row">' +
-                    '<span class="leaderboard-rank">#' + (index + 1) + '</span>' +
-                    '<span class="leaderboard-name">' + escapeHtml(label) + '</span>' +
-                    '<span class="leaderboard-score">' + formatNumber(clan.total_experience || 0) + '</span>' +
-                '</li>';
-            }).join('');
-        }
-
-        function setLoadingRows() {
-            ['rankpoints', 'experience', 'honor', 'clans'].forEach(function (key) {
-                var el = document.getElementById('modal-leaderboard-' + key);
-                if (el) {
-                    el.innerHTML = emptyRow('Loading...');
-                }
-            });
-        }
-
-        function renderTop100(leaderboards) {
-            var rankpoints = document.getElementById('modal-leaderboard-rankpoints');
-            var experience = document.getElementById('modal-leaderboard-experience');
-            var honor = document.getElementById('modal-leaderboard-honor');
-            var clans = document.getElementById('modal-leaderboard-clans');
-
-            if (rankpoints) rankpoints.innerHTML = renderPilotRows(leaderboards.rankpoints || [], 'rankpoints');
-            if (experience) experience.innerHTML = renderPilotRows(leaderboards.experience || [], 'experience');
-            if (honor) honor.innerHTML = renderPilotRows(leaderboards.honor || [], 'honor');
-            if (clans) clans.innerHTML = renderClanRows(leaderboards.clans || []);
-        }
-
-        function loadTop100() {
-            if (loaded || loading) {
-                return;
-            }
-
-            loading = true;
-            setStatus('Loading top 100...', false);
-            setLoadingRows();
-
-            fetch('views/api/home_top100.php', {
-                method: 'GET',
-                credentials: 'same-origin',
-                cache: 'no-store'
-            })
-                .then(function (response) {
-                    if (!response.ok) {
-                        throw new Error('HTTP ' + response.status);
-                    }
-                    return response.json();
-                })
-                .then(function (payload) {
-                    if (!payload || !payload.success) {
-                        throw new Error((payload && payload.message) || 'Unable to load top 100.');
-                    }
-                    renderTop100(payload.leaderboards || {});
-                    loaded = true;
-                    setStatus('', false);
-                })
-                .catch(function () {
-                    setStatus('Unable to load the top 100 right now. Close this window and try again.', true);
-                    ['rankpoints', 'experience', 'honor', 'clans'].forEach(function (key) {
-                        var el = document.getElementById('modal-leaderboard-' + key);
-                        if (el) {
-                            el.innerHTML = emptyRow('Top 100 unavailable.');
-                        }
-                    });
-                })
-                .finally(function () {
-                    loading = false;
-                });
-        }
-
-        function openModal(e) {
-            e.preventDefault();
-            modal.hidden = false;
-            document.body.classList.add('modal-open');
-
-            var mainActive = document.querySelector('.hof-card [role="tab"].is-active');
-            var map = {
-                'tab-rankpoints': 'modal-tab-rankpoints',
-                'tab-experience': 'modal-tab-experience',
-                'tab-honor': 'modal-tab-honor',
-                'tab-clan': 'modal-tab-clan'
-            };
-            if (mainActive && map[mainActive.id]) {
-                var target = document.getElementById(map[mainActive.id]);
-                if (target) target.click();
-            }
-
-            loadTop100();
-        }
-
-        function closeModal() {
-            modal.hidden = true;
-            document.body.classList.remove('modal-open');
-        }
-
-        openBtn.addEventListener('click', openModal);
-        closeBtn.addEventListener('click', closeModal);
-
-        modal.addEventListener('click', function (e) {
-            if (e.target === modal) closeModal();
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && !modal.hidden) closeModal();
-        });
-    })();
 });
 </script>

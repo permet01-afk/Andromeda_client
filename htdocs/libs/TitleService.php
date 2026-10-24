@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/BeginnerStatusService.php';
+
 class TitleService
 {
     const BEGINNER_TITLE = 'title_5';
@@ -298,13 +300,13 @@ class TitleService
 
     private function buildBeginnerCard(array $user, string $currentTitle): array
     {
-        $active = (int)($user['canBeginner'] ?? 0) === 1 && (int)($user['rankpoints'] ?? 0) < 25000;
+        $active = BeginnerStatusService::isBeginnerExperience($user['experience'] ?? 0);
         return [
             'title_key' => self::BEGINNER_TITLE,
             'label' => self::getTitleLabel(self::BEGINNER_TITLE),
             'type' => 'Starter',
-            'status' => $active || $currentTitle === self::BEGINNER_TITLE ? 'Active' : 'Not active',
-            'condition' => 'Available while beginner protection is active.',
+            'status' => $active ? 'Active' : 'Not active',
+            'condition' => 'Available through level 11 inclusive.',
             'description' => 'Starter title. It is not selectable as a permanent title.',
             'progress_text' => '',
             'progress_percent' => 0,
@@ -414,12 +416,12 @@ class TitleService
         }
 
         $user = $this->getUserRow();
-        if ((int)($user['canBeginner'] ?? 0) === 1 && (int)($user['rankpoints'] ?? 0) < 25000) {
+        if (BeginnerStatusService::isBeginnerExperience($user['experience'] ?? 0)) {
             return self::BEGINNER_TITLE;
         }
 
         $current = (string)($user['game_title'] ?? '');
-        if ($current !== '' && !isset(self::$managedTitles[$current])) {
+        if ($current !== '' && $current !== self::BEGINNER_TITLE && !isset(self::$managedTitles[$current])) {
             return $current;
         }
 
@@ -428,10 +430,10 @@ class TitleService
 
     private function getUserRow(): array
     {
-        $stmt = $this->db->prepare('SELECT id, game_title, canBeginner, rankpoints FROM users WHERE id = :player_id LIMIT 1');
+        $stmt = $this->db->prepare('SELECT id, game_title, canBeginner, experience, level FROM users WHERE id = :player_id LIMIT 1');
         $stmt->execute([':player_id' => $this->playerId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return is_array($row) ? $row : [];
+        return is_array($row) ? BeginnerStatusService::normalizeUserRow($this->db, $row) : [];
     }
 
     private function getSelectedPermanentTitle(): string

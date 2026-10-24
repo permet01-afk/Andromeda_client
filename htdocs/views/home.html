@@ -1,5 +1,5 @@
 <?php 
-$sth = $db->prepare("SELECT username, grade, factionid, clanid, credits, uridium, rankpoints FROM users WHERE id = :id LIMIT 1");
+$sth = $db->prepare("SELECT username, grade, factionid, clanid, credits, uridium FROM users WHERE id = :id LIMIT 1");
 $sth->execute(array(
 				':id' => $_SESSION['player_id']
 			));
@@ -23,10 +23,9 @@ $sth->execute(array(
 			));
 $userlog = $sth->fetchAll();
 
-$last_active_limit = time() - (3600*14*24);
-$sth = $db->prepare("SELECT users.username, users.rankpoints, users.factionid, users.grade FROM users WHERE lastlogin > $last_active_limit AND (SELECT count(id) AS is_ban FROM bans WHERE bans.user_id = users.id AND bans.timestamp_expire > UNIX_TIMESTAMP() ) = 0  ORDER BY users.rankpoints DESC LIMIT 0, 10");
-$sth->execute();
-$top10 = $sth->fetchAll();
+require_once __DIR__ . '/../libs/HallOfFameService.php';
+$hof = HallOfFameService::getCategory($db, 'top_user', 10);
+$top10 = $hof['rows'];
 
 $sth = $db->prepare("SELECT COUNT(*) as regplayer FROM users;");
 $sth->execute();
@@ -57,7 +56,6 @@ $vruplayer = $sth->fetchAll();
 			<div class="stat"><div class="stat-left">Username</div><div class="stat-right"><?=$userclanag,$datauser[0]['username']?></div></div>
 			<div class="stat"><div class="stat-left">Company</div><div class="stat-right"><img src="img/ranks/company/<?=$datauser[0]['factionid']?>.png"></div></div>
 			<div class="stat"><div class="stat-left">Grade</div><div class="stat-right"><img src="img/ranks/<?=$datauser[0]['grade']?>.png"></div></div>
-			<div class="stat"><div class="stat-left">Rankpoints</div><div class="stat-right"><?=number_format($datauser[0]['rankpoints'])?></div></div>
 			<div class="stat"><div class="stat-left">Credits</div><div class="stat-right"><?=number_format($datauser[0]['credits'])?></div></div>
 			<div class="stat"><div class="stat-left">Uridium</div><div class="stat-right"><?=number_format($datauser[0]['uridium'])?></div></div>
 		</div>
@@ -89,7 +87,7 @@ $vruplayer = $sth->fetchAll();
 				$i++;
 				$j = $i % 2;
 				?>	
-				<div class="top10item<?=$j?>"><div class="top10index"><?=$i?>.</div><div class="top10company"><img src="img/ranks/company/<?=$player['factionid']?>.png"></div><div class="top10grade"><img src="img/ranks/<?=$player['grade']?>.png"></div><div class="top10username"><?=$player['username']?></div><div class="top10points"><?=number_format($player['rankpoints'])?></div></div>
+				<div class="top10item<?=$j?>"><div class="top10index"><?=$i?>.</div><div class="top10company"><img src="img/ranks/company/<?=$player['factionid']?>.png"></div><div class="top10grade"><img src="img/ranks/<?=$player['grade']?>.png"></div><div class="top10username"><?=$player['username']?></div><div class="top10points"><?=number_format((float)$player['score'])?></div></div>
 				<?php
 			}
 		?>

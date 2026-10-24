@@ -8,16 +8,16 @@ $buymessage = null;
 function handleCompanyChange($db, $factionid, $type)
 {
     $transferPlans = [
-        1 => ['price' => 35000, 'rankMultiplier' => 0.70, 'honorMultiplier' => 0.70],
-        2 => ['price' => 350000, 'rankMultiplier' => 0.85, 'honorMultiplier' => 0.85],
-        3 => ['price' => 700000, 'rankMultiplier' => 0.95, 'honorMultiplier' => 0.95],
+        1 => ['price' => 35000, 'honorMultiplier' => 0.70],
+        2 => ['price' => 350000, 'honorMultiplier' => 0.85],
+        3 => ['price' => 700000, 'honorMultiplier' => 0.95],
     ];
 
     if (!isset($transferPlans[$type])) {
         return "Invalid transfer type.";
     }
 
-    $sth = $db->prepare("SELECT uridium, rankpoints, honor, clanid, factionid FROM users WHERE id = :id LIMIT 1");
+    $sth = $db->prepare("SELECT uridium, honor, clanid, factionid FROM users WHERE id = :id LIMIT 1");
     $sth->execute([':id' => $_SESSION['player_id']]);
     $datauser = $sth->fetch();
 
@@ -34,7 +34,6 @@ function handleCompanyChange($db, $factionid, $type)
         return "Error: Not enough Uridium (Need ".number_format($priceUri)." U).";
     }
 
-    $newRankpoints = floor($datauser['rankpoints'] * $plan['rankMultiplier']);
     $newHonor      = floor($datauser['honor'] * $plan['honorMultiplier']);
 
     switch ($factionid) {
@@ -44,12 +43,11 @@ function handleCompanyChange($db, $factionid, $type)
         default: return "Invalid Company ID.";
     }
 
-    $req = $db->prepare('UPDATE users SET factionid=:fid, uridium=uridium-:cost, rankpoints=:rp, honor=:hn, locx=:x, locy=:y, mapid=:m WHERE id=:id AND uridium >= :cost_check AND NOT EXISTS(SELECT 1 FROM player_ship_state s WHERE s.player_id=users.id AND s.status=\'DESTROYED\') AND NOT EXISTS(SELECT 1 FROM player_drone_state d WHERE d.player_id=users.id AND d.gameplay_token IS NOT NULL)');
+    $req = $db->prepare('UPDATE users SET factionid=:fid, uridium=uridium-:cost, honor=:hn, locx=:x, locy=:y, mapid=:m WHERE id=:id AND uridium >= :cost_check AND NOT EXISTS(SELECT 1 FROM player_ship_state s WHERE s.player_id=users.id AND s.status=\'DESTROYED\') AND NOT EXISTS(SELECT 1 FROM player_drone_state d WHERE d.player_id=users.id AND d.gameplay_token IS NOT NULL)');
     $req->execute([
         ':fid' => $factionid,
         ':cost' => $priceUri,
         ':cost_check' => $priceUri,
-        ':rp' => $newRankpoints,
         ':hn' => $newHonor,
         ':x' => $newX,
         ':y' => $newY,
@@ -216,7 +214,7 @@ if(isset($_GET['success'])) {
                 </div>
                 <div class="plan-body">
                     <div class="stat-row">
-                        <span>Rank & Honor</span>
+                        <span>Honor</span>
                         <span class="stat-val neg">-30%</span>
                     </div>
                     <div class="stat-row">
@@ -244,7 +242,7 @@ if(isset($_GET['success'])) {
                 </div>
                 <div class="plan-body">
                     <div class="stat-row">
-                        <span>Rank & Honor</span>
+                        <span>Honor</span>
                         <span class="stat-val neg" style="color:#fbbf24;">-15%</span>
                     </div>
                     <div class="stat-row">
@@ -272,7 +270,7 @@ if(isset($_GET['success'])) {
                 </div>
                 <div class="plan-body">
                     <div class="stat-row">
-                        <span>Rank & Honor</span>
+                        <span>Honor</span>
                         <span class="stat-val neg" style="color:#4ade80;">-5%</span>
                     </div>
                     <div class="stat-row">

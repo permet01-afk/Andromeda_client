@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Game.Characters;
+﻿using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Storage;
 using System;
 using System.Data;
@@ -65,7 +65,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     int rings = Convert.ToInt32(user["gg_rings"]);
                     if (gateId == 1 || rings >= gateId - 1) rings = Math.Max(rings, gateId);
                     rings = Math.Max(0, Math.Min(4, rings));
-                    RequireOne(tx.Execute("UPDATE users SET credits=credits+@cre,uridium=uridium+@uri,experience=experience+@xp,honor=honor+@hon,ammo_ucb100=ammo_ucb100+@ammo,level=@level,gg_rings=@rings WHERE id=@uid",
+                    RequireOne(tx.Execute("UPDATE users SET credits=credits+@cre,uridium=uridium+@uri,experience=experience+@xp,honor=honor+@hon,ammo_ucb100=ammo_ucb100+@ammo,level=@level,canBeginner=CASE WHEN experience<10240000 THEN 1 ELSE 0 END,gg_rings=@rings WHERE id=@uid",
                         "@cre", reward.Credits, "@uri", reward.Uridium, "@xp", reward.Experience, "@hon", reward.Honor,
                         "@ammo", reward.Ucb100, "@level", ExperienceSystem.GetLevelFromExperience(experience), "@rings", rings, "@uid", userId));
                     RequireOne(tx.Execute("UPDATE player_cargo SET seprom=seprom+@seprom WHERE id=@uid", "@seprom", reward.Seprom, "@uid", userId));

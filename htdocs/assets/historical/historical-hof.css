@@ -1,0 +1,54 @@
+.hfOverlay{position:fixed;inset:0;z-index:30000;display:flex;align-items:center;justify-content:center;padding:12px;background:#0009;overflow:auto;color:#bcd3e3;font:11px/1.45 Arial,sans-serif}
+.hfWindow{position:relative;width:803px;height:420px;max-width:100%;flex:none;margin:auto;background:url('dops-hof/hof_background.jpg') 0 0/100% 100% no-repeat}
+.hfNav{position:absolute;top:17px;left:244px;display:flex;gap:3px}
+.hfWindow button{font:10px Arial,sans-serif;color:#bcd3e3;cursor:pointer}
+.hfNav button.hfNavButton{box-sizing:border-box;flex:0 0 42px;width:42px;height:49px;padding:0;margin:0;border:0;border-radius:0;background-color:transparent;background-repeat:no-repeat;background-position:0 0}
+.hfNav button.hfNavButton:hover,.hfNav button.hfNavButton[aria-pressed=true],.hfNav button.hfNavButton:focus-visible{background-position:0 -49px}
+.hfWindow .hfClose{position:absolute;right:25px;top:28px;width:24px;height:24px;padding:0;border:0;background:transparent url('dops-rev7/shell/popup/close_button_sprite.png') 0 0 no-repeat;font-size:0}
+.hfWindow .hfClose:hover{background-position:0 -48px}
+.hfInside{position:absolute;left:82px;right:80px;top:90px;bottom:39px;display:flex;flex-direction:column;min-height:0;min-width:0}
+.hfTop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none;height:26px}
+.hfTop h2{margin:0;color:#c3ebfe;font:11px Arial,sans-serif;letter-spacing:0;text-shadow:none;text-transform:none}
+.hfChoice{position:relative;flex:none}
+.hfChoice summary{box-sizing:border-box;list-style:none;cursor:pointer;width:183px;height:22px;padding:5px 4px 0 25px;background:url('dops-hof/dropdown_sprite_183x22.png') 0 0 no-repeat;color:#fff;font:9px Arial,sans-serif}
+.hfChoice summary::-webkit-details-marker{display:none}
+.hfMenu{position:absolute;right:0;top:22px;width:183px;z-index:10;background:#02070b;border:1px solid #697984}
+.hfMenu button{display:block;width:100%;padding:6px 9px;background:none;border:0;border-radius:0;text-align:left}
+.hfMenu button:hover,.hfMenu button:focus{background:#2f4d65;color:#fff}
+.hfModes{display:flex;justify-content:center;gap:2px;flex:none;margin:4px 0 8px}
+.hfModes button{background:#10202c;border:1px solid #354e60;border-radius:0;min-height:22px;width:138px;padding:0 4px;font-size:9px}
+.hfModes button[aria-pressed=true]{color:#fc0;border-bottom-color:#c4af43}
+.hfFilters{display:flex;align-items:center;gap:6px;margin:0 0 7px;flex:none;color:#92a9b9}
+.hfFilters select{max-width:135px;background:#091721;color:#c9d9e4;border:1px solid #466276;font:10px Arial,sans-serif}
+.hfContent{flex:1;min-height:0;min-width:0;overflow:auto;scrollbar-color:#7f909c #0b1720}
+.hfTableViewport{width:100%;min-height:100%;overflow:auto;border-top:1px solid #29465b;border-bottom:1px solid #29465b}
+.hfOverlay .hfWindow table{width:100%;border-collapse:collapse;table-layout:auto;font:10px/1.45 Arial,sans-serif}
+.hfOverlay .hfWindow thead{position:sticky;top:0;background:#152632;z-index:1}
+.hfOverlay .hfWindow th{height:22px;text-align:left;color:#a4d3ff;font-weight:400}
+.hfOverlay .hfWindow td{height:22px;padding:0 6px;background:url('dops-hof/line_black_thin.png') repeat-x;border:0;overflow-wrap:anywhere}
+.hfOverlay .hfWindow th:first-child,.hfOverlay .hfWindow td:first-child{width:36px;text-align:center}
+.hfOverlay .hfWindow th:last-child,.hfOverlay .hfWindow td:last-child{text-align:right;padding-right:9px}
+.hfOverlay .hfWindow td:nth-child(2){color:#a4d3ff}
+.hfNativeIcon{display:inline-block;vertical-align:middle;width:12px!important;height:12px!important;object-fit:contain;margin-right:4px;border:0}
+.hfProvenance{font-size:10px;line-height:14px;flex:none;margin:6px 0 0;color:#95aaba;overflow-wrap:anywhere}
+.hfEmpty{padding:15px 10px;margin:0;color:#b7cad7;font-size:12px;line-height:1.6}
+.hfRankCard{display:flex;gap:12px;align-items:flex-start;padding:12px 5px}
+.hfRankCard p{margin:7px 0}.hfRankCard strong{color:#e0ebf2}
+.hfWindow [hidden]{display:none!important}
+.hfWindow :focus-visible{outline:2px solid #e7cf70;outline-offset:2px}
+@media(max-width:850px){
+ .hfWindow{height:min(600px,calc(100dvh - 24px));min-height:390px;padding:13px 14px 30px;background-size:100% 100%}
+ .hfNav{position:static;justify-content:center;flex-wrap:wrap;gap:3px;max-width:330px;margin:0 auto 10px;background:#02080dbb}
+ .hfWindow .hfClose{top:4px;right:3px}
+ .hfInside{position:static;height:calc(100% - 64px);min-height:0}
+ .hfTop{height:auto;min-height:45px;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:7px}
+ .hfTop h2{width:100%;text-align:center}.hfModes button{flex:1;min-width:0;width:auto;padding:3px 2px;font-size:9px}
+ .hfFilters select{max-width:125px}.hfOverlay .hfWindow table{font-size:10px}.hfOverlay .hfWindow th:first-child,.hfOverlay .hfWindow td:first-child{width:32px}
+ .hfOverlay .hfWindow td{padding:0 4px}.hfOverlay .hfWindow th:last-child,.hfOverlay .hfWindow td:last-child{padding-right:4px}.hfProvenance{font-size:10px;line-height:14px}
+}
+@media(max-width:350px){.hfNav{max-width:200px}.hfInside{height:calc(100% - 116px)}.hfWindow .hfNavButton{margin-bottom:1px}.hfWindow{min-height:460px}}
+@media(max-height:480px){.hfOverlay{align-items:flex-start}.hfWindow{min-height:390px}}
+
+/* Keep numeric rank and score intact under the existing site table rules. */
+.hfOverlay .hfWindow th:first-child,.hfOverlay .hfWindow td:first-child{white-space:nowrap;min-width:28px}
+.hfOverlay .hfWindow th:last-child,.hfOverlay .hfWindow td:last-child{white-space:nowrap}

@@ -96,6 +96,7 @@ class WeeklyMissionService
                  SET uridium = uridium + :uridium,
                      experience = experience + :experience,
                      level = :level,
+                     canBeginner = :beginner,
                      honor = honor + :honor,
                      ammo_ucb100 = ammo_ucb100 + :ucb100,
                      ammo_rsb75 = ammo_rsb75 + :rsb75
@@ -105,6 +106,7 @@ class WeeklyMissionService
                 ':uridium' => (int)$mission['reward_uridium'],
                 ':experience' => $rewardExperience,
                 ':level' => $newLevel,
+                ':beginner' => BeginnerStatusService::isBeginnerLevel($newLevel) ? 1 : 0,
                 ':honor' => (int)$mission['reward_honor'],
                 ':ucb100' => (int)$mission['reward_ucb100'],
                 ':rsb75' => (int)$mission['reward_rsb75'],

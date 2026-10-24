@@ -124,6 +124,32 @@ namespace OrbitReborn_Emulator.Game.Titles
 
         public static string ResolveDisplayedTitle(CharacterInfo information)
         {
+            if (information == null) return string.Empty;
+            try
+            {
+                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                    return ResolveDisplayedTitle(information, client);
+            }
+            catch { return ResolveTitleFallback(information); }
+        }
+
+        // Reuse the caller's reward client: no nested custom-pool checkout during level-up.
+        public static void RefreshBeginnerTitleAfterLevelChange(CharacterInfo information, bool wasBeginner, SqlDatabaseClient client)
+        {
+            if (information == null || wasBeginner == information.IsBeginner) return;
+            string title;
+            try { title = ResolveDisplayedTitle(information, client); }
+            catch { title = ResolveTitleFallback(information); }
+            if (string.Equals(title, information.GameTitle, StringComparison.Ordinal)) return;
+            information.GameTitle = title;
+            client.ClearParameters(); client.SetParameter("title", title); client.SetParameter("id", information.Id);
+            client.ExecuteNonQuery("UPDATE users SET game_title=@title WHERE id=@id LIMIT 1");
+            Session session = SessionManager.GetSessionByCharacterId(information.Id);
+            if (session != null && ReferenceEquals(session.CharacterInfo, information)) SendPlayerTitle(session, title);
+        }
+
+        private static string ResolveDisplayedTitle(CharacterInfo information, SqlDatabaseClient client)
+        {
             if (information == null)
             {
                 return string.Empty;
@@ -131,7 +157,6 @@ namespace OrbitReborn_Emulator.Game.Titles
 
             try
             {
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                 {
                     if (AreTitleTablesAvailable(client))
                     {
@@ -149,7 +174,9 @@ namespace OrbitReborn_Emulator.Game.Titles
                         }
 
                         string selectedPermanentTitle = GetSelectedPermanentTitle(client, information.Id);
-                        if (!string.IsNullOrEmpty(selectedPermanentTitle) && IsPermanentTitleUnlocked(client, information.Id, selectedPermanentTitle))
+                        if (!string.IsNullOrEmpty(selectedPermanentTitle)
+                            && (selectedPermanentTitle != BeginnerTitleKey || information.IsBeginner)
+                            && IsPermanentTitleUnlocked(client, information.Id, selectedPermanentTitle))
                         {
                             return selectedPermanentTitle;
                         }
@@ -160,12 +187,18 @@ namespace OrbitReborn_Emulator.Game.Titles
             {
             }
 
+            return ResolveTitleFallback(information);
+        }
+
+        private static string ResolveTitleFallback(CharacterInfo information)
+        {
+
             if (information.IsBeginner)
             {
                 return BeginnerTitleKey;
             }
 
-            if (!string.IsNullOrEmpty(information.GameTitle) && !ManagedTitleKeys.Contains(information.GameTitle))
+            if (!string.IsNullOrEmpty(information.GameTitle) && information.GameTitle != BeginnerTitleKey && !ManagedTitleKeys.Contains(information.GameTitle))
             {
                 return information.GameTitle;
             }

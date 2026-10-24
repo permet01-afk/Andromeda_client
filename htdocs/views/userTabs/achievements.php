@@ -80,11 +80,12 @@ if (isset($_GET['claim'])) {
             $db->prepare("UPDATE users_npc_lvl SET " . $npc_name . " = " . $npc_name . " + 1 WHERE id = :id")
                ->execute([':id' => $_SESSION['player_id']]);
 
-            $db->prepare("UPDATE users SET credits = credits + :cr, uridium = uridium + :uri, experience = experience + :exp, honor = honor + :hon WHERE id = :id")
+            $db->prepare("UPDATE users SET credits = credits + :cr, uridium = uridium + :uri, canBeginner = CASE WHEN experience + :beginner_exp < 10240000 THEN 1 ELSE 0 END, experience = experience + :exp, honor = honor + :hon WHERE id = :id")
                ->execute([
                    ':cr' => $reward_credits,
                    ':uri' => $reward_uridium,
                    ':exp' => $reward_exp,
+                   ':beginner_exp' => $reward_exp,
                    ':hon' => $reward_honor,
                    ':id' => $_SESSION['player_id']
                ]);

@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Communication;
+﻿using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
@@ -1016,7 +1016,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             double multiplier = 1.0;
             bool applyNpcBonus = rocketId == 8 && targetIsNpc && targetNpcShipId != 442;
 
-            if (session.CharacterInfo.LabInfos != null && session.CharacterInfo.LabInfos.Rocket[1] > 0)
+            lock (session.CharacterInfo.RefinementSyncRoot)
+            {
+            if (session.CharacterInfo.CanUseRefiningBonuses && session.CharacterInfo.LabInfos != null && session.CharacterInfo.LabInfos.Rocket[1] > 0)
             {
                 if (session.CharacterInfo.LabInfos.Rocket[0] == 11)
                     multiplier = 1.05;
@@ -1030,6 +1032,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.CharacterInfo.LabInfos.Update += consumedProm;
                 if (session.CharacterInfo.LabInfos.Update > 8)
                     session.CharacterInfo.UpdateLaserRocketReff();
+            }
             }
 
             int[] damages = new int[missiles];
@@ -3096,7 +3099,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     if (npc.SpawnSeq != targetSpawnSeq)
                         return;
 
-                    if (session.CharacterInfo.LabInfos != null && session.CharacterInfo.LabInfos.Rocket[1] > 0)
+                    lock (session.CharacterInfo.RefinementSyncRoot)
+            {
+            if (session.CharacterInfo.CanUseRefiningBonuses && session.CharacterInfo.LabInfos != null && session.CharacterInfo.LabInfos.Rocket[1] > 0)
                     {
                         if (session.CharacterInfo.LabInfos.Rocket[0] == 11)
                             damage = (int)(damage * 1.05);
@@ -3111,6 +3116,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         if (session.CharacterInfo.LabInfos.Update > 8)
                             session.CharacterInfo.UpdateLaserRocketReff();
                     }
+            }
 
                     if (IsNormalDirectDamageRocket(rocketId) && !IsPrecisionTargeterRocketGuided(session, rocketId) && !Fight.RollPlayerRocketHit(session, null, rocketId))
                     {
@@ -3151,7 +3157,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     ApplyDCR250Effect(targetSession);
                 }
 
-                if (session.CharacterInfo.LabInfos != null && session.CharacterInfo.LabInfos.Rocket[1] > 0)
+                lock (session.CharacterInfo.RefinementSyncRoot)
+            {
+            if (session.CharacterInfo.CanUseRefiningBonuses && session.CharacterInfo.LabInfos != null && session.CharacterInfo.LabInfos.Rocket[1] > 0)
                 {
                     if (session.CharacterInfo.LabInfos.Rocket[0] == 11)
                         damage = (int)(damage * 1.05);
@@ -3166,6 +3174,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     if (session.CharacterInfo.LabInfos.Update > 8)
                         session.CharacterInfo.UpdateLaserRocketReff();
                 }
+            }
 
                 if (IsNormalDirectDamageRocket(rocketId) && !IsPrecisionTargeterRocketGuided(session, rocketId) && !Fight.RollPlayerRocketHit(session, targetSession, rocketId))
                 {
@@ -3617,7 +3626,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             const int LASER_REFINERY_UNITS_PER_VOLLEY = 18;
 
-            if (Session.CharacterInfo.LabInfos.Laser[1] >= LASER_REFINERY_UNITS_PER_VOLLEY)
+            lock (Session.CharacterInfo.RefinementSyncRoot)
+            {
+            if (Session.CharacterInfo.CanUseRefiningBonuses && Session.CharacterInfo.LabInfos.Laser[1] >= LASER_REFINERY_UNITS_PER_VOLLEY)
             {
                 if (Session.CharacterInfo.LabInfos.Laser[0] == 11)
                     num2 = (int)((double)num2 * 1.05);
@@ -3631,6 +3642,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 if (Session.CharacterInfo.LabInfos.Update > 8)
                     Session.CharacterInfo.UpdateLaserRocketReff();
+            }
             }
 
 
@@ -3896,7 +3908,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             const int LASER_REFINERY_UNITS_PER_VOLLEY = 18;
 
-            if (Session.CharacterInfo.LabInfos.Laser[1] >= LASER_REFINERY_UNITS_PER_VOLLEY)
+            lock (Session.CharacterInfo.RefinementSyncRoot)
+            {
+            if (Session.CharacterInfo.CanUseRefiningBonuses && Session.CharacterInfo.LabInfos.Laser[1] >= LASER_REFINERY_UNITS_PER_VOLLEY)
             {
                 if (Session.CharacterInfo.LabInfos.Laser[0] == 11)
                     num2 = (int)((double)num2 * 1.05);
@@ -3910,6 +3924,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 if (Session.CharacterInfo.LabInfos.Update > 8)
                     Session.CharacterInfo.UpdateLaserRocketReff();
+            }
             }
 
 

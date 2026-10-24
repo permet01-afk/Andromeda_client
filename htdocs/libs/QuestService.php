@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/BeginnerStatusService.php';
+
 class QuestService
 {
     const MAX_ACTIVE_SITE_QUESTS = 5;
@@ -219,6 +221,7 @@ class QuestService
                      uridium = uridium + :uridium,
                      experience = experience + :experience,
                      level = :level,
+                     canBeginner = :beginner,
                      honor = honor + :honor,
                      ammo_ucb100 = ammo_ucb100 + :ucb100,
                      ammo_rsb75 = ammo_rsb75 + :rsb75
@@ -229,6 +232,7 @@ class QuestService
                 ':uridium' => (int)$quest['reward_uridium'],
                 ':experience' => $rewardExperience,
                 ':level' => $newLevel,
+                ':beginner' => BeginnerStatusService::isBeginnerLevel($newLevel) ? 1 : 0,
                 ':honor' => (int)$quest['reward_honor'],
                 ':ucb100' => (int)($quest['reward_ucb100'] ?? 0),
                 ':rsb75' => (int)($quest['reward_rsb75'] ?? 0),
@@ -427,6 +431,7 @@ class QuestService
                 'UPDATE users
                  SET credits = credits + :credits,
                      uridium = uridium + :uridium,
+                     canBeginner = CASE WHEN experience + :beginner_experience < 10240000 THEN 1 ELSE 0 END,
                      experience = experience + :experience,
                      honor = honor + :honor
                  WHERE id = :id'
@@ -434,6 +439,7 @@ class QuestService
                 ':credits' => $rewardCredits,
                 ':uridium' => $rewardUridium,
                 ':experience' => $rewardExperience,
+                ':beginner_experience' => $rewardExperience,
                 ':honor' => $rewardHonor,
                 ':id' => $this->playerId,
             ]);

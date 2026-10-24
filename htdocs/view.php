@@ -42,6 +42,7 @@ ob_start();
 
 require_once __DIR__ . '/libs/Database.php';
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/libs/BeginnerStatusService.php';
 
 $db = new Database(DB_TYPE, DB_HOST, DB_NAME, DB_USER, DB_PASS);
 require_once __DIR__.'/libs/ShipRepairService.php';
@@ -107,7 +108,7 @@ $pageContent = ob_get_clean();
 $historicalPresentation = defined('ANDROMEDA_HISTORICAL_CATALOGUE') && ANDROMEDA_HISTORICAL_CATALOGUE === true;
 // Private visual preview: extend this existing projection; no additional lookup.
 $historicalHeaderFields = $historicalPresentation ? ', u.level, u.shipid' : '';
-$sth = $db->prepare('SELECT u.username, u.factionid, u.clanid, u.grade, u.experience, u.honor, u.rankpoints, u.credits, u.uridium, c.clan_tag' . $historicalHeaderFields . ' FROM users u LEFT JOIN clan c ON c.id = u.clanid WHERE u.id = :id LIMIT 1');
+$sth = $db->prepare('SELECT u.username, u.factionid, u.clanid, u.grade, u.experience, u.honor, u.credits, u.uridium, c.clan_tag' . $historicalHeaderFields . ' FROM users u LEFT JOIN clan c ON c.id = u.clanid WHERE u.id = :id LIMIT 1');
 $sth->execute([
     ':id' => $sessionPlayerId,
 ]);
@@ -124,9 +125,9 @@ $pilotUsername = htmlspecialchars((string)($pilot['username'] ?? ''), ENT_QUOTES
 $pilotClanLabel = $bHasClan && !empty($pilot['clan_tag']) ? '[' . htmlspecialchars((string)$pilot['clan_tag'], ENT_QUOTES, 'UTF-8') . ']' : '';
 $pilotFactionId = (int)($pilot['factionid'] ?? 0);
 $pilotGrade = (int)($pilot['grade'] ?? 0);
+$pilotLevel = BeginnerStatusService::levelFromExperience($pilot['experience'] ?? 0);
 $pilotExperience = number_format((int)($pilot['experience'] ?? 0));
 $pilotHonor = number_format((int)($pilot['honor'] ?? 0));
-$pilotRankpoints = number_format((int)($pilot['rankpoints'] ?? 0));
 $pilotCredits = number_format((int)($pilot['credits'] ?? 0));
 $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
 ?>
@@ -140,7 +141,7 @@ $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
 </div>
 <?php } else { ?>
 <div class="app-shell">
-    <header class="app-header"<?php if ($historicalPresentation) { ?> data-pilot-id="<?php echo (int)$sessionPlayerId; ?>" data-pilot-level="<?php echo (int)($pilot['level'] ?? 0); ?>" data-pilot-ship="<?php echo (int)($pilot['shipid'] ?? 0); ?>" data-pilot-xp="<?php echo (int)($pilot['experience'] ?? 0); ?>" data-pilot-honor="<?php echo (int)($pilot['honor'] ?? 0); ?>"<?php } ?>>
+    <header class="app-header"<?php if ($historicalPresentation) { ?> data-pilot-id="<?php echo (int)$sessionPlayerId; ?>" data-pilot-level="<?php echo $pilotLevel; ?>" data-pilot-ship="<?php echo (int)($pilot['shipid'] ?? 0); ?>" data-pilot-xp="<?php echo (int)($pilot['experience'] ?? 0); ?>" data-pilot-honor="<?php echo (int)($pilot['honor'] ?? 0); ?>"<?php } ?>>
         <div class="header-primary">
             <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="app-navigation">
                 <span class="sr-only">Toggle navigation</span>
@@ -271,10 +272,6 @@ $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
                         <span class="stat-label">Honor</span>
                         <span class="stat-value" id="pilot-honor"><?php echo $pilotHonor; ?></span>
                     </div>
-                    <div class="stat-box">
-                        <span class="stat-label">Rank points</span>
-                        <span class="stat-value" id="pilot-rankpoints"><?php echo $pilotRankpoints; ?></span>
-                    </div>
                 </div>
 
             </div>
@@ -326,7 +323,7 @@ function local_entete(bool $mobileEmbed = false)
         '}',
         '</style>',
         '<link rel="stylesheet" href="/assets/historical/historical-site.css?v=14d04cb6e3184c7d">',
-        '<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=ccd9e34ac16f290f">',
+        '<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=mechanics-20261024-2">',
         '<link rel="stylesheet" href="/assets/historical/historical-finish-commerce.css?v=06a9ce6c05eed8c0">',
         '<link rel="stylesheet" href="/assets/historical/historical-finish-activities.css?v=78dc86ba8f9c19d3">',
         '<link rel="stylesheet" href="/assets/historical/historical-finish-account.css?v=e0a7d2f0f6ac3e71">',
@@ -346,6 +343,7 @@ function local_entete(bool $mobileEmbed = false)
         '<link rel="stylesheet" href="/assets/historical/final-six-titles.css?v=final6-1">',
         '<link rel="stylesheet" href="/assets/historical/last-four-profile-treasury.css?v=last4-1">',
         '<link rel="stylesheet" href="/assets/historical/last-four-shop.css?v=last4-1">',
+        '<link rel="stylesheet" href="/assets/historical/historical-hof.css?v=mechanics-20261024-3">',
         '</head>',
         $mobileEmbed ? '<body class="mobile-embed historical-site">' : '<body class="historical-site">';
 }
@@ -363,8 +361,8 @@ function local_pied(bool $mobileEmbed = false)
         'if(!f.querySelector("input[name=mobile_embed]")){const i=document.createElement("input");i.type="hidden";i.name="mobile_embed";i.value="1";f.appendChild(i);}',
         '});',
         '</script>',
-        '<script src="/assets/historical/historical-site.js?v=d557af55b311b912" defer></script>',
-        '<script src="/assets/historical/historical-finish-shell.js?v=5e50b3116c43d26a" defer></script>',
+        '<script src="/assets/historical/historical-site.js?v=mechanics-20261024-1" defer></script>',
+        '<script src="/assets/historical/historical-finish-shell.js?v=mechanics-20261024-1" defer></script>',
         '<script src="/assets/historical/historical-finish-commerce.js?v=1db15d604fd34fea" defer></script>',
         '<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>',
         '<script src="/assets/historical/historical-finish-account.js?v=437fb29aaf93df61" defer></script>',
@@ -372,7 +370,7 @@ function local_pied(bool $mobileEmbed = false)
         '<script src="/assets/historical/historical-public.js?v=e7f492bc252bed8d" defer></script>',
         '<script src="/assets/historical/visual-proposal-root.js?v=proposal1" defer></script>',
         '<script src="/assets/historical/visual-proposal-clan.js?v=proposal1" defer></script>',
-        '<script src="/assets/historical/visual-proposal-pilot.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-pilot.js?v=mechanics-20261024-1" defer></script>',
         '<script src="/assets/historical/visual-proposal-content.js?v=proposal1" defer></script>',
         '<script src="/assets/historical/visual-proposal-account.js?v=alignment1" defer></script>',
         '<script src="/assets/historical/clan-actions-final.js?v=actions1" defer></script>',
@@ -380,6 +378,7 @@ function local_pied(bool $mobileEmbed = false)
         '<script src="/assets/historical/historical-actions-header.js?v=initial-brand-footer1" defer></script>',
         '<script src="/assets/historical/final-six-media.js?v=final6-1" defer></script>',
         '<script src="/assets/historical/final-six-titles.js?v=final6-1" defer></script>',
+        '<script src="/assets/historical/historical-hof.js?v=mechanics-20261024-1" defer></script>',
         '</body>',
         '</html>';
         return;
@@ -436,8 +435,8 @@ function local_pied(bool $mobileEmbed = false)
         '}',
         '});',
         '</script>',
-        '<script src="/assets/historical/historical-site.js?v=d557af55b311b912" defer></script>',
-        '<script src="/assets/historical/historical-finish-shell.js?v=5e50b3116c43d26a" defer></script>',
+        '<script src="/assets/historical/historical-site.js?v=mechanics-20261024-1" defer></script>',
+        '<script src="/assets/historical/historical-finish-shell.js?v=mechanics-20261024-1" defer></script>',
         '<script src="/assets/historical/historical-finish-commerce.js?v=1db15d604fd34fea" defer></script>',
         '<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>',
         '<script src="/assets/historical/historical-finish-account.js?v=437fb29aaf93df61" defer></script>',
@@ -445,7 +444,7 @@ function local_pied(bool $mobileEmbed = false)
         '<script src="/assets/historical/historical-public.js?v=e7f492bc252bed8d" defer></script>',
         '<script src="/assets/historical/visual-proposal-root.js?v=proposal1" defer></script>',
         '<script src="/assets/historical/visual-proposal-clan.js?v=proposal1" defer></script>',
-        '<script src="/assets/historical/visual-proposal-pilot.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-pilot.js?v=mechanics-20261024-1" defer></script>',
         '<script src="/assets/historical/visual-proposal-content.js?v=proposal1" defer></script>',
         '<script src="/assets/historical/visual-proposal-account.js?v=alignment1" defer></script>',
         '<script src="/assets/historical/clan-actions-final.js?v=actions1" defer></script>',
@@ -453,6 +452,7 @@ function local_pied(bool $mobileEmbed = false)
         '<script src="/assets/historical/historical-actions-header.js?v=initial-brand-footer1" defer></script>',
         '<script src="/assets/historical/final-six-media.js?v=final6-1" defer></script>',
         '<script src="/assets/historical/final-six-titles.js?v=final6-1" defer></script>',
+        '<script src="/assets/historical/historical-hof.js?v=mechanics-20261024-1" defer></script>',
         '</body>',
         '</html>';
 }

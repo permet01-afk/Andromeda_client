@@ -95,6 +95,8 @@
   <ItemGroup>
     <Compile Include="Communication\Outgoing\MapHeroInitComposer.cs" />
     <Compile Include="Game\Characters\ExperienceSystem.cs" />
+    <Compile Include="Game\Characters\BeginnerRules.cs" />
+    <Compile Include="Game\Laboratory\RefiningUpgradeStore.cs" />
     <Compile Include="Game\Chat\ChatAction.cs" />
     <Compile Include="Game\Event\1v1.cs" />
     <Compile Include="Game\GalaxyGates\GalaxyGatePortalService.cs" />

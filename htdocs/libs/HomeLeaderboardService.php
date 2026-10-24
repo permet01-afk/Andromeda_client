@@ -15,19 +15,21 @@ class HomeLeaderboardService
     {
         $limit = max(1, min(100, (int)$limit));
         $lastActiveLimit = time() - (3600 * 14 * 24);
-        $cacheKey = 'leaderboards_v3_' . $limit;
+        $cacheKey = 'leaderboards_v4_top_user_' . $limit;
 
         return self::remember($cacheKey, self::CACHE_TTL_SECONDS, function () use ($db, $limit, $lastActiveLimit) {
             return [
-                'rankpoints' => self::fetchAll($db, "
-                    SELECT u.username, u.rankpoints, u.factionid, u.grade
+                'top_user' => self::fetchAll($db, "
+                    SELECT u.username,
+                           (CAST(u.experience AS DECIMAL(30,3)) / 1000 + CAST(u.honor AS DECIMAL(30,3)) / 100) AS score,
+                           u.factionid, u.grade
                     FROM users u
                     LEFT JOIN bans b
                         ON b.user_id = u.id
                        AND b.timestamp_expire > UNIX_TIMESTAMP()
                     WHERE u.lastlogin > :last_active_limit
                       AND b.id IS NULL
-                    ORDER BY u.rankpoints DESC
+                    ORDER BY score DESC, u.id ASC
                     LIMIT " . $limit, [
                         ':last_active_limit' => $lastActiveLimit,
                     ]),
@@ -126,7 +128,8 @@ class HomeLeaderboardService
         return $sth->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    private static function remember($key, $ttlSeconds, $callback)
+    /** Shared bounded cache for dashboard and Hall of Fame source queries. */
+    public static function remember($key, $ttlSeconds, $callback)
     {
         $file = self::cacheFile($key);
         $now = time();

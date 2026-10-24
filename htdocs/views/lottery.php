@@ -372,13 +372,11 @@ function refreshPilotBar(pilot) {
     const uridiumEl = document.getElementById('pilot-uridium');
     const xpEl = document.getElementById('pilot-xp');
     const honorEl = document.getElementById('pilot-honor');
-    const rankpointsEl = document.getElementById('pilot-rankpoints');
 
     if (creditsEl) creditsEl.textContent = pilot.credits;
     if (uridiumEl) uridiumEl.textContent = pilot.uridium;
     if (xpEl) xpEl.textContent = pilot.experience;
     if (honorEl) honorEl.textContent = pilot.honor;
-    if (rankpointsEl) rankpointsEl.textContent = pilot.rankpoints;
 }
 
 function getGateVisualParts(data, gateId) {

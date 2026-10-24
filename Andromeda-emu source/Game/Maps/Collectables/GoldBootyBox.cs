@@ -41,7 +41,9 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                     Random random = RandomProvider.Current;
                     using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                     {
-                        int num = random.Next(1, 101);
+                        // Remove only the old ten-point-weight RP outcome.
+                        // Other prize weights remain 5:5:25:20:20:15 out of 90.
+                        int num = random.Next(1, 91);
 
                         if(num > 0 && num <=5)
                         {
@@ -59,20 +61,14 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                             user.CharacterInfo.AddReward(client, 0, uridium, 0, true);
                             user.SendData(PacketComposer.Compose("y", "URI|" + (object)uridium + "|" + (object)user.CharacterInfo.Uridium));
                         }
-                        else if (num > 35 && num <= 45)
-                        {
-                            int rp = random.Next(300, 500);
-                            user.CharacterInfo.AddRankpoints(client, rp);
-                            user.SendData(PacketComposer.Compose("A", "STD|You received " + (object)rp + " rankpoints."));
-                        }
-                        else if(num > 45 && num <= 65)
+                        else if(num > 35 && num <= 55)
                         {
                             user.CharacterInfo.AddCargo(11L, 150);
                             user.CharacterInfo.AddCargo(12L, 150);
                             user.SendData(PacketComposer.Compose("A", "STD|You received 150 Prometids/Duraniums."));
                             user.SendData(user.CharacterInfo.GetCargoMessage());
                         }
-                        else if(num > 65 && num <= 85)
+                        else if(num > 55 && num <= 75)
                         {
                             user.CharacterInfo.AddBoosterReward("dmg", 1);
                             user.CharacterInfo.AddBoosterReward("shd", 1);
@@ -81,7 +77,7 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                             user.CharacterInfo.AddBoosterReward("npcPoints", 1);
                             user.SendData(PacketComposer.Compose("A", "STD|You received 1 hour of each boosters."));
                         }
-                        else if (num > 85 && num <= 100)
+                        else if (num > 75 && num <= 90)
                         {
                             if (!user.CharacterInfo.ApisBuilt || !user.CharacterInfo.ZeusBuilt)
                             {

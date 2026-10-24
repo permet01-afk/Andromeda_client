@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/libs/BeginnerStatusService.php';
 session_start();
 if (isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] === true) {
     header('Location: view.php?page=home');
@@ -291,6 +292,10 @@ function handleLoginForm($db)
     }
 
     rotateCsrfToken();
+
+    if ($user['is_admin'] > 0 || $user['is_verified'] > 0) {
+        BeginnerStatusService::normalizePlayerCache($db, (int)$user['id']);
+    }
 
     if ($user['is_admin'] > 0) {
         $_SESSION['loggedIn'] = true;

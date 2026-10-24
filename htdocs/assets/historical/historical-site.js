@@ -214,7 +214,7 @@
     }
     if(pilotStrip){
       if(profileCard&&isProfile){
-        const fields={Experience:'pilot-xp',Honor:'pilot-honor','Rank Points':'pilot-rankpoints'};
+        const fields={Experience:'pilot-xp',Honor:'pilot-honor'};
         profileCard.querySelectorAll('.stats-list .stat-row').forEach(row=>{
           const label=(row.querySelector('.stat-label')?.textContent||'').trim();
           if(fields[label]){

@@ -5,6 +5,7 @@ using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Storage;
+using OrbitReborn_Emulator.Game.Laboratory;
 
 namespace OrbitReborn_Emulator.Game.Handlers
 {
@@ -31,6 +32,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
             }
 
+            lock (Session.CharacterInfo.RefinementSyncRoot)
+            {
             if (resId == 11L)
             {
                 if (Session.CharacterInfo.LabInfos.GetCargo(1L) < 20 * amount) return;
@@ -68,25 +71,12 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 Session.SendData(Session.CharacterInfo.GetCargoMessage());
                 return;
             }
+            }
         }
 
         private static bool IsUpgradeOreAllowed(string type, int oreId)
         {
-            switch ((type ?? string.Empty).ToUpperInvariant())
-            {
-                case "LASER":
-                case "ROCKET":
-                    return oreId == 11 || oreId == 13 || oreId == 14;
-
-                case "SHIELD":
-                    return oreId == 12 || oreId == 13 || oreId == 14;
-
-                case "DRIVING":
-                    return oreId == 12 || oreId == 13;
-
-                default:
-                    return false;
-            }
+            return RefiningUpgradeRules.IsAllowed(type, oreId);
         }
 
         private static void SendSafeState(Session Session)
@@ -257,52 +247,28 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void AddReff(Session Session, ClientMessage Message)
         {
+            if (Session == null || Session.CharacterInfo == null || Session.CharacterInfo.LabInfos == null)
+                return;
             int oreId = Message.GetNextInt(4);
             int oreAmount = Message.GetNextInt(5);
-
-            if (oreId <= 0 || oreAmount <= 0)
-                return;
-
             string type = (Message.GetNextString(3) ?? string.Empty).ToUpperInvariant();
-            if (!Laboratory.IsUpgradeOreAllowed(type, oreId))
+            string error;
+            if (!Session.CharacterInfo.TryApplyRefiningUpgrade(type, oreId, oreAmount, out error))
             {
-                Session.SendData(PacketComposer.Compose("A", "STD|This ore cannot be used on this target."));
+                string message = (error ?? "Unable to apply the upgrade.").Replace('|', '/');
+                Session.SendData(PacketComposer.Compose("LAB", "UPD|ERROR|" + message));
+                Session.SendData(PacketComposer.Compose("A", "STD|" + message));
+                Session.SendData(Session.CharacterInfo.GetCargoMessage());
+                Session.SendData(Session.CharacterInfo.GetReffMessage());
                 return;
             }
-
-            if (Session.CharacterInfo == null || Session.CharacterInfo.LabInfos == null)
-                return;
-
-            if (Session.CharacterInfo.LabInfos.GetCargo((long)oreId) < oreAmount)
-                return;
-
-            switch (type)
-            {
-                case "LASER":
-                    Session.CharacterInfo.AddLaserReff(oreId, oreAmount);
-                    break;
-
-                case "ROCKET":
-                    Session.CharacterInfo.AddRocketReff(oreId, oreAmount);
-                    break;
-
-                case "SHIELD":
-                    Session.CharacterInfo.AddShieldReff(oreId, oreAmount);
-                    Session.SendData(PacketComposer.Compose("A", "SHD|" + (object)Session.CharacterInfo.ShipShield + "|" + (object)Session.CharacterInfo.ShipMaxShield));
-                    break;
-
-                case "DRIVING":
-                    Session.CharacterInfo.AddSpeedReff(oreId, oreAmount);
-                    Session.SendData(PacketComposer.Compose("A", "v|" + (object)Session.CharacterInfo.ShipSpeed));
-                    break;
-
-                default:
-                    return;
-            }
-
-            Session.CharacterInfo.RemoveCargo((long)oreId, oreAmount);
+            if (type == "SHIELD")
+                Session.SendData(PacketComposer.Compose("A", "SHD|" + (object)Session.CharacterInfo.ShipShield + "|" + (object)Session.CharacterInfo.ShipMaxShield));
+            if (type == "DRIVING")
+                Session.SendData(PacketComposer.Compose("A", "v|" + (object)Session.CharacterInfo.ShipSpeed));
             Session.SendData(Session.CharacterInfo.GetCargoMessage());
             Session.SendData(Session.CharacterInfo.GetReffMessage());
+            Session.SendData(PacketComposer.Compose("LAB", "UPD|OK"));
         }
 
         private static void Lab(Session Session, ClientMessage Message)
@@ -412,9 +378,6 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (oreId <= 0 || amount <= 0)
                 return;
 
-            if (amount > Session.CharacterInfo.LabInfos.GetCargo((long)oreId))
-                return;
-
             int price = Laboratory.GetPriceForSession(Session, oreId);
             if (price <= 0)
             {
@@ -431,11 +394,17 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             int credits = (int)creditsLong;
 
+            // Serialize stock validation and debit with enhancement upgrades. Do not
+            // hold a legacy SQL lease while waiting for this player-local lock.
+            lock (Session.CharacterInfo.RefinementSyncRoot)
+            {
+                if (amount > Session.CharacterInfo.LabInfos.GetCargo((long)oreId)) return;
+                Session.CharacterInfo.RemoveCargo((long)oreId, amount);
+            }
+            Session.SendData(Session.CharacterInfo.GetCargoMessage());
+
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
-                Session.CharacterInfo.RemoveCargo((long)oreId, amount);
-                Session.SendData(Session.CharacterInfo.GetCargoMessage());
-
                 Session.CharacterInfo.AddReward(client, credits, 0, 0, false);
                 Session.SendData(PacketComposer.Compose("y", "CRE|" + credits + "|" + Session.CharacterInfo.Credits));
             }

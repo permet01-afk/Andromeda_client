@@ -75,7 +75,7 @@
       const resourceList = element('div', 'stats-list');
       rows.forEach(row => {
         const label = row.querySelector('.stat-label')?.textContent.trim().toLowerCase();
-        (['experience', 'honor', 'rank points'].includes(label) ? playerList : resourceList).appendChild(row);
+        (['experience', 'honor'].includes(label) ? playerList : resourceList).appendChild(row);
       });
       if (playerList.children.length) { player.appendChild(playerList); main.appendChild(player); }
       if (resourceList.children.length) { resources.appendChild(resourceList); main.appendChild(resources); }

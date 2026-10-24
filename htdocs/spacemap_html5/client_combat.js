@@ -551,16 +551,13 @@ function sendProduce(productId, amount) {
 }
 
 function sendRefiningUpgrade(target, oreKey, amount) {
-    if (!ws || ws.readyState !== WebSocket.OPEN || amount <= 0) return;
+    if (typeof window !== "undefined" && window.AndromedaShipDeath && window.AndromedaShipDeath.terminal) return false;
+    if (!ws || ws.readyState !== WebSocket.OPEN || !Number.isSafeInteger(amount) || amount <= 0 || amount > 2147483647) return false;
     const tgt = String(target || "").toUpperCase();
     const oreId = labOreKeyToId(oreKey);
-    if (!oreId) {
-        console.warn("[WS] Unknown ore for upgrade:", oreKey);
-        return;
-    }
+    if (!oreId || typeof canOreUpgradeTarget !== "function" || !canOreUpgradeTarget(oreKey, tgt)) return false;
     const packet = `LAB|UPD|SET|${tgt}|${oreId}|${amount}`;
-    sendRaw(packet);
-    addInfoMessage(`Upgrade ${tgt} requested (${amount} ${String(oreKey || "").toUpperCase()}).`);
+    try { sendRaw(packet); return true; } catch (_) { return false; }
 }
 
 function flashIntCoordinate(value) {

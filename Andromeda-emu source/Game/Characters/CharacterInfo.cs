@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Communication;
+﻿using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
 using OrbitReborn_Emulator.Game.Laboratory;
@@ -171,7 +171,6 @@ namespace OrbitReborn_Emulator.Game.Characters
         private int mSelectedLauncherRocket = 7;
         private int mSelectedPlayerRocket;
         private int mSelectedPlayerRocketSpawnSeq;
-        private long mRankPoints;
         private int mUserKill;
         private int mNpcKill;
         private long mExperience;
@@ -301,7 +300,6 @@ namespace OrbitReborn_Emulator.Game.Characters
         public int AutoRocketLauncherSkill = 0;
         private int mBlk = 0;
         private int mGroupBoss = 0;
-        private int mPvpPoints;
         private bool mActiveAutoRocket = false;
         private double mLastSkillSolace = 0.0;
         private double mLastSkillDiminisher = 0.0;
@@ -320,11 +318,14 @@ namespace OrbitReborn_Emulator.Game.Characters
         private bool mDisableNpc = false;
         private int mPreviousAttacked = 0;
         private double mPreviousDamageTime = 0;
-        private string mExtraBooster = "";
         private int mRealFaction;
         private int mRealClan;
         public Timer UpdateGroupTimer;
-        public bool IsBeginner = false;
+        public bool IsBeginner { get { return BeginnerRules.IsBeginnerLevel(this.mLevel); } }
+        private readonly object mRefinementSyncRoot = new object();
+        public object RefinementSyncRoot { get { return this.mRefinementSyncRoot; } }
+        private volatile bool mRefiningStateUncertain;
+        public bool CanUseRefiningBonuses { get { return !this.mRefiningStateUncertain; } }
         private int duelPending = 0;
         public CDictionnary<int, double> duelSend = new CDictionnary<int, double>();
         public double LastDuel = 0;
@@ -346,17 +347,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             get
             {
                 return this.mRealClan;
-            }
-        }
-        public string ExtraBooster
-        {
-            get
-            {
-                return this.mExtraBooster;
-            }
-            set
-            {
-                this.mExtraBooster = value;
             }
         }
         public int LaserSlots2010 { get { return mLaserSlots2010; } }
@@ -414,17 +404,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.mActiveAutoRocket = value;
             }
         }
-        public int PvpPoints
-        {
-            get
-            {
-                return this.mPvpPoints;
-            }
-            set
-            {
-                this.mPvpPoints = value;
-            }
-        }
+        
         public bool GroupLeader
         {
             get
@@ -667,7 +647,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             {
                 double totalSeconds = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds;
                 int num = this.ActiveConfig != 1 ? this.Config2.ShipSpeed : this.Config1.ShipSpeed;
-                if ((double)this.LabInfos.Speed[1] > totalSeconds)
+                if (this.CanUseRefiningBonuses && (double)this.LabInfos.Speed[1] > totalSeconds)
                 {
                     if (this.LabInfos.Speed[0] == 12)
                         num += 15;
@@ -719,7 +699,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             {
                 double totalSeconds = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds;
                 int num = this.ActiveConfig != 1 ? this.Config2.MaxShield : this.Config1.MaxShield;
-                if ((double)this.LabInfos.Shield[1] <= totalSeconds)
+                if (!this.CanUseRefiningBonuses || (double)this.LabInfos.Shield[1] <= totalSeconds)
                     return num;
                 if (this.LabInfos.Shield[0] == 12)
                     return (int)((double)num * 1.15);
@@ -1212,13 +1192,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             }
         }
 
-        public long RankPoints
-        {
-            get
-            {
-                return this.mRankPoints;
-            }
-        }
+        
 
         public int NpcKill
         {
@@ -2579,7 +2553,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.mSelectedRocketAuto = this.mSelectedRocket;
             this.mSelectedLauncherRocket = 7;
             this.mLastRocketShotType = this.mSelectedRocket;
-            this.mRankPoints = 0L;
             this.mUserKill = 0;
             this.mNpcKill = 0;
             this.mGGRings = 0;
@@ -3121,12 +3094,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.LastDuel = time;
         }
 
-        public void AddRankpoints(SqlDatabaseClient MySqlClient, int rankpoints)
-        {
-            MySqlClient.ClearParameters();
-            MySqlClient.SetParameter("id", (object)this.mId);
-            MySqlClient.ExecuteNonQuery("UPDATE users SET rankpoints = rankpoints + " + (object)rankpoints + " WHERE id = @id LIMIT 1");
-        }
+        
         public void AddDuelReward(SqlDatabaseClient MySqlClient, int nbMatch, int nbWin)
         {
             MySqlClient.ClearParameters();
@@ -3159,12 +3127,13 @@ namespace OrbitReborn_Emulator.Game.Characters
                 Console.WriteLine("ERROR ADDING REWARD :", e.Message);
             }
         }
-        public bool ApplyNpcKillRewardBatch(SqlDatabaseClient MySqlClient, int credits, int uridium, int npcPoints, int rankpoints, int experience, int honor, int online)
+        public bool ApplyNpcKillRewardBatch(SqlDatabaseClient MySqlClient, int credits, int uridium, int npcPoints, int experience, int honor, int online)
         {
             if (MySqlClient == null)
                 return false;
 
             int oldLevel = this.mLevel;
+            bool wasBeginner = this.IsBeginner;
             long newExperience = this.mExperience;
             int newLevel = this.mLevel;
 
@@ -3181,12 +3150,11 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.SetParameter("credits", (object)credits);
             MySqlClient.SetParameter("uridium", (object)uridium);
             MySqlClient.SetParameter("npcPoints", (object)npcPoints);
-            MySqlClient.SetParameter("rankpoints", (object)rankpoints);
             MySqlClient.SetParameter("experience", (object)experience);
             MySqlClient.SetParameter("level", (object)newLevel);
             MySqlClient.SetParameter("honor", (object)honor);
             // Rewards remain deltas; runtime vitals/location use the separate life fence.
-            MySqlClient.ExecuteNonQuery("UPDATE users SET uridium=uridium+@uridium,credits=credits+@credits,npc_kill=npc_kill+@npcPoints,rankpoints=rankpoints+@rankpoints,experience=experience+@experience,level=@level,honor=honor+@honor WHERE id=@id LIMIT 1");
+            MySqlClient.ExecuteNonQuery("UPDATE users SET uridium=uridium+@uridium,credits=credits+@credits,npc_kill=npc_kill+@npcPoints,experience=experience+@experience,level=@level,canBeginner=CASE WHEN experience<10240000 THEN 1 ELSE 0 END,honor=honor+@honor WHERE id=@id LIMIT 1");
             SynchronizeStatisticsCore(MySqlClient, this.Disconnected ? 0 : 1);
 
             this.Uridium += (long)uridium;
@@ -3201,6 +3169,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (honor != 0)
                 this.mHonor += (long)honor;
 
+            TitleService.RefreshBeginnerTitleAfterLevelChange(this, wasBeginner, MySqlClient);
             return this.mLevel > oldLevel;
         }
 
@@ -3209,6 +3178,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             if (amount <= 0) return false;
 
             int oldLevel = this.mLevel;
+            bool wasBeginner = this.IsBeginner;
 
             this.mExperience += amount;
             this.mLevel = ExperienceSystem.GetLevelFromExperience(this.mExperience);
@@ -3216,9 +3186,10 @@ namespace OrbitReborn_Emulator.Game.Characters
             client.ClearParameters();
             client.SetParameter("id", (object)this.mId);
             client.ExecuteNonQuery(
-                "UPDATE users SET experience = experience + " + amount + ", level = " + this.mLevel + " WHERE id = @id LIMIT 1"
+                "UPDATE users SET experience = experience + " + amount + ", level = " + this.mLevel + ", canBeginner = CASE WHEN experience < 10240000 THEN 1 ELSE 0 END WHERE id = @id LIMIT 1"
             );
 
+            TitleService.RefreshBeginnerTitleAfterLevelChange(this, wasBeginner, client);
             return this.mLevel > oldLevel;
         }
         public void AddHonor(SqlDatabaseClient client, int amount)
@@ -3250,12 +3221,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.ExecuteNonQuery("UPDATE users SET tdm_win = tdm_win +" + (object)nbVictory + ", nb_tdm = nb_tdm +" + (object)nbMatch + " WHERE id = @id");
         }
 
-        public void RemoveRankPoints(SqlDatabaseClient MySqlClient, int amount)
-        {
-            MySqlClient.ClearParameters();
-            MySqlClient.SetParameter("id", (object)this.mId);
-            MySqlClient.ExecuteNonQuery("UPDATE users SET rankpoints = rankpoints - " + (object)amount + " WHERE id = @id LIMIT 1");
-        }
+        
 
         public bool RemoveReward(long credits, long uridium)
         {
@@ -3464,14 +3430,12 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.mExperience = getInt64("experience", this.mExperience);
             this.mHonor = getInt64("honor", this.mHonor);
             this.mLevel = ExperienceSystem.GetLevelFromExperience(this.mExperience);
-            this.mPvpPoints = getInt32("pvp_points", this.mPvpPoints);
             this.mBootyKeys = getInt32("booty_keys", this.mBootyKeys);
             this.mUserKill = getInt32("user_kill", this.mUserKill);
             this.mNpcKill = getInt32("npc_kill", this.mNpcKill);
             AutoRocketSkill = getInt32("auto_rkt_skill", 0);
             AutoRocketLauncherSkill = getInt32("auto_rocketlauncher_skill", AutoRocketLauncherSkill) == 1 ? 1 : 0;
             SelectedLauncherRocket = getInt32("selected_launcher_rocket", SelectedLauncherRocket);
-            this.mRankPoints = getInt64("rankpoints", this.mRankPoints);
             int canBeginner = getInt32("canBeginner", 0);
             this.mDisableNpc = false;
             this.LastDuel = getInt64("last_duel", (long)this.LastDuel);
@@ -3479,17 +3443,12 @@ namespace OrbitReborn_Emulator.Game.Characters
             int dbActiveConfig = getInt32("active_config", this.mActiveConfig);
             this.mActiveConfig = (dbActiveConfig == 2) ? 2 : 1;
 
-            if (this.mRankPoints < 25000L && canBeginner == 1)
+            int expectedBeginner = BeginnerRules.CacheForLevel(this.mLevel);
+            if (canBeginner != expectedBeginner)
             {
-                this.IsBeginner = true;
-            }
-            if (canBeginner == 1 && this.mRankPoints >= 25000L)
-            {
-                this.IsBeginner = false;
                 MySqlClient.ClearParameters();
                 MySqlClient.SetParameter("id", this.Id);
-                MySqlClient.SetParameter("beginner", 0);
-                MySqlClient.ExecuteNonQuery("UPDATE users SET canBeginner = @beginner WHERE id = @id");
+                MySqlClient.ExecuteNonQuery("UPDATE users SET canBeginner = CASE WHEN experience < 10240000 THEN 1 ELSE 0 END WHERE id = @id");
             }
 
             TitleService.RefreshDisplayedTitle(this);
@@ -3700,7 +3659,6 @@ namespace OrbitReborn_Emulator.Game.Characters
             this.mBoosterDmgTime = getInt32("booster_dmg_time", this.mBoosterDmgTime);
 
             this.mBoosterNpcTime = 0;
-            this.mExtraBooster = "";
 
             int totalSeconds = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
 
@@ -4627,51 +4585,26 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public void SendRewardAssistAttacker(SqlDatabaseClient client, Session ennemy)
         {
-            int BaseRp = 75;
-            int BasePvppoints = 50;
-            if (ennemy.CharacterInfo.RankPoints <= 35000L)
-            {
-                BaseRp = 30;
-                BasePvppoints = 25;
-            }
-            if (HappyHour.Enabled)
-            {
-                BaseRp *= 2;
-                BasePvppoints *= 2;
-            }
+            // Preserve the real assist statistic and its existing eligibility.
+            // No artificial point grant, threshold, replacement reward or extra roll.
             foreach (KeyValuePair<Session, double> entry in this.assistAttacker)
             {
                 if (entry.Key != null && UnixTimestamp.GetCurrent() - entry.Value <= 15.0
-                    && entry.Key.CharacterInfo != null
-                    && this.Attacker != null
+                    && entry.Key.CharacterInfo != null && this.Attacker != null
                     && this.Attacker.CharacterInfo != null
                     && entry.Key.CharacterInfo.FactionId == this.Attacker.CharacterInfo.FactionId)
                 {
-                    bool rewardAsEnemy = entry.Key.CharacterInfo.ShouldTreatPvpKillAsEnemy(ennemy.CharacterInfo, entry.Key.CharacterInfo.MapId);
-                    if (!rewardAsEnemy)
-                        continue;
-                    int rpReceive = BaseRp;
-                    int pvpReceive = BasePvppoints;
-                    if (entry.Key.CharacterInfo.mExtraBooster == "pts")
-                    {
-                        rpReceive += (int)(rpReceive * 0.5);
-                        pvpReceive += (int)(pvpReceive * 0.5);
-                    }
-                    string message = "You helped " + this.Attacker.CharacterInfo.Username + " !\n" +
-                        "You received " + rpReceive + " Rankpoints !\n" +
-                        "You received " + pvpReceive + " Pvp points !";
+                    if (!entry.Key.CharacterInfo.ShouldTreatPvpKillAsEnemy(ennemy.CharacterInfo, entry.Key.CharacterInfo.MapId)) continue;
+                    string message = "You helped " + this.Attacker.CharacterInfo.Username + " !";
                     entry.Key.SendData(PacketComposer.Compose("A", "STD|" + message));
                     entry.Key.CharacterInfo.AddLog(client, message);
-                    entry.Key.CharacterInfo.AddRankpoints(client, rpReceive);
-                    entry.Key.CharacterInfo.AddPvpPoints(client, pvpReceive);
                     entry.Key.CharacterInfo.AddAssists(client, 1);
                 }
             }
         }
 
-        public int CalculatePvpPoints(Session ennemy)
+        public void AnnounceKillStreakEffect()
         {
-            int amountPvpPoints = this.Attacker.CharacterInfo.KillStrek * 100;
             if (this.Attacker.CharacterInfo.KillStrek == 10)
             {
                 MapInstance instanceByMapId = MapManager.GetInstanceByMapId(this.Attacker.CurrentMapId);
@@ -4684,27 +4617,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                     );
                 }
             }
-            if (ennemy.CharacterInfo.KillStrek >= 10)
-            {
-                amountPvpPoints = 3000;
-            }
-            else if (this.Attacker.CharacterInfo.KillStrek >= 5 && this.Attacker.CharacterInfo.KillStrek < 10)
-            {
-                amountPvpPoints = 500;
-            }
-            else if (this.Attacker.CharacterInfo.KillStrek >= 10)
-            {
-                amountPvpPoints = 1500;
-            }
-            if (HappyHour.Enabled)
-            {
-                amountPvpPoints *= 2;
-            }
-            if (this.mExtraBooster == "pts")
-            {
-                amountPvpPoints += (int)(amountPvpPoints * 0.5);
-            }
-            return amountPvpPoints;
         }
 
         public void AddAssists(SqlDatabaseClient MySqlClient, int amount)
@@ -4714,12 +4626,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.ExecuteNonQuery("UPDATE users SET kill_assists = kill_assists + " + (object)amount + " WHERE id = @id LIMIT 1");
         }
 
-        public void AddPvpPoints(SqlDatabaseClient MySqlClient, int amount)
-        {
-            MySqlClient.ClearParameters();
-            MySqlClient.SetParameter("id", (object)this.mId);
-            MySqlClient.ExecuteNonQuery("UPDATE users SET pvp_points = pvp_points + " + (object)amount + " WHERE id = @id LIMIT 1");
-        }
+        
 
         public void AddTokens(SqlDatabaseClient MySqlClient, int amount)
         {
@@ -4735,7 +4642,7 @@ namespace OrbitReborn_Emulator.Game.Characters
             MySqlClient.ExecuteNonQuery("UPDATE users_infos SET tickets = tickets + " + (object)amount + " WHERE id = @id LIMIT 1");
         }
 
-        public void RemoveRankPoints(Session ennemy, int amount)
+        public void LogUnrewardedPvpDestroy(Session ennemy)
         {
             if (ennemy.CharacterInfo.Destroy || this.Attacker == null || this.Attacker.CharacterInfo == null)
                 return;
@@ -4745,8 +4652,6 @@ namespace OrbitReborn_Emulator.Game.Characters
                 string _Message1 = "You have destroyed " + this.Username + ".";
                 this.Attacker.SendData(PacketComposer.Compose("A", "STD|" + _Message1));
                 this.Attacker.CharacterInfo.AddLog(client, _Message1);
-                this.Attacker.CharacterInfo.RemoveRankPoints(client, amount);
-                this.Attacker.SendData(PacketComposer.Compose("A", "STD|You lost " + (object)amount + " rankpoint(s)."));
                 string _Message2 = "You have been destroyed by " + WebUtility.HtmlEncode(this.Attacker.CharacterInfo.Username) + ".";
                 ennemy.CharacterInfo.AddLog(client, _Message2);
                 MapInstance instanceByMapId = MapManager.GetInstanceByMapId(this.mAttacker.CurrentMapId);
@@ -5035,46 +4940,30 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public void AddCargo(long iResId, int iAmount)
         {
-            if (iAmount < 0)
+            if (iAmount < 0) throw new ArgumentOutOfRangeException("iAmount");
+            if (iAmount == 0) return;
+            lock (this.mRefinementSyncRoot)
             {
-                Console.WriteLine(iResId + " = montant negatif: " + iAmount);
-                return;
+                this.EnsureRefiningStateReady();
+                try { RefiningUpgradeStore.ChangeCargo(this.mId, iResId, iAmount, false); }
+                catch { this.mRefiningStateUncertain = true; throw; }
+                this.mLabInfos.AddCargo(iResId, iAmount);
+                this.mShipCargo = this.GetCurrentCargoTotal();
             }
-
-            string col = CharacterInfo.GetResName(iResId);
-            if (col == "error")
-            {
-                Console.WriteLine("AddCargo: resId inconnu " + iResId);
-                return;
-            }
-
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-            {
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE player_cargo SET " + col + " = " + col + " + " + (object)iAmount + " WHERE id = @id LIMIT 1");
-            }
-            this.mLabInfos.AddCargo(iResId, iAmount);
-            this.mShipCargo = this.GetCurrentCargoTotal();
         }
 
         public void RemoveCargo(long iResId, int iAmount)
         {
-            string col = CharacterInfo.GetResName(iResId);
-            if (col == "error")
+            if (iAmount < 0) throw new ArgumentOutOfRangeException("iAmount");
+            if (iAmount == 0) return;
+            lock (this.mRefinementSyncRoot)
             {
-                Console.WriteLine("RemoveCargo: resId inconnu " + iResId);
-                return;
+                this.EnsureRefiningStateReady();
+                try { RefiningUpgradeStore.ChangeCargo(this.mId, iResId, iAmount, true); }
+                catch { this.mRefiningStateUncertain = true; throw; }
+                this.mLabInfos.RemoveCargo(iResId, iAmount);
+                this.mShipCargo = this.GetCurrentCargoTotal();
             }
-
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-            {
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE player_cargo SET " + col + " = " + col + " - " + (object)iAmount + " WHERE id = @id LIMIT 1");
-            }
-            this.mLabInfos.RemoveCargo(iResId, iAmount);
-            this.mShipCargo = this.GetCurrentCargoTotal();
         }
 
 
@@ -5172,53 +5061,56 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public void LoadSepromSafe(SqlDatabaseClient client)
         {
-            this.mSepromSafeLevel = 0;
-            this.mSepromSafeStored = 0;
-
-            if (client == null)
-                return;
-
-            this.EnsureSepromSafeStorage(client);
-
-            client.ClearParameters();
-            client.SetParameter("id", (object)this.mId);
-            DataRow row = client.ExecuteQueryRow("SELECT CAST(safe_level AS UNSIGNED) AS safe_level, CAST(stored_seprom AS SIGNED) AS stored_seprom FROM player_seprom_safe WHERE player_id = @id LIMIT 1");
-            if (row == null)
-                return;
-
-            object levelObj = row["safe_level"];
-            object storedObj = row["stored_seprom"];
-            int safeLevel = 0;
-            int safeStored = 0;
-
-            try
+            lock (this.mRefinementSyncRoot)
             {
-                safeLevel = levelObj is bool ? ((bool)levelObj ? 1 : 0) : Convert.ToInt32(levelObj);
-            }
-            catch
-            {
-                int.TryParse(Convert.ToString(levelObj), out safeLevel);
-            }
+                this.mSepromSafeLevel = 0;
+                this.mSepromSafeStored = 0;
 
-            try
-            {
-                safeStored = storedObj is bool ? ((bool)storedObj ? 1 : 0) : Convert.ToInt32(storedObj);
-            }
-            catch
-            {
-                int.TryParse(Convert.ToString(storedObj), out safeStored);
-            }
+                if (client == null)
+                    return;
 
-            this.mSepromSafeLevel = Math.Max(0, Math.Min(3, safeLevel));
-            this.mSepromSafeStored = Math.Max(0, safeStored);
+                this.EnsureSepromSafeStorage(client);
 
-            int cap = this.GetSepromSafeCapacity();
-            if (cap > 0 && this.mSepromSafeStored > cap)
-            {
-                this.mSepromSafeStored = cap;
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE player_seprom_safe SET stored_seprom = " + (object)this.mSepromSafeStored + " WHERE player_id = @id LIMIT 1");
+                DataRow row = client.ExecuteQueryRow("SELECT CAST(safe_level AS UNSIGNED) AS safe_level, CAST(stored_seprom AS SIGNED) AS stored_seprom FROM player_seprom_safe WHERE player_id = @id LIMIT 1");
+                if (row == null)
+                    return;
+
+                object levelObj = row["safe_level"];
+                object storedObj = row["stored_seprom"];
+                int safeLevel = 0;
+                int safeStored = 0;
+
+                try
+                {
+                    safeLevel = levelObj is bool ? ((bool)levelObj ? 1 : 0) : Convert.ToInt32(levelObj);
+                }
+                catch
+                {
+                    int.TryParse(Convert.ToString(levelObj), out safeLevel);
+                }
+
+                try
+                {
+                    safeStored = storedObj is bool ? ((bool)storedObj ? 1 : 0) : Convert.ToInt32(storedObj);
+                }
+                catch
+                {
+                    int.TryParse(Convert.ToString(storedObj), out safeStored);
+                }
+
+                this.mSepromSafeLevel = Math.Max(0, Math.Min(3, safeLevel));
+                this.mSepromSafeStored = Math.Max(0, safeStored);
+
+                int cap = this.GetSepromSafeCapacity();
+                if (cap > 0 && this.mSepromSafeStored > cap)
+                {
+                    this.mSepromSafeStored = cap;
+                    client.ClearParameters();
+                    client.SetParameter("id", (object)this.mId);
+                    client.ExecuteNonQuery("UPDATE player_seprom_safe SET stored_seprom = " + (object)this.mSepromSafeStored + " WHERE player_id = @id LIMIT 1");
+                }
             }
         }
 
@@ -5286,245 +5178,291 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         public bool TryDepositSepromToSafe(SqlDatabaseClient client, int requestedAmount, out int movedAmount, out string error)
         {
-            movedAmount = 0;
-            error = string.Empty;
-
-            if (client == null)
+            lock (this.mRefinementSyncRoot)
             {
-                error = "db_unavailable";
-                return false;
+                movedAmount = 0;
+                error = string.Empty;
+
+                if (client == null)
+                {
+                    error = "db_unavailable";
+                    return false;
+                }
+
+                try { this.EnsureRefiningStateReady(); }
+                catch (Exception) { error = "db_unavailable"; return false; }
+                this.EnsureSepromSafeStorage(client);
+
+                if (this.mSepromSafeLevel <= 0)
+                {
+                    error = "safe_locked";
+                    return false;
+                }
+
+                if (requestedAmount <= 0)
+                {
+                    error = "invalid_amount";
+                    return false;
+                }
+
+                int cargoSeprom = this.mLabInfos == null ? 0 : this.mLabInfos.Seprom;
+                if (cargoSeprom <= 0)
+                {
+                    error = "not_enough_seprom";
+                    return false;
+                }
+
+                int capacity = this.GetSepromSafeCapacity();
+                int freeSpace = Math.Max(0, capacity - this.mSepromSafeStored);
+                if (freeSpace <= 0)
+                {
+                    error = "safe_full";
+                    return false;
+                }
+
+                movedAmount = Math.Min(requestedAmount, Math.Min(cargoSeprom, freeSpace));
+                if (movedAmount <= 0)
+                {
+                    error = "invalid_amount";
+                    return false;
+                }
+
+                client.ClearParameters();
+                client.SetParameter("id", (object)this.mId);
+                client.ExecuteNonQuery("UPDATE player_cargo SET seprom = seprom - " + (object)movedAmount + " WHERE id = @id LIMIT 1");
+
+                if (this.mLabInfos != null)
+                {
+                    this.mLabInfos.Seprom -= movedAmount;
+                    if (this.mLabInfos.Seprom < 0)
+                        this.mLabInfos.Seprom = 0;
+                }
+                this.mShipCargo = this.GetCurrentCargoTotal();
+
+                this.mSepromSafeStored += movedAmount;
+                client.ClearParameters();
+                client.SetParameter("id", (object)this.mId);
+                client.ExecuteNonQuery("UPDATE player_seprom_safe SET stored_seprom = " + (object)this.mSepromSafeStored + " WHERE player_id = @id LIMIT 1");
+                return true;
             }
-
-            this.EnsureSepromSafeStorage(client);
-
-            if (this.mSepromSafeLevel <= 0)
-            {
-                error = "safe_locked";
-                return false;
-            }
-
-            if (requestedAmount <= 0)
-            {
-                error = "invalid_amount";
-                return false;
-            }
-
-            int cargoSeprom = this.mLabInfos == null ? 0 : this.mLabInfos.Seprom;
-            if (cargoSeprom <= 0)
-            {
-                error = "not_enough_seprom";
-                return false;
-            }
-
-            int capacity = this.GetSepromSafeCapacity();
-            int freeSpace = Math.Max(0, capacity - this.mSepromSafeStored);
-            if (freeSpace <= 0)
-            {
-                error = "safe_full";
-                return false;
-            }
-
-            movedAmount = Math.Min(requestedAmount, Math.Min(cargoSeprom, freeSpace));
-            if (movedAmount <= 0)
-            {
-                error = "invalid_amount";
-                return false;
-            }
-
-            client.ClearParameters();
-            client.SetParameter("id", (object)this.mId);
-            client.ExecuteNonQuery("UPDATE player_cargo SET seprom = seprom - " + (object)movedAmount + " WHERE id = @id LIMIT 1");
-
-            if (this.mLabInfos != null)
-            {
-                this.mLabInfos.Seprom -= movedAmount;
-                if (this.mLabInfos.Seprom < 0)
-                    this.mLabInfos.Seprom = 0;
-            }
-            this.mShipCargo = this.GetCurrentCargoTotal();
-
-            this.mSepromSafeStored += movedAmount;
-            client.ClearParameters();
-            client.SetParameter("id", (object)this.mId);
-            client.ExecuteNonQuery("UPDATE player_seprom_safe SET stored_seprom = " + (object)this.mSepromSafeStored + " WHERE player_id = @id LIMIT 1");
-            return true;
         }
 
         public bool TryWithdrawSepromFromSafe(SqlDatabaseClient client, int requestedAmount, out int movedAmount, out string error)
         {
-            movedAmount = 0;
-            error = string.Empty;
-
-            if (client == null)
+            lock (this.mRefinementSyncRoot)
             {
-                error = "db_unavailable";
-                return false;
+                movedAmount = 0;
+                error = string.Empty;
+
+                if (client == null)
+                {
+                    error = "db_unavailable";
+                    return false;
+                }
+
+                try { this.EnsureRefiningStateReady(); }
+                catch (Exception) { error = "db_unavailable"; return false; }
+                this.EnsureSepromSafeStorage(client);
+
+                if (this.mSepromSafeLevel <= 0)
+                {
+                    error = "safe_locked";
+                    return false;
+                }
+
+                if (requestedAmount <= 0)
+                {
+                    error = "invalid_amount";
+                    return false;
+                }
+
+                if (this.mSepromSafeStored <= 0)
+                {
+                    error = "safe_empty";
+                    return false;
+                }
+
+                int freeCargo = this.mShipMaxCargo > 0 ? Math.Max(0, this.mShipMaxCargo - this.mShipCargo) : requestedAmount;
+                if (freeCargo <= 0)
+                {
+                    error = "cargo_full";
+                    return false;
+                }
+
+                movedAmount = Math.Min(requestedAmount, Math.Min(this.mSepromSafeStored, freeCargo));
+                if (movedAmount <= 0)
+                {
+                    error = "invalid_amount";
+                    return false;
+                }
+
+                this.mSepromSafeStored -= movedAmount;
+                if (this.mSepromSafeStored < 0)
+                    this.mSepromSafeStored = 0;
+
+                client.ClearParameters();
+                client.SetParameter("id", (object)this.mId);
+                client.ExecuteNonQuery("UPDATE player_seprom_safe SET stored_seprom = " + (object)this.mSepromSafeStored + " WHERE player_id = @id LIMIT 1");
+
+                client.ClearParameters();
+                client.SetParameter("id", (object)this.mId);
+                client.ExecuteNonQuery("UPDATE player_cargo SET seprom = seprom + " + (object)movedAmount + " WHERE id = @id LIMIT 1");
+
+                if (this.mLabInfos != null)
+                    this.mLabInfos.Seprom += movedAmount;
+
+                this.mShipCargo = this.GetCurrentCargoTotal();
+                return true;
             }
+        }
 
-            this.EnsureSepromSafeStorage(client);
-
-            if (this.mSepromSafeLevel <= 0)
+        public bool TryApplyRefiningUpgrade(string target, int ore, int amount, out string error)
+        {
+            error = null;
+            target = (target ?? string.Empty).ToUpperInvariant();
+            if (amount <= 0) { error = "Invalid upgrade amount. Choose a positive whole number."; return false; }
+            if (!RefiningUpgradeRules.IsAllowed(target, ore)) { error = "This ore cannot be used on this target."; return false; }
+            lock (this.mRefinementSyncRoot)
             {
-                error = "safe_locked";
-                return false;
+                try { this.EnsureRefiningStateReady(); }
+                catch (Exception)
+                {
+                    error = "Enhancement state could not be refreshed. Reconnect before upgrading.";
+                    return false;
+                }
+                try
+                {
+                    // Save already-fired batched units before reading the durable state.
+                    // A single bounded native command avoids the legacy pool/lock inversion.
+                    if (this.mLabInfos.Update > 0)
+                    {
+                        RefiningUpgradeStore.FlushAmmunition(this.mId, this.mLabInfos.Laser[0],
+                            this.mLabInfos.Laser[1], this.mLabInfos.Rocket[0], this.mLabInfos.Rocket[1]);
+                        this.mLabInfos.Update = 0;
+                    }
+                }
+                catch (Exception)
+                {
+                    // This idempotent preflush never consumed ore. Keep pending RAM usage;
+                    // reloading old SQL here could resurrect ammunition already fired.
+                    error = "Unable to save current enhancement usage. No ore was consumed. Reconnect before upgrading.";
+                    return false;
+                }
+                RefiningUpgradeReceipt receipt;
+                bool applied = new RefiningUpgradeStore().TryApply(this.mId, target, ore, amount,
+                    (long)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds, out receipt, out error);
+                if (!applied)
+                {
+                    // A failed acknowledgement must not let stale RAM overwrite a committed bonus.
+                    this.mRefiningStateUncertain = true;
+                    // Resolve by READ only, never by retrying a debit.
+                    try { this.ReloadRefiningState(); }
+                    catch (Exception) { error += " The current state could not be refreshed; reconnect before another attempt."; }
+                    return false;
+                }
+                switch (ore)
+                {
+                    case 11: this.mLabInfos.Prometid = receipt.RemainingCargo; break;
+                    case 12: this.mLabInfos.Duranium = receipt.RemainingCargo; break;
+                    case 13: this.mLabInfos.Promerium = receipt.RemainingCargo; break;
+                    case 14: this.mLabInfos.Seprom = receipt.RemainingCargo; break;
+                }
+                int[] state = this.GetRefiningTargetState(target);
+                state[0] = receipt.Ore; state[1] = receipt.Value;
+                this.mShipCargo = this.GetCurrentCargoTotal();
+                return true;
             }
+        }
 
-            if (requestedAmount <= 0)
+        private int[] GetRefiningTargetState(string target)
+        {
+            switch (target) { case "LASER": return this.mLabInfos.Laser; case "ROCKET": return this.mLabInfos.Rocket; case "SHIELD": return this.mLabInfos.Shield; case "DRIVING": return this.mLabInfos.Speed; default: throw new ArgumentOutOfRangeException("target"); }
+        }
+
+        private void EnsureRefiningStateReady()
+        {
+            if (this.mRefiningStateUncertain) this.ReloadRefiningState();
+        }
+
+        private void ReloadRefiningState()
+        {
+            using (var tx = new SqlDatabaseTransaction(SqlDatabaseManager.GenerateConnectionString()))
             {
-                error = "invalid_amount";
-                return false;
+                var cargo = tx.Query("SELECT prometium,endurium,terbium,xenomit,palladium,prometid,duranium,promerium,seprom FROM player_cargo WHERE id=@id", "@id", this.mId);
+                var states = tx.Query("SELECT laser0,laser1,rocket0,rocket1,speed0,speed1,shield0,shield1 FROM player_reff WHERE id=@id", "@id", this.mId);
+                if (cargo.Rows.Count != 1 || states.Rows.Count > 1) throw new InvalidOperationException("Refinement state unavailable.");
+                // Publish RAM only after the entire read scope has completed successfully.
+                tx.Commit();
+                DataRow row = cargo.Rows[0];
+                this.mLabInfos.Prometium = Convert.ToInt32(row["prometium"]); this.mLabInfos.Endurium = Convert.ToInt32(row["endurium"]);
+                this.mLabInfos.Terbium = Convert.ToInt32(row["terbium"]); this.mLabInfos.Xenomit = Convert.ToInt32(row["xenomit"]);
+                this.mLabInfos.Palladium = Convert.ToInt32(row["palladium"]); this.mLabInfos.Prometid = Convert.ToInt32(row["prometid"]);
+                this.mLabInfos.Duranium = Convert.ToInt32(row["duranium"]); this.mLabInfos.Promerium = Convert.ToInt32(row["promerium"]); this.mLabInfos.Seprom = Convert.ToInt32(row["seprom"]);
+                foreach (string target in new[] { "LASER", "ROCKET", "DRIVING", "SHIELD" })
+                {
+                    string prefix = RefiningUpgradeRules.TargetColumn(target); int[] state = this.GetRefiningTargetState(target);
+                    state[0] = states.Rows.Count == 0 ? 0 : Convert.ToInt32(states.Rows[0][prefix + "0"]);
+                    state[1] = states.Rows.Count == 0 ? 0 : Convert.ToInt32(states.Rows[0][prefix + "1"]);
+                }
+                this.mShipCargo = this.GetCurrentCargoTotal();
+                this.mLabInfos.Update = 0;
+                this.mRefiningStateUncertain = false;
             }
+        }
 
-            if (this.mSepromSafeStored <= 0)
+        private void AddLegacyRefiningBonus(string target, int ore, int amount)
+        {
+            lock (this.mRefinementSyncRoot)
             {
-                error = "safe_empty";
-                return false;
+                this.EnsureRefiningStateReady();
+                int[] state = this.GetRefiningTargetState(target); int value; string error;
+                if (!RefiningUpgradeRules.TryCalculate(target, ore, amount, state[0], state[1],
+                    (long)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds, out value, out error))
+                    throw new ArgumentOutOfRangeException("amount", error);
+                try { RefiningUpgradeStore.WriteExistingBonus(this.mId, target, ore, value); }
+                catch { this.mRefiningStateUncertain = true; throw; }
+                state[0] = ore; state[1] = value;
             }
-
-            int freeCargo = this.mShipMaxCargo > 0 ? Math.Max(0, this.mShipMaxCargo - this.mShipCargo) : requestedAmount;
-            if (freeCargo <= 0)
-            {
-                error = "cargo_full";
-                return false;
-            }
-
-            movedAmount = Math.Min(requestedAmount, Math.Min(this.mSepromSafeStored, freeCargo));
-            if (movedAmount <= 0)
-            {
-                error = "invalid_amount";
-                return false;
-            }
-
-            this.mSepromSafeStored -= movedAmount;
-            if (this.mSepromSafeStored < 0)
-                this.mSepromSafeStored = 0;
-
-            client.ClearParameters();
-            client.SetParameter("id", (object)this.mId);
-            client.ExecuteNonQuery("UPDATE player_seprom_safe SET stored_seprom = " + (object)this.mSepromSafeStored + " WHERE player_id = @id LIMIT 1");
-
-            client.ClearParameters();
-            client.SetParameter("id", (object)this.mId);
-            client.ExecuteNonQuery("UPDATE player_cargo SET seprom = seprom + " + (object)movedAmount + " WHERE id = @id LIMIT 1");
-
-            if (this.mLabInfos != null)
-                this.mLabInfos.Seprom += movedAmount;
-
-            this.mShipCargo = this.GetCurrentCargoTotal();
-            return true;
         }
 
         public void AddSpeedReff(int iResId, int iAmount)
-        {
-            int totalSeconds = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
-            if (this.mLabInfos.Speed[0] != iResId)
-            {
-                this.mLabInfos.Speed[0] = iResId;
-                this.mLabInfos.Speed[1] = totalSeconds + 600 * iAmount;
-            }
-            else if (this.mLabInfos.Speed[1] > totalSeconds)
-                this.mLabInfos.Speed[1] += 600 * iAmount;
-            else
-                this.mLabInfos.Speed[1] = totalSeconds + 600 * iAmount;
-            this.mLabInfos.Speed[1] -= 5;
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-            {
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE player_reff SET speed0 = " + (object)this.mLabInfos.Speed[0] + ", speed1  = " + (object)this.mLabInfos.Speed[1] + " WHERE id = @id LIMIT 1");
-            }
-        }
+        { this.AddLegacyRefiningBonus("DRIVING", iResId, iAmount); }
 
         public void AddShieldReff(int iResId, int iAmount)
-        {
-            int totalSeconds = (int)DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
-            if (this.mLabInfos.Shield[0] != iResId)
-            {
-                this.mLabInfos.Shield[0] = iResId;
-                this.mLabInfos.Shield[1] = totalSeconds + 600 * iAmount;
-            }
-            else if (this.mLabInfos.Shield[1] > totalSeconds)
-                this.mLabInfos.Shield[1] += 600 * iAmount;
-            else
-                this.mLabInfos.Shield[1] = totalSeconds + 600 * iAmount;
-            this.mLabInfos.Shield[1] -= 5;
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-            {
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE player_reff SET shield0 = " + (object)this.mLabInfos.Shield[0] + ", shield1  = " + (object)this.mLabInfos.Shield[1] + " WHERE id = @id LIMIT 1");
-            }
-        }
+        { this.AddLegacyRefiningBonus("SHIELD", iResId, iAmount); }
 
         public void AddLaserReff(int iResId, int iAmount)
-        {
-            if (iAmount <= 0)
-                return;
-
-            int addUnits = iAmount * 10;
-
-            if (this.mLabInfos.Laser[0] != iResId)
-            {
-                this.mLabInfos.Laser[0] = iResId;
-                this.mLabInfos.Laser[1] = addUnits;
-            }
-            else
-            {
-                this.mLabInfos.Laser[1] += addUnits;
-            }
-
-            this.UpdateLaserReff();
-        }
+        { this.AddLegacyRefiningBonus("LASER", iResId, iAmount); }
 
 
         public void UpdateLaserReff()
         {
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            lock (this.mRefinementSyncRoot)
             {
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE player_reff SET laser0 = " + (object)this.mLabInfos.Laser[0] + ", laser1  = " + (object)this.mLabInfos.Laser[1] + " WHERE id = @id LIMIT 1");
+                if (!this.CanUseRefiningBonuses) return;
+                RefiningUpgradeStore.WriteExistingBonus(this.mId, "LASER", this.mLabInfos.Laser[0], this.mLabInfos.Laser[1]);
             }
         }
 
         public void AddRocketReff(int iResId, int iAmount)
-        {
-            if (iAmount <= 0)
-                return;
-
-            int addUnits = iAmount * 10;
-
-            if (this.mLabInfos.Rocket[0] != iResId)
-            {
-                this.mLabInfos.Rocket[0] = iResId;
-                this.mLabInfos.Rocket[1] = addUnits;
-            }
-            else
-            {
-                this.mLabInfos.Rocket[1] += addUnits;
-            }
-
-            this.UpdateRocketReff();
-        }
-
+        { this.AddLegacyRefiningBonus("ROCKET", iResId, iAmount); }
 
         public void UpdateRocketReff()
         {
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            lock (this.mRefinementSyncRoot)
             {
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE player_reff SET rocket0 = " + (object)this.mLabInfos.Rocket[0] + ", rocket1  = " + (object)this.mLabInfos.Rocket[1] + " WHERE id = @id LIMIT 1");
+                if (!this.CanUseRefiningBonuses) return;
+                RefiningUpgradeStore.WriteExistingBonus(this.mId, "ROCKET", this.mLabInfos.Rocket[0], this.mLabInfos.Rocket[1]);
             }
         }
 
         public void UpdateLaserRocketReff()
         {
-            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+            lock (this.mRefinementSyncRoot)
             {
-                client.ClearParameters();
-                client.SetParameter("id", (object)this.mId);
-                client.ExecuteNonQuery("UPDATE player_reff SET laser0 = " + (object)this.mLabInfos.Laser[0] + ", laser1  = " + (object)this.mLabInfos.Laser[1] + ", rocket0  = " + (object)this.mLabInfos.Rocket[0] + ", rocket1  = " + (object)this.mLabInfos.Rocket[1] + " WHERE id = @id LIMIT 1");
+                if (!this.CanUseRefiningBonuses) return;
+                RefiningUpgradeStore.FlushAmmunition(this.mId, this.mLabInfos.Laser[0],
+                    this.mLabInfos.Laser[1], this.mLabInfos.Rocket[0], this.mLabInfos.Rocket[1]);
             }
         }
         public void GetDroneDisplayCounts(out int flax, out int iris)
@@ -6391,15 +6329,18 @@ namespace OrbitReborn_Emulator.Game.Characters
         // Serialize with ammo flushes; DB rewards never acknowledge unflushed shots.
         public GalaxyGateRewardReceipt ClaimGalaxyGateReward(int gateId)
         {
+            bool wasBeginner = this.IsBeginner;
+            GalaxyGateRewardReceipt receipt;
             lock (this.mPrimaryAmmoFlushLock)
+            lock (this.mRefinementSyncRoot)
             {
-                var receipt = new GalaxyGateRewardStore().Claim(this.mId, gateId);
+                receipt = new GalaxyGateRewardStore().Claim(this.mId, gateId);
                 var row = receipt.Balance;
                 this.mCredits = Convert.ToInt64(row["credits"]);
                 this.mUridium = Convert.ToInt64(row["uridium"]);
                 this.mExperience = Convert.ToInt64(row["experience"]);
                 this.mHonor = Convert.ToInt64(row["honor"]);
-                this.mLevel = Convert.ToInt32(row["level"]);
+                this.mLevel = ExperienceSystem.GetLevelFromExperience(this.mExperience);
                 this.GGRings = Convert.ToInt32(row["gg_rings"]);
                 lock (this.mPrimaryAmmoSyncLock)
                 {
@@ -6409,13 +6350,15 @@ namespace OrbitReborn_Emulator.Game.Characters
                 }
                 this.mLabInfos.Seprom = receipt.Seprom;
                 this.mShipCargo = this.GetCurrentCargoTotal();
-                return receipt;
             }
+            this.RefreshBeginnerTitleAfterExternalLevelChange(wasBeginner);
+            return receipt;
         }
 
         // TDM refresh reads only economic totals. It cannot restore dirty ammo or equipment.
         public void RefreshTdmRewardData()
         {
+            bool wasBeginner = this.IsBeginner;
             lock (this.mPrimaryAmmoFlushLock)
             using (var db = new SqlDatabaseTransaction(SqlDatabaseManager.GenerateConnectionString()))
             {
@@ -6426,7 +6369,15 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.mHonor = Convert.ToInt64(row["honor"]); this.mLevel = ExperienceSystem.GetLevelFromExperience(this.mExperience);
                 db.Commit();
             }
+            this.RefreshBeginnerTitleAfterExternalLevelChange(wasBeginner);
         }
+        private void RefreshBeginnerTitleAfterExternalLevelChange(bool wasBeginner)
+        {
+            if (wasBeginner == this.IsBeginner) return;
+            using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
+                TitleService.RefreshBeginnerTitleAfterLevelChange(this, wasBeginner, client);
+        }
+
         public bool RefreshQuestRewardData()
         {
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
@@ -6436,6 +6387,7 @@ namespace OrbitReborn_Emulator.Game.Characters
 
         private bool RefreshQuestRewardDataCore(SqlDatabaseClient client)
         {
+            bool wasBeginner = this.IsBeginner;
             {
                 client.ClearParameters();
                 client.SetParameter("id", (object)this.mId);
@@ -6510,6 +6462,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                     }
                 }
 
+                TitleService.RefreshBeginnerTitleAfterLevelChange(this, wasBeginner, client);
                 return changed;
             }
         }

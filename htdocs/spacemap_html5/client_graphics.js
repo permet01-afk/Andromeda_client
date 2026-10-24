@@ -5312,6 +5312,24 @@ const FLASH_WINDOW_RECOVERABLE_BOTTOM_Y = 20;
 
 let __flashPersistedWindowSettingsByKey = {};
 
+// Per-page intent: Refinement starts closed even if a saved setting says open.
+// Only explicit controls change it; late server settings still restore position.
+let refinementWindowVisibilityIntent = false;
+
+function setRefiningWindowVisibilityIntent(open) {
+    refinementWindowVisibilityIntent = !!open;
+    if (typeof windowStates === "object" && windowStates) {
+        windowStates.refinement = refinementWindowVisibilityIntent;
+    }
+    return refinementWindowVisibilityIntent;
+}
+
+function resolveFlashWindowOpenState(key, persisted, fallbackOpen) {
+    if (key === "refinement") return refinementWindowVisibilityIntent;
+    if (persisted && typeof persisted.open === "boolean") return persisted.open;
+    return !!fallbackOpen;
+}
+
 let __flashDisplayChatEnabled = true;
 
 let __flashMainMenuPosition = null;
@@ -5627,7 +5645,7 @@ function applyFlashWindowSettingEntryToRuntime(key, entry) {
         }
     }
     if (typeof windowStates === "object" && windowStates) {
-        windowStates[key] = normalized.open;
+        windowStates[key] = resolveFlashWindowOpenState(key, normalized, normalized.open);
     }
     if (key === "map") {
         window.showMinimap = normalized.open;
@@ -5969,6 +5987,63 @@ function getFlashMinimizedIconSlots() {
 
 const FLASH_TOPMENU_BG_WIDTH = 151;
 
+// Andromeda adaptation: keep the native bitmaps, but align the four controls
+// horizontally beneath the logo in one uniformly scaled viewport plane.
+// The original decorative backdrop remains retained and CSS-hidden.
+let flashTopMenuBrandLayout = "";
+function getFlashTopMenuUniformScale() {
+    const portrait = window.innerWidth <= 700 && window.innerHeight > window.innerWidth;
+    if (portrait) return 8 / 9;
+    const sx = typeof window.getHudScaleX === "function" ? window.getHudScaleX() : 1;
+    const sy = typeof window.getHudScaleY === "function" ? window.getHudScaleY() : 1;
+    return Math.max(.01, Math.min(sx, sy));
+}
+
+function syncFlashTopMenuBrand() {
+    let brand = document.getElementById("flashTopMenuBrand");
+    if (!brand) {
+        brand = document.createElement("div");
+        brand.id = "flashTopMenuBrand";
+        const backdrop = document.createElement("img");
+        backdrop.id = "flashTopMenuBrandBackdrop";
+        backdrop.className = "flashTopMenuBrandBackdrop";
+        backdrop.src = "graphics/ui/actionMenu/historical/sticky_nav_bg.png";
+        backdrop.alt = "";
+        backdrop.setAttribute("aria-hidden", "true");
+        const logo = document.createElement("img");
+        logo.className = "flashTopMenuBrandLogo";
+        logo.src = "/assets/historical/public-external/andromeda-reborn-wordmark-v1.png";
+        logo.alt = "";
+        logo.setAttribute("aria-hidden", "true");
+        brand.append(backdrop, logo);
+        document.body.appendChild(brand);
+        let resizeFrame = null;
+        window.addEventListener("resize", () => {
+            if (resizeFrame !== null) return;
+            resizeFrame = window.requestAnimationFrame(() => {
+                resizeFrame = null;
+                syncFlashTopMenuBrand();
+            });
+        });
+    }
+    // This plane also owns real controls. Only its decorative images are hidden
+    // from assistive technology; the parent must never be aria-hidden.
+    brand.removeAttribute("aria-hidden");
+    const scale = getFlashTopMenuUniformScale();
+    const signature = String(scale);
+    if (signature === flashTopMenuBrandLayout) return brand;
+    flashTopMenuBrandLayout = signature;
+    Object.assign(brand.style, {
+        width: "151px", height: "75px", transformOrigin: "right top",
+        transform: `scale(${scale})`
+    });
+    const logo = brand.querySelector(".flashTopMenuBrandLogo");
+    Object.assign(logo.style, {width: "108px", height: "36px", top: "0px", left: "36px", right: "auto"});
+    const backdrop = brand.querySelector(".flashTopMenuBrandBackdrop");
+    Object.assign(backdrop.style, {width: "151px", height: "54px", top: "0px", left: "0px", right: "auto"});
+    return brand;
+}
+
 function getCurrentHudLogicalWidth() {
     const root = typeof window.getHudRoot === "function" ? window.getHudRoot() : document.getElementById("hudRoot");
     if (root) {
@@ -6024,20 +6099,11 @@ function isFlashTopMenuStaticWindowKey(key) {
 
 const FLASH_TOP_UTILITY_WINDOW_KEYS = new Set([ "refinement", "trade", "settings", "logout" ]);
 
-function getFlashTopUtilityBasePos() {
-    return {
-        left: getCurrentHudLogicalWidth() - FLASH_TOPMENU_BG_WIDTH + 2,
-        top: 51
-    };
-}
-
-function getFlashTopUtilityButtonPosByIndex(index) {
-    const base = getFlashTopUtilityBasePos();
-    const step = 33;
-    return {
-        left: base.left + step * index,
-        top: base.top
-    };
+function getFlashTopUtilityButtonPosByKey(key) {
+    // User-approved Andromeda layout, independent of the native stair-step XML
+    // anchors. Window metadata and all four controls' actions remain unchanged.
+    const horizontalSlots = {logout: 18, settings: 51, trade: 84, refinement: 117};
+    return Object.prototype.hasOwnProperty.call(horizontalSlots, key) ? {left: horizontalSlots[key], top: 40} : null;
 }
 
 const FLASH_TOP_UTILITY_BUTTONS = [ {
@@ -6045,7 +6111,7 @@ const FLASH_TOP_UTILITY_BUTTONS = [ {
     windowKey: "refinement",
     title: "Refining",
     iconPath: "graphics/ui/window1/images/refinement_icon.png",
-    getPos: () => getFlashTopUtilityButtonPosByIndex(0),
+    getPos: () => getFlashTopUtilityButtonPosByKey("refinement"),
     onClick: () => {
         if (typeof openRefiningWindow === "function") openRefiningWindow();
     }
@@ -6054,7 +6120,7 @@ const FLASH_TOP_UTILITY_BUTTONS = [ {
     windowKey: "trade",
     title: "Trade",
     iconPath: "graphics/ui/window1/images/trade_icon.png",
-    getPos: () => getFlashTopUtilityButtonPosByIndex(1),
+    getPos: () => getFlashTopUtilityButtonPosByKey("trade"),
     onClick: () => {
         if (typeof openTradeWindow === "function") openTradeWindow();
     }
@@ -6063,7 +6129,7 @@ const FLASH_TOP_UTILITY_BUTTONS = [ {
     windowKey: "settings",
     title: "Settings",
     iconPath: "graphics/ui/window1/images/settings_icon.png",
-    getPos: () => getFlashTopUtilityButtonPosByIndex(2),
+    getPos: () => getFlashTopUtilityButtonPosByKey("settings"),
     onClick: () => {
         if (typeof window.toggleSettingsWindow === "function") window.toggleSettingsWindow(); else if (typeof toggleSettingsWindow === "function") toggleSettingsWindow();
     }
@@ -6072,7 +6138,7 @@ const FLASH_TOP_UTILITY_BUTTONS = [ {
     windowKey: "logout",
     title: "Logout",
     iconPath: "graphics/ui/window1/images/logout_icon.png",
-    getPos: () => getFlashTopUtilityButtonPosByIndex(3),
+    getPos: () => getFlashTopUtilityButtonPosByKey("logout"),
     onClick: () => {
         if (typeof openLogoutWindow === "function") openLogoutWindow();
     }
@@ -6094,6 +6160,7 @@ function syncFlashTopUtilityButtonPosition(buttonOrId) {
 }
 
 function syncFlashTopUtilityButtons() {
+    syncFlashTopMenuBrand();
     FLASH_TOP_UTILITY_BUTTONS.forEach(def => {
         const btn = document.getElementById(def.domId);
         if (btn) syncFlashTopUtilityButtonPosition(btn);
@@ -6132,18 +6199,38 @@ function ensureFlashTopUtilityButton(windowKey) {
             e.stopPropagation();
             if (typeof def.onClick === "function") def.onClick();
         });
-        window.appendToHud ? window.appendToHud(btn) : document.body.appendChild(btn);
+        syncFlashTopMenuBrand().appendChild(btn);
     } else {
         btn.classList.add("flashTopUtilityButton");
         btn.dataset.windowKey = def.windowKey;
         btn.title = def.title;
     }
+    const plane = syncFlashTopMenuBrand();
+    if (btn.parentNode !== plane) plane.appendChild(btn);
+    btn.setAttribute("role", "button");
+    btn.setAttribute("tabindex", "0");
+    btn.setAttribute("aria-label", def.title);
+    if (btn.dataset.flashTopUtilityKeyboardBound !== "1") {
+        btn.dataset.flashTopUtilityKeyboardBound = "1";
+        btn.addEventListener("keydown", e => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof def.onClick === "function") def.onClick();
+        });
+    }
     btn.textContent = "";
     btn.style.right = "auto";
     btn.style.removeProperty("--icon");
-    btn.style.setProperty("--flash-top-bg", typeof getUiCssUrl === "function" ? getUiCssUrl("graphics/ui/actionMenu/images/81_comb02_std.png.png") : `url('graphics/ui/actionMenu/images/81_comb02_std.png.png')`);
-    btn.style.setProperty("--flash-top-bg-hover", typeof getUiCssUrl === "function" ? getUiCssUrl("graphics/ui/actionMenu/images/83_comb02_hover.png.png") : `url('graphics/ui/actionMenu/images/83_comb02_hover.png.png')`);
-    btn.style.setProperty("--flash-top-bg-active", typeof getUiCssUrl === "function" ? getUiCssUrl("graphics/ui/actionMenu/images/83_comb02_hover.png.png") : `url('graphics/ui/actionMenu/images/83_comb02_hover.png.png')`);
+    const logoutShape = def.windowKey === "logout";
+    const normal = logoutShape ? "graphics/ui/actionMenu/images/79_comb03_std.png.png" : "graphics/ui/actionMenu/images/81_comb02_std.png.png";
+    const hover = logoutShape ? "graphics/ui/actionMenu/images/80_comb03_hover.png.png" : "graphics/ui/actionMenu/images/83_comb02_hover.png.png";
+    const selected = logoutShape ? hover : "graphics/ui/actionMenu/images/82_comb02_selected.png.png";
+    const cssImage = path => typeof getUiCssUrl === "function" ? getUiCssUrl(path) : `url('${path}')`;
+    btn.style.setProperty("--flash-top-bg", cssImage(normal));
+    btn.style.setProperty("--flash-top-bg-hover", cssImage(hover));
+    btn.style.setProperty("--flash-top-bg-active", cssImage(hover));
+    btn.style.setProperty("--flash-top-bg-selected", cssImage(selected));
     let inner = btn.querySelector(".flashTopUtilityButtonInner");
     if (!inner) {
         inner = document.createElement("div");
@@ -6923,7 +7010,7 @@ function openRefinePrompt(recipe, maxAmount) {
     const actions = document.createElement("div");
     actions.className = "refinePromptActions";
     const refineBtn = document.createElement("button");
-    refineBtn.textContent = flashLocaleText("lab_btn_refine", "");
+    refineBtn.textContent = flashLocaleText("lab_btn_refine", "Refine");
     refineBtn.addEventListener("click", () => {
         const val = parseInt(select.value, 10);
         if (typeof sendProduce === "function" && val > 0) {
@@ -6976,7 +7063,7 @@ function createRefiningModule(ore, count, options = {}) {
     if (options.recipe) {
         const btn = document.createElement("button");
         btn.className = "refNodeBtn";
-        btn.textContent = flashLocaleText("lab_btn_refine", "");
+        btn.textContent = flashLocaleText("lab_btn_refine", "Refine");
         const maxCraft = computeRecipeMax(options.recipe, getOreCargoSnapshot());
         btn.disabled = maxCraft <= 0;
         bindBitmapStates(btn, REFINEMENT_BITMAP_STATES.button);
@@ -7106,12 +7193,21 @@ function formatUpgradeAmount(targetId, amount) {
 }
 
 let upgradePromptOverlay = null;
+let pendingRefiningUpgrade = null;
+let upgradePromptReturnFocus = null;
 
 function closeUpgradePrompt() {
+    if (pendingRefiningUpgrade && !pendingRefiningUpgrade.timedOut) return;
+    if (pendingRefiningUpgrade) clearTimeout(pendingRefiningUpgrade.timer);
+    // A timeout only dismisses the window. Keep the unresolved operation until
+    // its explicit reply (or a real client reload), never assign its late OK
+    // to a second request.
     if (upgradePromptOverlay && upgradePromptOverlay.parentNode) {
         upgradePromptOverlay.parentNode.removeChild(upgradePromptOverlay);
     }
     upgradePromptOverlay = null;
+    if (upgradePromptReturnFocus && upgradePromptReturnFocus.isConnected) upgradePromptReturnFocus.focus();
+    upgradePromptReturnFocus = null;
 }
 
 function buildAmountOptions(maxAmount) {
@@ -7123,73 +7219,157 @@ function buildAmountOptions(maxAmount) {
     return Array.from(new Set(opts.filter(v => v > 0)));
 }
 
-function openUpgradeAmountPrompt(targetId, oreKey, maxAmount, previousAmount = 0) {
+function createUpgradePromptFrame() {
+    const overlay = document.createElement("div");
+    overlay.id = "refinePromptOverlay";
+    overlay.className = "refinementModal";
+    const card = document.createElement("div");
+    card.id = "refinePrompt";
+    card.className = "refinementAmountPrompt";
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-modal", "true");
+    card.setAttribute("aria-labelledby", "refinementPromptTitle");
+    const title = document.createElement("h4");
+    title.id = "refinementPromptTitle";
+    title.textContent = flashLocaleText("title_alert", "Note");
+    card.appendChild(title);
+    overlay.appendChild(card);
+    overlay.addEventListener("click", e => { if (e.target === overlay) closeUpgradePrompt(); });
+    overlay.addEventListener("keydown", e => {
+        if (e.key === "Escape") { e.preventDefault(); closeUpgradePrompt(); }
+        if (e.key !== "Tab") return;
+        const fields = Array.from(card.querySelectorAll("button:not(:disabled), select:not(:disabled)"));
+        if (!fields.length) { e.preventDefault(); return; }
+        const first = fields[0], last = fields[fields.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+    upgradePromptReturnFocus = document.activeElement;
+    document.body.appendChild(overlay);
+    upgradePromptOverlay = overlay;
+    return {overlay, card};
+}
+
+function setRefiningPromptStatus(text) {
+    const status = upgradePromptOverlay && upgradePromptOverlay.querySelector(".refinementPromptStatus");
+    if (status) status.textContent = text || "";
+}
+
+function refreshUpgradePromptAvailability() {
+    const card = upgradePromptOverlay && upgradePromptOverlay.querySelector(".refinementAmountPrompt");
+    if (!card || !card.dataset.upgradeOre || pendingRefiningUpgrade) return;
+    const stock = Math.max(0, Math.min(2147483647, Math.floor(Number(getOreCargoSnapshot()[card.dataset.upgradeOre]) || 0)));
+    const select = card.querySelector("select");
+    const selected = Number(select.value);
+    const options = buildAmountOptions(stock);
+    select.replaceChildren();
+    options.forEach(value => { const option = document.createElement("option"); option.value = String(value); option.textContent = String(value); select.appendChild(option); });
+    select.value = String(options.includes(selected) ? selected : options[0] || "");
+    select.disabled = stock === 0;
+    card.querySelector(".refinementFlashButton").disabled = stock === 0;
+    const target = getUpgradeTargetDef(card.dataset.upgradeTarget);
+    card.querySelector(".refinementPromptContext").textContent = `${formatOreName(card.dataset.upgradeOre)} → ${flashLocaleText(target && target.languageKey, card.dataset.upgradeTarget)} · ${formatOreCount(stock)}`;
+}
+
+function onRefiningUpgradeReply(success, message) {
+    if (!pendingRefiningUpgrade) return;
+    clearTimeout(pendingRefiningUpgrade.timer);
+    pendingRefiningUpgrade = null;
+    if (success) { closeUpgradePrompt(); return; }
+    if (!upgradePromptOverlay) return;
+    upgradePromptOverlay.querySelectorAll("button, select").forEach(el => { el.disabled = false; });
+    upgradePromptOverlay.removeAttribute("aria-busy");
+    setRefiningPromptStatus(message || "The upgrade was not applied. Check the available resources.");
+}
+
+function openUpgradeAmountPrompt(targetId, oreKey, maxAmount) {
+    if (pendingRefiningUpgrade) return;
     closeUpgradePrompt();
-    if (maxAmount <= 0) {
+    const available = Math.min(2147483647, Math.floor(Number(maxAmount)));
+    if (!Number.isSafeInteger(available) || available <= 0) {
         addInfoMessage(flashLocaleText("notEnoughCargo", ""));
         return;
     }
-    const overlay = document.createElement("div");
-    overlay.id = "refinePromptOverlay";
-    const card = document.createElement("div");
-    card.id = "refinePrompt";
-    const title = document.createElement("h4");
-    title.textContent = flashLocaleText("lab_btn_update", "");
-    card.appendChild(title);
-    const question = document.createElement("p");
-    question.textContent = flashLocaleText("lab_refine_question", "");
-    card.appendChild(question);
+    const {overlay, card} = createUpgradePromptFrame();
+    card.dataset.upgradeOre = oreKey;
+    card.dataset.upgradeTarget = targetId;
+    const context = document.createElement("p");
+    context.className = "refinementPromptContext";
+    const target = getUpgradeTargetDef(targetId);
+    context.textContent = `${formatOreName(oreKey)} → ${flashLocaleText(target && target.languageKey, targetId)} · ${formatOreCount(available)}`;
+    card.appendChild(context);
+    const label = document.createElement("label");
+    label.className = "refinementQuantityLabel";
+    label.htmlFor = "refinementUpgradeQuantity";
+    label.textContent = flashLocaleText("lab_count", "Quantity");
+    card.appendChild(label);
     const select = document.createElement("select");
-    buildAmountOptions(maxAmount).forEach(val => {
+    select.id = "refinementUpgradeQuantity";
+    buildAmountOptions(available).forEach(val => {
         const opt = document.createElement("option");
         opt.value = String(val);
         opt.textContent = val;
         select.appendChild(opt);
     });
-    const safeDefault = previousAmount > 0 ? Math.min(previousAmount, maxAmount) : maxAmount;
-    select.value = String(safeDefault);
+    // Applied rounds/minutes are never a quantity of new ore.
+    select.value = String(buildAmountOptions(available)[0]);
     card.appendChild(select);
     const actions = document.createElement("div");
     actions.className = "refinePromptActions";
     const applyBtn = document.createElement("button");
-    applyBtn.textContent = flashLocaleText("lab_btn_update", "");
+    applyBtn.textContent = flashLocaleText("lab_btn_update", "Upgrade");
     applyBtn.addEventListener("click", () => {
-        const val = parseInt(select.value, 10);
-        if (isNaN(val) || val <= 0) return;
-        if (typeof sendRefiningUpgrade === "function") {
-            sendRefiningUpgrade(targetId, oreKey, val);
+        if (pendingRefiningUpgrade) return;
+        const val = Number(select.value);
+        const currentStock = Number(getOreCargoSnapshot()[oreKey]) || 0;
+        if (!Number.isSafeInteger(val) || val <= 0 || val > 2147483647 || val > currentStock) {
+            setRefiningPromptStatus("Select a valid quantity within the available resources.");
+            return;
         }
-        closeUpgradePrompt();
+        if (typeof sendRefiningUpgrade !== "function" || !sendRefiningUpgrade(targetId, oreKey, val)) {
+            setRefiningPromptStatus("The connection is unavailable. No upgrade was sent.");
+            return;
+        }
+        pendingRefiningUpgrade = {targetId, oreKey, amount: val, timedOut: false, timer: null};
+        overlay.setAttribute("aria-busy", "true");
+        card.querySelectorAll("button, select").forEach(el => { el.disabled = true; });
+        setRefiningPromptStatus("Waiting for confirmation…");
+        pendingRefiningUpgrade.timer = setTimeout(() => {
+            if (!pendingRefiningUpgrade) return;
+            pendingRefiningUpgrade.timedOut = true;
+            cancelBtn.disabled = false;
+            setRefiningPromptStatus("The result could not be confirmed. Check the refreshed inventory before trying again. No automatic retry was made.");
+        }, 15000);
     });
     const cancelBtn = document.createElement("button");
     cancelBtn.textContent = flashLocaleText("lab_cancel", "");
     cancelBtn.addEventListener("click", closeUpgradePrompt);
-    bindBitmapStates(applyBtn, REFINEMENT_BITMAP_STATES.button);
+    applyBtn.className = "refinementFlashButton";
     actions.appendChild(applyBtn);
-    bindBitmapStates(cancelBtn, REFINEMENT_BITMAP_STATES.button);
+    cancelBtn.className = "refinementFlashButton";
     actions.appendChild(cancelBtn);
     card.appendChild(actions);
-    overlay.appendChild(card);
-    overlay.addEventListener("click", e => {
-        if (e.target === overlay) closeUpgradePrompt();
-    });
-    document.body.appendChild(overlay);
-    upgradePromptOverlay = overlay;
+    const status = document.createElement("p");
+    status.className = "refinementPromptStatus";
+    status.setAttribute("role", "status");
+    card.appendChild(status);
+    select.focus();
 }
 
 function openUpgradeReplacePrompt(onConfirm) {
+    if (pendingRefiningUpgrade) return;
     closeUpgradePrompt();
-    const overlay = document.createElement("div");
-    overlay.id = "refinePromptOverlay";
-    const card = document.createElement("div");
-    card.id = "refinePrompt";
+    const {card} = createUpgradePromptFrame();
+    card.classList.add("refinementReplacePrompt");
+    card.setAttribute("role", "alertdialog");
     const question = document.createElement("p");
-    question.textContent = flashLocaleText("lab_refine_question", "");
+    question.className = "refinementReplaceText";
+    question.textContent = flashLocaleText("lab_alert", "Upgrading with this resource will result in the loss of any other recently completed upgrades.");
     card.appendChild(question);
     const actions = document.createElement("div");
     actions.className = "refinePromptActions";
     const okBtn = document.createElement("button");
-    okBtn.textContent = flashLocaleText("lab_btn_update", "");
+    okBtn.textContent = flashLocaleText("lab_btn_update", "Upgrade");
     okBtn.addEventListener("click", () => {
         closeUpgradePrompt();
         onConfirm();
@@ -7197,17 +7377,12 @@ function openUpgradeReplacePrompt(onConfirm) {
     const cancelBtn = document.createElement("button");
     cancelBtn.textContent = flashLocaleText("lab_cancel", "");
     cancelBtn.addEventListener("click", closeUpgradePrompt);
-    bindBitmapStates(okBtn, REFINEMENT_BITMAP_STATES.button);
+    okBtn.className = "refinementFlashButton";
     actions.appendChild(okBtn);
-    bindBitmapStates(cancelBtn, REFINEMENT_BITMAP_STATES.button);
+    cancelBtn.className = "refinementFlashButton";
     actions.appendChild(cancelBtn);
     card.appendChild(actions);
-    overlay.appendChild(card);
-    overlay.addEventListener("click", e => {
-        if (e.target === overlay) closeUpgradePrompt();
-    });
-    document.body.appendChild(overlay);
-    upgradePromptOverlay = overlay;
+    cancelBtn.focus();
 }
 
 let safePromptOverlay = null;
@@ -7279,6 +7454,121 @@ function openSafeAmountPrompt(mode, maxAmount) {
     safePromptOverlay = overlay;
 }
 
+let upgradePointerGesture = null;
+
+function createReadyUpgradeGhost(oreKey) {
+    const path = UPGRADE_DRAG_ICONS[oreKey];
+    const image = path && typeof getUiImage === "function" ? getUiImage(path) : null;
+    if (!image || !image.complete || image.width !== 20 || image.height !== 20 ||
+        (image.__uiAtlasEntry && !image.__uiAtlasPainted)) return null;
+    const ghost = document.createElement("canvas");
+    ghost.width = ghost.height = 20;
+    ghost.id = "refinementDragGhost";
+    ghost.setAttribute("aria-hidden", "true");
+    const ctx = ghost.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(image, 0, 0, 20, 20);
+    return ghost;
+}
+
+function setUpgradePointerTarget(oreKey, activeSlot) {
+    document.querySelectorAll(".refTargetSlot[data-upgrade-target]").forEach(slot => {
+        const compatible = !!oreKey && canOreUpgradeTarget(oreKey, slot.dataset.upgradeTarget);
+        slot.classList.toggle("refDropCompatible", compatible);
+        slot.classList.toggle("refDropOver", compatible && slot === activeSlot);
+    });
+}
+
+function finishUpgradePointer(cancelled, x, y) {
+    const gesture = upgradePointerGesture;
+    if (!gesture) return;
+    upgradePointerGesture = null;
+    document.removeEventListener("pointermove", gesture.move, true);
+    document.removeEventListener("pointerup", gesture.up, true);
+    document.removeEventListener("pointercancel", gesture.cancel, true);
+    document.removeEventListener("keydown", gesture.keydown, true);
+    window.removeEventListener("blur", gesture.cancel);
+    try { if (gesture.source.hasPointerCapture(gesture.id)) gesture.source.releasePointerCapture(gesture.id); } catch (_) {}
+    const hit = !cancelled && gesture.ghost ? document.elementFromPoint(x, y) : null;
+    const slot = hit && hit.closest(".refTargetSlot[data-upgrade-target]");
+    const target = slot && getUpgradeTargetDef(slot.dataset.upgradeTarget);
+    const valid = target && canOreUpgradeTarget(gesture.oreKey, target.id);
+    setUpgradePointerTarget(null, null);
+    if (gesture.ghost) {
+        const ghost = gesture.ghost;
+        const reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!valid && !reduced && gesture.source.isConnected) {
+            const rect = gesture.source.getBoundingClientRect();
+            ghost.style.transition = "transform 250ms ease-out, opacity 250ms ease-out";
+            ghost.style.transform = `translate3d(${rect.left + rect.width / 2 - 10}px,${rect.top + rect.height / 2 - 10}px,0)`;
+            ghost.style.opacity = "0";
+            setTimeout(() => ghost.remove(), 260);
+        } else ghost.remove();
+    }
+    // Keep the existing compatibility, replacement and quantity path authoritative.
+    if (valid) handleUpgradeDrop(target, gesture.oreKey, getOreCargoSnapshot(), getUpgradeState(target.id));
+    endUpgradeDrag();
+}
+
+function bindUpgradePointerSource(source, oreKey) {
+    // Warm the existing atlas canvas before the first interaction. No native
+    // draggable node remains, so the browser cannot snapshot the whole module.
+    if (typeof getUiImage === "function") getUiImage(UPGRADE_DRAG_ICONS[oreKey]);
+    source.draggable = false;
+    source.classList.add("refPointerSource");
+    source.addEventListener("dragstart", e => e.preventDefault());
+    source.addEventListener("contextmenu", e => e.preventDefault());
+    source.addEventListener("lostpointercapture", () => {
+        if (upgradePointerGesture && upgradePointerGesture.source === source) finishUpgradePointer(true);
+    });
+    source.addEventListener("pointerdown", e => {
+        if (!e.isPrimary || e.button !== 0 || upgradePointerGesture) return;
+        if (pendingRefiningUpgrade) {
+            if (pendingRefiningUpgrade.timedOut) addInfoMessage("The previous upgrade is not confirmed. Wait for its reply or reconnect the client to check the inventory.");
+            return;
+        }
+        if ((Number(getOreCargoSnapshot()[oreKey]) || 0) <= 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof hideActionTooltip === "function") hideActionTooltip();
+        const gesture = {id: e.pointerId, oreKey, source, x: e.clientX, y: e.clientY, ghost: null};
+        gesture.move = event => {
+            if (event.pointerId !== gesture.id || upgradePointerGesture !== gesture) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (!gesture.ghost && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) < 4) return;
+            if (!gesture.ghost) {
+                gesture.ghost = createReadyUpgradeGhost(oreKey);
+                if (!gesture.ghost) {
+                    finishUpgradePointer(true);
+                    addInfoMessage("The resource image is still loading. Please try again.");
+                    return;
+                }
+                beginUpgradeDrag(oreKey);
+                document.body.appendChild(gesture.ghost);
+            }
+            gesture.ghost.style.transform = `translate3d(${event.clientX - 10}px,${event.clientY - 10}px,0)`;
+            const hit = document.elementFromPoint(event.clientX, event.clientY);
+            const target = hit && hit.closest(".refTargetSlot[data-upgrade-target]");
+            if (target !== gesture.lastTarget) { setUpgradePointerTarget(oreKey, target); gesture.lastTarget = target; }
+        };
+        gesture.up = event => {
+            if (event.pointerId !== gesture.id) return;
+            event.preventDefault(); event.stopPropagation();
+            finishUpgradePointer(false, event.clientX, event.clientY);
+        };
+        gesture.cancel = () => finishUpgradePointer(true);
+        gesture.keydown = event => { if (event.key === "Escape") { event.preventDefault(); gesture.cancel(); } };
+        upgradePointerGesture = gesture;
+        try { source.setPointerCapture(e.pointerId); } catch (_) {}
+        document.addEventListener("pointermove", gesture.move, {capture: true, passive: false});
+        document.addEventListener("pointerup", gesture.up, {capture: true, passive: false});
+        document.addEventListener("pointercancel", gesture.cancel, true);
+        document.addEventListener("keydown", gesture.keydown, true);
+        window.addEventListener("blur", gesture.cancel);
+    });
+}
+
 function buildUpgradeOreSlot(ore, cargo) {
     const slot = document.createElement("div");
     slot.className = "refUpgradeModule";
@@ -7287,29 +7577,14 @@ function buildUpgradeOreSlot(ore, cargo) {
     bg.className = "refSlot";
     const icon = document.createElement("img");
     icon.className = "refSlotIcon";
+    icon.draggable = false;
     if (typeof setUiImageElementSource === "function") setUiImageElementSource(icon, ore.icon); else icon.src = ore.icon;
     icon.alt = "";
     bg.appendChild(icon);
     slot.appendChild(bg);
     slot.appendChild(createRefinementLabelEl(formatOreCount(cargo), true));
     attachOreTooltip(bg, ore.key, getRefiningRecipe(ore.key));
-    if (ore.allowedTargets) {
-        slot.draggable = cargo > 0;
-        if (cargo > 0) {
-            let dragImg = null;
-            slot.addEventListener("dragstart", e => {
-                e.dataTransfer.setData("text/upgrade-ore", ore.key);
-                if (!dragImg && UPGRADE_DRAG_ICONS[ore.key]) {
-                    dragImg = typeof getUiImage === "function" ? getUiImage(UPGRADE_DRAG_ICONS[ore.key]) : andromedaCreateImage(UPGRADE_DRAG_ICONS[ore.key]);
-                }
-                if (dragImg) {
-                    e.dataTransfer.setDragImage(dragImg, dragImg.width / 2, dragImg.height / 2);
-                }
-                beginUpgradeDrag(ore.key);
-            });
-            slot.addEventListener("dragend", endUpgradeDrag);
-        }
-    }
+    if (ore.allowedTargets && cargo > 0) bindUpgradePointerSource(slot, ore.key);
     return slot;
 }
 
@@ -7331,7 +7606,7 @@ function handleUpgradeDrop(target, oreKey, cargo, state) {
         addInfoMessage(flashLocaleText("notEnoughCargo", ""));
         return;
     }
-    const proceed = () => openUpgradeAmountPrompt(target.id, oreKey, available, state?.oreKey === oreKey ? state.amount : 0);
+    const proceed = () => openUpgradeAmountPrompt(target.id, oreKey, available);
     if (state?.oreKey && state.oreKey !== oreKey) {
         openUpgradeReplacePrompt(proceed);
     } else {
@@ -7346,6 +7621,7 @@ function buildUpgradeTarget(target, cargo) {
     card.appendChild(createRefinementLabelEl(flashLocaleText(target.languageKey, target.id), false));
     const slot = document.createElement("div");
     slot.className = "refTargetSlot";
+    slot.dataset.upgradeTarget = target.id;
     const icon = document.createElement("div");
     icon.className = "refTargetSlotIcon";
     if (typeof setUiBackgroundImage === "function") setUiBackgroundImage(icon, target.icon); else icon.style.backgroundImage = `url('${target.icon}')`;
@@ -7848,7 +8124,7 @@ function ensureRefiningWindow() {
     const {content: content, win: win} = getFlashWindowShellRefs("refinement");
     if (!content || !win) return null;
     refiningWindowElement = content;
-    content.innerHTML = `\n        <div class="refiningTabs">\n            <button class="refTab active" data-tab="refine">${flashLocaleText("lab_btn_refinement", "")}</button>\n            <button class="refTab" data-tab="upgrade">${flashLocaleText("lab_btn_update", "")}</button>\n            <button class="refTab" data-tab="safe">Safe</button>\n        </div>\n        <div class="refiningBody">\n            <div class="refPage active" data-tab="refine"></div>\n            <div class="refPage" data-tab="upgrade"></div>\n            <div class="refPage" data-tab="safe"></div>\n        </div>\n    `;
+    content.innerHTML = `\n        <div class="refiningTabs">\n            <button class="refTab active" data-tab="refine">${flashLocaleText("lab_btn_refinement", "Refining")}</button>\n            <button class="refTab" data-tab="upgrade">${flashLocaleText("lab_btn_update", "Upgrade")}</button>\n            <button class="refTab" data-tab="safe">Safe</button>\n        </div>\n        <div class="refiningBody">\n            <div class="refPage active" data-tab="refine"></div>\n            <div class="refPage" data-tab="upgrade"></div>\n            <div class="refPage" data-tab="safe"></div>\n        </div>\n    `;
     content.querySelectorAll(".refTab").forEach(btn => {
         bindBitmapStates(btn, REFINEMENT_BITMAP_STATES.tab, () => btn.classList.contains("active"));
         btn.addEventListener("click", () => {
@@ -7865,6 +8141,18 @@ function ensureRefiningWindow() {
     if (safePage) renderSafeTab(safePage);
     setRefiningTab(refiningActiveTab);
     return refiningWindowElement;
+}
+
+// The persisted window state can show the shell without passing through
+// openRefiningWindow. Hydrate it once, including a recreated detached shell.
+function restoreRefiningWindowContent() {
+    if (!windowStates || !windowStates.refinement) return;
+    if (!refiningWindowElement || !refiningWindowElement.isConnected) {
+        refiningWindowElement = null;
+        if (!ensureRefiningWindow()) return;
+        refreshRefiningWindow(true);
+    }
+    if (!refiningPollTimer) startRefiningPoll();
 }
 
 function setRefiningTab(tab) {
@@ -7936,19 +8224,19 @@ function openRefiningWindow() {
             capacity: 0
         };
     }
-    windowStates.refinement = true;
+    setRefiningWindowVisibilityIntent(true);
     persistCurrentFlashWindowSettingsLocally();
     sendCurrentFlashWindowSettingsToServer();
     if (typeof refreshWindowsVisibility === "function") refreshWindowsVisibility();
     if (typeof bringWindowToFront === "function") bringWindowToFront(getFlashWindowShellRefs("refinement").win || "refinement");
     if (typeof sendLabSafeGet === "function") sendLabSafeGet();
     refreshRefiningWindow(true);
-    startRefiningPoll();
+    if (!refiningPollTimer) startRefiningPoll();
 }
 
 function closeRefiningWindow() {
     stopRefiningPoll();
-    windowStates.refinement = false;
+    setRefiningWindowVisibilityIntent(false);
     persistCurrentFlashWindowSettingsLocally();
     sendCurrentFlashWindowSettingsToServer();
     if (typeof refreshWindowsVisibility === "function") refreshWindowsVisibility();
@@ -7956,6 +8244,15 @@ function closeRefiningWindow() {
     closeUpgradePrompt();
     closeSafePrompt();
 }
+
+// A new transport keeps the page alive: reset only this window's visibility
+// through its normal close path. Pending upgrade acknowledgements stay guarded.
+function resetRefiningWindowForConnection(event) {
+    if (!event || !event.detail || event.detail.reconnect !== true) return;
+    closeRefiningWindow();
+}
+
+window.addEventListener("andromeda:ws-connecting", resetRefiningWindowForConnection);
 
 function initRefiningButton() {
     ensureFlashTopUtilityButton("refinement");
@@ -9006,11 +9303,7 @@ function createGameWindows() {
         const usesFlashUtilityButton = FLASH_TOP_UTILITY_WINDOW_KEYS.has(key);
         const useTopMenuStaticSlot = !usesFlashUtilityButton && isFlashTopMenuStaticWindowKey(key);
         const persistedWindowSetting = getFlashPersistedWindowSetting(key);
-        if (persistedWindowSetting && typeof persistedWindowSetting.open === "boolean") {
-            windowStates[key] = persistedWindowSetting.open;
-        } else {
-            windowStates[key] = !cfg.startMinimized;
-        }
+        windowStates[key] = resolveFlashWindowOpenState(key, persistedWindowSetting, !cfg.startMinimized);
         const existingIcon = document.getElementById("icon_" + key);
         if (existingIcon && existingIcon.parentNode) {
             existingIcon.parentNode.removeChild(existingIcon);
@@ -9489,7 +9782,7 @@ function toggleWindow(key, forceState) {
     const hudMinimized = flashHudWindowSnapshot && flashHudWindowSnapshot.has(key);
     if (hudMinimized) flashHudWindowSnapshot.delete(key);
     const newState = forceState !== undefined ? forceState : hudMinimized ? true : !windowStates[key];
-    windowStates[key] = newState;
+    if (key === "refinement") setRefiningWindowVisibilityIntent(newState); else windowStates[key] = newState;
     refreshWindowsVisibility();
     saveInterfaceLayout();
     const meta = getFlashWindowMeta(key);
@@ -9734,6 +10027,9 @@ function refreshWindowsVisibility() {
                 if (key === "chat") {
                     if (typeof renderChatTabs === "function") renderChatTabs();
                     if (typeof syncChatScrollThumb === "function") syncChatScrollThumb();
+                }
+                if (key === "refinement") {
+                    restoreRefiningWindowContent();
                 }
                 if (key === "spacemap" && typeof refreshFlashSpacemapWindow === "function") {
                     refreshFlashSpacemapWindow();
@@ -10756,16 +11052,17 @@ function syncFlashConnectionInfoLocale() {
 
 function syncFlashConnectionLostLocale() {
     const winEl = ensureFlashConnectionLostWindow();
+    const rebrand = text => String(text == null ? "" : text).replace(/\bDarkOrbit\b/gi, "Andromeda");
     const titleEl = winEl.querySelector(".gwTitle");
-    if (titleEl) titleEl.textContent = flashLocaleText("title_connection_lost", "Connection lost");
+    if (titleEl) titleEl.textContent = rebrand(flashLocaleText("title_connection_lost", "Connection lost"));
     const bodyEl = winEl.querySelector(".flashConnectionLostBody");
     const reconnectBtn = winEl.querySelector(".flashConnectionReconnectBtn");
     const logoutBtn = winEl.querySelector(".flashConnectionLogoutBtn");
-    const head = flashLocaleText("log_verbindunghead", "The connection was interrupted.");
-    const body = flashLocaleText("log_verbindungtext", "You're no longer connected to the DarkOrbit game server.\nDo you wish to reconnect?");
+    const head = rebrand(flashLocaleText("log_verbindunghead", "The connection was interrupted."));
+    const body = rebrand(flashLocaleText("log_verbindungtext", "You're no longer connected to the Andromeda game server.\nDo you wish to reconnect?"));
     if (bodyEl) bodyEl.textContent = `${head}\n\n${body}`;
-    if (reconnectBtn) reconnectBtn.textContent = flashLocaleText("log_neueverbindung", "New connection") || "New connection";
-    if (logoutBtn) logoutBtn.textContent = flashLocaleText("log_Logout", "Logout") || "Logout";
+    if (reconnectBtn) reconnectBtn.textContent = rebrand(flashLocaleText("log_neueverbindung", "New connection") || "New connection");
+    if (logoutBtn) logoutBtn.textContent = rebrand(flashLocaleText("log_Logout", "Logout") || "Logout");
     layoutFlashConnectionLostWindow(winEl);
 }
 

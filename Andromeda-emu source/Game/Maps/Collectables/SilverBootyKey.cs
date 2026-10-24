@@ -41,37 +41,27 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                     Random random = RandomProvider.Current;
                     using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                     {
-                        int num = random.Next(1, 101);
+                        // Retain the relative weights of the remaining existing prizes:
+                        // token 5, Promerium 15, Palladium 25, Prometid 15.
+                        int num = random.Next(1, 61);
                         if(num > 0 && num <=5)
                         {
                             user.CharacterInfo.AddTokens(client, 1);
                             user.SendData(PacketComposer.Compose("A", "STD|You received a token."));
                         }
-                        else if(num > 5 && num <=25)
-                        {
-                            int pvpPoints = random.Next(400, 500);
-                            user.CharacterInfo.AddPvpPoints(client, pvpPoints);
-                            user.SendData(PacketComposer.Compose("A", "STD|You received "+pvpPoints+" Pvp points."));
-                        }
-                        else if (num > 25 && num <= 40)
+                        else if (num > 5 && num <= 20)
                         {
                             user.CharacterInfo.AddCargo(13L, 20);
                             user.SendData(PacketComposer.Compose("A", "STD|You received 20 promeriums."));
                             user.SendData(user.CharacterInfo.GetCargoMessage());
                         }
-                        else if (num > 40 && num <= 60)
-                        {
-                            int rp = random.Next(300, 500);
-                            user.CharacterInfo.AddRankpoints(client, rp);
-                            user.SendData(PacketComposer.Compose("A", "STD|You received "+rp+" rankpoints."));
-                        }
-                        else if(num > 60 && num <= 85 )
+                        else if(num > 20 && num <= 45 )
                         {
                             user.CharacterInfo.AddCargo(5L, 20);
                             user.SendData(PacketComposer.Compose("A", "STD|You received 20 palladiums."));
                             user.SendData(user.CharacterInfo.GetCargoMessage());
                         }
-                        else if (num > 85 && num <= 100)
+                        else if (num > 45 && num <= 60)
                         {
                             user.CharacterInfo.AddCargo(11L, 200);
                             user.SendData(PacketComposer.Compose("A", "STD|You received 200 prometids."));

@@ -239,13 +239,6 @@ namespace OrbitReborn_Emulator.Game.Event
                                 sessionById.CharacterInfo.AddLog(client, _Message1);
                                 sessionById.CharacterInfo.AddReward(client, 0, 500000, 0, true);
                                 sessionById.SendData(PacketComposer.Compose("y", "URI|" + (object)500000 + "|" + (object)sessionById.CharacterInfo.Uridium));
-                                string _Message2 = "You received 10.000 Pvp points !";
-                                sessionById.SendData(PacketComposer.Compose("A", "STD|" + _Message2));
-                                sessionById.CharacterInfo.AddLog(client, _Message2);
-                                sessionById.CharacterInfo.AddPvpPoints(client, 10000);
-                                int rankpoints = Survivor.PlayerCountMax * 250;
-                                sessionById.SendData(PacketComposer.Compose("A", "STD|You received " + (object)rankpoints + " rankpoint(s)."));
-                                sessionById.CharacterInfo.AddRankpoints(client, rankpoints);
                                 client.ClearParameters();
                                 client.ExecuteNonQuery("UPDATE event_information SET isActif=0 WHERE id = 2");
                                 client.ExecuteNonQuery("UPDATE event_information SET playerId=" + sessionById.CharacterInfo.Id + " WHERE id = 5");

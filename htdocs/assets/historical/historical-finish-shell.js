@@ -267,7 +267,7 @@
         if(hof){
           const currentTabs=hof.querySelector('.tab-controls');if(currentTabs)currentTabs.hidden=true;
           const full=document.getElementById('open-top100');if(full)full.textContent='All Hall of Fame records';
-          moved.push({from:'Rankpoints / Experience / Honor / Clan mini-tabs on Home',to:'single native Home ranking; all four categories in existing full Hall of Fame dialog',preserved:'original #open-top100 handler; original four Top100 category controls and real rankings; Home tab nodes retained hidden, not rebuilt'});
+          moved.push({from:'Home ranking category controls',to:'single native Top User ranking; historical navigation in the full Hall of Fame window',preserved:'real server rankings, authenticated endpoint and deferred loading'});
         }
         const userCard=home?.querySelector('.user-card');
         if(userCard){
@@ -627,7 +627,7 @@
       const card=document.querySelector('.user-card');const list=card?.querySelector('.stat-list');
       if(list){
         Array.from(list.querySelectorAll(':scope>.stat-row')).forEach(row=>{
-          const label=row.querySelector('dt');if(label?.textContent.trim()==='Rank points')storage.appendChild(row);
+          const label=row.querySelector('dt');
           if(label?.textContent.trim()==='Experience')label.textContent='XP';
         });
         for(const [label,id] of [['Credits','pilot-credits'],['Uridium','pilot-uridium']]){

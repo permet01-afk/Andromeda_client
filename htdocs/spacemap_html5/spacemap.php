@@ -116,6 +116,12 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
         #startBtn:hover{transform:none;box-shadow:none;text-shadow:0 0 8px #ffd64e,0 1px 3px #000}
         #startBtn:active{transform:none;box-shadow:none;color:#ffe17a}
         #startBtn:focus-visible{outline:2px solid #fff3ac;outline-offset:3px}
+        /* DoPs ready glow loops 30 frames at 24 fps; START stays readable.
+           The CSS halo adapts that cadence without changing loader state. */
+        #startBtn::before{content:"";position:absolute;inset:-12% -6%;border-radius:6px;box-shadow:0 0 14px 4px #ffcf5866,inset 0 0 10px #ffdd7870;pointer-events:none;opacity:0}
+        #startBtn:enabled::before{animation:dops-ready-glow 1.25s linear infinite}
+        @keyframes dops-ready-glow{0%,96.666667%,100%{opacity:1}46.666667%{opacity:0}}
+        @media(prefers-reduced-motion:reduce){#startBtn:enabled::before{animation:none;opacity:.55}}
         @media(max-width:812px){.loader-wordmark{right:12px;max-width:40vw}.loader-dock{bottom:8px}#progressBar{background-size:calc((100vw - 24px)*.467) calc((100vw - 24px)*.05076)}#loadingText{font-size:16px}#startBtn{font-size:clamp(14px,4.6vw,22px)}}
         /* On a narrow viewport the historical wide tutorial must reflow its
            existing text instead of cropping it with the background canvas.
@@ -298,7 +304,7 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
                 btn.style.opacity = ok ? "1" : "0.6";
                 btn.style.cursor = ok ? "pointer" : "not-allowed";
                 if (!startClicked) {
-                    box.style.display = ready ? "none" : "block";
+                    box.style.display = "block";
                     btn.style.display = ready ? "block" : "none";
                 }
             }
@@ -730,10 +736,11 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
 <script src="client_config.js?v=p0c-client-stability-20261014-1"></script>
 <link rel="stylesheet" href="ship_death.css?v=phase5-window14-2">
 <script src="ship_death.js?v=phase5-window14-2"></script>
-<script src="client_network.js?v=p1-startup-20261016-1"></script>
+<script src="client_network.js?v=historical-mechanics-20261024-1"></script>
 <script src="client_entities.js?v=gg-continue-animation-20261011-1"></script>
-<script src="client_combat.js?v=p0c-client-stability-20261014-1"></script>
-<script src="client_graphics.js?v=p1-flash-stacking-20261016-4"></script>
+<script src="client_combat.js?v=historical-mechanics-20261024-1"></script>
+<script src="client_graphics.js?v=mechanics-20261024-8"></script>
+<link rel="stylesheet" href="historical_refinement.css?v=historical-mechanics-20261024-2">
 <script src="client_ui.js?v=flash-strict-combat-20261011-1"></script>
 <script src="client_quests.js?v=phase7-quest-visual-3"></script>
 <script src="client_map_decor_data.js?v=phase8c-decor-1"></script>

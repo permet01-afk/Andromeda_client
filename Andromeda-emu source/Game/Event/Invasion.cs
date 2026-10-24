@@ -851,7 +851,7 @@ namespace OrbitReborn_Emulator.Game.Event
             bool ammoPersisted = true;
             using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
             {
-                leveledUp = session.CharacterInfo.ApplyNpcKillRewardBatch(client, credits, uridium, 0, 0, xp, honor, 1);
+                leveledUp = session.CharacterInfo.ApplyNpcKillRewardBatch(client, credits, uridium, 0, xp, honor, 1);
                 SqlFailureScope.ThrowIfCurrentFailed();
 
                 if (ucb > 0 || rsb > 0)

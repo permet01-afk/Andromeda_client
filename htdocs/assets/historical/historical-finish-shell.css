@@ -442,20 +442,7 @@ body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .drone-tok
 body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .drone-token .drone-portrait:not([data-hist-portrait-kind="havok-atlas"]){width:63px!important;height:63px!important;max-width:63px;max-height:63px;background-size:63px 63px!important;background-position:0 0!important}
 body.historical-site.hist-finish-shell.hist-equipment.hist-rev7-shell .drone-token .drone-portrait[data-hist-portrait-kind="havok-atlas"]{max-width:none;max-height:none;background-repeat:no-repeat}
 
-/* Root QA: the original fourTop100 controls were still flat modern buttons.
-   DoPs hallOfFame.css58..89 proves these category sprites42x49, including
-   normal/active y0/-49. Native historical files supplied by PK complement.
-   TopUser artwork maps to Andromeda Rankpoints without changing its score. */
-body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-controls{display:flex;justify-content:center;align-items:start;flex-wrap:nowrap;width:100%;height:49px;min-height:49px;max-height:49px;gap:3px;margin:0 0 6px;padding:0;border:0;background:none}
-body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-control{display:block;box-sizing:border-box;flex:0 0 42px;width:42px;min-width:42px;max-width:42px;height:49px;min-height:49px;max-height:49px;margin:0;padding:0;border:0;border-radius:0;background-color:transparent!important;background-repeat:no-repeat!important;background-position:0 0!important;color:transparent!important;font-size:0!important;line-height:0;box-shadow:none;text-shadow:none;cursor:pointer}
-body.historical-site.hist-finish-shell.hist-rev7-shell #modal-tab-rankpoints{background-image:url('pk/do/hof/navigation_icon_start_42x49.png')!important}
-body.historical-site.hist-finish-shell.hist-rev7-shell #modal-tab-experience{background-image:url('pk/do/hof/navigation_icon_experience_42x49.png')!important}
-body.historical-site.hist-finish-shell.hist-rev7-shell #modal-tab-honor{background-image:url('pk/do/hof/navigation_icon_honor_42x49.png')!important}
-body.historical-site.hist-finish-shell.hist-rev7-shell #modal-tab-clan{background-image:url('pk/do/hof/navigation_icon_clan_42x49.png')!important}
-body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-control.is-active,body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-control:hover,body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .tab-control:focus-visible{background-position:0 -49px!important}
-body.historical-site.hist-finish-shell.hist-rev7-shell #top100Modal .modal-body{height:200px;max-height:200px;overflow:auto}
-body.historical-site.hist-finish-shell.hist-rev7-shell #top100Close{display:block;box-sizing:border-box;width:24px;min-width:24px;max-width:24px;height:24px;min-height:24px;max-height:24px;margin:0;padding:0;border:0;border-radius:0;background:url('dops-rev7/shell/popup/close_button_sprite.png') 0 0 no-repeat!important;color:transparent;font-size:0!important;box-shadow:none;cursor:pointer}
-body.historical-site.hist-finish-shell.hist-rev7-shell #top100Close:hover,body.historical-site.hist-finish-shell.hist-rev7-shell #top100Close:focus-visible{background-position:0 -48px!important}
+/* The complete DoPs navigation and its responsive window live in historical-hof.css. */
 
 /* Original automatic Home dialog inside the native DoPs standard News window.
    Source: internalDockBooster_Body145-202, darkorbit.css306-311.
@@ -684,3 +671,14 @@ body.historical-site .hist-history-pagination a{text-decoration:underline;font:1
  body.historical-site.hist-finish-shell.hist-responsive .rev5-titles .titles-action-bar>div:first-child{max-width:100%!important}
  body.historical-site.hist-finish-shell.hist-responsive .rev5-titles .titles-action-bar__buttons{flex-wrap:wrap!important;max-width:100%!important}
 }
+
+/* Keep the home leaderboard below its painted title without moving its footer. */
+@media(min-width:861px){
+ body.historical-site.hist-finish-shell.hist-rev6-shell.hist-rev7-shell .hist-dashboard-native>.hof-card{top:270px;height:116px}
+ body.historical-site.hist-finish-shell.hist-rev6-shell.hist-rev7-shell .hof-card .tab-group{height:116px}
+ body.historical-site.hist-finish-shell.hist-rev6-shell.hist-rev7-shell .hof-card .leaderboard{height:99px;max-height:99px}
+ body.historical-site.hist-finish-shell.hist-rev6-shell.hist-rev7-shell .hof-card .leaderboard li{height:11px;min-height:11px;max-height:11px;line-height:11px}
+ body.historical-site.hist-finish-shell.hist-rev6-shell.hist-rev7-shell .hof-card .leaderboard li .name{height:11px;line-height:11px}
+}
+/* DoPs home log entries have spacing, without horizontal separators. */
+body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-home .log-entry{border:0}

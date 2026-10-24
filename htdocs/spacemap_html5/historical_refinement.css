@@ -1,0 +1,42 @@
+/* Flash assets, native quantity frame; portrait sizing and focus are HTML5 adaptations. */
+#flashTopMenuBrand{position:fixed;top:0;right:0;z-index:9001;pointer-events:none!important;background:transparent}
+#flashTopMenuBrand img{position:absolute;right:0;top:0;display:block;pointer-events:none!important;object-fit:contain;border:0;background:transparent}
+/* Andromeda adaptation approved by the user: retain the original DoPs
+   backdrop file, but hide its decorative honeycomb beside our wordmark.
+   Controls keep the historical XML anchors in this one uniformly scaled plane. */
+#flashTopMenuBrandBackdrop{display:none!important}
+#flashTopMenuBrand .flashTopUtilityButton{pointer-events:auto}
+#flashTopMenuBrand .flashTopUtilityButtonInner{left:4px;top:5px;transform:none}
+#flashTopMenuBrand .flashTopUtilityButton.active,#flashTopMenuBrand .flashTopUtilityButton.active:hover{background-image:var(--flash-top-bg-selected,var(--flash-top-bg-active)),url('graphics/ui/actionMenu/images/8_slot.png');background-repeat:no-repeat,no-repeat;background-position:center,center;background-size:32px 35px,32px 35px}
+#flashTopMenuBrand .flashTopUtilityButton:focus-visible{outline:1px solid #e8d78d;outline-offset:2px}
+#refinementDragGhost{position:fixed;left:0;top:0;width:20px;height:20px;z-index:95000;pointer-events:none!important;background:transparent;border:0;image-rendering:auto;opacity:1;animation:refinementGhostAppear .25s ease-out}
+@keyframes refinementGhostAppear{from{opacity:0}to{opacity:1}}
+.refPointerSource{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+.refPointerSource img{-webkit-user-drag:none;user-select:none;pointer-events:none}
+/* The small compatible-slot outline is sourced from the UU Flash variant. */
+.refTargetSlot.refDropOver .refTargetMini{outline:2px solid #ffe40080;outline-offset:0}
+#refinePromptOverlay.refinementModal{position:fixed;inset:0;z-index:96000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);padding:16px;pointer-events:auto;font-family:EurostileFl,Tahoma,Arial,sans-serif}
+.refinementModal #refinePrompt{position:relative;box-sizing:border-box;width:140px;height:110px;max-width:100%;margin:0;padding:0;border:0;border-radius:0;box-shadow:0 4px 18px #000;background:url('graphics/ui/window1/images/w1_bg_tile.png');color:#fff;font-size:12px;text-align:left}
+.refinementModal #refinePrompt::before{content:'';position:absolute;inset:0;border:solid transparent;border-width:36px 79px 22px 40px;border-image:url('graphics/ui/window1/images/w1_border_nonres.png') 36 79 22 40 fill stretch;pointer-events:none}
+.refinementModal #refinePrompt h4{position:absolute;top:5px;left:9px;margin:0;color:#fff;font-size:12px;line-height:16px;font-weight:400}
+.refinementModal .refinementQuantityLabel{position:absolute;left:20px;top:29px;line-height:17px}
+.refinementModal #refinePrompt select{position:absolute;left:20px;top:49px;box-sizing:border-box;width:100px;height:22px;margin:0;padding:0 3px;border:1px solid #82909a;border-radius:2px;background:#eee;color:#222;font:12px EurostileFl,Tahoma,sans-serif}
+.refinementModal #refinePrompt .refinePromptActions{position:absolute;left:18px;right:8px;top:86px;display:flex;justify-content:flex-start;gap:4px;margin:0;padding:0}
+.refinementModal #refinePrompt button.refinementFlashButton{min-width:0;width:auto;height:21px;margin:0;padding:0 4px;border:0;border-radius:0;background:url('graphics/ui/ui/sprites/DefineSprite_518_button1/1.png') 0 0/100% 100% no-repeat;color:#fff;font:12px/21px EurostileFl,Tahoma,sans-serif;white-space:nowrap;cursor:pointer;text-shadow:0 1px #000}
+.refinementModal #refinePrompt button:disabled{opacity:.5;cursor:wait}
+.refinementModal #refinePrompt button:hover:not(:disabled){filter:brightness(1.08)}
+.refinementModal #refinePrompt button:focus-visible,.refinementModal #refinePrompt select:focus-visible{outline:1px solid #e8d78d;outline-offset:2px}
+.refinementModal #refinePrompt p.refinementPromptContext,.refinementModal #refinePrompt p.refinementPromptStatus{position:absolute;left:50%;transform:translateX(-50%);width:280px;max-width:calc(100vw - 24px);box-sizing:border-box;margin:0;padding:7px 10px;background:#070e16e8;color:#e7f1f6;font:12px/17px EurostileFl,Tahoma,sans-serif;text-align:center;overflow-wrap:anywhere}
+.refinementModal #refinePrompt p.refinementPromptContext{bottom:calc(100% + 8px)}
+.refinementModal #refinePrompt p.refinementPromptStatus{top:calc(100% + 8px);color:#f0d89d}
+.refinementModal #refinePrompt p.refinementPromptStatus:empty{display:none}
+.refinementModal #refinePrompt.refinementReplacePrompt{width:300px;height:176px}
+.refinementModal #refinePrompt .refinementReplaceText{position:absolute;top:36px;left:20px;right:20px;margin:0;font-size:12px;line-height:18px}
+.refinementModal #refinePrompt.refinementReplacePrompt .refinePromptActions{top:auto;bottom:15px}
+@media(max-width:600px){
+ .refinementModal #refinePrompt{width:168px;height:132px}
+ .refinementModal #refinePrompt select{width:128px;height:26px}
+ .refinementModal #refinePrompt .refinePromptActions{top:95px;left:17px;gap:7px}
+ .refinementModal #refinePrompt button.refinementFlashButton{height:29px;line-height:29px;padding:0 7px}
+}
+@media(prefers-reduced-motion:reduce){#refinementDragGhost{animation:none}}

@@ -41,7 +41,9 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                     Random random = RandomProvider.Current;
                     using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                     {
-                        int num = random.Next(1, 101);
+                        // Remaining original weights: 5:5:15:15:15:15:15.
+                        // The weighted NPC-points prize is a separate legacy rule.
+                        int num = random.Next(1, 86);
                         if (num > 0 && num <= 5)
                         {
                             user.CharacterInfo.AddTokens(client, 1);
@@ -60,30 +62,24 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                         }
                         else if (num > 25 && num <= 40)
                         {
-                            int rp = random.Next(800,1000);
-                            user.CharacterInfo.AddRankpoints(client, rp);
-                            user.SendData(PacketComposer.Compose("A", "STD|You received "+ rp +" rankpoints."));
-                        }
-                        else if (num > 40 && num <= 55)
-                        {
                             int uri = random.Next(8000, 10000);
                             user.CharacterInfo.AddReward(client, 0, uri, 0, true);
                             user.SendData(PacketComposer.Compose("y", "URI|" + (object)uri + "|" + (object)user.CharacterInfo.Uridium));
                         }
-                        else if (num > 55 && num <=70)
+                        else if (num > 40 && num <=55)
                         {
                             user.CharacterInfo.AddCargo(11L, 200);
                             user.CharacterInfo.AddCargo(12L, 200);
                             user.SendData(PacketComposer.Compose("A", "STD|You received 200 Prometids/Duraniums."));
                             user.SendData(user.CharacterInfo.GetCargoMessage());
                         }
-                        else if (num > 70 && num <= 85)
+                        else if (num > 55 && num <= 70)
                         {
                             int credit = random.Next(150000000, 200000000);
                             user.CharacterInfo.AddReward(client, credit, 0, 0, true);
                             user.SendData(PacketComposer.Compose("y", "CRE|" + (object)credit + "|" + (object)user.CharacterInfo.Credits));
                         }
-                        else if (num > 85 && num <= 100)
+                        else if (num > 70 && num <= 85)
                         {
                             user.CharacterInfo.AddCargo(5L, 40);
                             user.SendData(PacketComposer.Compose("A", "STD|You received 40 palladiums."));

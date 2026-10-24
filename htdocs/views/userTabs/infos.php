@@ -12,7 +12,7 @@ $tokens  = $datauserInfos[0]['tokens'] ?? 0;
 
 $sth = $db->prepare("
     SELECT
-        username, grade, factionid, clanid, credits, uridium, rankpoints, user_kill, npc_kill,
+        username, grade, factionid, clanid, credits, uridium, user_kill, npc_kill,
         experience, honor,
         max_hp, speed, damages, max_shield, drones, apis_built, zeus_built,
         dmg_lvl, hp_lvl, shd_lvl, speed_lvl, logfiles, booty_keys, drone_parts, skilltree,
@@ -58,14 +58,6 @@ $rank_name = [
     13 => "Basic Major", 14 => "Major", 15 => "Chief Major", 16 => "Basic Colonel", 17 => "Colonel", 18 => "Chief Colonel",
     19 => "Basic General", 20 => "General", 21 => "Game Administrator", 22 => "Outlaw", 23 => "Supreme General"
 ];
-if ((int)$u['grade'] < 20) {
-    $rank_after = $db->prepare("SELECT rankpoints FROM users WHERE grade > " . (int)$u['grade'] . " AND factionid=" . (int)$u['factionid'] . " ORDER BY rankpoints ASC LIMIT 1");
-    $rank_after->execute();
-    $data_rank = $rank_after->fetch();
-    $nextrankpoints = isset($data_rank['rankpoints']) ? number_format($data_rank['rankpoints']) : 'N/A';
-} else {
-    $nextrankpoints = 'Max Rank';
-}
 
 
 
@@ -197,10 +189,6 @@ $shipDesignId = max(1, (int)($u['shipId'] ?? 1));
                 <div class="stat-row">
                     <span class="stat-label">Honor</span>
                     <span class="stat-val"><?= number_format($u['honor']) ?></span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Rank Points</span>
-                    <span class="stat-val"><?= number_format($u['rankpoints']) ?></span>
                 </div>
                 <div class="stat-row" style="margin-top:10px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:15px;">
                     <span class="stat-label">Credits</span>
