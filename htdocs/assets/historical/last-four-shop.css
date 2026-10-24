@@ -1,0 +1,98 @@
+/* Private final Shop containment, 2026-10-24; presentation only.
+ * DoPs internalDock.css confirms the 222px catalogue, 276px preview and
+ * 157x394 purchase artwork. The previous 804px grid used 803px of that
+ * width, leaving only 1px for the decorative right frame. The frame bitmap
+ * is itself 804x437 although the recovered #dock_content CSS says 810px.
+ * Preserve all native media/control dimensions. The outer frame below is
+ * an explicit adaptation: its 18px side slices surround the existing 804px
+ * composition, instead of allowing the purchase panel over its right edge.
+ * No product, price, form, quantity, stock state or purchase handler changes.
+ */
+
+@media (min-width: 861px) {
+  body.historical-site.hist-page-shop.finish-commerce-shop .user-hub {
+    box-sizing: border-box !important;
+    width: 840px !important;
+    min-width: 840px !important;
+    max-width: 840px !important;
+  }
+
+  body.historical-site.hist-page-shop.finish-commerce-shop .user-hub__layout {
+    box-sizing: border-box !important;
+    width: 840px !important;
+    min-width: 840px !important;
+    max-width: 840px !important;
+    min-height: 437px !important;
+    display: grid !important;
+    grid-template-columns: 140px 664px !important;
+    align-items: start !important;
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: solid transparent !important;
+    border-width: 18px 18px 20px !important;
+    border-image: url('dops/global/hangar/bg_shop.jpg') 18 18 20 18 fill stretch !important;
+    background: none !important;
+    overflow: visible !important;
+  }
+
+  /* The frame now supplies the original approximately 16px content inset;
+   * retaining the previous top/bottom padding would double that reserve. */
+  body.historical-site.hist-page-shop.finish-commerce-shop .user-hub__nav {
+    box-sizing: border-box !important;
+    width: 140px !important;
+    min-width: 140px !important;
+    max-width: 140px !important;
+    height: 397px !important;
+    margin: 0 !important;
+    padding: 0 3px !important;
+  }
+
+  body.historical-site.hist-page-shop.finish-commerce-shop .user-hub__content {
+    box-sizing: border-box !important;
+    width: 664px !important;
+    min-width: 664px !important;
+    max-width: 664px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  body.historical-site.hist-page-shop.finish-commerce-shop .hist-shop-console {
+    box-sizing: border-box !important;
+    width: 663px !important;
+    min-width: 663px !important;
+    max-width: 663px !important;
+    grid-template-columns: 222px 441px !important;
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.historical-site.hist-page-shop.finish-commerce-shop .hist-shop-detail {
+    box-sizing: border-box !important;
+    width: 441px !important;
+    min-width: 441px !important;
+    max-width: 441px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* The generic active-tab rule replaced this sprite with a single-state GIF,
+ * while the Shop retained DoPs' -267px selected offset. That offset lay
+ * outside the GIF, so the active category lost its visible button artwork.
+ * Keep the original three-state 408x34 sprite in the selected state too.
+ * DoPs subnav.css confirms -267px; its template uses black active text.
+ * Existing desktop/mobile offsets, hover, focus, routes and handlers stay.
+ */
+body.historical-site.hist-page-shop.finish-commerce-shop .user-hub__menu-item.is-active > .user-hub__menu-link {
+  background-image: url('pk/do/hangar/subnav_button_408x34.png') !important;
+  color: #000 !important;
+  text-shadow: none !important;
+}
+
+/* Mobile retains the already approved vertical flow. No desktop frame
+ * minimum width or horizontal scaling is imposed on the mobile composition.
+ * The action's own native 157x394 frame and its internal source-derived
+ * price/action coordinates remain unchanged for Buy, Max and Owned states. */

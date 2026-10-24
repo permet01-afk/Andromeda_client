@@ -1,0 +1,30 @@
+/* Private final-six presentation, 24 October 2026.
+ * Red Havok pixels are the approved Andromeda atlas, not certified DoPs art.
+ * Files are lossless first-angle crops: no enlargement, sharpening or tint.
+ * The original selectable/draggable token and original renderers stay intact.
+ */
+body.historical-site.hist-equipment.final-six-media [data-final-six-havok-level="1"]{--six-havok-image:url('final-six-media/andromeda-havok-level-1.png');--six-native-width:36px;--six-native-height:27px;--six-token-width:36px;--six-token-height:27px;--six-top-x:93px;--six-top-y:221px}
+body.historical-site.hist-equipment.final-six-media [data-final-six-havok-level="2"]{--six-havok-image:url('final-six-media/andromeda-havok-level-2.png');--six-native-width:36px;--six-native-height:30px;--six-token-width:36px;--six-token-height:30px;--six-top-x:93px;--six-top-y:220px}
+body.historical-site.hist-equipment.final-six-media [data-final-six-havok-level="3"]{--six-havok-image:url('final-six-media/andromeda-havok-level-3.png');--six-native-width:36px;--six-native-height:30px;--six-token-width:36px;--six-token-height:30px;--six-top-x:93px;--six-top-y:220px}
+body.historical-site.hist-equipment.final-six-media [data-final-six-havok-level="4"]{--six-havok-image:url('final-six-media/andromeda-havok-level-4.png');--six-native-width:81px;--six-native-height:58px;--six-token-width:63px;--six-token-height:45.1111111111px;--six-top-x:70px;--six-top-y:206px}
+body.historical-site.hist-equipment.final-six-media [data-final-six-havok-level="5"]{--six-havok-image:url('final-six-media/andromeda-havok-level-5.png');--six-native-width:81px;--six-native-height:65px;--six-token-width:63px;--six-token-height:50.5555555556px;--six-top-x:70px;--six-top-y:202px}
+body.historical-site.hist-equipment.final-six-media [data-final-six-havok-level="6"]{--six-havok-image:url('final-six-media/andromeda-havok-level-6.png');--six-native-width:81px;--six-native-height:65px;--six-token-width:63px;--six-token-height:50.5555555556px;--six-top-x:70px;--six-top-y:202px}
+
+body.historical-site.hist-equipment.final-six-media .drone-token .drone-portrait[data-hist-portrait-kind="havok-atlas"][data-final-six-havok-level],
+body.historical-site.hist-equipment.final-six-media .hist-rev6-drone-entity[data-design-state="havok"] .hist-complement-drone-top[data-final-six-havok-level]{
+  background-image:var(--six-havok-image)!important;
+  background-size:100% 100%!important;
+  background-position:0 0!important;
+  background-repeat:no-repeat!important;
+  background-color:transparent!important;
+  box-sizing:content-box!important;
+  min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;
+  image-rendering:auto;filter:none!important;transform:none!important;
+}
+body.historical-site.hist-equipment.final-six-media .drone-token .drone-portrait[data-hist-portrait-kind="havok-atlas"][data-final-six-havok-level]{width:var(--six-token-width)!important;height:var(--six-token-height)!important}
+body.historical-site.hist-equipment.final-six-media .hist-rev6-drone-entity[data-design-state="havok"] .hist-complement-drone-top[data-final-six-havok-level]{width:var(--six-native-width)!important;height:var(--six-native-height)!important;left:var(--six-top-x)!important;top:var(--six-top-y)!important}
+
+/* Complementary PK silhouette retained byte-for-byte at its native size.
+ * The DoPs default-avatar URL is proven; that host's exact bitmap is not.
+ */
+body.historical-site.visual-proposal-pilot.final-six-media .vp-profile-avatar{width:110px!important;height:120px!important;min-width:110px;max-width:110px;max-height:120px;object-fit:contain;image-rendering:auto;filter:none;transform:none}

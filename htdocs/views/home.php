@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../libs/HomeLeaderboardService.php';
 require_once __DIR__ . '/../libs/DailyLoginBonusService.php';
+require_once __DIR__ . '/../includes/legacy_message_display.php';
 
 if (!function_exists('homeDecodeLegacyHtmlEntitiesForDisplay')) {
     function homeDecodeLegacyHtmlEntitiesForDisplay($value)
@@ -13,10 +14,7 @@ if (!function_exists('homeDecodeLegacyHtmlEntitiesForDisplay')) {
 if (!function_exists('homeRenderLogMessage')) {
     function homeRenderLogMessage($message)
     {
-        // Legacy logs store line breaks as <br/>; all other markup stays plain text.
-        $text = preg_replace('/<br\s*\/?>/i', "\n", (string)$message);
-        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        return nl2br(htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false);
+        return andromedaRenderLegacySystemMessage($message);
     }
 }
 

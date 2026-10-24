@@ -38,13 +38,14 @@ $csrfToken = getCsrfToken();
         <link rel="stylesheet" type="text/css" href="styles/default.css" />
         <link rel="stylesheet" type="text/css" href="styles/login.css" />
     <link rel="stylesheet" href="/assets/historical/historical-site.css?v=14d04cb6e3184c7d">
-<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=1814ad9fabb275eb">
-<link rel="stylesheet" href="/assets/historical/historical-finish-commerce.css?v=bc47d5e0cf6ac5b8">
+<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=ccd9e34ac16f290f">
+<link rel="stylesheet" href="/assets/historical/historical-finish-commerce.css?v=06a9ce6c05eed8c0">
 <link rel="stylesheet" href="/assets/historical/historical-finish-activities.css?v=78dc86ba8f9c19d3">
-<link rel="stylesheet" href="/assets/historical/historical-finish-account.css?v=25a37628d4d543f9">
-<link rel="stylesheet" href="/assets/historical/historical-public.css?v=b99e70db7bf19fbc">
+<link rel="stylesheet" href="/assets/historical/historical-finish-account.css?v=e0a7d2f0f6ac3e71">
+<link rel="stylesheet" href="/assets/historical/historical-public.css?v=3ac6ab73e17879de">
+<link rel="stylesheet" href="/assets/historical/visual-proposal-root.css?v=proposal1">
 </head>
-    <body class="auth-body historical-site">
+    <body class="auth-body historical-site" data-auth-initial-tab="<?php echo !empty($_POST['signup_submit']) ? 'signup' : (!empty($_POST['connect']) ? 'login' : ''); ?>">
         <main class="auth-container">
             <section class="auth-intro">
                 <img src="img/logo.png" alt="Andromeda" class="auth-logo" />
@@ -210,12 +211,12 @@ $csrfToken = getCsrfToken();
             });
         </script>
     <script src="/assets/historical/historical-site.js?v=d557af55b311b912" defer></script>
-<script src="/assets/historical/historical-finish-shell.js?v=d7b22eeff856dc21" defer></script>
-<script src="/assets/historical/historical-finish-commerce.js?v=e614bf29de0f1b75" defer></script>
+<script src="/assets/historical/historical-finish-shell.js?v=5e50b3116c43d26a" defer></script>
+<script src="/assets/historical/historical-finish-commerce.js?v=1db15d604fd34fea" defer></script>
 <script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>
-<script src="/assets/historical/historical-finish-account.js?v=68070d839cb48d33" defer></script>
+<script src="/assets/historical/historical-finish-account.js?v=437fb29aaf93df61" defer></script>
 <script src="/assets/historical/public-legal-copy.js?v=1631579bf9549e0f" defer></script>
-<script src="/assets/historical/historical-public.js?v=9136cc0a94ec6d7b" defer></script>
+<script src="/assets/historical/historical-public.js?v=e7f492bc252bed8d" defer></script>
 </body>
 </html>
 <?php

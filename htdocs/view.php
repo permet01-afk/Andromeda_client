@@ -72,6 +72,7 @@ $allowed = [
     'company',
     'contact',
     'home',
+    'history',
     'rules',
     'settings',
     'shop',
@@ -148,7 +149,7 @@ $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
                 <span class="nav-toggle-bar"></span>
             </button>
             <a class="brand" href="view.php?page=home">
-                <img src="img/logo.png" alt="Andromeda" width="160" height="56" />
+                <img class="historical-final-wordmark" src="/assets/historical/public-external/andromeda-reborn-wordmark-v1.png" alt="Andromeda Reborn" width="224" height="75" fetchpriority="high" />
                 <span class="brand-text">Command Center</span>
             </a>
         </div>
@@ -286,7 +287,8 @@ $pilotUridium = number_format((int)($pilot['uridium'] ?? 0));
     </main>
 
     <footer class="app-footer">
-        <p>&copy; <?php echo date('Y'); ?> Andromeda. All rights reserved.</p>
+        <p>Andromeda — independent, non-profit project &copy; <?php echo date('Y'); ?>.</p>
+        <p>DarkOrbit is a registered trademark of Bigpoint. Andromeda is not affiliated with Bigpoint.</p>
     </footer>
 </div>
 <?php } ?>
@@ -324,11 +326,26 @@ function local_entete(bool $mobileEmbed = false)
         '}',
         '</style>',
         '<link rel="stylesheet" href="/assets/historical/historical-site.css?v=14d04cb6e3184c7d">',
-        '<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=1814ad9fabb275eb">',
-        '<link rel="stylesheet" href="/assets/historical/historical-finish-commerce.css?v=bc47d5e0cf6ac5b8">',
+        '<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=ccd9e34ac16f290f">',
+        '<link rel="stylesheet" href="/assets/historical/historical-finish-commerce.css?v=06a9ce6c05eed8c0">',
         '<link rel="stylesheet" href="/assets/historical/historical-finish-activities.css?v=78dc86ba8f9c19d3">',
-        '<link rel="stylesheet" href="/assets/historical/historical-finish-account.css?v=25a37628d4d543f9">',
-        '<link rel="stylesheet" href="/assets/historical/historical-public.css?v=b99e70db7bf19fbc">',
+        '<link rel="stylesheet" href="/assets/historical/historical-finish-account.css?v=e0a7d2f0f6ac3e71">',
+        '<link rel="stylesheet" href="/assets/historical/historical-public.css?v=3ac6ab73e17879de">',
+        '<link rel="stylesheet" href="/assets/historical/visual-proposal-root.css?v=proposal1">',
+        '<link rel="stylesheet" href="/assets/historical/visual-proposal-clan.css?v=proposal1">',
+        '<link rel="stylesheet" href="/assets/historical/visual-proposal-pilot.css?v=proposal1">',
+        '<link rel="stylesheet" href="/assets/historical/visual-proposal-content.css?v=proposal1">',
+        '<link rel="stylesheet" href="/assets/historical/visual-proposal-account.css?v=alignment1">',
+        '<link rel="stylesheet" href="/assets/historical/historical-actions-details.css?v=actions1">',
+        '<link rel="stylesheet" href="/assets/historical/clan-actions-final.css?v=actions1">',
+        '<link rel="stylesheet" href="/assets/historical/clan-diplomacy-final.css?v=actions1">',
+        '<link rel="stylesheet" href="/assets/historical/historical-actions-header.css?v=initial-brand-footer1">',
+        '<link rel="stylesheet" href="/assets/historical/historical-actions-gates.css?v=actions1">',
+        '<link rel="stylesheet" href="/assets/historical/final-six-layout.css?v=final6-1">',
+        '<link rel="stylesheet" href="/assets/historical/final-six-media.css?v=final6-1">',
+        '<link rel="stylesheet" href="/assets/historical/final-six-titles.css?v=final6-1">',
+        '<link rel="stylesheet" href="/assets/historical/last-four-profile-treasury.css?v=last4-1">',
+        '<link rel="stylesheet" href="/assets/historical/last-four-shop.css?v=last4-1">',
         '</head>',
         $mobileEmbed ? '<body class="mobile-embed historical-site">' : '<body class="historical-site">';
 }
@@ -347,12 +364,22 @@ function local_pied(bool $mobileEmbed = false)
         '});',
         '</script>',
         '<script src="/assets/historical/historical-site.js?v=d557af55b311b912" defer></script>',
-        '<script src="/assets/historical/historical-finish-shell.js?v=d7b22eeff856dc21" defer></script>',
-        '<script src="/assets/historical/historical-finish-commerce.js?v=e614bf29de0f1b75" defer></script>',
+        '<script src="/assets/historical/historical-finish-shell.js?v=5e50b3116c43d26a" defer></script>',
+        '<script src="/assets/historical/historical-finish-commerce.js?v=1db15d604fd34fea" defer></script>',
         '<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>',
-        '<script src="/assets/historical/historical-finish-account.js?v=68070d839cb48d33" defer></script>',
+        '<script src="/assets/historical/historical-finish-account.js?v=437fb29aaf93df61" defer></script>',
         '<script src="/assets/historical/public-legal-copy.js?v=1631579bf9549e0f" defer></script>',
-        '<script src="/assets/historical/historical-public.js?v=9136cc0a94ec6d7b" defer></script>',
+        '<script src="/assets/historical/historical-public.js?v=e7f492bc252bed8d" defer></script>',
+        '<script src="/assets/historical/visual-proposal-root.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-clan.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-pilot.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-content.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-account.js?v=alignment1" defer></script>',
+        '<script src="/assets/historical/clan-actions-final.js?v=actions1" defer></script>',
+        '<script src="/assets/historical/clan-diplomacy-final.js?v=actions1" defer></script>',
+        '<script src="/assets/historical/historical-actions-header.js?v=initial-brand-footer1" defer></script>',
+        '<script src="/assets/historical/final-six-media.js?v=final6-1" defer></script>',
+        '<script src="/assets/historical/final-six-titles.js?v=final6-1" defer></script>',
         '</body>',
         '</html>';
         return;
@@ -410,12 +437,22 @@ function local_pied(bool $mobileEmbed = false)
         '});',
         '</script>',
         '<script src="/assets/historical/historical-site.js?v=d557af55b311b912" defer></script>',
-        '<script src="/assets/historical/historical-finish-shell.js?v=d7b22eeff856dc21" defer></script>',
-        '<script src="/assets/historical/historical-finish-commerce.js?v=e614bf29de0f1b75" defer></script>',
+        '<script src="/assets/historical/historical-finish-shell.js?v=5e50b3116c43d26a" defer></script>',
+        '<script src="/assets/historical/historical-finish-commerce.js?v=1db15d604fd34fea" defer></script>',
         '<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>',
-        '<script src="/assets/historical/historical-finish-account.js?v=68070d839cb48d33" defer></script>',
+        '<script src="/assets/historical/historical-finish-account.js?v=437fb29aaf93df61" defer></script>',
         '<script src="/assets/historical/public-legal-copy.js?v=1631579bf9549e0f" defer></script>',
-        '<script src="/assets/historical/historical-public.js?v=9136cc0a94ec6d7b" defer></script>',
+        '<script src="/assets/historical/historical-public.js?v=e7f492bc252bed8d" defer></script>',
+        '<script src="/assets/historical/visual-proposal-root.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-clan.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-pilot.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-content.js?v=proposal1" defer></script>',
+        '<script src="/assets/historical/visual-proposal-account.js?v=alignment1" defer></script>',
+        '<script src="/assets/historical/clan-actions-final.js?v=actions1" defer></script>',
+        '<script src="/assets/historical/clan-diplomacy-final.js?v=actions1" defer></script>',
+        '<script src="/assets/historical/historical-actions-header.js?v=initial-brand-footer1" defer></script>',
+        '<script src="/assets/historical/final-six-media.js?v=final6-1" defer></script>',
+        '<script src="/assets/historical/final-six-titles.js?v=final6-1" defer></script>',
         '</body>',
         '</html>';
 }

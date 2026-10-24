@@ -529,3 +529,158 @@ body.historical-site.hist-finish-shell #dailyLoginModal.hist-daily-five-modal .d
 /* The approved Havok atlas has transparent pixels. Remove the first-layer
    RGB fill without replacing its image, crop, size or original action token. */
 body.historical-site.hist-equipment.hist-rev7-shell .droneBlock .drone-portrait[data-hist-portrait-kind="havok-atlas"]{background-color:transparent}
+
+/* Approved 16-point corrections: existing data and controls, no economic changes. */
+body.historical-site.hist-finish-shell #dailyLoginModal .daily-reward-uridium-icon{display:block;flex:0 0 18px;width:18px;height:18px;margin:0 6px;background:url('pk/do/header/buttons/header_background_02.png') -684px -207px no-repeat}
+body.historical-site .hist-pilot-four-menu{display:flex!important;gap:0!important;width:770px;max-width:100%;margin:0;padding:0;list-style:none}
+body.historical-site .hist-pilot-four-menu .user-hub__menu-item{flex:1 1 0!important;width:auto!important;min-width:0!important;max-width:none!important}
+body.historical-site .hist-pilot-four-menu .user-hub__menu-link{width:100%!important;min-width:0!important;max-width:none!important;height:25px!important;min-height:25px!important;padding:0 3px!important;background:transparent url('pk/do/pilotSheet/profilePage/tab_inactive1.jpg') center/100% 25px no-repeat!important}
+body.historical-site .hist-pilot-four-menu .is-active>.user-hub__menu-link,body.historical-site .hist-pilot-four-menu .user-hub__menu-link:hover,body.historical-site .hist-pilot-four-menu .user-hub__menu-link:focus-visible{background-image:url('pk/do/pilotSheet/profilePage/tab_active.jpg')!important;color:#111}
+/* The historical teaser is positioned artwork. The real status card must be
+   positioned above it and inside its visible opening, rather than behind it. */
+body.historical-site .hist-home-rail>.hist-home-server-statistics{position:relative;z-index:1;display:block!important;box-sizing:border-box;width:114px;min-width:0;margin:40px 13px 0 54px;padding:0;border:0;background:none;box-shadow:none}
+body.historical-site .hist-home-server-statistics .card-header{position:static;display:block;width:auto;height:auto;margin:0 0 8px;padding:0;border:0;clip:auto;clip-path:none;overflow:visible;background:none}
+body.historical-site .hist-home-server-statistics .card-header h2{margin:0;text-align:center;font:bold 10px/16px Verdana;color:#d6c995}
+body.historical-site .hist-home-server-statistics .stat-summary{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+body.historical-site .hist-home-server-statistics .stat-summary li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px;width:100%;min-height:20px;margin:0;padding:0;border:0;background:none;box-shadow:none}
+body.historical-site .hist-home-server-statistics .summary-label{font:9px/15px Verdana;color:#bac5ce}
+body.historical-site .hist-home-server-statistics .summary-value{font:10px/15px Verdana;color:#e0d6a9}
+body.historical-site .hist-home-server-statistics .company-breakdown{display:flex;justify-content:space-between;gap:6px;width:100%}
+body.historical-site .hist-home-server-statistics .company-breakdown img{width:12px;height:12px;vertical-align:middle}
+body.historical-site .hist-entire-history{box-sizing:border-box;width:677px;max-width:100%;margin:0 auto;min-height:439px;padding:22px 28px 24px;border:16px solid transparent;border-image:url('dops/global/hangar/bg_shop.jpg') 18 fill stretch;background:#09121a;color:#cad3d8}
+body.historical-site .hist-entire-history-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px;padding:0;border-bottom:1px solid #55626d}
+body.historical-site .hist-entire-history-header h1{margin:0;padding:0 0 10px;font:bold 14px/20px Verdana;color:#ddcf99}
+body.historical-site .hist-entire-history-scroll{max-height:440px;overflow-y:auto;scrollbar-color:#748a95 #101b24;scrollbar-width:thin;outline-offset:3px}
+body.historical-site .hist-entire-history-table{width:100%;table-layout:fixed;font:11px/17px Verdana;color:#d2d6d8}
+body.historical-site .hist-entire-history-table th,body.historical-site .hist-entire-history-table td{padding:9px 8px;vertical-align:top;text-align:left;border:0;border-bottom:1px solid #4b5b66;background:none;overflow-wrap:anywhere}
+body.historical-site .hist-entire-history-table th{position:sticky;top:0;z-index:1;background:#111d27;color:#e0d1a0}
+body.historical-site .hist-entire-history-table th:first-child,body.historical-site .hist-entire-history-table td:first-child{width:139px;border-right:1px solid #4b5b66;white-space:nowrap}
+body.historical-site .hist-history-pagination{display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:14px;padding:10px 0 0;border-top:1px solid #4b5b66}
+body.historical-site .hist-history-pagination a{text-decoration:underline;font:11px/18px Verdana}
+@media(max-width:860px){
+ body.historical-site.hist-responsive{min-width:0!important;width:100%;overflow-x:hidden;font-size:12px;background-position:center top!important}
+ body.historical-site.hist-responsive .app-shell,body.historical-site.hist-responsive .app-header,body.historical-site.hist-responsive .app-nav,body.historical-site.hist-responsive .app-main,body.historical-site.hist-responsive .app-content,body.historical-site.hist-responsive .app-footer{width:100%!important;min-width:0!important;max-width:100%!important;margin-left:0!important;margin-right:0!important}
+ body.historical-site.hist-responsive .app-header{height:140px!important;min-height:140px;margin:0!important;overflow:hidden;background-position:center top!important}
+ body.historical-site.hist-responsive .app-header::before{background-position:center top!important;background-size:860px 230px;clip-path:inset(0)}
+ body.historical-site.hist-responsive .app-header .brand{left:50%!important;top:23px!important;transform:translateX(-50%)!important;width:200px!important;height:67px!important;margin:0!important;padding:0!important}
+ body.historical-site.hist-responsive .brand img{width:170px!important;max-width:170px!important;height:60px!important}
+ body.historical-site.hist-responsive .hist-header-ship{display:none!important}
+ body.historical-site.hist-responsive .hist-rev6-header-stats{position:absolute!important;top:0!important;left:0!important;right:0!important;display:flex!important;justify-content:space-around;width:100%!important;height:19px!important}
+ body.historical-site.hist-responsive .hist-rev6-header-stat{position:static!important;flex:0 1 auto;width:auto!important;max-width:25%;font-size:8px!important}
+ body.historical-site.hist-responsive .app-header .header-actions{top:25px!important;right:5px!important}
+ body.historical-site.hist-responsive .app-header .hist-rev6-header-discord{left:5px!important;top:25px!important}
+ body.historical-site.hist-responsive .hist-header-wallet{top:108px!important;width:44%!important;height:20px!important;padding:0 5px!important;background:#08151dbb!important;justify-content:flex-end!important}
+ body.historical-site.hist-responsive .hist-header-wallet.hist-wallet-credits{left:4%!important;right:auto!important}
+ body.historical-site.hist-responsive .hist-header-wallet.hist-wallet-uridium{left:auto!important;right:4%!important}
+ body.historical-site.hist-responsive .hist-header-wallet::before{display:inline-block;position:static;width:20px;margin-right:auto;color:#c9d7dd;content:'C'}
+ body.historical-site.hist-responsive .hist-header-wallet.hist-wallet-uridium::before{content:'U'}
+ body.historical-site.hist-responsive .app-nav{position:relative!important;left:auto!important;top:auto!important;display:block!important;height:auto!important;padding:8px!important;pointer-events:auto}
+ body.historical-site.hist-responsive .app-nav .nav-list{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;height:auto!important}
+ body.historical-site.hist-responsive .app-nav .nav-item{position:static!important;left:auto!important;top:auto!important;width:100%!important;height:auto!important;min-width:0!important;margin:0!important}
+ body.historical-site.hist-responsive .app-nav .nav-item>.nav-link{width:100%!important;min-width:0!important;height:34px!important;padding:0 3px!important;background-size:400% 100%!important;font-size:10px!important;line-height:14px!important}
+ body.historical-site.hist-responsive .app-nav .nav-item.cta{grid-column:1/-1;order:-1;display:flex;justify-content:center}
+ body.historical-site.hist-responsive .app-nav .nav-item.cta>.nav-link{width:190px!important;height:50px!important;background-size:190px 150px!important;background-position:center 0!important;font-size:17px!important}
+ body.historical-site.hist-responsive .app-main{padding:6px 8px!important}
+ body.historical-site.hist-responsive .CMSContent,body.historical-site.hist-responsive .user-hub-wrapper,body.historical-site.hist-responsive .user-hub,body.historical-site.hist-responsive .user-hub__content,body.historical-site.hist-responsive .user-tab-panel{width:100%!important;min-width:0!important;max-width:100%!important}
+ body.historical-site.hist-responsive .hist-home-rail{position:relative!important;left:auto!important;top:auto!important;width:100%!important;height:auto!important;min-height:100px;margin:0 0 10px;padding:8px;background:#0b1620 url('pk/do/global/nav_sub_bg.png') center top/100% auto no-repeat;overflow:visible}
+ body.historical-site.hist-responsive .hist-home-server-statistics{width:auto;margin:0 12px}
+ body.historical-site.hist-responsive .hist-home-server-statistics .stat-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px}
+ body.historical-site.hist-responsive .hist-home-server-statistics .stat-summary li:first-child{grid-column:1/-1}
+ body.historical-site.hist-responsive .hist-dashboard-native{position:relative!important;left:auto!important;top:auto!important;display:grid!important;grid-template-columns:1fr;gap:10px;width:100%!important;min-width:0!important;height:auto!important;margin:0!important;padding:0!important;background:none!important}
+ body.historical-site.hist-responsive .hist-dashboard-native>.dashboard-card{position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;width:100%!important;height:auto!important;min-height:185px;margin:0!important;padding:25px 16px 26px!important;border:9px solid transparent!important;border-image:url('dops/global/hangar/bg_shop.jpg') 18 fill stretch!important;background:#0a141d!important;overflow:visible!important}
+ body.historical-site.hist-responsive .hist-dashboard-native .card-header{position:static!important;display:block!important;height:auto!important;margin:0 0 12px!important;background:none!important}
+ body.historical-site.hist-responsive .hist-dashboard-native .card-header h2{display:block!important;position:static!important;clip:auto!important;width:auto!important;height:auto!important;color:#d5c695!important;font-size:14px!important}
+ body.historical-site.hist-responsive .hist-dashboard-native .user-card .stat-row{height:auto!important;min-height:23px!important;font-size:11px!important}
+ body.historical-site.hist-responsive .hist-dashboard-native .user-card .stat-row dt,body.historical-site.hist-responsive .hist-dashboard-native .user-card .stat-row dd{font-size:11px!important;line-height:21px!important;max-height:none!important}
+ body.historical-site.hist-responsive .hist-rev6-news-choices{left:15px!important;bottom:9px!important}
+ body.historical-site.hist-responsive .hist-rev6-news-details,body.historical-site.hist-responsive .hist-rev6-log-history{right:15px!important;bottom:9px!important;font-size:10px!important}
+ body.historical-site.hist-responsive .hist-rev6-log-home{width:100%!important;height:120px!important}
+ body.historical-site.hist-responsive .user-hub{border-width:8px!important;padding:10px!important}
+ body.historical-site.hist-responsive .user-hub__nav{width:100%!important;min-width:0!important;padding:0!important}
+ body.historical-site.hist-responsive .hist-pilot-four-menu{width:100%!important;max-width:100%!important}
+ body.historical-site.hist-responsive .hist-pilot-four-menu .user-hub__menu-link{font-size:10px!important}
+ body.historical-site.hist-responsive .hist-entire-history{min-height:0;padding:12px 8px;border-width:9px;width:100%}
+ body.historical-site.hist-responsive .hist-entire-history-header{align-items:flex-start}
+ body.historical-site.hist-responsive .hist-entire-history-header h1{font-size:12px}
+ body.historical-site.hist-responsive .hist-entire-history-scroll{max-height:65vh}
+ body.historical-site.hist-responsive .hist-entire-history-table th:first-child,body.historical-site.hist-responsive .hist-entire-history-table td:first-child{width:108px;white-space:normal}
+ body.historical-site.hist-responsive .hist-entire-history-table th,body.historical-site.hist-responsive .hist-entire-history-table td{padding:8px 5px;font-size:10px;line-height:16px}
+ body.historical-site.hist-responsive #dailyLoginModal.hist-daily-five-modal{padding:12px 7px;align-items:flex-start}
+ body.historical-site.hist-responsive #dailyLoginModal.hist-daily-five-modal .daily-login-card{max-height:calc(100dvh - 24px)}
+ body.historical-site.hist-responsive #dailyLoginModal.hist-daily-five-modal .daily-login-body{padding-left:18px;padding-right:18px}
+ body.historical-site.hist-responsive #dailyLoginModal.hist-daily-five-modal .daily-login-hero{padding-left:18px}
+ body.historical-site.hist-responsive #dailyLoginModal.hist-daily-five-modal .daily-login-footer{width:calc(100% + 36px);margin-left:-18px;margin-right:-18px}
+}
+
+/* Targeted real-runtime mobile corrections. Desktop artwork/layout is intact.
+   Native small left/right strips contain 5/6 frames; PLAY contains 5 rows. */
+@media(max-width:860px){
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item:not(.cta)>.nav-link{display:flex!important;align-items:center!important;justify-content:center!important;background-repeat:no-repeat!important;background-position:0 0!important;padding:0 3px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item{background:none!important;--hist-mobile-hover:33.333333%;--hist-mobile-down:66.666667%;--hist-mobile-selected:100%}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item[style*="small_button_left_sprite"]{--hist-mobile-hover:25%;--hist-mobile-down:50%;--hist-mobile-selected:75%}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item[style*="small_button_right_sprite"]{--hist-mobile-hover:20%;--hist-mobile-down:40%;--hist-mobile-selected:60%}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item[style*="small_button_left_sprite"]>.nav-link{background-size:500% 100%!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item[style*="small_button_right_sprite"]>.nav-link{background-size:600% 100%!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item.hist-big>.nav-link{background-size:400% 100%!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item:not(.cta)>.nav-link:hover,body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item:not(.cta)>.nav-link:focus-visible{background-position:var(--hist-mobile-hover) 0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item.is-active:not(.cta)>.nav-link{background-position:var(--hist-mobile-selected) 0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item:not(.cta)>.nav-link:active{background-position:var(--hist-mobile-down) 0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item.cta>.nav-link{background-size:190px 250px!important;background-repeat:no-repeat!important;background-position:center 0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item.cta>.nav-link:hover,body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item.cta>.nav-link:focus-visible{background-position:center -50px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item.cta>.nav-link:active{background-position:center -100px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .app-nav .nav-item.has-submenu::after{display:none!important;content:none!important}
+ body.historical-site.hist-finish-shell.hist-responsive .dashboard,body.historical-site.hist-finish-shell.hist-responsive .dashboard-grid,body.historical-site.hist-finish-shell.hist-responsive .dashboard-column,body.historical-site.hist-finish-shell.hist-responsive .hist-dashboard-extensions,body.historical-site.hist-finish-shell.hist-responsive .hist-finish-home-more{width:100%!important;min-width:0!important;max-width:100%!important;margin-left:0!important;margin-right:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-dashboard-native{min-height:0!important;grid-template-columns:minmax(0,1fr)!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-dashboard-native>.dashboard-card{box-sizing:border-box!important;min-width:0!important;max-width:100%!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-dashboard-native .card-header{position:static!important;width:auto!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;clip:auto!important;clip-path:none!important;overflow:visible!important;padding:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-rail{box-sizing:border-box!important;min-width:0!important;min-height:0!important;max-width:100%!important;height:auto!important;padding:12px!important;border:6px solid transparent!important;border-image:url('dops/global/events/frame.png') 8 fill stretch!important;background:#08131c!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-rail .hist-rail-teaser{display:none!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-rail .hist-home-server-statistics{position:static!important;display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;margin:0!important;padding:0!important;border:0!important;border-image:none!important;background:none!important;box-shadow:none!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-server-statistics .card-header{position:static!important;width:auto!important;height:auto!important;margin:0 0 10px!important;padding:0!important;clip:auto!important;overflow:visible!important;background:none!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-server-statistics .card-header h2{font:11px/17px Verdana,Arial,sans-serif!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-server-statistics .stat-summary{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px 14px!important;width:100%!important;min-width:0!important;margin:0!important;padding:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-server-statistics .stat-summary li{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:3px!important;width:100%!important;min-width:0!important;max-width:100%!important;padding:0!important;background:none!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-server-statistics .stat-summary li:first-child{grid-column:1/-1!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-server-statistics .summary-label{font:10px/16px Verdana,Arial,sans-serif!important;overflow-wrap:anywhere}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-server-statistics .summary-value{max-width:100%!important;font:11px/16px Verdana,Arial,sans-serif!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-server-statistics .company-breakdown{display:flex!important;flex-wrap:wrap!important;justify-content:space-between!important;gap:8px!important;width:100%!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-home-server-statistics .company-breakdown>span{display:inline-flex;align-items:center;gap:5px}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-dashboard-native .hist-rev6-news-current{height:auto!important;min-height:0!important;max-height:none!important;padding:0!important;overflow:visible!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-dashboard-native .hist-rev6-news-choices{position:static!important;width:auto!important;height:auto!important;flex-wrap:wrap!important;margin:12px 0!important;gap:6px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .hist-dashboard-native .hist-rev6-news-details,body.historical-site.hist-finish-shell.hist-responsive .hist-dashboard-native .hist-rev6-log-history{position:static!important;left:auto!important;right:auto!important;bottom:auto!important;width:100%!important;height:auto!important;min-height:20px!important;margin-top:8px!important;font-size:10px!important;line-height:20px!important}
+}
+
+/* The desktop Pilot Sheet is a fixed historical canvas. On small screens its
+   real content reflows inside the existing native frame; only the skill tree
+   retains local horizontal panning so all unchanged skill slots stay usable. */
+@media(max-width:860px){
+ body.historical-site.hist-finish-shell.hist-responsive .CMSContent.user-hub-wrapper,body.historical-site.hist-finish-shell.hist-responsive .rev5-pilot-hub,body.historical-site.hist-finish-shell.hist-responsive .rev5-pilot-hub .user-hub__layout,body.historical-site.hist-finish-shell.hist-responsive .rev5-pilot-hub .user-hub__nav,body.historical-site.hist-finish-shell.hist-responsive .rev5-pilot-hub .user-hub__content{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;margin-left:0!important;margin-right:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-pilot-hub{padding:0!important;border:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-pilot-hub .user-hub__nav{height:auto!important;min-height:25px!important;padding:0!important;margin-bottom:7px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-pilot-hub .user-hub__content{height:auto!important;min-height:0!important;padding:10px!important;border:8px solid transparent!important;border-image:url('dops/global/hangar/bg_shop.jpg') 18 fill stretch!important;background:#0a1720!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-pilot-hub :is(.rev5-profile,.rev6-profile-sheet,.rev5-bio,.rev5-titles,.quest-page.hist-q-ready){box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;margin:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev6-profile-sheet{padding:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev6-profile-identity{flex-wrap:wrap!important;gap:10px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev6-profile-identity .card-header{align-items:flex-start!important;text-align:left!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev6-profile-sheet :is(.stat-label,.stat-val){overflow-wrap:anywhere!important;white-space:normal!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev6-profile-sheet .stat-label{width:52%!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev6-profile-links{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:6px;max-width:100%;text-align:left!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-bio :is(.rev5-bio-header,.rev5-bio-footer,.pilot-bio-resources,.pilot-bio-actions){height:auto!important;min-height:0!important;flex-wrap:wrap!important;gap:10px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-bio-header{align-items:flex-start!important;padding-bottom:8px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-bio .pilot-bio-tree{width:100%!important;min-width:0!important;max-width:100%!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-bio .pilot-bio-button{max-width:100%!important;white-space:normal!important}
+ body.historical-site.hist-finish-shell.hist-responsive .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures{height:auto!important;min-height:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .quest-page .rev9-quest-toolbar{flex-wrap:wrap!important;gap:6px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .quest-page .hist-q-family-picker{max-width:100%!important;min-width:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .quest-page .hist-q-family-picker :is(.quest-tabs,.quest-tab){box-sizing:border-box!important;max-width:100%!important;min-width:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .quest-page.hist-q-ready .hist-q-console{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;flex:none!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .quest-page.hist-q-ready .hist-q-list{height:auto!important;min-height:0!important;max-height:220px!important;border-right:0!important;border-bottom:1px solid #505050!important;overflow:auto!important}
+ body.historical-site.hist-finish-shell.hist-responsive .quest-page.hist-q-ready .hist-q-detail{height:auto!important;min-height:140px!important;max-height:440px!important;overflow:auto!important;padding:9px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-titles .titles-summary-card,body.historical-site.hist-finish-shell.hist-responsive .rev5-titles .titles-summary-card>div{flex-wrap:wrap!important;min-width:0!important;gap:6px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-titles .rev5-title-stage{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;height:auto!important;min-height:0!important;gap:8px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-title-list{max-height:240px!important;border-right:0!important;border-bottom:1px solid #505050!important;padding-right:0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-title-details{min-height:120px!important;max-height:300px!important;padding:8px 0!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-titles .titles-action-bar{flex-wrap:wrap!important;gap:8px!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-titles .titles-action-bar>div:first-child{max-width:100%!important}
+ body.historical-site.hist-finish-shell.hist-responsive .rev5-titles .titles-action-bar__buttons{flex-wrap:wrap!important;max-width:100%!important}
+}

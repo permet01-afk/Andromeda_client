@@ -5,7 +5,7 @@
   'use strict';
   function start(){
     if(!document.body.classList.contains('historical-site')||window.AndromedaHistoricalFinishShell)return;
-    document.body.classList.add('hist-finish-shell');
+    document.body.classList.add('hist-finish-shell','hist-responsive');
     const originalIds=Array.from(document.querySelectorAll('[id]')).map(node=>node.id);
     const params=new URLSearchParams(location.search);
     const page=params.get('page')||'home';
@@ -643,7 +643,16 @@
           const active=Number(b.classList.contains('is-active'))-Number(a.classList.contains('is-active'));
           return active||Number(a.dataset.nextStart)-Number(b.dataset.nextStart);
         });
-        const modal=dialog('Server events',events);if(serverStats){const extra=el('details','hist-rev7-server-statistics');extra.appendChild(el('summary','','Server statistics'));extra.appendChild(serverStats);modal.content.appendChild(extra);}
+        const modal=dialog('Server events',events);
+        if(serverStats){
+          const rail=document.querySelector('.hist-home-rail');
+          if(rail){
+            rail.querySelector('.hist-finish-server-time')?.remove();
+            serverStats.classList.add('hist-home-server-statistics');
+            const title=serverStats.querySelector('.card-header h2');if(title)title.textContent='Server statistics';
+            rail.appendChild(serverStats);
+          }
+        }
         while(news.firstChild)storage.appendChild(news.firstChild);
         const choices=el('div','hist-rev6-news-choices');const display=el('div','hist-rev6-news-current');
         function field(panel,label){return Array.from(panel.querySelectorAll('.event-details>div')).find(row=>row.querySelector('dt')?.textContent.trim()===label)?.querySelector('dd')?.textContent.trim()||'';}
@@ -661,10 +670,8 @@
       if(logs){
         if(!logs.querySelector('.hist-rev6-welcome')){const welcome=el('li','log-entry hist-rev6-welcome');welcome.appendChild(el('div','log-message','Welcome to Andromeda'));logs.insertBefore(welcome,logs.firstChild);}
         const holder=el('div','hist-rev6-log-home');logs.parentNode.insertBefore(holder,logs);holder.appendChild(logs);
-        const open=el('button','hist-rev6-log-history','Logbook history');open.type='button';logCard.appendChild(open);
-        const content=el('div','hist-rev6-log-full');const modal=dialog('Recent logbook history',content);
-        modal.setHooks(()=>content.appendChild(logs),()=>holder.appendChild(logs));open.addEventListener('click',()=>modal.open(open));
-        report.logbook={welcomePresentationOnly:true,originalLoadedRecordsPreserved:logs.children.length-1,fullDatabaseHistoryNotClaimed:true,sourceLink:'DoPs Entire logbook history is a route, not this modal; adapted label Logbook history honestly opens only already-loaded records in native news-popup artwork'};
+        const open=el('a','hist-rev6-log-history','Entire logbook history');open.href='view.php?page=history';logCard.appendChild(open);
+        report.logbook={welcomePresentationOnly:true,originalLoadedRecordsPreserved:logs.children.length-1,fullHistoryRoute:'view.php?page=history',sourceLink:'DoPs internalHistory: dedicated authenticated Date / Action page; bounded keyset pagination over the complete Andromeda log'};
       }
       report.userInfo='Username, Company, Grade, XP, Honor, Credits, Uridium; same wallet sources observed without new requests; Profile/Change/bonus original paths';
     }
@@ -684,22 +691,14 @@
     if(!body.classList.contains('historical-site')||window.AndromedaHistoricalDailyView)return;
     const query=new URLSearchParams(location.search);
     const bonusHref='view.php?page=home&hist_bonus=1';
-    const facts={source:'DoPs internalDockBooster_Body145-202 / darkorbit.css306-311; native standard News window',calendarGeometry:'ANDROMEDA_FIVE_DAY_ADAPTATION; exact original Daily calendar not recovered',cycleDays:5,firstFiveRewardsUnchanged:true,businessRequestsAdded:0,timersAdded:0,nativeMediaLoadsExpected:true,uridium:'Exact reward text; no unverified currency icon'};
+    const facts={source:'DoPs internalDockBooster_Body145-202 / darkorbit.css306-311; native standard News window',calendarGeometry:'ANDROMEDA_FIVE_DAY_ADAPTATION; exact original Daily calendar not recovered',cycleDays:5,firstFiveRewardsUnchanged:true,businessRequestsAdded:0,timersAdded:0,nativeMediaLoadsExpected:true,uridium:'Existing Home header U sprite; exact reward text retained'};
     window.AndromedaHistoricalDailyView=facts;
     function make(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;}
-    function bonusItem(menu,active){
-      const item=make('li','user-hub__menu-item hist-rev7-bonus-item'+(active?' is-active':''));
-      const link=make('a','user-hub__menu-link');link.href=bonusHref;
-      link.appendChild(make('span','user-hub__menu-title','Bonus'));
-      if(active)link.setAttribute('aria-current','page');
-      item.appendChild(link);menu.appendChild(item);return link;
-    }
-    // This is a link to the existing Home renderer, not a new PHP route/API.
+    // Home retains the Daily entry and its compatibility URL. Pilot Sheet has
+    // four routes; do not create a second access to the same reward dialog.
     if(body.classList.contains('hist-area-pilot')){
       const menu=document.querySelector('.user-hub__menu');
-      if(menu&&!menu.querySelector('.hist-rev7-bonus-item')){
-        menu.classList.add('hist-rev7-bonus-menu');bonusItem(menu,false);
-      }
+      if(menu)menu.classList.add('hist-pilot-four-menu');
     }
     const modal=document.getElementById('dailyLoginModal');
     const card=modal?.querySelector('.daily-login-card');
@@ -734,7 +733,12 @@
     cards.forEach(article=>article.querySelectorAll('.daily-reward-line').forEach(line=>{
       const label=(line.textContent||'').trim();
       const name=Object.keys(nativeIcons).find(name=>label.endsWith(' '+name));
-      if(!name)return; // Uridium stays actual text; never substitute Endurium ore.
+      if(label.endsWith(' Uridium')){
+        const icon=make('span','daily-reward-uridium-icon');icon.setAttribute('aria-hidden','true');
+        line.insertBefore(icon,line.firstChild);line.dataset.nativeReward='Uridium';
+        return;
+      }
+      if(!name)return;
       const value=line.lastElementChild;
       const rewardText=value?.textContent||'';
       if(value&&rewardText.endsWith(name)){

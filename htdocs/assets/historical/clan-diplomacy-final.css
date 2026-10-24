@@ -1,0 +1,10 @@
+/* Narrow integration of the existing diplomacy controls in their historical panel. */
+body.hist-page-clan .clan-diplo-action-form{display:inline!important;position:static!important;width:auto!important;height:auto!important;margin:0 0 0 5px!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important}
+body.hist-page-clan .clan-diplo-action-form .leftbutton{display:inline-block!important;float:none!important;position:static!important;vertical-align:middle!important;margin:0!important;max-width:155px!important;cursor:pointer}
+body.hist-page-clan .clan-diplo-nap-heading{margin:10px 0 3px!important;font:bold 10px/15px Verdana,Arial,sans-serif!important;color:#d5d5cb!important;background:none!important;border:0!important}
+body.hist-page-clan #clan-new-diplomacy-form label{display:inline-block;max-width:100%;font:10px/17px Verdana,Arial,sans-serif}
+body.hist-page-clan #clan-new-diplomacy-form select,body.hist-page-clan #clan-new-diplomacy-form textarea{box-sizing:border-box;max-width:100%}
+body.hist-page-clan .clan-diplo-nap-help{font:10px/14px Verdana,Arial,sans-serif!important;color:#c4d3d7!important;max-width:290px;margin:6px 0 0!important}
+body.hist-page-clan .clan-diplo-notice{box-sizing:border-box;max-width:772px;width:100%;margin:6px auto;padding:7px 12px;background:#161b1e;border:1px solid #a89a65;color:#eadc9c;font:11px/16px Verdana,Arial,sans-serif}
+body.hist-page-clan .clan-diplo-notice p{margin:2px 0}
+@media(max-width:849px){body.hist-page-clan .clan-diplo-notice{max-width:calc(100vw - 24px)}}

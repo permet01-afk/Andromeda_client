@@ -1,0 +1,131 @@
+/* Private finishing pass, 2026-10-24. Presentation only.
+ * Account: retain the original fields, forms and buttons; lower the name footer.
+ * Diplomacy: retain the form/confirmation; omit only the added explanatory copy.
+ * Shop: internalDock.css #sellPrice geometry within the native 157x394 panel.
+ * The native Buy control is already correct at x7/y292, 142x48: leave it intact.
+ */
+
+body.historical-site.hist-page-settings.vp-account-aligned #newign > .vp-account-actions {
+  margin-top: 24px !important;
+}
+
+/* The original footer bitmap is 60px high. The previous 41px bottom
+ * padding let its upper border cross the last control row. Keep the native
+ * slices unscaled and leave 8px between the content and the 60px footer. */
+body.historical-site.hist-page-settings.vp-account-aligned .rev4-native-window:has(.set-card:not([hidden]) #newign) {
+  height: auto !important;
+  padding-bottom: 68px !important;
+}
+
+/* DoPs .diplo_candidate_close used an 8px top inset. The current dialog
+ * wrapper is an adaptation; this changes only the New action Close position. */
+body.historical-site.hist-page-clan .rev5-social-dialog:has(#clan-new-diplomacy-form) > .rev5-social-close {
+  top: 8px !important;
+}
+
+body.historical-site.hist-page-clan #clan-new-diplomacy-form .clan-diplo-nap-help {
+  display: none !important;
+}
+
+/* Repeat the mobile proposal's specificity so the same native insert is used
+ * in every category and viewport. Prices remain the original DOM text.
+ * No ellipsis, clipping, price calculation, quantity or purchase change. */
+body.historical-site.hist-page-shop.finish-commerce-shop .hist-shop-detail .finish-purchase-price,
+body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .finish-purchase-price {
+  position: absolute !important;
+  box-sizing: border-box !important;
+  left: 15px !important;
+  top: 265px !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 123px !important;
+  min-width: 123px !important;
+  max-width: 123px !important;
+  height: 16px !important;
+  min-height: 16px !important;
+  max-height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  color: #fff !important;
+  font: 10px/16px Verdana, Arial, sans-serif !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+/* The original Andromeda Max button remains disabled. Its stock-state
+ * placement missed the native purchase geometry because it has no .btn-buy
+ * class. DoPs proves the 142x48 bitmap geometry, not this exact Max state:
+ * grayscale/opacity are an explicit presentation adaptation, not native art.
+ * Keep Owned/Equipped labels and all enabled purchase controls untouched. */
+body.historical-site.hist-page-shop.finish-commerce-shop .hist-shop-detail :is(.ship-action, .design-action, .item-action) > button.btn-disabled:disabled {
+  position: absolute !important;
+  box-sizing: border-box !important;
+  left: 7px !important;
+  top: 292px !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 142px !important;
+  min-width: 142px !important;
+  max-width: 142px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: url('dops/global/hangar/buy-item_buy-button_576x48.png') -144px 0 no-repeat !important;
+  color: #eee !important;
+  font: 11px/16px Verdana, Arial, sans-serif !important;
+  box-shadow: none !important;
+  text-shadow: 0 1px #000 !important;
+  transform: none !important;
+  filter: grayscale(1) !important;
+  opacity: .55 !important;
+  cursor: not-allowed !important;
+}
+
+/* Mobile is an adaptation; DoPs supplies a fixed 480px window. Let the active
+ * name editor fit the viewport instead of clipping its Update Name button.
+ * Ornamental frame slices adapt horizontally, retaining native 65/60px
+ * heights so the existing title and footer stay clear. Desktop stays 480px.
+ * The content and native controls remain in flow, without overflow masking. */
+@media (max-width: 600px) {
+  body.historical-site.hist-page-settings.vp-account-aligned .CMSContent.settings-wrapper:has(.set-card:not([hidden]) #newign) {
+    box-sizing: border-box !important;
+    width: calc(100vw - 16px) !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  body.historical-site.hist-page-settings.vp-account-aligned .rev4-native-window:has(.set-card:not([hidden]) #newign) {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    background-size: 100% auto !important;
+  }
+
+  body.historical-site.hist-page-settings.vp-account-aligned .rev4-native-window:has(.set-card:not([hidden]) #newign)::before {
+    width: 100% !important;
+    height: 65px !important;
+    background-size: 100% 100% !important;
+  }
+
+  body.historical-site.hist-page-settings.vp-account-aligned .rev4-native-window:has(.set-card:not([hidden]) #newign)::after {
+    width: 100% !important;
+    height: 60px !important;
+    background-size: 100% 100% !important;
+  }
+
+  body.historical-site.hist-page-settings.vp-account-aligned .rev4-native-window:has(.set-card:not([hidden]) #newign) :is(.rev4-native-window-content, .rev4-account-layout, .rev4-account-forms, .set-card, .set-body, #newign, .rev4-account-field, .vp-account-actions) {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+}

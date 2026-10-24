@@ -1,4 +1,21 @@
 <?php
+require_once __DIR__ . '/../../libs/ClanRequestSecurity.php';
+
+// Existing clan permissions and handlers are reused; GET never mutates diplomacy.
+clan_request_csrf_token();
+$diploPostValid = clan_request_is_post_valid();
+
+function clan_diplo_action(array $fields, string $label, string $title, string $message): void {
+    echo '<form class="clan-diplo-action-form" method="post" action="view.php?page=clan&amp;tab=diplomacy" data-clan-confirm="'.htmlspecialchars($message, ENT_QUOTES, 'UTF-8').'" data-clan-confirm-title="'.htmlspecialchars($title, ENT_QUOTES, 'UTF-8').'">';
+    echo clan_request_csrf_field();
+    foreach ($fields as $name=>$value) {
+        echo '<input type="hidden" name="'.htmlspecialchars($name, ENT_QUOTES, 'UTF-8').'" value="'.htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8').'">';
+    }
+    echo '<button class="leftbutton" type="submit">'.htmlspecialchars($label, ENT_QUOTES, 'UTF-8').'</button></form>';
+}
+function clan_diplo_message(string $value): string {
+    return htmlspecialchars(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_QUOTES, 'UTF-8');
+}
 
 
 
@@ -75,29 +92,34 @@ $can_any_diplo = ($can_start_alliance || $can_cancel_alliance || $can_declare_wa
 
 
 $form_errors = [];
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && !$diploPostValid) {
+    http_response_code(403);
+    $form_errors[] = 'Your request could not be verified. Reload the page and try again.';
+}
 
 
-if (!empty($_GET['cancel']) && ($_GET['type'] ?? '') === 'alliance') {
+if ($diploPostValid && !empty($_POST['cancel']) && in_array($_POST['type'] ?? '', ['alliance','nap'], true)) {
+    $agreementType = $_POST['type'];
     if (!$can_cancel_alliance) { header("Location: view.php?page=clan&tab=diplomacy"); exit(); }
 
-    $id = (int)$_GET['cancel'];
+    $id = (int)$_POST['cancel'];
 
     
-    $q = $db->prepare("SELECT clan_id, second_clan_id FROM clan_diplomacy WHERE id=:id AND type='alliance' AND (clan_id=:cid OR second_clan_id=:cid) LIMIT 1");
-    $q->execute([':id'=>$id, ':cid'=>$clan_id]);
+    $q = $db->prepare("SELECT clan_id, second_clan_id FROM clan_diplomacy WHERE id=:id AND type=:agreement_type AND (clan_id=:cid OR second_clan_id=:cid) LIMIT 1");
+    $q->execute([':id'=>$id, ':cid'=>$clan_id, ':agreement_type'=>$agreementType]);
     $rel = $q->fetch();
 
     $sth  = $db->prepare("
         DELETE FROM clan_diplomacy
         WHERE id = :id
-          AND type = 'alliance'
+          AND type = :agreement_type
           AND (clan_id = :cid OR second_clan_id = :cid)
     ");
-    $sth->execute([':id'=>$id, ':cid'=>$clan_id]);
+    $sth->execute([':id'=>$id, ':cid'=>$clan_id, ':agreement_type'=>$agreementType]);
 
     if ($rel) {
         $other = ($rel['clan_id'] == $clan_id) ? (int)$rel['second_clan_id'] : (int)$rel['clan_id'];
-        clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], 'alliance_cancel', [
+        clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], $agreementType.'_cancel', [
             'other_clan_id' => $other,
             'phase'         => 'direct_cancel'
         ]);
@@ -107,10 +129,10 @@ if (!empty($_GET['cancel']) && ($_GET['type'] ?? '') === 'alliance') {
 }
 
 
-if (!empty($_GET['cancel']) && ($_GET['type'] ?? '') === 'war') {
+if ($diploPostValid && !empty($_POST['cancel']) && ($_POST['type'] ?? '') === 'war') {
     if (!$can_request_war_cancel) { header("Location: view.php?page=clan&tab=diplomacy"); exit(); }
 
-    $id = (int)$_GET['cancel'];
+    $id = (int)$_POST['cancel'];
     $q = $db->prepare("SELECT clan_id, second_clan_id FROM clan_diplomacy WHERE id=:id AND type='war' AND (clan_id=:cid OR second_clan_id=:cid) LIMIT 1");
     $q->execute([':id'=>$id, ':cid'=>$clan_id]);
     $rel = $q->fetch();
@@ -142,18 +164,21 @@ if (!empty($_GET['cancel']) && ($_GET['type'] ?? '') === 'war') {
 }
 
 
-if (!empty($_GET['cancelAR'])) {
-    $id  = (int)$_GET['cancelAR'];
+if ($diploPostValid && !empty($_POST['cancelAR'])) {
+    $id  = (int)$_POST['cancelAR'];
 
     
-    $qq = $db->prepare("SELECT * FROM clan_diplomacy_request WHERE id=:id LIMIT 1");
-    $qq->execute([':id'=>$id]);
+    $qq = $db->prepare("SELECT * FROM clan_diplomacy_request WHERE id=:id AND (clan_id=:cid OR second_clan_id=:cid) LIMIT 1");
+    $qq->execute([':id'=>$id, ':cid'=>$clan_id]);
     $req = $qq->fetch();
 
     if ($req) {
-        $type = $req['type']; 
+        $type = $req['type'];
+        if (!in_array($type, ['alliance','nap','war_cancel'], true)) {
+            header("Location: view.php?page=clan&tab=diplomacy"); exit();
+        } 
         
-        if ($type === 'alliance' && !$can_cancel_alliance && !$is_marshal) {
+        if (in_array($type, ['alliance','nap'], true) && !$can_cancel_alliance && !$is_marshal) {
             header("Location: view.php?page=clan&tab=diplomacy"); exit();
         }
         if ($type === 'war_cancel' && !$can_request_war_cancel && !$is_marshal) {
@@ -172,9 +197,9 @@ if (!empty($_GET['cancelAR'])) {
         $isRequester = ((int)$req['clan_id'] === $clan_id);
         $other       = $isRequester ? (int)$req['second_clan_id'] : (int)$req['clan_id'];
 
-        if ($type === 'alliance') {
+        if (in_array($type, ['alliance','nap'], true)) {
             $phase = $isRequester ? 'request_cancelled_by_requester' : 'request_refused_by_recipient';
-            clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], 'alliance_cancel', [
+            clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], $type.'_cancel', [
                 'other_clan_id' => $other,
                 'phase'         => $phase
             ]);
@@ -190,16 +215,17 @@ if (!empty($_GET['cancelAR'])) {
 }
 
 
-if (!empty($_GET['acceptAR']) && ($_GET['kind'] ?? '') === 'alliance') {
+if ($diploPostValid && !empty($_POST['acceptAR']) && in_array($_POST['kind'] ?? '', ['alliance','nap'], true)) {
+    $agreementType = $_POST['kind'];
     if (!$can_start_alliance) { header("Location: view.php?page=clan&tab=diplomacy"); exit(); }
 
-    $id  = (int)$_GET['acceptAR'];
+    $id  = (int)$_POST['acceptAR'];
     $sth = $db->prepare("
         SELECT * FROM clan_diplomacy_request
-        WHERE id = :id AND type='alliance' AND second_clan_id = :cid
+        WHERE id = :id AND type=:agreement_type AND second_clan_id = :cid
         LIMIT 1
     ");
-    $sth->execute([':id'=>$id, ':cid'=>$clan_id]);
+    $sth->execute([':id'=>$id, ':cid'=>$clan_id, ':agreement_type'=>$agreementType]);
     $req = $sth->fetch();
 
     if ($req) {
@@ -208,10 +234,10 @@ if (!empty($_GET['acceptAR']) && ($_GET['kind'] ?? '') === 'alliance') {
         $db->insert('clan_diplomacy', [
             'clan_id'        => $other,
             'second_clan_id' => $clan_id,
-            'type'           => 'alliance',
+            'type'           => $agreementType,
             'message'        => $req['message']
         ]);
-        clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], 'alliance_accept', [
+        clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], $agreementType.'_accept', [
             'other_clan_id' => $other
         ]);
     }
@@ -219,10 +245,10 @@ if (!empty($_GET['acceptAR']) && ($_GET['kind'] ?? '') === 'alliance') {
 }
 
 
-if (!empty($_GET['acceptAR']) && ($_GET['kind'] ?? '') === 'war_cancel') {
+if ($diploPostValid && !empty($_POST['acceptAR']) && ($_POST['kind'] ?? '') === 'war_cancel') {
     if (!$can_request_war_cancel) { header("Location: view.php?page=clan&tab=diplomacy"); exit(); }
 
-    $id  = (int)$_GET['acceptAR'];
+    $id  = (int)$_POST['acceptAR'];
     $sth = $db->prepare("
         SELECT * FROM clan_diplomacy_request
         WHERE id = :id AND type='war_cancel' AND second_clan_id = :cid
@@ -251,11 +277,12 @@ if (!empty($_GET['acceptAR']) && ($_GET['kind'] ?? '') === 'war_cancel') {
 }
 
 
-if (!empty($_POST['diplo-submit'])) {
-    $type = ($_POST['diplo_type'] ?? '') === 'war' ? 'war' : 'alliance';
+if ($diploPostValid && !empty($_POST['diplo-submit'])) {
+    $type = (string)($_POST['diplo_type'] ?? '');
+    if (!in_array($type, ['alliance','nap','war'], true)) $form_errors[] = 'Invalid diplomatic relation.';
 
     
-    if ($type === 'alliance' && !$can_start_alliance) { header("Location: view.php?page=clan&tab=diplomacy"); exit(); }
+    if (in_array($type, ['alliance','nap'], true) && !$can_start_alliance) { header("Location: view.php?page=clan&tab=diplomacy"); exit(); }
     if ($type === 'war'      && !$can_declare_war)    { header("Location: view.php?page=clan&tab=diplomacy"); exit(); }
 
     $target  = isset($_POST['target_clan']) ? (int)$_POST['target_clan'] : 0;
@@ -280,24 +307,24 @@ if (!empty($_POST['diplo-submit'])) {
     }
 
     
-    if ($type === 'alliance') {
+    if (in_array($type, ['alliance','nap'], true)) {
         $q = $db->prepare("
             SELECT 1 FROM clan_diplomacy_request
-            WHERE type='alliance'
+            WHERE type=:agreement_type
               AND ((clan_id=:a AND second_clan_id=:b) OR (clan_id=:b AND second_clan_id=:a))
             LIMIT 1
         ");
-        $q->execute([':a'=>$clan_id, ':b'=>$target]);
-        if ($q->fetchColumn()) $form_errors[] = "Alliance request already pending.";
+        $q->execute([':a'=>$clan_id, ':b'=>$target, ':agreement_type'=>$type]);
+        if ($q->fetchColumn()) $form_errors[] = ($type==='nap' ? 'NAP request already pending.' : 'Alliance request already pending.');
 
         $q = $db->prepare("
             SELECT 1 FROM clan_diplomacy
-            WHERE type='alliance'
+            WHERE type=:agreement_type
               AND ((clan_id=:a AND second_clan_id=:b) OR (clan_id=:b AND second_clan_id=:a))
             LIMIT 1
         ");
-        $q->execute([':a'=>$clan_id, ':b'=>$target]);
-        if ($q->fetchColumn()) $form_errors[] = "Alliance already active.";
+        $q->execute([':a'=>$clan_id, ':b'=>$target, ':agreement_type'=>$type]);
+        if ($q->fetchColumn()) $form_errors[] = ($type==='nap' ? 'NAP already active.' : 'Alliance already active.');
     } else {
         $q = $db->prepare("
             SELECT 1 FROM clan_diplomacy
@@ -310,14 +337,14 @@ if (!empty($_POST['diplo-submit'])) {
     }
 
     if (empty($form_errors)) {
-        if ($type === 'alliance') {
+        if (in_array($type, ['alliance','nap'], true)) {
             $db->insert('clan_diplomacy_request', [
                 'clan_id'        => $clan_id,
                 'second_clan_id' => $target,
-                'type'           => 'alliance',
+                'type'           => $type,
                 'message'        => $message
             ]);
-            clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], 'alliance_request', [
+            clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], $type.'_request', [
                 'other_clan_id' => $target,
                 'message'       => $messageRaw
             ]);
@@ -348,6 +375,11 @@ $sth->execute([':cid'=>$clan_id]);  $alliancesOut = $sth->fetchAll();
 $sth = $db->prepare("SELECT * FROM clan_diplomacy WHERE second_clan_id = :cid AND type='alliance'");
 $sth->execute([':cid'=>$clan_id]);  $alliancesIn  = $sth->fetchAll();
 
+
+$sth = $db->prepare("SELECT * FROM clan_diplomacy WHERE clan_id = :cid AND type='nap'");
+$sth->execute([':cid'=>$clan_id]); $napsOut = $sth->fetchAll();
+$sth = $db->prepare("SELECT * FROM clan_diplomacy WHERE second_clan_id = :cid AND type='nap'");
+$sth->execute([':cid'=>$clan_id]); $napsIn = $sth->fetchAll();
 
 $sth = $db->prepare("SELECT * FROM clan_diplomacy WHERE clan_id = :cid AND type='war'");
 $sth->execute([':cid'=>$clan_id]);  $warsOut = $sth->fetchAll();
@@ -380,6 +412,11 @@ if ($can_start_alliance || $can_declare_war) {
 <link rel="stylesheet" type="text/css" href="styles/clan.css?v=2" />
 
 <div class="clan-page">
+  <?php if ($form_errors): ?>
+    <div class="clan-diplo-notice" role="alert" data-clan-diplomacy-error>
+      <?php foreach ($form_errors as $error): ?><p><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p><?php endforeach; ?>
+    </div>
+  <?php endif; ?>
 
   <!-- Alliances -->
   <h3 class="clan-section-title">Current Alliances</h3>
@@ -393,12 +430,12 @@ if ($can_start_alliance || $can_declare_war) {
         echo '<div class="stat"><div class="stat-left">Ally</div><div class="stat-right">'
            . htmlspecialchars($label);
         if ($can_cancel_alliance) {
-            echo ' <a class="leftbutton" href="view.php?page=clan&tab=diplomacy&cancel='.(int)$a['id'].'&type=alliance">Cancel</a>';
+            clan_diplo_action(['cancel'=>(int)$a['id'],'type'=>'alliance'], 'Cancel', 'End alliance', 'End the alliance with '.$label.'?');
         }
         echo '</div></div>';
         if (!empty($a['message'])) {
             echo '<div class="stat" style="margin-top:-4px;"><div class="stat-left">Message</div><div class="stat-rightbis">'
-               . $a['message'] . '</div></div>';
+               . clan_diplo_message((string)$a['message']) . '</div></div>';
         }
     }
     foreach ($alliancesIn as $a) {
@@ -406,14 +443,27 @@ if ($can_start_alliance || $can_declare_war) {
         echo '<div class="stat"><div class="stat-left">Ally</div><div class="stat-right">'
            . htmlspecialchars($label);
         if ($can_cancel_alliance) {
-            echo ' <a class="leftbutton" href="view.php?page=clan&tab=diplomacy&cancel='.(int)$a['id'].'&type=alliance">Cancel</a>';
+            clan_diplo_action(['cancel'=>(int)$a['id'],'type'=>'alliance'], 'Cancel', 'End alliance', 'End the alliance with '.$label.'?');
         }
         echo '</div></div>';
         if (!empty($a['message'])) {
             echo '<div class="stat" style="margin-top:-4px;"><div class="stat-left">Message</div><div class="stat-rightbis">'
-               . $a['message'] . '</div></div>';
+               . clan_diplo_message((string)$a['message']) . '</div></div>';
         }
     }
+    ?>
+    <h3 class="clan-diplo-nap-heading">Non-aggression pacts (NAP)</h3>
+    <?php
+      if (!$napsOut && !$napsIn) echo '<div class="stat"><div class="stat-right">No active non-aggression pacts.</div></div>';
+      foreach ([[$napsOut,'second_clan_id'],[$napsIn,'clan_id']] as $direction) {
+          foreach ($direction[0] as $nap) {
+              $label=clan_label($db,(int)$nap[$direction[1]]);
+              echo '<div class="stat"><div class="stat-left">NAP</div><div class="stat-right">'.htmlspecialchars($label,ENT_QUOTES,'UTF-8');
+              if ($can_cancel_alliance) clan_diplo_action(['cancel'=>(int)$nap['id'],'type'=>'nap'],'Cancel','End non-aggression pact','End the NAP with '.$label.'?');
+              echo '</div></div>';
+              if (!empty($nap['message'])) echo '<div class="stat"><div class="stat-left">Message</div><div class="stat-rightbis">'.clan_diplo_message((string)$nap['message']).'</div></div>';
+          }
+      }
     ?>
   </div>
 
@@ -439,13 +489,13 @@ if ($can_start_alliance || $can_declare_war) {
             if ($hasCancelReq($clan_id, $other)) {
                 echo ' <span class="leftbutton" style="background:rgba(34,197,94,.25);border-color:rgba(34,197,94,.45);cursor:default;">Cancel requested</span>';
             } else {
-                echo ' <a class="leftbutton" href="view.php?page=clan&tab=diplomacy&cancel='.(int)$w['id'].'&type=war">Cancel</a>';
+                clan_diplo_action(['cancel'=>(int)$w['id'],'type'=>'war'], 'Request peace', 'Request peace', 'Ask '.$label.' to end the war? The war remains active until they accept.');
             }
         }
         echo '</div></div>';
         if (!empty($w['message'])) {
             echo '<div class="stat" style="margin-top:-4px;"><div class="stat-left">Message</div><div class="stat-rightbis">'
-               . $w['message'] . '</div></div>';
+               . clan_diplo_message((string)$w['message']) . '</div></div>';
         }
     }
     foreach ($warsIn as $w) {
@@ -457,13 +507,13 @@ if ($can_start_alliance || $can_declare_war) {
             if ($hasCancelReq($clan_id, $other)) {
                 echo ' <span class="leftbutton" style="background:rgba(34,197,94,.25);border-color:rgba(34,197,94,.45);cursor:default;">Cancel requested</span>';
             } else {
-                echo ' <a class="leftbutton" href="view.php?page=clan&tab=diplomacy&cancel='.(int)$w['id'].'&type=war">Cancel</a>';
+                clan_diplo_action(['cancel'=>(int)$w['id'],'type'=>'war'], 'Request peace', 'Request peace', 'Ask '.$label.' to end the war? The war remains active until they accept.');
             }
         }
         echo '</div></div>';
         if (!empty($w['message'])) {
             echo '<div class="stat" style="margin-top:-4px;"><div class="stat-left">Message</div><div class="stat-rightbis">'
-               . $w['message'] . '</div></div>';
+               . clan_diplo_message((string)$w['message']) . '</div></div>';
         }
     }
     ?>
@@ -479,42 +529,43 @@ if ($can_start_alliance || $can_declare_war) {
     }
     foreach ($pendingOut as $r) {
         $label = clan_label($db, (int)$r['second_clan_id']);
-        $kindTxt = ($r['type']==='alliance'?'Alliance':'War cancel');
+        $kindTxt = $r['type']==='nap' ? 'NAP' : ($r['type']==='alliance' ? 'Alliance' : 'Peace request');
         $showCancel =
-            ($r['type']==='alliance'  && $can_cancel_alliance) ||
+            (in_array($r['type'], ['alliance','nap'], true) && $can_cancel_alliance) ||
             ($r['type']==='war_cancel'&& $can_request_war_cancel);
 
         echo '<div class="stat"><div class="stat-left">'.htmlspecialchars($kindTxt).'</div><div class="stat-right">'
            . htmlspecialchars($label);
         if ($showCancel) {
-            echo ' <a class="leftbutton" href="view.php?page=clan&tab=diplomacy&cancelAR='.(int)$r['id'].'">Cancel</a>';
+            clan_diplo_action(['cancelAR'=>(int)$r['id']], 'Cancel', 'Cancel request', 'Cancel the '.$kindTxt.' request to '.$label.'?');
         }
         echo '</div></div>';
         if (!empty($r['message'])) {
             echo '<div class="stat" style="margin-top:-4px;"><div class="stat-left">Message</div><div class="stat-rightbis">'
-               . $r['message'] . '</div></div>';
+               . clan_diplo_message((string)$r['message']) . '</div></div>';
         }
     }
     foreach ($pendingIn as $r) {
         $label = clan_label($db, (int)$r['clan_id']);
-        $isAlliance = ($r['type']==='alliance');
-        $kindParam  = $isAlliance ? 'alliance' : 'war_cancel';
+        $isAgreement = in_array($r['type'], ['alliance','nap'], true);
+        $kindParam = $isAgreement ? $r['type'] : 'war_cancel';
+        $kindTxt = $r['type']==='nap' ? 'NAP' : ($r['type']==='alliance' ? 'Alliance' : 'Peace request');
 
-        $canAccept = ($isAlliance && $can_start_alliance) || (!$isAlliance && $can_request_war_cancel);
-        $canRefuse = ($isAlliance && $can_cancel_alliance) || (!$isAlliance && $can_request_war_cancel);
+        $canAccept = ($isAgreement && $can_start_alliance) || (!$isAgreement && $can_request_war_cancel);
+        $canRefuse = ($isAgreement && $can_cancel_alliance) || (!$isAgreement && $can_request_war_cancel);
 
-        echo '<div class="stat"><div class="stat-left">'.($isAlliance?'Alliance':'War cancel').'</div><div class="stat-right">'
+        echo '<div class="stat"><div class="stat-left">'.htmlspecialchars($kindTxt, ENT_QUOTES, 'UTF-8').'</div><div class="stat-right">'
            . htmlspecialchars($label);
         if ($canAccept) {
-            echo ' <a class="leftbutton" href="view.php?page=clan&tab=diplomacy&acceptAR='.(int)$r['id'].'&kind='.$kindParam.'">Accept</a>';
+            clan_diplo_action(['acceptAR'=>(int)$r['id'],'kind'=>$kindParam], 'Accept', 'Accept '.$kindTxt, 'Accept the '.$kindTxt.' from '.$label.'?'.($kindParam==='war_cancel' ? ' This ends the war.' : ''));
         }
         if ($canRefuse) {
-            echo ' <a class="leftbutton" href="view.php?page=clan&tab=diplomacy&cancelAR='.(int)$r['id'].'">Refuse</a>';
+            clan_diplo_action(['cancelAR'=>(int)$r['id']], 'Refuse', 'Refuse '.$kindTxt, 'Refuse the '.$kindTxt.' from '.$label.'?');
         }
         echo '</div></div>';
         if (!empty($r['message'])) {
             echo '<div class="stat" style="margin-top:-4px;"><div class="stat-left">Message</div><div class="stat-rightbis">'
-               . $r['message'] . '</div></div>';
+               . clan_diplo_message((string)$r['message']) . '</div></div>';
         }
     }
     ?>
@@ -531,7 +582,8 @@ if ($can_start_alliance || $can_declare_war) {
         echo '</p></div>';
     }
     ?>
-    <form class="clan-form" action="view.php?page=clan&tab=diplomacy" method="post">
+    <form class="clan-form" id="clan-new-diplomacy-form" action="view.php?page=clan&tab=diplomacy" method="post" data-clan-confirm="Send this diplomacy action?" data-clan-confirm-title="Diplomacy" data-clan-confirm-target-selector="select[name=target_clan]">
+      <?= clan_request_csrf_field() ?>
       <ul style="list-style:none;padding-left:0;">
         <li>
           <b>Search</b><br>
@@ -546,7 +598,7 @@ if ($can_start_alliance || $can_declare_war) {
                 echo '<option value="'.(int)$c['id'].'">['.htmlspecialchars($c['clan_tag']).'] '.htmlspecialchars($c['clan_name']).'</option>';
             }
             echo '</optgroup>';
-            echo '<optgroup label="All clans (for wars)">';
+            echo '<optgroup label="All clans (for NAPs and wars)">';
             foreach ($allClans as $c) {
                 echo '<option value="'.(int)$c['id'].'">['.htmlspecialchars($c['clan_tag']).'] '.htmlspecialchars($c['clan_name']).'</option>';
             }
@@ -558,7 +610,10 @@ if ($can_start_alliance || $can_declare_war) {
           <b>Type</b><br>
           <label><input type="radio" name="diplo_type" value="alliance" <?= $can_start_alliance ? 'checked' : 'disabled' ?>> Alliance</label>
           &nbsp;&nbsp;
-          <label><input type="radio" name="diplo_type" value="war"      <?= $can_declare_war   ? '' : 'disabled' ?>> War</label>
+          <label><input type="radio" name="diplo_type" value="nap" <?= $can_start_alliance ? '' : 'disabled' ?>> Non-aggression pact (NAP)</label>
+          &nbsp;&nbsp;
+          <label><input type="radio" name="diplo_type" value="war" <?= !$can_start_alliance && $can_declare_war ? 'checked' : '' ?> <?= $can_declare_war ? '' : 'disabled' ?>> War</label>
+          <p class="clan-diplo-nap-help">A non-aggression pact is a separate agreement. It does not end an active war; use Request peace for that.</p>
         </li>
         <li style="margin-top:10px;">
           <b>Message</b> (12–120 characters):<br>
@@ -589,10 +644,10 @@ jQuery.fn.filterByText = function(textbox, selectSingleMatch) {
     $(textbox).bind('change keyup', function() {
       var options = $(select).empty().data('options');
       var search = $(this).val().trim();
-      var regex  = new RegExp(search,"gi");
+      var needle = search.toLowerCase();
       $.each(options, function(i) {
         var option = options[i];
-        if(option.text.match(regex) !== null) {
+        if(option.text.toLowerCase().indexOf(needle) !== -1) {
           $(select).append($('<option>').text(option.text).val(option.value));
         }
       });

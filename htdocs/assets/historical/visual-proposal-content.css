@@ -1,0 +1,47 @@
+/* Private proposal. Native common-library window artwork; Andromeda action. */
+@font-face{font-family:ProposalGGText;src:url('dops-rev7/commerce/fonts/EurostileT.ttf') format('truetype');font-display:swap}
+@font-face{font-family:ProposalGGHeading;src:url('dops-rev7/commerce/fonts/EurostileTHea.ttf') format('truetype');font-display:swap}
+body.historical-site .gg-page #confirmModal .modal-box{
+  position:relative!important;box-sizing:border-box!important;width:360px!important;
+  max-width:calc(100vw - 20px)!important;height:auto!important;aspect-ratio:360/262!important;
+  padding:0!important;margin:auto!important;border:0!important;border-image:none!important;
+  border-radius:0!important;box-shadow:none!important;overflow:hidden!important;
+  background:url('visual-proposal-content/gg-popup-bg.png') 0 0/100% 100% no-repeat!important;
+  transform:none!important;text-align:left!important
+}
+body.historical-site .gg-page #confirmModal .modal-title{
+  position:absolute!important;left:3.888889%!important;top:3.816794%!important;
+  width:83.333333%!important;height:21px!important;padding:0!important;margin:0!important;
+  font:17px/21px ProposalGGHeading,Arial,sans-serif!important;color:#fff!important;
+  text-transform:none!important;letter-spacing:0!important
+}
+body.historical-site .gg-page #confirmModal .modal-text{
+  position:absolute!important;left:3.888889%!important;top:17.175573%!important;
+  width:91.666667%!important;height:57.251908%!important;padding:0!important;margin:0!important;
+  font:14px/20px ProposalGGText,Arial,sans-serif!important;color:#ddd!important;
+  text-align:center!important;overflow:auto!important;overflow-wrap:anywhere
+}
+body.historical-site .gg-page #confirmModal .modal-actions{position:static!important;display:block!important;padding:0!important;margin:0!important}
+body.historical-site .gg-page #confirmModal .btn-modal{
+  position:absolute!important;top:83.969466%!important;width:41.666667%!important;
+  max-width:none!important;min-width:0!important;height:12.213740%!important;min-height:0!important;
+  padding:0 8px!important;margin:0!important;border:0!important;border-radius:0!important;
+  font:12px/1 ProposalGGHeading,Arial,sans-serif!important;letter-spacing:0!important;
+  color:#fff!important;text-transform:none!important;box-shadow:none!important;
+  background-position:0 0!important;background-size:100% 100%!important;background-repeat:no-repeat!important
+}
+body.historical-site .gg-page #confirmModal .btn-confirm{left:7.222222%!important;background-image:url('visual-proposal-content/gg-confirm-std.png')!important}
+body.historical-site .gg-page #confirmModal .btn-confirm:hover{background-image:url('visual-proposal-content/gg-confirm-hover.png')!important}
+body.historical-site .gg-page #confirmModal .btn-confirm:active{background-image:url('visual-proposal-content/gg-confirm-active.png')!important}
+body.historical-site .gg-page #confirmModal .btn-cancel{left:51.111111%!important;background-image:url('visual-proposal-content/gg-cancel-std.png')!important}
+body.historical-site .gg-page #confirmModal .btn-cancel:hover{background-image:url('visual-proposal-content/gg-cancel-hover.png')!important}
+body.historical-site .gg-page #confirmModal .btn-cancel:active{background-image:url('visual-proposal-content/gg-cancel-active.png')!important}
+body.historical-site .gg-page #confirmModal .proposal-gg-close{
+  position:absolute!important;left:91.666667%!important;top:4.580153%!important;
+  width:4.444444%!important;height:6.488550%!important;min-height:0!important;padding:0!important;
+  border:0!important;background:url('visual-proposal-content/gg-close-std.png') 0 0/100% 100% no-repeat!important
+}
+body.historical-site .gg-page #confirmModal .proposal-gg-close:hover{background-image:url('visual-proposal-content/gg-close-hover.png')!important}
+body.historical-site .gg-page #confirmModal button:focus-visible{outline:2px solid #fff!important;outline-offset:2px!important}
+.legacy-system-message,.log-message{overflow-wrap:anywhere}
+.legacy-system-message b,.log-message b{font-weight:bold}

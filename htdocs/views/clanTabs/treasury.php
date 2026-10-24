@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../../libs/ClanRequestSecurity.php';
+require_once __DIR__ . '/../../libs/ClanTreasuryTransfer.php';
 
 
 
@@ -20,8 +22,8 @@ if (!$clan) { header("Location: view.php?page=clan&tab=joinclan"); exit(); }
 $is_admin = ((int)$clan['admin_id'] === (int)$_SESSION['player_id']);
 
 
-function set_flash_treasury(string $type, string $msg) { $_SESSION['flash']=['type'=>$type,'msg'=>$msg]; }
-function get_flash_treasury(): ?array { if(!empty($_SESSION['flash'])){ $f=$_SESSION['flash']; unset($_SESSION['flash']); return $f; } return null; }
+function set_flash_treasury(string $type, string $msg) { clan_request_flash_set('treasury', $type, $msg); }
+function get_flash_treasury(): ?array { return clan_request_flash_get('treasury'); }
 
 
 function clan_log_local($db, int $clan_id, ?int $actor_id, string $type, array $details = []) {
@@ -102,6 +104,10 @@ if ($row = $sth->fetch()) $tax = $row;
 
 
 if (!empty($_POST['treasury-tax-save'])) {
+    if (!clan_request_is_post_valid()) {
+        set_flash_treasury('error', 'The request expired or was invalid. Reload and try again.');
+        header("Location: view.php?page=clan&tab=treasury"); exit();
+    }
     
     $active = !empty($_POST['tax_active']) ? 1 : 0;
 
@@ -140,8 +146,12 @@ if (!empty($_POST['treasury-tax-save'])) {
 
 
 if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['to_user_id'], $_POST['amount']) && isset($_POST['treasury-transfer'])) {
+    if (!clan_request_is_post_valid()) {
+        set_flash_treasury('error', 'The request expired or was invalid. Reload and try again.');
+        header("Location: view.php?page=clan&tab=treasury"); exit();
+    }
     $toUser = (int)($_POST['to_user_id'] ?? 0);
-    $amount = (int)preg_replace('~[^\d]~','',(string)($_POST['amount'] ?? '0'));
+    $amount = clan_treasury_positive_amount($_POST['amount'] ?? '0');
     $note   = substr(trim($_POST['note'] ?? ''), 0, 255);
 
     if (!$can_spend) {
@@ -154,47 +164,15 @@ if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['to_user_id'], $_POST['a
         set_flash_treasury('error', "Invalid amount.");
         header("Location: view.php?page=clan&tab=treasury"); exit();
     } else {
-        $chk = $db->prepare("SELECT COUNT(*) FROM users WHERE id=? AND clanid=?");
-        $chk->execute([$toUser, $clan_id]);
-        if ((int)$chk->fetchColumn() === 0) {
-            set_flash_treasury('error', "Selected user is not in your clan.");
-            header("Location: view.php?page=clan&tab=treasury"); exit();
+        try {
+            clan_treasury_transfer($db, $clan_id, (int)$_SESSION['player_id'], $toUser, $amount, $note);
+            set_flash_treasury('success', "Transferred ".number_format($amount,0,'.',' ')." credits.");
+        } catch (DomainException $e) {
+            set_flash_treasury('error', $e->getMessage());
+        } catch (Throwable $e) {
+            error_log('[Clan treasury] Atomic transfer failed: '.$e->getMessage());
+            set_flash_treasury('error', 'The transfer could not be completed. No partial transfer was saved. Reload and try again.');
         }
-
-        $qBal = $db->prepare("SELECT balance FROM clan_wallet WHERE clan_id=:cid LIMIT 1");
-        $qBal->execute([':cid'=>$clan_id]);
-        $current = (int)$qBal->fetchColumn();
-        if ($current < $amount) {
-            set_flash_treasury('error', "Insufficient funds (available: ".number_format($current,0,'.',' ').").");
-            header("Location: view.php?page=clan&tab=treasury"); exit();
-        }
-
-        $deb = $db->prepare("UPDATE clan_wallet SET balance = balance - :amt
-                             WHERE clan_id = :cid AND balance >= :amt");
-        $okDeb = $deb->execute([':amt'=>$amount, ':cid'=>$clan_id]);
-        if (!$okDeb || $deb->rowCount() === 0) {
-            set_flash_treasury('error', "Wallet debit failed. Try again.");
-            header("Location: view.php?page=clan&tab=treasury"); exit();
-        }
-
-        $okCred = $db->prepare("UPDATE users SET credits = credits + :amt WHERE id = :uid")
-                     ->execute([':amt'=>$amount, ':uid'=>$toUser]);
-        if (!$okCred) {
-            $db->prepare("UPDATE clan_wallet SET balance = balance + :amt WHERE clan_id = :cid")
-               ->execute([':amt'=>$amount, ':cid'=>$clan_id]);
-            set_flash_treasury('error', "Player credit failed.");
-            header("Location: view.php?page=clan&tab=treasury"); exit();
-        }
-
-        $db->prepare("INSERT INTO clan_transfers (clan_id, actor_user_id, to_user_id, amount, note)
-                      VALUES (?,?,?,?,?)")
-           ->execute([$clan_id, (int)$_SESSION['player_id'], $toUser, $amount, $note !== '' ? $note : null]);
-
-        $details = ['to_user_id'=>$toUser,'amount'=>$amount];
-        if ($note !== '') $details['note'] = $note;
-        clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], 'wallet_transfer', $details);
-
-        set_flash_treasury('success', "Transferred ".number_format($amount,0,'.',' ')." credits.");
         header("Location: view.php?page=clan&tab=treasury"); exit();
     }
 }
@@ -213,7 +191,7 @@ if ($current_percent > 5) $current_percent = 5;
       <div><?= htmlspecialchars($flash['msg']) ?></div>
       <button class="flash-close" type="button" aria-label="Close" onclick="(function(){var n=document.getElementById('flashBox'); if(n) n.remove();})();">×</button>
     </div>
-    <script>setTimeout(function(){var n=document.getElementById('flashBox'); if(n){n.remove();}}, 4000);</script>
+    <?php if ($flash['type']==='success'): ?><script>setTimeout(function(){var n=document.getElementById('flashBox'); if(n){n.remove();}}, 4000);</script><?php endif; ?>
   <?php endif; ?>
 
   <h3 class="clan-section-title">Treasury</h3>
@@ -228,6 +206,7 @@ if ($current_percent > 5) $current_percent = 5;
         <dt>Daily Clan Tax</dt>
         <dd>
           <form class="clan-form" action="view.php?page=clan&tab=treasury" method="post">
+            <?= clan_request_csrf_field() ?>
             <label>
               Rate:
               <select name="rate_percent" <?= $can_set_tax_rate ? '' : 'disabled' ?>>
@@ -252,7 +231,8 @@ if ($current_percent > 5) $current_percent = 5;
       <div class="clan-row clan-row--textarea">
         <dt>Transfer from Wallet</dt>
         <dd>
-          <form class="clan-form" action="view.php?page=clan&tab=treasury" method="post">
+          <form class="clan-form" action="view.php?page=clan&tab=treasury" method="post" data-clan-transfer data-clan-confirm="transfer" data-clan-confirm-title="Confirm transfer" data-clan-balance="<?= $wallet_balance ?>">
+            <?= clan_request_csrf_field() ?>
             <fieldset <?= $can_spend ? '' : 'disabled' ?>>
               <label>To member:&nbsp;
                 <select name="to_user_id" style="max-width:420px;">

@@ -1,0 +1,8 @@
+/* Final containment of the existing360x262 MessageWindow adaptation.
+   Original artwork/buttons, openModal, Cancel and deploy POST are reused. */
+body.historical-site .gg-page #confirmModal .modal-box{max-width:min(360px,calc(100% - 12px))!important;container-type:inline-size}
+@media(max-width:379px){
+ body.historical-site .gg-page #confirmModal .modal-title{font-size:4.722222cqw!important;line-height:1.235294!important;height:auto!important}
+ body.historical-site .gg-page #confirmModal .modal-text{font-size:3.888889cqw!important;line-height:1.428571!important}
+ body.historical-site .gg-page #confirmModal .btn-modal{font-size:3.333333cqw!important}
+}

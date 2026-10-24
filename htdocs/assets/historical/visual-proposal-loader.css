@@ -1,0 +1,26 @@
+/* Source geometry: splashscreen_0.swf 1280x900; progress bitmap 788x123.
+   LOADING placement is the explicit Andromeda proposal requested by the user.
+   No readiness flag, counter, websocket, ticket or callback is changed. */
+@font-face{font-family:VP-EurostileTHea;src:url('/assets/historical/dops-rev7/commerce/fonts/EurostileTHea.ttf') format('truetype');font-display:swap}
+.loader-tutorial-canvas{container-type:inline-size}
+.loader-tutorial-text{font-family:VP-EurostileTHea,Arial,sans-serif;font-size:1.09375cqw;line-height:1.142857;transform:scaleY(.92500305);transform-origin:left top;text-shadow:none}
+.loader-tutorial-movement{left:47.4765625%;top:22.4277778%;width:15.07421875%;min-height:0}
+.loader-tutorial-attack{left:52.08203125%;top:43.4722222%;width:20.46875%;min-height:0}
+.loader-tutorial-collect{left:39.5546875%;top:63.7777778%;width:19.5625%;min-height:0}
+.progress-box,#startBtn{left:25.8883248731%;top:18.6991869919%;width:46.7005076142%;height:32.5203252033%;container-type:inline-size}
+#progressBar{background-size:100cqw 100%;background-position:left top}
+#loadingText{z-index:2;left:25.8883248731%;right:auto;top:18.6991869919%;bottom:auto;width:46.7005076142%;height:32.5203252033%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;margin:0;padding:0;background:none;color:#fff6d4;font:clamp(12px,2.2vw,20px)/1 EurostileHeaFl,Arial,sans-serif;text-shadow:0 1px 3px #000;pointer-events:none;overflow:hidden;white-space:nowrap}
+#loadingText:empty{display:none}
+#loadingText.vp-loader-detail{left:50%;right:auto;top:auto;bottom:calc(100% + 8px);transform:translateX(-50%);box-sizing:border-box;width:min(90vw,640px);height:auto;min-height:30px;max-height:min(40vh,240px);display:block;margin:0;padding:8px 12px;background:#03070aeb;color:#ffe3a1;white-space:normal;overflow:auto;overflow-wrap:anywhere;font:clamp(14px,2vw,20px)/1.3 EurostileFl,Arial,sans-serif;pointer-events:auto}
+/* All three states use the same recovered opening:204,23,368x40 in788x123.
+   Error text alone uses a readable overlay; ordinary phases stay in the bar. */
+@media(max-width:600px){
+ .loader-visual-stage{overflow:auto;overscroll-behavior:contain;scrollbar-color:#60707a #06090c}
+ .loader-tutorial-canvas{position:relative;inset:auto;left:auto;top:auto;transform:none;display:block;box-sizing:content-box;width:1280px;height:900px;min-height:900px;aspect-ratio:1280/900;margin:0;padding:0;background-size:1280px 900px;background-position:0 0}
+ .loader-tutorial-text{position:absolute;display:block;box-sizing:content-box;flex:none;margin:0;padding:0;background:none;color:#fff;font:14px/16px VP-EurostileTHea,Arial,sans-serif;white-space:pre-line;transform:scaleY(.92500305);transform-origin:left top;text-shadow:none}
+ .loader-tutorial-movement{left:607.7px;top:201.85px;width:192.95px}
+ .loader-tutorial-attack{left:666.65px;top:391.25px;width:262px}
+ .loader-tutorial-collect{left:506.3px;top:574px;width:250.4px}
+ .loader-dock{position:fixed;left:50%;bottom:8px}
+ .loader-wordmark{position:fixed;top:12px;right:18px;width:220px;max-width:52vw}
+}

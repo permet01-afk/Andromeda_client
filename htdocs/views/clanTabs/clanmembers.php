@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../libs/ClanRequestSecurity.php';
 
 $sth = $db->prepare("SELECT clanid FROM users WHERE id = :id LIMIT 1");
 $sth->execute([':id' => $_SESSION['player_id']]);
@@ -54,7 +55,9 @@ $can_kick   = has_perm($my_role, 'can_kick', $is_marshal);
 $can_review = has_perm($my_role, 'can_review_requests', $is_marshal);
 
 
-if (!empty($_GET['kick']))   handleKickClan($db, $clan_id, $marshal_id, $can_kick);
+// The former GET link is intentionally inert. The existing kick handler now
+// accepts only a same-session protected POST after the UI confirmation.
+if (isset($_POST['clan-kick-submit'])) handleKickClan($db, $clan_id, $marshal_id, $can_kick);
 if (!empty($_GET['accept'])) handleAcceptRequest($db, $clan_id, $can_review);
 if (!empty($_GET['refuse'])) handleRefuseRequest($db, $clan_id, $can_review);
 
@@ -69,6 +72,7 @@ if ($can_review) {
     $sth->execute([':clanid' => $clan_id]);
     $datarequest = $sth->fetchAll();
 }
+$memberFlash = clan_request_flash_get('members');
 ?>
 
 <style>
@@ -84,6 +88,9 @@ if ($can_review) {
 </style>
 
 <div class="box">
+    <?php if ($memberFlash): ?>
+    <div class="clan-action-feedback <?= $memberFlash['type'] === 'success' ? 'is-success' : 'is-error' ?>" role="<?= $memberFlash['type'] === 'success' ? 'status' : 'alert' ?>"><?= htmlspecialchars($memberFlash['msg'], ENT_QUOTES, 'UTF-8') ?></div>
+    <?php endif; ?>
     <div class="title clanmembers-section-title">Clan members</div>
     <div id="clan-members">
         <?php displayClanMember($datamembers, $can_kick, $marshal_id); ?>
@@ -114,9 +121,13 @@ function displayClanMember($clanmembers, bool $can_kick, int $marshal_id)
                 <?php
                 
                 if ($can_kick && $uid !== (int)$_SESSION['player_id'] && $uid !== $marshal_id) { ?>
-                    <a class="leftbutton" href="view.php?page=clan&tab=clanmembers&kick=<?= $uid ?>">
-                        Kick
-                    </a>
+                    <form class="clan-kick-form" action="view.php?page=clan&amp;tab=clanmembers" method="post"
+                          data-clan-confirm-title="Remove clan member"
+                          data-clan-confirm="Remove <?= htmlspecialchars($member['username'], ENT_QUOTES, 'UTF-8') ?> from the clan?">
+                        <?= clan_request_csrf_field() ?>
+                        <input type="hidden" name="kick" value="<?= $uid ?>">
+                        <button class="leftbutton" name="clan-kick-submit" value="1" type="submit">Kick</button>
+                    </form>
                 <?php } ?>
             </div>
         </div>
@@ -126,9 +137,13 @@ function displayClanMember($clanmembers, bool $can_kick, int $marshal_id)
 
 function handleKickClan($db, int $clan_id, int $marshal_id, bool $can_kick): void
 {
+    if (!clan_request_is_post_valid()) {
+        clan_request_flash_set('members', 'error', 'The request expired or was invalid. Reload and try again.');
+        header("Location: view.php?page=clan&tab=clanmembers"); exit();
+    }
     if (!$can_kick) { header("Location: view.php?page=clan&tab=clanmembers"); exit(); }
 
-    $id = (int)($_GET['kick'] ?? 0);
+    $id = (int)($_POST['kick'] ?? 0);
     if ($id <= 0) { header("Location: view.php?page=clan&tab=clanmembers"); exit(); }
 
     
@@ -144,13 +159,18 @@ function handleKickClan($db, int $clan_id, int $marshal_id, bool $can_kick): voi
     }
 
     
-    $sth = $db->prepare("UPDATE users SET clanid=0 WHERE id=:id AND clanid=:cid");
-    $sth->execute([':id' => $id, ':cid'=>$clan_id]);
+    $sth = $db->prepare("UPDATE users SET clanid=0 WHERE id=:id AND clanid=:cid AND id<>:actor AND id<>:marshal");
+    $sth->execute([':id' => $id, ':cid'=>$clan_id, ':actor'=>(int)$_SESSION['player_id'], ':marshal'=>$marshal_id]);
+    if ($sth->rowCount() !== 1) {
+        clan_request_flash_set('members', 'error', 'This member could not be removed. Reload the member list.');
+        header("Location: view.php?page=clan&tab=clanmembers"); exit();
+    }
 
     
     clan_log_local($db, $clan_id, (int)$_SESSION['player_id'], 'member_kick', [
         'kicked_user_id' => $id
     ]);
+    clan_request_flash_set('members', 'success', 'The member was removed from the clan.');
 
     header("Location: view.php?page=clan&tab=clanmembers"); exit();
 }

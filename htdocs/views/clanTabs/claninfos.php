@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../libs/ClanRequestSecurity.php';
 
 
 
@@ -51,12 +52,11 @@ $can_edit_desc = clan_can_edit_desc($db, $clan_id, (int)$_SESSION['player_id'], 
 
 
 
-function set_flash(string $type, string $msg) {
-    $_SESSION['flash'] = ['type'=>$type,'msg'=>$msg];
+function set_flash(string $type, string $msg, array $context = []) {
+    clan_request_flash_set('infos', $type, $msg, $context);
 }
 function get_flash(): ?array {
-    if (!empty($_SESSION['flash'])) { $f = $_SESSION['flash']; unset($_SESSION['flash']); return $f; }
-    return null;
+    return clan_request_flash_get('infos');
 }
 
 
@@ -81,6 +81,10 @@ $ui_notices = [];
 
 
 if (isset($_POST['clan-edit-form-submit'])) {
+    if (!clan_request_is_post_valid()) {
+        set_flash('error', 'The request expired or was invalid. Reload and try again.', ['form'=>'description']);
+        header("Location: view.php?page=clan&tab=claninfos"); exit();
+    }
     if (!$can_edit_desc) {
         set_flash('error', "You don't have permission to edit the description.");
         header("Location: view.php?page=clan&tab=claninfos"); exit();
@@ -90,7 +94,7 @@ if (isset($_POST['clan-edit-form-submit'])) {
     $len  = function_exists('mb_strlen') ? mb_strlen($desc, 'UTF-8') : strlen($desc);
 
     if ($desc === '' || $len < 12 || $len > 120) {
-        set_flash('error', "Invalid Clan's Description (12–120 characters).");
+        set_flash('error', "The description must contain 12–120 characters.", ['form'=>'description', 'value'=>$desc]);
         header("Location: view.php?page=clan&tab=claninfos"); exit();
     }
 
@@ -113,9 +117,13 @@ if (isset($_POST['clan-edit-form-submit'])) {
 
 
 if (isset($_POST['clan-newmessage-submit'])) {
+    if (!clan_request_is_post_valid()) {
+        set_flash('error', 'The request expired or was invalid. Reload and try again.', ['form'=>'message']);
+        header("Location: view.php?page=clan&tab=claninfos"); exit();
+    }
     $msg = trim($_POST['clan-newmessage-message'] ?? '');
     if ($msg === '' || strlen($msg) < 12 || strlen($msg) > 120) {
-        set_flash('error', "Invalid Message (12–120 characters).");
+        set_flash('error', "The message must contain 12–120 bytes (UTF-8).", ['form'=>'message', 'value'=>$msg]);
         header("Location: view.php?page=clan&tab=claninfos"); exit();
     } else {
         $message = htmlspecialchars($msg, ENT_QUOTES, 'UTF-8');
@@ -212,6 +220,8 @@ function convertToNumericEntities($string) {
 
 
 $flash = get_flash();
+$validationForm = $flash && $flash['type'] === 'error' ? ($flash['context']['form'] ?? '') : '';
+$validationValue = (string)($flash['context']['value'] ?? '');
 ?>
 <link rel="stylesheet" type="text/css" href="styles/achievements.css" />
 <link rel="stylesheet" type="text/css" href="styles/clan.css?v=2" />
@@ -229,11 +239,11 @@ $flash = get_flash();
 
 <div class="clan-page">
   <?php if ($flash): ?>
-    <div class="flash <?= $flash['type']==='success' ? 'flash--success' : 'flash--error' ?>" role="status" id="flashBox">
+    <div class="flash <?= $flash['type']==='success' ? 'flash--success' : 'flash--error' ?>" role="<?= $flash['type']==='success' ? 'status' : 'alert' ?>" id="flashBox">
       <div><?= htmlspecialchars($flash['msg']) ?></div>
       <button class="flash-close" type="button" aria-label="Close" onclick="(function(){var n=document.getElementById('flashBox'); if(n) n.remove();})();">×</button>
     </div>
-    <script>setTimeout(function(){var n=document.getElementById('flashBox'); if(n){n.remove();}}, 4000);</script>
+    <?php if ($flash['type']==='success'): ?><script>setTimeout(function(){var n=document.getElementById('flashBox'); if(n){n.remove();}}, 4000);</script><?php endif; ?>
   <?php endif; ?>
 
   <h3 class="clan-section-title">Clan informations</h3>
@@ -255,8 +265,10 @@ $flash = get_flash();
       <div class="clan-row clan-row--textarea">
         <dt>Clan's Description</dt>
         <dd>
-          <form class="clan-form" action="view.php?page=clan&tab=claninfos" method="post">
-            <textarea name="clan-edit-form-description" rows="4" cols="40" <?= $can_edit_desc ? '' : 'readonly' ?>><?= htmlspecialchars($clan['clan_description'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
+          <form class="clan-form" action="view.php?page=clan&tab=claninfos" method="post" data-clan-validate="description" data-clan-length-mode="<?= function_exists('mb_strlen') ? 'characters' : 'bytes' ?>"<?= $validationForm === 'description' ? ' data-clan-server-invalid="1"' : '' ?>>
+            <?= clan_request_csrf_field() ?>
+            <textarea name="clan-edit-form-description" rows="4" cols="40" aria-describedby="clan-description-validation" <?= $can_edit_desc ? '' : 'readonly' ?>><?= htmlspecialchars($validationForm === 'description' ? $validationValue : ($clan['clan_description'] ?? ''), ENT_QUOTES, 'UTF-8') ?></textarea>
+            <p id="clan-description-validation" class="clan-inline-error" role="alert"<?= $validationForm === 'description' ? '' : ' hidden' ?>><?= $validationForm === 'description' ? htmlspecialchars($flash['msg'], ENT_QUOTES, 'UTF-8') : '' ?></p>
             <?php if ($can_edit_desc) { ?>
               <button class="btn-primary" name="clan-edit-form-submit" value="1" type="submit">Save</button>
             <?php } ?>
@@ -282,9 +294,11 @@ $flash = get_flash();
         </div>
       <?php } ?>
     </div>
-    <form class="clan-form" action="view.php?page=clan&tab=claninfos" method="post">
+    <form class="clan-form" action="view.php?page=clan&tab=claninfos" method="post" data-clan-validate="message" data-clan-length-mode="bytes"<?= $validationForm === 'message' ? ' data-clan-server-invalid="1"' : '' ?>>
+      <?= clan_request_csrf_field() ?>
       <label class="clan-label">New Message <small>(12–120 characters)</small></label>
-      <textarea name="clan-newmessage-message" rows="4" cols="40"></textarea>
+      <textarea name="clan-newmessage-message" rows="4" cols="40" aria-describedby="clan-message-validation"><?= htmlspecialchars($validationForm === 'message' ? $validationValue : '', ENT_QUOTES, 'UTF-8') ?></textarea>
+      <p id="clan-message-validation" class="clan-inline-error" role="alert"<?= $validationForm === 'message' ? '' : ' hidden' ?>><?= $validationForm === 'message' ? htmlspecialchars($flash['msg'], ENT_QUOTES, 'UTF-8') : '' ?></p>
       <button class="btn-primary" name="clan-newmessage-submit" value="1" type="submit">Post New Message</button>
     </form>
   </div>

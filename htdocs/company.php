@@ -54,214 +54,51 @@ if(!empty($_GET['factionid'])) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Select Faction • Andromeda</title>
+    <title>Choose Your Company • Andromeda Reborn</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#03111f" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="Andromeda" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="img/apple-touch-icon.png" />
-    <style>
-        :root {
-            --bg-dark: #020407;
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            
-            /* Couleurs Factions */
-            --mmo-color: #ef4444; /* Rouge */
-            --eic-color: #3b82f6; /* Bleu */
-            --vru-color: #22c55e; /* Vert */
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background-color: var(--bg-dark);
-            background-image: radial-gradient(circle at center, #111827 0%, #000 100%);
-            color: var(--text-main);
-            font-family: "Segoe UI", "Roboto", sans-serif;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        /* Effet de grille en fond */
-        body::before {
-            content: "";
-            position: absolute;
-            width: 200%; height: 200%;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            transform: perspective(500px) rotateX(60deg);
-            z-index: -1;
-            top: -50%;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-            z-index: 10;
-        }
-
-        .logo {
-            /* TAILLE AUGMENTÉE ICI */
-            height: 160px;
-            margin-bottom: 1rem;
-            filter: drop-shadow(0 0 20px rgba(94, 234, 212, 0.6));
-        }
-
-        h1 {
-            font-size: 2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        p { color: var(--text-muted); font-size: 1.1rem; }
-
-        /* Grille des Factions */
-        .faction-container {
-            display: flex;
-            gap: 2rem;
-            padding: 0 2rem;
-            z-index: 10;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .faction-card {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid #1e293b;
-            border-radius: 12px;
-            width: 280px;
-            padding: 2rem;
-            text-align: center;
-            text-decoration: none;
-            color: #fff;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        .faction-card img {
-            width: 100%;
-            height: 160px;
-            object-fit: contain;
-            margin-bottom: 1.5rem;
-            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.5));
-            transition: transform 0.3s;
-        }
-
-        .faction-card h2 {
-            font-size: 1.5rem;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-            letter-spacing: 1px;
-        }
-
-        .faction-card span {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 1rem;
-            padding: 0.5rem;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 4px;
-            transition: 0.3s;
-        }
-
-        /* --- STYLES SPÉCIFIQUES --- */
-        
-        /* MMO */
-        .faction-card.mmo:hover {
-            border-color: var(--mmo-color);
-            box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
-            transform: translateY(-10px);
-        }
-        .faction-card.mmo:hover h2 { color: var(--mmo-color); }
-        .faction-card.mmo:hover span { background: var(--mmo-color); color: #000; border-color: var(--mmo-color); }
-
-        /* EIC */
-        .faction-card.eic:hover {
-            border-color: var(--eic-color);
-            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
-            transform: translateY(-10px);
-        }
-        .faction-card.eic:hover h2 { color: var(--eic-color); }
-        .faction-card.eic:hover span { background: var(--eic-color); color: #fff; border-color: var(--eic-color); }
-
-        /* VRU */
-        .faction-card.vru:hover {
-            border-color: var(--vru-color);
-            box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
-            transform: translateY(-10px);
-        }
-        .faction-card.vru:hover h2 { color: var(--vru-color); }
-        .faction-card.vru:hover span { background: var(--vru-color); color: #000; border-color: var(--vru-color); }
-
-        .faction-card:hover img { transform: scale(1.1); }
-
-    </style>
-<link rel="stylesheet" href="/assets/historical/historical-site.css?v=14d04cb6e3184c7d">
-<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=1814ad9fabb275eb">
-<link rel="stylesheet" href="/assets/historical/historical-finish-commerce.css?v=bc47d5e0cf6ac5b8">
-<link rel="stylesheet" href="/assets/historical/historical-finish-activities.css?v=78dc86ba8f9c19d3">
-<link rel="stylesheet" href="/assets/historical/historical-finish-account.css?v=25a37628d4d543f9">
-<link rel="stylesheet" href="/assets/historical/historical-public.css?v=b99e70db7bf19fbc">
+    <meta name="theme-color" content="#03111f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Andromeda">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+    <link rel="stylesheet" href="/assets/historical/last-four-company.css?v=3">
 </head>
-<body class="historical-site">
-
-    <div class="header">
-        <img src="img/logo.png" alt="Andromeda" class="logo">
-        <h1>Welcome Pilot</h1>
-        <p>Choose your allegiance to begin your journey.</p>
-    </div>
-
-    <div class="faction-container">
-        
-        <a href="company.php?factionid=1" class="faction-card mmo">
-            <img src="img/mmo.jpg" alt="Mars Mining Operations">
-            <h2>Mars</h2>
-            <p style="font-size:0.8rem; margin-bottom:10px;">Mining Operations</p>
-            <span>Select Faction</span>
-        </a>
-
-        <a href="company.php?factionid=2" class="faction-card eic">
-            <img src="img/eic.jpg" alt="Earth Industries Corporation">
-            <h2>Earth</h2>
-            <p style="font-size:0.8rem; margin-bottom:10px;">Industries Corp.</p>
-            <span>Select Faction</span>
-        </a>
-
-        <a href="company.php?factionid=3" class="faction-card vru">
-            <img src="img/vru.jpg" alt="Venus Resources Unlimited">
-            <h2>Venus</h2>
-            <p style="font-size:0.8rem; margin-bottom:10px;">Resources Unlimited</p>
-            <span>Select Faction</span>
-        </a>
-
-    </div>
-
-<script src="/assets/historical/historical-site.js?v=d557af55b311b912" defer></script>
-<script src="/assets/historical/historical-finish-shell.js?v=d7b22eeff856dc21" defer></script>
-<script src="/assets/historical/historical-finish-commerce.js?v=e614bf29de0f1b75" defer></script>
-<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>
-<script src="/assets/historical/historical-finish-account.js?v=68070d839cb48d33" defer></script>
-<script src="/assets/historical/public-legal-copy.js?v=1631579bf9549e0f" defer></script>
-<script src="/assets/historical/historical-public.js?v=9136cc0a94ec6d7b" defer></script>
+<body class="historical-company-select">
+    <header class="company-global-header">
+        <nav aria-label="Public navigation"><a href="login.php">Sign in</a><a href="index.php" id="company-terms-open">Terms of Use</a></nav>
+    </header>
+    <main class="company-native-viewport" aria-label="Company selection">
+        <div id="container_main" class="fliess10px-weiss" data-active-company="0">
+            <div class="company-brand-slot"><a class="company-brand" href="login.php" aria-label="Andromeda home"><img src="/assets/historical/public-external/andromeda-reborn-wordmark-v1.png" width="620" height="207" alt="Andromeda Reborn"></a></div>
+            <div id="headline">CHOOSE YOUR COMPANY</div>
+            <section class="company-entry" aria-label="Mars Mining Operations">
+                <div id="company_1" class="company-card" data-faction-id="1">
+                    <div id="logo_1" class="company-logo" aria-hidden="true"></div>
+                    <div id="text_1" class="faction_info">Mars Mining Operations mines the universe’s energy resources, putting profit first.<br><br>Stay focused and make your name among the pilots who serve Mars.</div>
+                    <div id="button_1" class="font_choose"><a class="company-confirm" href="company.php?factionid=1" aria-label="Select Mars Mining Operations"><img src="/assets/historical/dops/global/companyChoose/seleccionar.png" width="100" height="29" alt="Select"></a></div>
+                </div>
+            </section>
+            <section class="company-entry" aria-label="Earth Industries Corporation">
+                <div id="company_2" class="company-card" data-faction-id="2">
+                    <div id="logo_2" class="company-logo" aria-hidden="true"></div>
+                    <div id="text_2" class="faction_info">Fly for Earth Industries Corporation as part of a strong community.<br><br>Your company grants privileges and expects you to fight for its goals. Work together and become a renowned space pilot.</div>
+                    <div id="button_2" class="font_choose"><a class="company-confirm" href="company.php?factionid=2" aria-label="Select Earth Industries Corporation"><img src="/assets/historical/dops/global/companyChoose/seleccionar.png" width="100" height="29" alt="Select"></a></div>
+                </div>
+            </section>
+            <section class="company-entry" aria-label="Venus Resources Unlimited">
+                <div id="company_3" class="company-card" data-faction-id="3">
+                    <div id="logo_3" class="company-logo" aria-hidden="true"></div>
+                    <div id="text_3" class="faction_info">Venus Resources Unlimited looks after its people and protects the galaxy.<br><br>Work hard for your company and earn your place among its celebrated pilots.</div>
+                    <div id="button_3" class="font_choose"><a class="company-confirm" href="company.php?factionid=3" aria-label="Select Venus Resources Unlimited"><img src="/assets/historical/dops/global/companyChoose/seleccionar.png" width="100" height="29" alt="Select"></a></div>
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer class="company-footer"><p>Andromeda — independent, non-profit project.</p><p>DarkOrbit is a registered trademark of Bigpoint. Andromeda is not affiliated with Bigpoint.</p></footer>
+    <dialog id="company-terms-dialog" aria-label="Terms and policies"><div id="company-terms-content" tabindex="0"></div><button id="company-terms-close" type="button">Close</button></dialog>
+    <script src="/assets/historical/public-legal-copy.js?v=1631579bf9549e0f" defer></script>
+    <script src="/assets/historical/last-four-company.js?v=2" defer></script>
 </body>
 </html>

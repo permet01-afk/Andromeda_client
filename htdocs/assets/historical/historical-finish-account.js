@@ -118,7 +118,7 @@
       };
     }
     function formByName(host, name) {return host.querySelector('[name="' + name + '"]')?.closest('form');}
-    function footerAction(footer, text, nodes) {const list = nodes.filter(Boolean); if (list.length) footer.appendChild(button(text, dialog(text, list)));}
+    function footerAction(footer, text, nodes, className) {const list = nodes.filter(Boolean); if (list.length) {const action = button(text, dialog(text, list)); if (className) action.classList.add(className); footer.appendChild(action);}}
 
     if (page === 'clan') {
       const host = document.querySelector('.CMSContent.hist-clan-organized'), old = host?.querySelector('.hist-clan-scene');
@@ -156,12 +156,21 @@
           const administration = host.querySelector('[name="clan-delete-form-submit"],[name="clan-transfer-lead-submit"],[name="clan-leave-form-submit"]')?.closest('.clan-card');
           footerAction(footer, 'Administration', [administration]);
         } else if (actualTab === 'clanmembers') {
-          region(consoleEl, 'rev5-clan-members', el('h2', '', 'Members'), host.querySelector('#clan-members'));
+          const members = host.querySelector('#clan-members');
+          if (members) {
+            for (const row of Array.from(members.children)) {
+              const kick = row.querySelector('.stat-right > .leftbutton');
+              if (kick) {row.appendChild(kick); row.classList.add('rev10-clan-member-with-action');}
+            }
+          }
+          const memberList = region(consoleEl, 'rev5-clan-members', members);
+          memberList.tabIndex = 0; memberList.setAttribute('aria-label', 'Clan members');
           const requests = host.querySelector('#clan-members-requests');
-          if (requests) region(consoleEl, 'rev5-clan-candidates', el('h2', '', 'Membership requests'), requests);
+          if (requests) {consoleEl.appendChild(el('h2', 'rev10-clan-candidates-heading', 'Membership requests')); region(consoleEl, 'rev5-clan-candidates', requests);}
         } else if (actualTab === 'clanroles') {
           const table = host.querySelector('.roles-table');
           const editor = region(consoleEl, 'rev5-clan-role-editor'); const list = region(consoleEl, 'rev5-clan-role-list');
+          list.tabIndex = 0; list.setAttribute('aria-label', 'Select clan member');
           const details = [];
           const labels = {can_set_tax_rate: 'Set tax rate', can_toggle_tax_active: 'Enable daily tax', can_spend: 'Transfer credits', can_start_alliance: 'Propose alliance', can_cancel_alliance: 'Cancel alliance', can_declare_war: 'Declare war', can_request_war_cancel: 'Request peace'};
           for (const row of Array.from(table?.querySelectorAll('tbody > tr') || [])) {
@@ -191,11 +200,14 @@
           footerAction(footer, 'New action', [host.querySelector('#clan-new-diplomacy')]);
         } else if (actualTab === 'treasury') {
           region(consoleEl, 'rev5-clan-wallet', ...Array.from(old.querySelector('.hist-clan-balance')?.childNodes || []));
-          region(consoleEl, 'rev5-clan-cashflow', ...Array.from(old.querySelector('.hist-clan-transfers')?.childNodes || []));
+          const cashflow = region(consoleEl, 'rev5-clan-cashflow', ...Array.from(old.querySelector('.hist-clan-transfers')?.childNodes || []));
+          const cashflowHeading = cashflow.querySelector('.clan-section-title');
+          if (cashflowHeading) {cashflowHeading.classList.add('rev10-clan-cashflow-heading'); consoleEl.appendChild(cashflowHeading);}
+          cashflow.tabIndex = 0; cashflow.setAttribute('aria-label', 'Recent transfers');
           const taxForm = formByName(host, 'treasury-tax-save') || host.querySelector('select[name="rate_percent"]')?.closest('form');
           const transferForm = formByName(host, 'treasury-transfer') || host.querySelector('select[name="to_user_id"]')?.closest('form');
-          footerAction(footer, 'Tax settings', [taxForm?.closest('.clan-row')]);
-          footerAction(footer, 'Transfer', [transferForm?.closest('.clan-row')]);
+          footerAction(footer, 'Tax settings', [taxForm?.closest('.clan-row')], 'rev10-clan-tax-settings');
+          footerAction(footer, 'Transfer', [transferForm?.closest('.clan-row')], 'rev10-clan-transfer');
         } else if (actualTab === 'clanlog') {
           consoleEl.classList.add('rev5-clan-log');
           const logs = host.querySelector('#clan-logs'), detail = region(consoleEl, 'rev5-clan-log-detail');
@@ -207,7 +219,8 @@
             const choice = button(date + ' — ' + body.textContent.trim().slice(0, 70), () => {entries.forEach(item => {item.pane.hidden = item.pane !== pane; item.choice.setAttribute('aria-selected', String(item.pane === pane));});});
             choice.classList.add('rev5-list-choice'); entry.appendChild(choice); pane.hidden = entries.length > 0; choice.setAttribute('aria-selected', String(entries.length === 0)); entries.push({pane, choice});
           }
-          region(consoleEl, 'rev5-clan-log-list', logs);
+          const logList = region(consoleEl, 'rev5-clan-log-list', logs);
+          logList.tabIndex = 0; logList.setAttribute('aria-label', 'Clan activity');
         } else {
           const content = old.querySelector('.clan-page,.box') || old.querySelector('.hist-clan-pane');
           if (content) region(consoleEl, 'rev5-clan-single-list', ...Array.from(content.childNodes));

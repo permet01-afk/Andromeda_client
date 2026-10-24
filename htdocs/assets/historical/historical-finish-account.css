@@ -563,3 +563,101 @@ body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclos
 body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-console{box-sizing:border-box;flex:1 1 0;min-height:0;min-width:0;width:100%;height:auto;grid-template-rows:minmax(0,1fr)}
 body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures :is(.hist-q-list,.hist-q-detail){align-self:stretch;height:auto;min-height:0;min-width:0;overflow:auto}
 body.historical-site .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .rev7-q-view-toggle{display:flex;align-items:center;justify-content:flex-end;gap:0;height:auto;min-height:20px;padding:1px 3px;margin:0 0 6px auto;border:0;background:none!important;font:10px/16px Verdana,Arial,sans-serif;cursor:pointer}
+
+/* REV10: Clan-only alignment and responsive layout. The fixed desktop panels
+   retain the recovered 679x439 DoPs backgrounds. On small screens their real
+   Andromeda controls reflow instead of shrinking or being clipped. */
+body.historical-site.hist-page-clan .rev5-clan-heading{top:27px;height:19px;line-height:19px;letter-spacing:0;text-transform:none}
+body.historical-site.hist-page-clan .rev5-clan-claninfos .rev5-clan-heading{top:29px}
+body.historical-site.hist-page-clan .rev5-clan-clanmembers .rev5-clan-heading{top:25px}
+body.historical-site.hist-page-clan .rev5-clan-diplomacy .rev5-clan-heading{top:29px}
+body.historical-site.hist-page-clan .rev5-clan-treasury .rev5-clan-heading{top:28px}
+body.historical-site.hist-page-clan .rev5-clan-clanlog .rev5-clan-heading{top:29px}
+body.historical-site.hist-page-clan .rev5-clan-members,
+body.historical-site.hist-page-clan .rev5-clan-role-list,
+body.historical-site.hist-page-clan .rev5-clan-log-list{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+body.historical-site.hist-page-clan .rev5-clan-members #clan-members>.stat,
+body.historical-site.hist-page-clan .rev5-clan-cashflow .treasury-table tbody tr,
+body.historical-site.hist-page-clan .rev5-clan-log-list .rev5-list-choice{background-repeat:no-repeat!important}
+body.historical-site.hist-page-clan .rev5-clan-members #clan-members>.stat{display:grid;grid-template-columns:23px minmax(0,1fr) 70px;gap:5px;align-items:center;min-height:23px;padding:2px 0!important}
+body.historical-site.hist-page-clan .rev5-clan-members .stat-right{width:auto;overflow-wrap:anywhere}
+body.historical-site.hist-page-clan .rev5-clan-members .leftbutton{grid-column:3;justify-self:end;width:64px;min-width:64px;max-width:64px;margin:0}
+body.historical-site.hist-page-clan .rev5-clan-role-list .rev5-list-choice{height:auto;min-height:24px;margin:0;padding:4px 5px;border:0;border-bottom:1px solid #4d5353;background:none!important;line-height:16px;white-space:normal;overflow-wrap:anywhere}
+body.historical-site.hist-page-clan .rev5-clan-role-list .rev5-list-choice[aria-selected=true]{background:#555a50!important;color:#eee9cb}
+body.historical-site.hist-page-clan .rev5-clan-log-list .rev5-list-choice{white-space:normal;overflow-wrap:anywhere}
+body.historical-site.hist-page-clan .rev5-clan-diplomacy .rev5-clan-footer{top:345px;height:35px;justify-content:flex-end;padding-right:4px}
+body.historical-site.hist-page-clan .rev5-clan-treasury .rev5-clan-footer{left:0;top:0;width:679px;height:439px;display:block;z-index:2;pointer-events:none}
+body.historical-site.hist-page-clan .rev5-clan-treasury .rev5-clan-footer .rev5-social-button{position:absolute;pointer-events:auto}
+body.historical-site.hist-page-clan .rev5-clan-treasury .rev5-clan-footer .rev10-clan-tax-settings{right:76px;top:60px}
+body.historical-site.hist-page-clan .rev5-clan-treasury .rev5-clan-footer .rev10-clan-transfer{left:76px;top:351px}
+body.historical-site.hist-page-clan .rev5-clan-wallet .clan-row:last-child{padding-right:108px}
+body.historical-site.hist-page-clan .rev5-clan-wallet .clan-row:last-child dd{font-size:9px;line-height:12px}
+body.historical-site.hist-page-clan .rev5-clan-console .rev10-clan-cashflow-heading{display:block;position:absolute;left:80px;top:94px;width:519px;height:16px;margin:0;padding:0;font:10px/16px Verdana,Arial,sans-serif;color:#d8d3ad}
+body.historical-site.hist-page-clan .rev5-clan-console .rev10-clan-candidates-heading{position:absolute;left:80px;top:293px;width:519px;height:16px;margin:0;padding:0;font:10px/16px Verdana,Arial,sans-serif;color:#d8d3ad}
+body.historical-site.hist-page-clan .rev5-clan-log-detail{padding:0 7px;overflow:hidden}
+body.historical-site.hist-page-clan .rev5-clan-log-detail>section>h2{height:18px;margin:0;line-height:18px;overflow:auto;white-space:nowrap}
+body.historical-site.hist-page-clan .rev5-clan-log-detail .msg-body{position:absolute;left:7px;right:7px;top:31px;bottom:0;margin:0;overflow:auto;overscroll-behavior:contain}
+body.historical-site.hist-page-clan .rev5-clan-console :is(.rev5-clan-members,.rev5-clan-role-list,.rev5-clan-cashflow,.rev5-clan-log-list):focus-visible{outline:1px solid #bbc7c8;outline-offset:-2px}
+
+@media(max-width:860px){
+ body.historical-site.hist-page-clan .CMSContent.hist-clan-organized{display:block;width:100%;min-width:0;max-width:100%;margin:0;padding:0;box-sizing:border-box}
+ body.historical-site.hist-page-clan .rev5-clan-organized>.clan-subnav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;min-width:0;max-width:100%;margin:0;padding:0 0 8px;gap:2px}
+ body.historical-site.hist-page-clan .rev5-clan-organized>.clan-subnav a{width:100%;min-width:0;max-width:100%;height:35px;padding:2px 3px;background-size:100% 35px!important;font-size:10px;line-height:14px;overflow-wrap:anywhere}
+ body.historical-site.hist-page-clan .rev5-clan-console{display:flex;flex-direction:column;gap:10px;width:100%;min-width:0;max-width:100%;height:auto;min-height:0;padding:15px 12px 18px;border:8px solid transparent;border-image:url('dops/global/clan/bg_main_member.jpg') 24 75 25 75 stretch;background:#24292b!important;background-image:none!important;overflow:visible;box-sizing:border-box}
+ body.historical-site.hist-page-clan .rev5-clan-heading{position:static;order:0;width:auto;height:auto;min-height:19px;margin:0;padding:0 0 5px;border-bottom:1px solid #73766a;font-size:12px;line-height:19px;white-space:normal}
+ body.historical-site.hist-page-clan .rev5-clan-console>section,
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-description{position:static;order:2;left:auto;top:auto;right:auto;bottom:auto;width:100%;min-width:0;max-width:100%;height:auto;min-height:0;margin:0;padding:6px 4px;border:0;border-bottom:1px solid #4d575a;background:none;box-sizing:border-box;overflow:auto}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-summary{order:1}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-summary .clan-row{height:auto;min-height:20px;align-items:flex-start}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-summary .clan-row dt{flex:none;max-width:48%;white-space:normal}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-summary .clan-row dd{min-width:0;white-space:normal}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-emblem.has-company-logo{position:static;order:1;align-self:center;width:100px;min-width:100px;max-width:100px;height:100px;min-height:100px;padding:0;border:0;overflow:hidden}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-emblem.has-company-logo .clan-row{height:100px}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-description{max-height:180px}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-news{max-height:180px}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-members{height:260px;max-height:45vh;overflow-x:hidden;overflow-y:auto}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-candidates{max-height:200px}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev10-clan-candidates-heading{position:static;order:3;width:auto;height:auto;min-height:16px;padding:0;margin:0}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-candidates{order:4}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-role-list{order:1;height:180px;max-height:30vh;overflow-x:hidden;overflow-y:auto;border:1px solid #5f6869}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-role-editor{order:2;max-height:none;overflow:visible;padding:5px 4px}
+ body.historical-site.hist-page-clan .rev5-role-name{flex-wrap:wrap;gap:5px}
+ body.historical-site.hist-page-clan .rev5-role-name input{max-width:100%}
+ body.historical-site.hist-page-clan .rev5-role-detail .inline-perms,
+ body.historical-site.hist-page-clan .rev5-role-detail .hidden-perms{grid-template-columns:minmax(0,1fr);gap:8px}
+ body.historical-site.hist-page-clan .rev5-role-detail .inline-perms>label,
+ body.historical-site.hist-page-clan .rev5-role-detail .hidden-perms label{min-width:0;overflow-wrap:anywhere}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-relations{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;max-height:280px}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-diplo-requests{max-height:240px}
+ body.historical-site.hist-page-clan .rev5-clan-footer,
+ body.historical-site.hist-page-clan .rev5-clan-diplomacy .rev5-clan-footer,
+ body.historical-site.hist-page-clan .rev5-clan-treasury .rev5-clan-footer{position:static;order:8;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;width:100%;min-width:0;max-width:100%;height:auto;min-height:28px;padding:0;margin:0;pointer-events:auto}
+ body.historical-site.hist-page-clan .rev5-clan-treasury .rev5-clan-footer .rev5-social-button{position:static;left:auto;right:auto;top:auto}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-wallet{order:1}
+ body.historical-site.hist-page-clan .rev5-clan-wallet>.clan-grid{grid-template-columns:minmax(0,1fr);gap:7px}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-wallet .clan-row:last-child{padding-right:0}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev10-clan-cashflow-heading{position:static;order:2;width:auto;height:auto;min-height:16px;padding:0;margin:0}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-cashflow{order:3;max-height:280px;overflow:auto}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-cashflow table{width:100%;min-width:0}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-cashflow th,
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-cashflow td{padding:3px 2px!important;font-size:9px;line-height:13px;overflow-wrap:anywhere}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-log-list{order:1;height:220px;max-height:35vh;overflow-x:hidden;overflow-y:auto}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-log-detail{order:2;padding:5px 4px;overflow:visible}
+ body.historical-site.hist-page-clan .rev5-clan-log-detail>section>h2{height:auto;max-height:none;white-space:normal;overflow-wrap:anywhere}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-log-detail .msg-body{position:static;max-height:240px;margin-top:10px;overflow:auto}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-single-list{max-height:none}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-feedback{order:9;max-height:120px}
+ body.historical-site.hist-page-clan .rev5-social-overlay{padding:10px;align-items:center}
+ body.historical-site.hist-page-clan .rev5-social-dialog{box-sizing:border-box;width:100%;min-width:0;max-width:560px;max-height:calc(100dvh - 20px);overflow:auto}
+ body.historical-site.hist-page-clan .rev5-social-dialog .rev4-native-window-content{min-width:0;max-width:100%;padding:8px;overflow-wrap:anywhere}
+ body.historical-site.hist-page-clan .rev5-social-dialog :is(form,fieldset,label,input,select,textarea){min-width:0;max-width:100%;box-sizing:border-box}
+ body.historical-site.hist-page-clan .rev5-social-dialog .clan-form{width:100%;min-width:0}
+ body.historical-site.hist-page-clan .rev5-social-dialog select{width:100%}
+}
+@media(max-width:360px){
+ body.historical-site.hist-page-clan .rev5-clan-organized>.clan-subnav{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.historical-site.hist-page-clan .rev5-clan-console{padding:12px 7px 14px;border-width:6px}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-members #clan-members>.stat{grid-template-columns:18px minmax(0,1fr) 62px;gap:3px}
+ body.historical-site.hist-page-clan .rev5-clan-console .rev5-clan-members .leftbutton{width:60px;min-width:60px;max-width:60px}
+}
+

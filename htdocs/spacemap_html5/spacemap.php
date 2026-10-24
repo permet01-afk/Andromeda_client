@@ -108,15 +108,30 @@ $audioAssetManifest = buildAudioAssetManifest(__DIR__ . '/audio'); ?>
         .loader-tutorial-collect{left:39.5546875%;top:63.7777778%;width:19.5625%;min-height:10.5347%}
         .loader-wordmark{position:absolute;top:16px;right:26px;width:clamp(220px,25vw,320px);height:auto;pointer-events:none}
         .loader-dock{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);width:min(788px,calc(100% - 24px));aspect-ratio:788/123;background:url("loader-historical/loader-frame.png") center center/100% 100% no-repeat}
-        #loadingText{position:absolute;left:0;right:0;bottom:112%;margin:0;padding:6px 12px;background:rgba(0,0,0,.76);color:#ffe69b;font:20px/1.25 "EurostileFl",Arial,sans-serif;text-align:center;text-shadow:0 1px 2px #000;letter-spacing:.3px;overflow-wrap:anywhere}
+        #loadingText{position:absolute;left:0;right:0;bottom:112%;margin:0;padding:6px 12px;background:transparent;color:#ffe69b;font:20px/1.25 "EurostileFl",Arial,sans-serif;text-align:center;text-shadow:0 1px 2px #000;letter-spacing:.3px;overflow-wrap:anywhere}
+        #loadingText:empty{display:none}
         .progress-box{position:absolute;left:26.1%;top:21.9%;width:46.7%;height:32.5%;padding:0;margin:0;border:0;background:transparent;box-shadow:none;overflow:hidden}
         #progressBar{position:relative;width:0%;height:100%;background:url("loader-historical/loader-fill.png") left top/368px 40px no-repeat;transition:none}
         #startBtn{position:absolute;left:26.1%;top:21.9%;width:46.7%;height:32.5%;display:none;padding:0;border:0;background:transparent;box-shadow:none;color:#fff6d4;font:28px/1 "EurostileHeaFl",Arial,sans-serif;text-align:center;text-shadow:0 1px 3px #000;cursor:pointer}
         #startBtn:hover{transform:none;box-shadow:none;text-shadow:0 0 8px #ffd64e,0 1px 3px #000}
         #startBtn:active{transform:none;box-shadow:none;color:#ffe17a}
         #startBtn:focus-visible{outline:2px solid #fff3ac;outline-offset:3px}
-        @media(max-width:812px){.loader-wordmark{right:12px;max-width:40vw}.loader-dock{bottom:8px}#progressBar{background-size:calc((100vw - 24px)*.467) calc((100vw - 24px)*.05076)}#loadingText{font-size:16px}#startBtn{font-size:22px}}
+        @media(max-width:812px){.loader-wordmark{right:12px;max-width:40vw}.loader-dock{bottom:8px}#progressBar{background-size:calc((100vw - 24px)*.467) calc((100vw - 24px)*.05076)}#loadingText{font-size:16px}#startBtn{font-size:clamp(14px,4.6vw,22px)}}
+        /* On a narrow viewport the historical wide tutorial must reflow its
+           existing text instead of cropping it with the background canvas.
+           Startup state, progress and START remain owned by the same JS. */
+        @media(max-width:600px){
+            .loader-tutorial-canvas{box-sizing:border-box;inset:0;left:0;top:0;transform:none;width:100%;height:100%;aspect-ratio:auto;display:flex;flex-direction:column;justify-content:center;gap:16px;padding:100px 18px 112px;background-size:auto 100%;background-position:center center}
+            .loader-tutorial-text{position:static;flex:0 0 auto;box-sizing:border-box;width:100%;min-height:0;margin:0;padding:8px 10px;font:12px/1.45 "EurostileFl",Arial,sans-serif;white-space:pre-line;background:rgba(3,7,10,.76);text-shadow:0 1px 2px #000}
+            .loader-wordmark{top:12px;right:18px;max-width:52vw;width:220px}
+        }
+        @media(max-width:600px) and (max-height:650px){
+            .loader-tutorial-canvas{gap:8px;padding:78px 12px 82px}
+            .loader-tutorial-text{padding:5px 8px;font-size:11px;line-height:1.3}
+        }
     </style>
+    <link rel="stylesheet" href="/assets/historical/visual-proposal-loader.css?v=actions-final1">
+    <script src="/assets/historical/visual-proposal-loader.js?v=actions-final1" defer></script>
 
     <script>
         window.ANDROMEDA_CONFIG = {
@@ -153,7 +168,7 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
             </div>
             <img class="loader-wordmark" src="loader-historical/andromeda-reborn.png" alt="Andromeda Reborn">
             <div class="loader-dock">
-                <div id="loadingText">Initializing systems...</div>
+                <div id="loadingText" role="status" aria-live="polite">LOADING...</div>
                 <div class="progress-box"><div id="progressBar"></div></div>
                 <button id="startBtn">START</button>
             </div>
@@ -245,11 +260,11 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
                     const percent = Math.max(0, Math.min(100, Math.floor((completed / total) * 100)));
                     bar.style.width = percent + "%";
                     const phase = status.phase === 'atlases' ? 'portal atlases' : 'portal frames';
-                    txt.innerText = `Preparing ${phase}: ${completed}/${total} (${percent}%)`;
+                    txt.innerText = `LOADING... ${percent}%`;
                     return;
                 }
                 bar.style.width = "100%";
-                txt.innerText = portalVisualStarted ? "Preparing portal visuals..." : "Waiting for portal visual warmup...";
+                txt.innerText = portalVisualStarted ? "LOADING..." : "LOADING...";
             }
 
             function updateVisualRuntimeMessage() {
@@ -264,16 +279,16 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
                     const expansionCompleted = Math.max(0, Math.min(expansionTotal, Number(status.shipExpansionFramesCompleted) || 0));
                     bar.style.width = percent + "%";
                     if (shipTotal > 0 && shipCompleted < shipTotal) {
-                        txt.innerText = `Preparing ship visuals: ${shipCompleted}/${shipTotal} (${percent}%)`;
+                        txt.innerText = `LOADING... ${percent}%`;
                     } else if (expansionTotal > 0 && expansionCompleted < expansionTotal) {
-                        txt.innerText = `Preparing ship expansions: ${expansionCompleted}/${expansionTotal} (${percent}%)`;
+                        txt.innerText = `LOADING... ${percent}%`;
                     } else {
-                        txt.innerText = `Preparing game visuals: ${completed}/${total} (${percent}%)`;
+                        txt.innerText = `LOADING... ${percent}%`;
                     }
                     return;
                 }
                 bar.style.width = "100%";
-                txt.innerText = visualRuntimeStarted ? "Preparing game visuals..." : "Waiting for game visual warmup...";
+                txt.innerText = visualRuntimeStarted ? "LOADING..." : "LOADING...";
             }
 
             function updateStartState() {
@@ -303,15 +318,15 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
                     if (audioStatus && audioStatus.state === 'loading' && audioStatus.total > 0) {
                         const percent = Math.max(0, Math.min(100, Math.floor((audioStatus.completed / audioStatus.total) * 100)));
                         bar.style.width = percent + "%";
-                        txt.innerText = `Preloading audio: ${audioStatus.completed}/${audioStatus.total} (${percent}%)`;
+                        txt.innerText = `LOADING... ${percent}%`;
                         return;
                     }
                     bar.style.width = "100%";
-                    txt.innerText = !bootXmlReady ? "Loading game data..." : "Preparing audio...";
+                    txt.innerText = !bootXmlReady ? "LOADING..." : "LOADING...";
                     return;
                 }
                 bar.style.width = "100%";
-                txt.innerText = "Assets, audio and visuals ready. Click Start.";
+                txt.innerText = "";
             }
 
             function startBootXmlPreload() {
@@ -387,7 +402,7 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
             function renderProgress() {
                 const percent = totalAssets > 0 ? Math.floor((loadedCount / totalAssets) * 100) : 100;
                 bar.style.width = percent + "%";
-                txt.innerText = `Loading assets: ${loadedCount}/${totalAssets} (${percent}%)`;
+                txt.innerText = `LOADING... ${percent}%`;
             }
 
             function markLoaded() {
@@ -431,7 +446,7 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
 
                         const percent = list.length > 0 ? Math.floor((i / list.length) * 100) : 100;
                         bar.style.width = percent + "%";
-                        txt.innerText = `Finalizing textures: ${i}/${list.length} (${percent}%)`;
+                        txt.innerText = `LOADING... ${percent}%`;
 
                         if (i < list.length) {
                             requestAnimationFrame(step);
@@ -475,7 +490,7 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
                 if (portalVisualReady) return true;
 
                 bar.style.width = "0%";
-                txt.innerText = "Preparing portal visuals...";
+                txt.innerText = "LOADING...";
                 updateStartState();
 
                 const warmFn = await waitForPortalWarmupFunction();
@@ -499,7 +514,7 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
                 if (visualRuntimeReady) return true;
 
                 bar.style.width = "0%";
-                txt.innerText = "Preparing game visuals...";
+                txt.innerText = "LOADING...";
                 updateStartState();
 
                 const warmFn = await waitForVisualRuntimeWarmupFunction();
@@ -520,7 +535,7 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
             async function finalizeLoad() {
                 try {
                     bar.style.width = "0%";
-                    txt.innerText = "Finalizing textures...";
+                    txt.innerText = "LOADING...";
                     await warmupTextures();
                 } catch (e) {
                 }

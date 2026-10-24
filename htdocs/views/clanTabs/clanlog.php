@@ -165,6 +165,23 @@ function norm_action($s){
             $msg = "{$actor} declined the invite.";
             break;
 
+          case 'nap_request':
+            $msg = "{$actor} requested a non-aggression pact with {$otherClan}.";
+            break;
+          case 'nap_accept':
+            $msg = "{$actor} accepted the non-aggression pact with {$otherClan}.";
+            break;
+          case 'nap_cancel':
+            $phase = $d['phase'] ?? '';
+            if ($phase === 'request_cancelled_by_requester') {
+              $msg = "{$actor} cancelled their non-aggression pact request to {$otherClan}.";
+            } elseif ($phase === 'request_refused_by_recipient') {
+              $msg = "{$actor} refused the non-aggression pact request from {$otherClan}.";
+            } else {
+              $msg = "{$actor} ended the non-aggression pact with {$otherClan}.";
+            }
+            break;
+
           case 'alliance_request':
             $msg = "{$actor} requested an alliance with {$otherClan}.";
             break;

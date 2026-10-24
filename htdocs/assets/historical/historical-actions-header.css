@@ -1,0 +1,16 @@
+/* DoPs internalHeaderIntern.php9-34 proves this web-header counter row.
+   The existing PK bitmap supplies its dark plates. No new game HUD is made. */
+body.historical-site .app-header.actions-header-finish::before{clip-path:none!important}
+body.historical-site .app-header .brand img.historical-final-wordmark{display:block!important;width:224px!important;max-width:100%!important;height:auto!important;max-height:76px!important;object-fit:contain!important;background:transparent!important;border:0!important;filter:none!important;box-shadow:none!important}
+body.historical-site .app-header.actions-header-finish .hist-rev6-header-stat{color:#e3edf2!important;text-shadow:0 1px 1px #000!important}
+/* The existing narrow-screen counter row is an Andromeda adaptation. Its
+   backing must stay opaque where the860px bitmap's cell locations no longer
+   coincide with the four reflowed values; all original counters remain. */
+@media(max-width:860px){
+ body.historical-site .app-header .brand img.historical-final-wordmark{width:170px!important;height:auto!important;max-height:60px!important}
+ body.historical-site.hist-responsive .app-header.actions-header-finish .hist-rev6-header-stats{background:#04090d!important}
+}
+
+/* Connected footer uses the same project/trademark text as the public portal. */
+body.historical-site .app-footer{box-sizing:border-box;width:min(804px,100%);max-width:100%;line-height:16px;text-align:center;white-space:normal;overflow-wrap:break-word}
+body.historical-site .app-footer p{margin:0}

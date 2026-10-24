@@ -1,26 +1,48 @@
-Étapes simples
+COLLECTE QUOTIDIENNE DES TAXES DE CLAN — INSTALLATION MANUELLE
 
-Créer le fichier
+Le fichier scripts/clan_tax_run.php existe déjà. Ne pas créer un second collecteur.
+Il lit la configuration habituelle config/database.php. Il débite réellement les
+membres des clans dont la taxe est active et crédite leur portefeuille de clan.
+Vérifier impérativement l'instance/base visée avant toute exécution manuelle.
+Une copie de test doit employer sa configuration privée et sa base clonée.
 
-Dans ton dossier du jeu (htdocs), crée un dossier scripts
+Règles existantes, conservées :
+- exécution en ligne de commande uniquement (accès HTTP refusé) ;
+- date calculée dans le fuseau Europe/Zurich ;
+- taux actif compris entre 1 et 5 %, appliqué aux crédits strictement positifs ;
+- montant entier arrondi vers le bas par membre ;
+- transaction par clan, verrou SQL du collecteur et last_run_date pour éviter
+  une seconde collecte du même clan à la même date ;
+- une taxe désactivée n'est pas collectée ; taux et soldes ne sont pas réinitialisés.
 
-Dedans, crée un fichier clan_tax_run.php
+Préparation, uniquement sur l'installation expressément choisie :
+1. Vérifier PHP CLI et le pilote PDO MySQL ainsi que les tables déjà existantes
+   clan_tax_settings, clan_wallet, users et clan_log. Conserver les sauvegardes.
+2. Vérifier config/database.php sans copier de mot de passe dans les arguments,
+   le planificateur ou les journaux publics.
+3. Tester d'abord sur une copie privée. Lire la sortie et le code de retour :
+   0 = exécution terminée ; 1 = erreur ou collecteur déjà en cours.
+   « Already processed » et « inactive » sont des états sans nouveau débit.
 
-Configurer le planificateur de tâches Windows
+Planificateur Windows (opération manuelle, aucun installateur fourni) :
+- Programme : chemin absolu du php.exe CLI de l'installation choisie.
+- Arguments : chemin absolu, entre guillemets, de scripts/clan_tax_run.php.
+- Démarrer dans : dossier scripts de cette même installation.
+- Compte : accès en lecture au code/configuration et accès à la base prévue,
+  sans élévation administrateur si elle n'est pas nécessaire.
+- Déclencheur : une fois par jour à l'heure retenue par l'administrateur
+  (exemple antérieur : 08:00). Le script utilise la date Europe/Zurich.
+- Si une instance est déjà en cours : ne pas lancer une nouvelle instance.
+- Conserver la sortie dans un journal privé et examiner Dernière exécution,
+  Prochaine exécution et Dernier résultat dans le planificateur.
 
-Ouvre : Tâches planifiées (ou “Planificateur de tâches”)
+Après un essai autorisé sur clone : vérifier le total débité, le total crédité au
+portefeuille, last_run_date et l'entrée tax_run. Un second essai à la même date
+doit être sans nouveau débit. Ne pas avancer la date ou effacer last_run_date
+sur une installation réelle pour forcer un essai.
 
-Clique sur Créer une tâche
-
-Onglet Déclencheurs → “Tous les jours” à 08:00
-
-Onglet Actions → “Démarrer un programme”
-
-Programme/script : C:\xampp\php\php.exe
-
-Arguments : "C:\xampp\htdocs\scripts\clan_tax_run.php"
-
-Onglet Conditions → décoche “exécuter uniquement si sur secteur” si tu veux
-
-Valide.
- Et voilà, Windows exécutera ce script chaque jour à 8h du matin.
+Cette documentation ne lance pas le collecteur, ne crée aucune tâche planifiée,
+ne contient pas de requête d'installation et ne modifie aucune base.
+Le contrôle local du 23 octobre 2026 n'a trouvé aucune tâche Windows dont les
+arguments contiennent clan_tax_run.php ; la collecte automatique n'est donc pas
+confirmée sur ce poste. Cela ne prouve pas l'état d'un autre serveur.

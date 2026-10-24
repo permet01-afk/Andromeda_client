@@ -1,0 +1,151 @@
+/* Recovered old company composition. Native background829x663 and exact
+   older DoPs CSS rules below. URL paths and selector scope only are adapted.
+   The compatible 2013 ICOn8 forum markup establishes float flow and GIF hover;
+   it is supporting evidence, not proof of the served DoPs page at that date.
+   Andromeda backend, English copy, keyboard support and mobile panning remain
+   local adaptations. Native background retains its baked DarkOrbit logo. */
+body.historical-company-select{min-width:0;min-height:100vh;margin:0;padding:12px;background:#000;color:#fff;font:10px Verdana,Arial,sans-serif;overflow-x:hidden}
+.historical-company-select .company-global-header{display:flex;align-items:center;justify-content:space-between;gap:12px;width:829px;max-width:100%;min-height:50px;margin:0 auto 8px}
+/* Reversible existing wordmark overlay test. Native JPEG stays byte-identical.
+   Slot clipping stops all logo pixels before the neon row at y152. */
+.historical-company-select .company-brand-slot{position:absolute;top:0;left:0;width:829px;height:152px;overflow:hidden;background:none;pointer-events:none}
+.historical-company-select .company-brand-slot .company-brand{position:absolute;top:-23px;left:104.5px;display:block;width:620px;height:206.6667px;max-width:none;margin:0;padding:0;background:none;pointer-events:auto}
+.historical-company-select .company-brand-slot .company-brand img{display:block;width:620px;height:206.6667px;margin:0;padding:0;object-fit:contain;background:none}
+.historical-company-select .company-global-header nav{display:flex;gap:20px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.historical-company-select .company-global-header a{color:#a2ccd8;text-decoration:none;font:11px/16px Verdana,Arial,sans-serif}
+.historical-company-select .company-global-header a:hover{color:#fff;text-decoration:underline}
+.historical-company-select .company-native-viewport{width:829px;max-width:100%;margin:0 auto;overflow:auto;overscroll-behavior:contain}
+.historical-company-select .company-entry{margin:0;padding:0;border:0}
+.historical-company-select #container_main{font-family:Verdana,Arial,sans-serif;font-size:10px;color:#fff}
+.historical-company-select .company-confirm{display:block;width:100px;height:29px;margin:0;padding:0;border:0}
+.historical-company-select .company-confirm img{display:block;width:100px;height:29px;margin:0;padding:0;border:0}
+.historical-company-select a:focus-visible,.historical-company-select button:focus-visible{outline:2px solid #addbe9;outline-offset:3px}
+.historical-company-select .company-footer{width:829px;max-width:100%;margin:12px auto 0;color:#8ba6b5;text-align:center;font:10px/16px Verdana,Arial,sans-serif}
+.historical-company-select .company-footer p{margin:0}
+.historical-company-select #company-terms-dialog{box-sizing:border-box;width:700px;max-width:calc(100vw - 24px);max-height:calc(100vh - 24px);padding:20px;border:1px solid #527283;background:#07141e;color:#d1dce3;font:12px/1.6 Verdana,Arial,sans-serif}
+.historical-company-select #company-terms-dialog::backdrop{background:rgba(0,0,0,.8)}
+.historical-company-select #company-terms-content{max-height:calc(100vh - 126px);overflow:auto}
+.historical-company-select #company-terms-close{display:block;margin:16px auto 0;padding:6px 18px;border:1px solid #527283;background:#102535;color:#d1dce3;cursor:pointer}
+
+body.historical-company-select #container_main {
+    width: 829px;
+    height: 663px;
+    background-image: url(dops/global/bg_companyChoose.jpg);
+    margin: auto;
+    position: relative;
+}
+
+body.historical-company-select #headline {
+    position: relative;
+    color: #a6f8fa;
+    font-weight: bold;
+    font-size: 16px;
+    top: 185px;
+    text-align: center;
+    width: 500px;
+    margin: auto;
+}
+
+body.historical-company-select #company_1,body.historical-company-select #company_2,body.historical-company-select #company_3 {
+    cursor: pointer;
+    position: relative;
+    width: 202px;
+    height: 385px;
+    top: 208px;
+    float: left;
+}
+body.historical-company-select #company_1 {
+    left: 98px;
+}
+body.historical-company-select #company_2 {
+    left: 111px;
+}
+body.historical-company-select #company_3 {
+    left: 127px;
+}
+body.historical-company-select #company_1:hover {
+    background-image: url(company-b/bg_1_over.jpg);
+}
+body.historical-company-select #company_2:hover {
+    background-image: url(company-b/bg_2_over.jpg);
+}
+body.historical-company-select #company_3:hover {
+    background-image: url(company-b/bg_3_over.jpg);
+}
+body.historical-company-select #logo_1,body.historical-company-select #logo_2,body.historical-company-select #logo_3 {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    top: 4px;
+}
+body.historical-company-select #logo_1 {
+    left:49px;
+    /*background-image: url(../do_img/global/companyChoose/logo_1.jpg);*/
+}
+body.historical-company-select #logo_2 {
+    left: 58px;
+    /*background-image: url(../do_img/global/companyChoose/logo_2.jpg);*/
+}
+body.historical-company-select #logo_3 {
+    left: 59px;
+    top: 4px;
+    /*background-image: url(../do_img/global/companyChoose/logo_3.jpg);*/
+}
+
+body.historical-company-select #text_1,body.historical-company-select #text_2,body.historical-company-select #text_3 {
+    position: absolute;
+    text-align: left;
+    height: 145px;
+    overflow: auto;
+    margin: 10px;
+    top: 98px;
+    color: #909090;
+    left: 4px;
+    width: 182px;
+}
+
+body.historical-company-select .faction_info {
+    font-size: 11px;
+    color: #FFFFFF;
+}
+
+body.historical-company-select #button_1,body.historical-company-select #button_2,body.historical-company-select #button_3 {
+    position: absolute;
+    width: 100px;
+    height: 29px;
+    line-height: 29px;
+    background-image: url(company-b/choose.png);
+    margin: auto;
+    top: 345px;
+    left: 53px;
+}
+body.historical-company-select #button_1:hover,body.historical-company-select #button_2:hover,body.historical-company-select #button_3:hover {
+    background-image: url(company-b/choose_active.png);
+}
+body.historical-company-select #button_1 {
+
+}
+body.historical-company-select #button_2 {
+
+}
+body.historical-company-select #button_3 {
+
+}
+body.historical-company-select .font_choose { font-size: 12px; color: #909090;font-weight: bold}
+body.historical-company-select .font_choose b { font-weight:bold;}
+body.historical-company-select .font_choose a { color: #909090;text-decoration:none;display: block;}
+body.historical-company-select .font_choose a:link { color: #909090;}
+body.historical-company-select .font_choose a:visited { color: #909090;}
+body.historical-company-select .font_choose a:hover { color: #FFFFFF;}
+
+/* Original changeImage/closeAll behavior: one active GIF and white text;
+   other logos clear, revealing the normal logos baked into the background. */
+body.historical-company-select #container_main[data-active-company="1"] #company_1{background-image:url("company-b/bg_1_over.jpg")}
+body.historical-company-select #container_main[data-active-company="1"] #logo_1{background-image:url("dops/global/companyChoose/logo_1_active.gif")}
+body.historical-company-select #container_main[data-active-company="1"] #text_1{color:#fff}
+body.historical-company-select #container_main[data-active-company="2"] #company_2{background-image:url("company-b/bg_2_over.jpg")}
+body.historical-company-select #container_main[data-active-company="2"] #logo_2{background-image:url("dops/global/companyChoose/logo_2_active.gif")}
+body.historical-company-select #container_main[data-active-company="2"] #text_2{color:#fff}
+body.historical-company-select #container_main[data-active-company="3"] #company_3{background-image:url("company-b/bg_3_over.jpg")}
+body.historical-company-select #container_main[data-active-company="3"] #logo_3{background-image:url("dops/global/companyChoose/logo_3_active.gif")}
+body.historical-company-select #container_main[data-active-company="3"] #text_3{color:#fff}

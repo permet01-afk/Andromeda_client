@@ -1,0 +1,12 @@
+/* Presentation only: no values, CSRF tokens, prices, requests or callbacks read/changed. */
+(()=>{'use strict';function run(){const q=new URLSearchParams(location.search);const page=q.get('page');const b=document.body;if(!b.classList.contains('historical-site')||!['settings','company'].includes(page))return;
+ const facts=window.andromedaAccountAlignmentFacts={page,requestIssued:false,handlersChanged:false,valuesReadOrWritten:false};
+ if(page==='company'){const links=Array.from(document.querySelectorAll('.rev5-company .btn-company'));b.classList.add('vp-company-aligned');facts.companyAnchorsConnected=links.length===9&&links.every(n=>n.isConnected);facts.companyAnchorsChanged=false;return;}
+ const host=document.querySelector('.rev4-account-forms'),choice=document.getElementById('rev4-account-section'),back=document.querySelector('.rev8-account-back');if(!host||!choice||!back)return;
+ const forms=Array.from(host.querySelectorAll('form'));if(forms.length!==3)return;
+ const original=forms.map(f=>({node:f,action:f.getAttribute('action'),method:f.getAttribute('method'),controls:Array.from(f.elements).map(n=>({node:n,owner:n.form,name:n.name,type:n.type}))}));
+ const backHref=back.getAttribute('href'),backHandler=back.getAttribute('onclick');const footers=new Map();
+ for(const f of forms){const submit=f.querySelector('input[type=submit]');if(!submit)return;const footer=document.createElement('div');footer.className='vp-account-actions';f.appendChild(footer);footer.appendChild(submit);footers.set(f,footer);}
+ function alignBack(){const form=forms.find(f=>!f.closest('.set-card')?.hidden);if(form){const footer=footers.get(form);footer.prepend(back);}facts.backConnected=back.isConnected;facts.backDestinationUnchanged=back.getAttribute('href')===backHref&&back.getAttribute('onclick')===backHandler;facts.formsPreserved=original.every(x=>x.node.isConnected&&x.node.getAttribute('action')===x.action&&x.node.getAttribute('method')===x.method);facts.controlOwnersAndNamesPreserved=original.every(x=>x.controls.every(c=>c.node.isConnected&&c.node.form===c.owner&&c.node.name===c.name&&c.node.type===c.type));}
+ b.classList.add('vp-account-aligned');alignBack();choice.addEventListener('change',alignBack);facts.originalForms=forms.length;
+}const ready=()=>requestAnimationFrame(run);if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready,{once:true});else ready();})();

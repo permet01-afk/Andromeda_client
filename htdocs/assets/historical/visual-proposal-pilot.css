@@ -1,0 +1,100 @@
+/* Private visual proposal, 23 October 2026. No gameplay or server contract.
+ * Profile typography is a declared adaptation: the preserved DoPs member tag
+ * color is not established. PK supplies the missing dedicated panel artwork.
+ */
+body.historical-site.visual-proposal-pilot .rev6-profile-sheet{padding:0!important}
+body.historical-site.visual-proposal-pilot .vp-profile-columns{display:grid;grid-template-columns:210px 25px minmax(0,295px) 3px 238px;gap:0;min-height:401px;padding:2px 0;font:11px/17px Verdana,Arial,sans-serif;color:#fff}
+body.historical-site.visual-proposal-pilot .vp-profile-overview{grid-column:1;padding:0 12px 0 16px;border-right:1px solid #343e44;min-width:0}
+body.historical-site.visual-proposal-pilot .vp-profile-main{grid-column:3;min-width:0;padding-top:10px}
+body.historical-site.visual-proposal-pilot .vp-profile-avatar{display:block;width:110px;height:120px;max-width:none;margin:25px 0 13px 35px;object-fit:contain}
+body.historical-site.visual-proposal-pilot .vp-profile-station{grid-column:5;width:238px;height:393px;align-self:start;margin:0;padding:0;border:0;background:none}
+body.historical-site.visual-proposal-pilot .vp-profile-station img{display:block;width:238px;height:393px;max-width:none;margin:0;padding:0;object-fit:contain}
+body.historical-site.visual-proposal-pilot .vp-profile-columns h2{margin:3px 0 12px;padding:0;font:bold 13px/18px Verdana,Arial,sans-serif;color:#fcce00;text-transform:none;letter-spacing:0}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .rev6-profile-identity{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:12px;min-height:0;margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid #343e44}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .rev6-profile-identity .card-header{order:0;align-items:flex-start;text-align:left;gap:4px}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .rev6-profile-identity .card-title{font:bold 13px/18px Verdana,Arial,sans-serif!important;color:#fcce00!important}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .pilot-header{order:1;min-width:0}
+body.historical-site.visual-proposal-pilot .vp-profile-columns :is(.pilot-name,.pilot-name-row){display:flex;align-items:baseline;flex-wrap:wrap;gap:5px;font:normal 11px/17px Verdana,Arial,sans-serif;color:inherit;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .pilot-username{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+body.historical-site.visual-proposal-pilot .vp-profile-columns :is(.pilot-name,.pilot-name-row) :is(img.company-icon,img.company-mini-icon,img[alt="Company"]){width:24px;height:24px;max-width:24px;max-height:24px;object-fit:contain;align-self:center}
+body.historical-site.visual-proposal-pilot .vp-profile-columns :is(.vp-local-pilot-id,.vp-empty-pilot-header)[hidden]{display:none!important}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .card-header>.pilot-rank-row{margin-top:3px}
+body.historical-site.visual-proposal-pilot .vp-profile-columns :is(.pilot-clan,.clan-tag){padding:0!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;color:inherit!important;font:inherit!important;letter-spacing:0}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .pilot-rank-row{font:11px/17px Verdana,Arial,sans-serif;color:#c0c0c0;margin-top:10px}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .rev7-profile-facts{font:11px/17px Verdana,Arial,sans-serif;color:#c0c0c0;border-bottom:1px solid #343e44;padding:0 0 10px;margin:0 0 12px}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .rev7-profile-facts b{color:#fff}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .stats-list{display:table!important;table-layout:fixed;width:100%;margin:0 0 19px;padding:0;border:0;background:none}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .stat-row{display:table-row!important;background:none!important;border:0!important}
+body.historical-site.visual-proposal-pilot .vp-profile-columns :is(.stat-label,.stat-val){display:table-cell!important;width:auto!important;padding:5px 0!important;font:normal 11px/17px Verdana,Arial,sans-serif!important;border-bottom:1px solid #343e44!important;background:none!important;letter-spacing:0;white-space:normal;overflow-wrap:anywhere}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .stat-label{width:52%!important;color:#c0c0c0!important;text-transform:none}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .stat-val{color:#fff!important;text-align:right}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .rev6-profile-links{margin:14px 0 0;padding:0;text-align:left}
+body.historical-site.visual-proposal-pilot .vp-profile-columns .hist-finish-profile-tools a{font:10px/17px Verdana,Arial,sans-serif;color:#fff;text-decoration:underline}
+
+/* Text states corroborated by the DoPs template; four Andromeda routes remain. */
+body.historical-site.visual-proposal-pilot .rev5-pilot-hub .user-hub__menu-title{font:normal 10px/16px Verdana,Arial,sans-serif;color:#fff!important}
+body.historical-site.visual-proposal-pilot .rev5-pilot-hub .user-hub__menu-item.is-active .user-hub__menu-title{color:#000!important}
+body.historical-site.visual-proposal-pilot .rev5-pilot-hub .user-hub__menu-link:focus-visible{outline:2px solid #fcce00;outline-offset:1px}
+
+/* DoPs history proportions and gray text; the unavailable bg_auktion.jpg is
+ * complemented by the already preserved PK bg_auktion.png, never relabeled.
+ * Existing Date/Action rows, keyset links and handlers are moved unchanged.
+ */
+body.historical-site.visual-proposal-pilot .vp-history-layout{display:grid;grid-template-columns:181px 677px;width:858px;max-width:none;margin:0 auto;align-items:start;background:#000}
+body.historical-site.visual-proposal-pilot .vp-history-rail{display:block;width:181px;height:439px;background:url('pk/do/teaser/left_start_07.jpg') right top no-repeat,url('pk/do/global/nav_sub_bg.png') left top no-repeat}
+body.historical-site.visual-proposal-pilot .hist-entire-history{display:flex;flex-direction:column;box-sizing:border-box;width:677px;max-width:677px;height:439px;min-height:439px;margin:0;padding:40px 54px 45px 91px;border:0;border-image:none;background:#434c52 url('pk/do/trade/bg_auktion.png') left top/100% 100% no-repeat;box-shadow:none;border-radius:0;color:#ababab;font:11px/17px Verdana,Arial,sans-serif}
+body.historical-site.visual-proposal-pilot .hist-entire-history-header{flex:0 0 auto;align-items:center;gap:8px;margin:0 0 10px;padding:0 0 7px;border-bottom:1px solid #73777a}
+body.historical-site.visual-proposal-pilot .hist-entire-history-header h1{margin:0;padding:0;font:bold 11px/17px Verdana,Arial,sans-serif;color:#ababab}
+body.historical-site.visual-proposal-pilot .hist-entire-history-header a,body.historical-site.visual-proposal-pilot .hist-history-pagination a{font:10px/17px Verdana,Arial,sans-serif;color:#ababab;text-decoration:underline}
+body.historical-site.visual-proposal-pilot .hist-entire-history-scroll{flex:1 1 auto;min-height:0;max-height:none;width:100%;overflow:auto;scrollbar-color:#969696 #343c42}
+body.historical-site.visual-proposal-pilot .hist-entire-history-table{width:440px;max-width:100%;margin:0 auto;table-layout:fixed;border-collapse:collapse;font:11px/17px Verdana,Arial,sans-serif;color:#ababab}
+body.historical-site.visual-proposal-pilot .hist-entire-history-table :is(th,td){padding:4px 3px;border:0;border-bottom:1px solid #707477;background:none;color:#ababab;font:11px/17px Verdana,Arial,sans-serif;overflow-wrap:anywhere}
+body.historical-site.visual-proposal-pilot .hist-entire-history-table th{font-weight:bold;background:#434c52}
+body.historical-site.visual-proposal-pilot .hist-entire-history-table :is(th,td):first-child{width:125px;border-right:1px solid #707477;white-space:nowrap}
+body.historical-site.visual-proposal-pilot .hist-history-pagination{flex:0 0 auto;gap:8px;margin:7px 0 0;padding:5px 0 0;border-top:1px solid #73777a}
+@media(min-width:901px){
+ body.historical-site.hist-page-history.visual-proposal-pilot .app-main,body.historical-site.hist-page-history.visual-proposal-pilot .CMSContent{width:858px;min-width:858px;max-width:858px}
+}
+
+@media(max-width:860px){
+ /* Dedicated Pilot Sheet edges replace the unrelated Shop border. The edge
+  * slicing/reflow is an Andromeda mobile adaptation, not historical mobile UI. */
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .rev5-pilot-hub .user-hub__content{border-style:solid!important;border-color:transparent!important;border-width:20px 14px 18px 22px!important;border-image:url('pk/do/pilotSheet/profilePage/Pilotsheet_bg.jpg') 26 22 22 32 fill stretch!important;background:none!important;padding:6px!important}
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .vp-profile-columns{display:block;min-height:0;padding:0}
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .vp-profile-overview{padding:0 0 13px;margin:0 0 15px;border-right:0;border-bottom:1px solid #343e44}
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .vp-profile-avatar{margin:12px auto 13px}
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .vp-profile-station{margin:16px auto 0}
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .vp-profile-columns .rev6-profile-identity{gap:10px}
+
+ /* Repair the complete width/height chain, not a global overflow mask. The
+  * inactive sections keep their existing display/hidden state and callbacks. */
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures :is(.quest-panels,.quest-panel,.quest-section){box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;flex:0 0 auto!important;margin-left:0!important;margin-right:0!important;overflow:visible!important}
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .quest-panels{display:block!important}
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .quest-page.hist-q-ready.rev7-quests.rev9-objective-disclosures .hist-q-console{box-sizing:border-box!important;width:100%!important;max-width:100%!important;height:auto!important;min-height:0!important;flex:0 0 auto!important}
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .quest-page.hist-q-ready :is(.hist-q-list,.hist-q-detail){width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important}
+ body.historical-site.hist-finish-shell.hist-responsive.visual-proposal-pilot .quest-page .rev9-quest-active-counts{max-width:100%;text-align:left;white-space:normal}
+
+ /* Restore the complete 157×394 purchase panel; quantity controls and all
+  * original forms stay at their source-derived offsets, centered below media. */
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail :is(.ship-action,.design-action,.item-action){position:relative!important;display:block!important;box-sizing:border-box!important;width:157px!important;min-width:157px!important;max-width:157px!important;height:394px!important;min-height:394px!important;max-height:394px!important;margin:8px auto 0!important;padding:0!important;border:0!important;border-image:none!important;background:url('dops/global/hangar/buy-item_background_157x394.png') left top no-repeat!important;overflow:hidden!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .finish-product-name{position:absolute!important;left:13px!important;top:10px!important;width:132px!important;max-width:132px!important;margin:0!important;font:bold 11px/15px Verdana,Arial,sans-serif!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .finish-quantity-label{position:absolute!important;left:13px!important;top:63px!important;width:132px!important;margin:0!important;font:11px/17px Verdana,Arial,sans-serif!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .finish-amount-presets{position:absolute!important;left:48px!important;top:85px!important;width:60px!important;display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;gap:8px!important;margin:0!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .qty-input{position:absolute!important;left:27px!important;top:var(--vp-stepper-top,88px)!important;bottom:auto!important;right:auto!important;width:104px!important;min-width:0!important;max-width:104px!important;height:23px!important;min-height:23px!important;padding:2px 6px!important;margin:0!important;font:12px/17px Verdana,Arial,sans-serif!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .qty-input.finish-stepped-quantity{left:40px!important;width:75px!important;max-width:75px!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .finish-amount-step{position:absolute!important;top:var(--vp-stepper-top,88px)!important;bottom:auto!important;right:auto!important;margin:0!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .finish-amount-step.is-minus{left:12px!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .finish-amount-step.is-plus{left:120px!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .finish-purchase-price{position:absolute!important;left:8px!important;top:265px!important;width:141px!important;min-height:24px!important;margin:0!important;font:10px/12px Verdana,Arial,sans-serif!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail .btn-buy{position:absolute!important;left:7px!important;top:292px!important;bottom:auto!important;right:auto!important;width:142px!important;min-width:142px!important;max-width:142px!important;height:48px!important;min-height:48px!important;margin:0!important}
+ body.historical-site.hist-page-shop.finish-commerce-shop.visual-proposal-pilot .hist-shop-detail :is(.equipped-label,.owned-label){position:absolute!important;left:8px!important;top:302px!important;width:141px!important;margin:0!important}
+}
+@media(max-width:900px){
+ body.historical-site.visual-proposal-pilot .vp-history-layout{display:block;width:100%;max-width:100%;min-width:0}
+ body.historical-site.visual-proposal-pilot .vp-history-rail{display:none}
+ body.historical-site.hist-responsive.visual-proposal-pilot .hist-entire-history{width:100%;max-width:100%;height:auto;min-height:0;padding:5px;border:solid transparent;border-width:20px 17px 22px 34px;border-image:url('pk/do/trade/bg_auktion.png') 39 45 48 90 fill stretch;background:none}
+ body.historical-site.hist-responsive.visual-proposal-pilot .hist-entire-history-header{flex-wrap:wrap}
+ body.historical-site.hist-responsive.visual-proposal-pilot .hist-entire-history-scroll{max-height:60vh}
+ body.historical-site.hist-responsive.visual-proposal-pilot .hist-entire-history-table :is(th,td):first-child{width:105px;white-space:normal}
+ body.historical-site.hist-responsive.visual-proposal-pilot .hist-entire-history-table :is(th,td){font:10px/16px Verdana,Arial,sans-serif;padding:4px 3px}
+}

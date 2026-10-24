@@ -1,0 +1,88 @@
+/* Titles is an Andromeda adaptation. DoPs proves a Title Overview entry, not
+   this editor. Keep its verified Pilot Sheet frame and existing custom SVGs.
+   Presentation only: no title rule, control, form or permission is replaced. */
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles {
+  box-sizing:border-box!important; display:flex!important; flex-direction:column!important;
+  gap:8px!important; width:100%!important; min-width:0!important; max-width:100%!important;
+  height:401px; min-height:0!important; margin:0!important; padding:0 6px!important;
+  color:#cbd3d7; font:11px/16px Verdana,Arial,sans-serif;
+}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles *,
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles *::before,
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles *::after {box-sizing:border-box}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-hero {flex:none; min-height:18px!important; height:auto!important; margin:0!important; padding:0!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-hero__copy {padding:0!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-hero h2 {margin:0!important; font:bold 12px/18px Verdana,Arial,sans-serif; color:#d5ceb0}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles :is(.titles-hero,.titles-section__header,.title-card,.titles-summary-card)::before,
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles :is(.titles-hero,.titles-section__header,.title-card,.titles-summary-card)::after {display:none!important; content:none!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-summary-grid {flex:none; display:block!important; margin:0!important; padding:0!important; border:0!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-summary-card {
+  display:grid!important; grid-template-columns:32px minmax(0,1fr)!important; align-items:center!important;
+  gap:10px!important; width:100%!important; min-width:0!important; min-height:48px!important;
+  height:auto!important; margin:0!important; padding:5px 8px!important;
+  border:1px solid #45515a!important; border-radius:0!important; background:rgba(5,12,17,.7)!important;
+}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-summary-card>.titles-summary-card__icon {
+  display:block!important; grid-column:1!important; width:30px!important; height:30px!important;
+  min-width:30px!important; margin:0!important; padding:0!important; border:0!important; background:none!important;
+}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-summary-card>div:not(.titles-summary-card__icon) {display:flex!important; flex-direction:column!important; align-items:flex-start!important; flex-wrap:nowrap!important; gap:1px!important; min-width:0!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-summary-card__icon img {display:block; width:30px!important; height:30px!important; object-fit:contain; border:0; margin:0}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-summary-label {display:block; margin:0; font:10px/14px Verdana,Arial,sans-serif; letter-spacing:0; color:#aebbc2; text-transform:none}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-summary-card strong {display:block; margin:0; min-width:0; font:bold 13px/18px Verdana,Arial,sans-serif; color:#e0d7ad; white-space:normal; overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles :is(.titles-alert,.titles-temporary-warning) {flex:none; margin:0!important; padding:5px 7px!important; font:10px/14px Verdana,Arial,sans-serif; overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-stage {
+  flex:1 1 auto; display:grid!important; grid-template-columns:minmax(240px,.42fr) minmax(0,.58fr)!important;
+  grid-template-rows:minmax(0,1fr)!important; gap:14px!important; width:100%; min-width:0;
+  height:auto!important; min-height:160px!important; margin:0!important; padding:0!important; border:0!important;
+}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list {min-width:0!important; min-height:0!important; max-height:none!important; overflow:auto!important; margin:0; padding:0 10px 0 0!important; border:0!important; border-right:1px solid #44545e!important; scrollbar-width:thin; scrollbar-color:#6d777d #0b141a}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list :is(.titles-section,.titles-permanent-form,.six-title-starter) {display:block; margin:0 0 9px!important; padding:0!important; min-width:0; border:0; background:none}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .titles-section__header {display:block!important; position:static!important; margin:0!important; padding:5px 4px!important; min-height:25px; border:0!important; background:rgba(30,40,47,.85)!important; transform:none!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-section__header h3 {position:static!important; margin:0!important; padding:0!important; color:#c9c9b6; font:bold 10px/15px Verdana,Arial,sans-serif!important; letter-spacing:0!important; text-transform:none!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .titles-card-grid {display:block!important; margin:0!important; padding:0!important; min-width:0}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .title-card-option {display:flex!important; align-items:center!important; gap:5px!important; min-width:0!important; width:100%; margin:0!important; padding:0!important; background:none; border:0}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .title-card {
+  display:flex!important; align-items:center!important; flex-direction:row!important; gap:8px!important;
+  flex:1; width:100%; min-width:0!important; height:auto!important; min-height:52px!important; margin:0!important;
+  padding:6px 5px!important; border:0!important; border-bottom:1px solid #35434d!important;
+  border-radius:0!important; background:none!important; transform:none!important; box-shadow:none!important;
+}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list :is(.title-card__emblem,.title-card__emblem img) {display:block!important; position:static!important; flex:none; width:28px!important; height:28px!important; min-width:28px; margin:0!important; padding:0!important; border:0!important; border-radius:0!important; background:none!important; object-fit:contain; transform:none!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .title-card__content {display:flex!important; flex-direction:column!important; flex:1; gap:3px!important; min-width:0!important; padding:0!important; margin:0!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .title-card__topline {display:flex!important; flex-wrap:wrap!important; align-items:center; gap:3px 7px!important; min-width:0; margin:0!important; padding:0!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-badge {display:inline-block; max-width:100%; padding:0!important; margin:0; border:0!important; background:none!important; border-radius:0!important; color:#a7b5bd; font:8px/11px Verdana,Arial,sans-serif!important; letter-spacing:0; white-space:normal; overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-badge--good {color:#d3ce9e}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .title-card h3 {margin:0!important; padding:0!important; color:#cdd6da; font:bold 10px/15px Verdana,Arial,sans-serif!important; letter-spacing:0; overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .title-card.is-locked h3 {color:#9cabb4}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .title-card__radio {position:static!important; flex:none; display:block!important; width:13px!important; height:13px!important; margin:0 0 0 3px!important; opacity:1!important; clip:auto!important; clip-path:none!important; accent-color:#c6c7aa}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .six-title-focused {outline:0; background:#18262e!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list .six-title-focused>.title-card {background:#18262e!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list :is(.title-card-option:hover,.title-card[role=button]:hover) {background:#142027!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list :is(.title-card-option:focus-within,.title-card[role=button]:focus-visible) {outline:1px solid #c9c49f!important; outline-offset:-1px}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-details {min-width:0!important; min-height:0!important; max-height:none!important; height:auto!important; overflow:auto!important; margin:0!important; padding:7px 6px 7px 0!important; font:11px/17px Verdana,Arial,sans-serif; scrollbar-width:thin; scrollbar-color:#6d777d #0b141a}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-detail[hidden] {display:none!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .six-title-detail-heading {display:flex; align-items:center; gap:10px; min-width:0; margin:0 0 13px}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .six-title-detail-heading img {flex:none; width:34px; height:34px; object-fit:contain}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .six-title-detail-heading h3 {margin:0!important; padding:0; min-width:0; color:#dcd3ad; font:bold 13px/19px Verdana,Arial,sans-serif; overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-detail :is(p,.title-card__progress-text,.title-card__actions) {margin:0 0 10px!important; padding:0; color:#bbc8cf; font:11px/17px Verdana,Arial,sans-serif; overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .title-progress {height:4px!important; min-height:4px; margin:10px 0 5px!important; border:0!important; background:#182933!important; border-radius:0; overflow:hidden}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .title-progress>span {display:block; height:100%; background:#a8b7b9!important; border-radius:0}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-action-bar {flex:none; display:flex!important; align-items:center!important; justify-content:space-between!important; flex-wrap:nowrap; gap:10px!important; min-width:0; min-height:43px; margin:0!important; padding:6px 0 0!important; border:0!important; border-top:1px solid #49565f!important; background:none!important; position:static!important; backdrop-filter:none!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-action-bar>div:first-child {display:flex!important; flex-direction:column!important; gap:1px!important; flex:1; min-width:0!important; max-width:none!important; margin:0; padding:0}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-action-bar strong {display:block; min-width:0; margin:0; font:bold 11px/16px Verdana,Arial,sans-serif; color:#d8d0aa; overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-action-bar>div:first-child>span {display:block; margin:0; color:#a9b6bd; font:9px/13px Verdana,Arial,sans-serif; overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .six-title-selection-note[hidden] {display:none!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-action-bar__buttons {display:flex!important; align-items:center!important; flex:none; flex-wrap:nowrap!important; gap:7px!important; min-width:0; max-width:100%; margin:0; padding:0}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-remove-form {display:block!important; margin:0!important; padding:0!important; width:auto!important; min-width:0!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-button {display:inline-flex!important; align-items:center; justify-content:center; width:auto!important; min-width:82px!important; max-width:150px; height:25px!important; min-height:25px!important; margin:0!important; padding:3px 10px!important; background-position:left center,right center,center center!important; font:10px/19px Verdana,Arial,sans-serif!important; white-space:normal; overflow-wrap:anywhere}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-button:hover:not(:disabled) {background-position:left center,right center,center center!important; color:#fff!important}
+body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-button:focus-visible {outline:1px solid #d8d1ad; outline-offset:2px}
+@media(max-width:900px) {
+ body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles {height:auto!important; min-height:0!important; padding:0!important; gap:10px!important}
+ body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-stage {flex:none; grid-template-columns:minmax(0,1fr)!important; grid-template-rows:auto auto!important; gap:10px!important; min-height:0!important}
+ body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-list {height:auto!important; max-height:290px!important; min-height:0!important; border-right:0!important; border-bottom:1px solid #44545e!important; padding:0 0 7px!important}
+ body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .rev5-title-details {min-height:100px!important; max-height:330px!important; padding:4px 0 7px!important}
+ body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-action-bar {align-items:flex-start!important; flex-direction:column!important; gap:8px!important; padding-top:8px!important}
+ body.historical-site.hist-finish-shell.final-six-titles .titles-panel.rev5-titles .titles-action-bar__buttons {align-self:flex-end; max-width:100%!important; flex-wrap:wrap!important; justify-content:flex-end}
+}

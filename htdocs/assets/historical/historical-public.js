@@ -16,9 +16,10 @@
   const canvas=element('main','public-canvas');
   canvas.id='public-canvas';
   const viewport=element('div','public-viewport');viewport.append(canvas);
+  const header=element('header','public-header');canvas.append(header);
   const brand=element('a','public-brand');brand.href='login.php';brand.setAttribute('aria-label','Andromeda home');
   const logo=document.querySelector('img[src="img/logo.png"]')||element('img');
-  logo.src=A+'andromeda-reborn-wordmark-v1.png';logo.alt='Andromeda Reborn';logo.className='public-andromeda-logo';brand.append(logo);canvas.append(brand);
+  logo.src=A+'andromeda-reborn-wordmark-v1.png';logo.alt='Andromeda Reborn';logo.className='public-andromeda-logo';brand.append(logo);header.append(brand);
   const footer=element('footer','public-footer');
   footer.append(element('p','',`Andromeda — independent, non-profit project © ${new Date().getFullYear()}.`));
   footer.append(element('p','','DarkOrbit is a registered trademark of Bigpoint. Andromeda is not affiliated with Bigpoint.'));
@@ -28,58 +29,98 @@
     if(!legalDialog){
       legalDialog=element('dialog','public-legal-dialog');
       const content=element('div','public-legal-content');
+      content.tabIndex=0;content.setAttribute('role','region');content.setAttribute('aria-label','Terms and policies');
       // The only HTML here is the static legal article from the same index.php.
       content.innerHTML=window.AndromedaPublicLegal||'<p>Terms are available at the entry page.</p>';
+      const heading=content.querySelector('h2');
+      if(heading){heading.id='public-legal-heading';legalDialog.setAttribute('aria-labelledby',heading.id);}
       const close=element('button','public-small-button','Close');close.type='button';
       close.addEventListener('click',()=>legalDialog.close());
       legalDialog.append(content,close);body.append(legalDialog);
     }
-    legalDialog.addEventListener('close',()=>opener.focus(),{once:true});
+    legalDialog.addEventListener('close',()=>opener.focus({preventScroll:true}),{once:true});
     legalDialog.showModal();
   }
   function auxNavigation(){
     const nav=element('nav','public-navigation');nav.setAttribute('aria-label','Public navigation');
-    if(isAuth){
-      const signIn=element('a','','Sign in');signIn.href='#login_form';
-      signIn.addEventListener('click',()=>document.querySelector('#login-username')?.focus());
-      const register=element('a','','Create account');register.href='#signup';
-      register.addEventListener('click',()=>document.querySelector('#signup-login')?.focus());
-      nav.append(signIn,register);
-    }else{const back=element('a','','Sign in');back.href='login.php';nav.append(back);}
-    nav.append(legalLink());canvas.append(nav);
+    if(!isAuth){const back=element('a','','Sign in');back.href='login.php';nav.append(back);}
+    nav.append(legalLink());header.append(nav);
   }
   if(isAuth){
     body.classList.add('public-home');
     const previous=document.querySelector('.auth-container');
     const login=document.querySelector('#login_form');const signup=document.querySelector('#signup');
     if(!previous||!login||!signup)return;
-    const loginSlot=element('section','public-login');loginSlot.setAttribute('aria-label','Sign in');
-    loginSlot.append(login);canvas.append(loginSlot);
-    const signupSlot=element('section','public-registration');signupSlot.setAttribute('aria-label','Create an account');
-    const title=element('img','public-register-title');title.src=A+'en/txt_form.png';title.alt='The fight for essential resources has begun';
-    signupSlot.append(title,signup);canvas.append(signupSlot);
-    const character=element('img','public-nyx');character.src=A+'global/nyx.png';character.alt='';character.setAttribute('aria-hidden','true');canvas.append(character);
-    const trailer=element('img','public-historical-scene');trailer.src=A+'global/trailer_FALLBACK.png';trailer.alt='Historical DarkOrbit space battle illustration';canvas.append(trailer);
-    const intro=element('section','public-introduction');intro.setAttribute('aria-label','Andromeda');
-    intro.append(element('h1','','Andromeda'),element('p','','Enter your account details to access your hangar, clan and the Andromeda universe.'));
-    canvas.append(intro);
+    // Move the original forms, including their CSRF inputs, values and listeners.
+    // Only one panel is exposed; no credential or validation is reconstructed.
+    const panel=element('section','public-auth-panel');panel.setAttribute('aria-label','Pilot access');
+    const tabs=element('div','public-auth-tabs');tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Account access');
+    const panes=element('div','public-auth-panes');
+    const loginSlot=element('section','public-login');loginSlot.id='public-sign-in-panel';
+    const signupSlot=element('section','public-registration');signupSlot.id='public-signup-panel';
+    loginSlot.append(login);signupSlot.append(signup);panes.append(loginSlot,signupSlot);
+    const signIn=element('button','public-auth-tab','Sign in');signIn.type='button';signIn.id='public-sign-in-tab';
+    const register=element('button','public-auth-tab','Create account');register.type='button';register.id='public-signup-tab';
+    const modes={login:{tab:signIn,pane:loginSlot,field:'#login-username',hash:'#sign-in'},signup:{tab:register,pane:signupSlot,field:'#signup-login',hash:'#create-account'}};
+    for(const row of Object.values(modes)){
+      row.tab.setAttribute('role','tab');row.tab.setAttribute('aria-controls',row.pane.id);
+      row.pane.setAttribute('role','tabpanel');row.pane.setAttribute('aria-labelledby',row.tab.id);
+    }
+    tabs.append(signIn,register);panel.append(tabs);canvas.append(panel);
     const alert=document.querySelector('.auth-alert');
     if(alert){
       alert.classList.add('public-error');
       const title=alert.querySelector('h2');if(title)title.textContent='Please check your entries';
       const close=element('button','public-error-close','×');close.type='button';close.setAttribute('aria-label','Close error message');
-      close.addEventListener('click',()=>{alert.hidden=true;login.querySelector('input[type="text"]')?.focus();});
-      alert.prepend(close);canvas.append(alert);
+      close.addEventListener('click',()=>{alert.hidden=true;panel.querySelector('section:not([hidden]) input[type="text"]')?.focus({preventScroll:true});});
+      alert.prepend(close);panel.append(alert);
     }
+    panel.append(panes);
     login.querySelector('button[type="submit"]').textContent='Login';
     login.querySelector('#login-username').placeholder='Username';
     login.querySelector('#login-password').placeholder='Password';
     const signupButton=signup.querySelector('button[type="submit"]');signupButton.setAttribute('aria-label','Create account');
-    auxNavigation();previous.replaceWith(viewport);
+    const modeFromHash=()=>['#signup','#register','#create-account'].includes(location.hash)?'signup':'login';
+    function showAuth(mode,{focusField=false,focusTab=false,updateHash=false}={}){
+      const next=Object.hasOwn(modes,mode)?mode:'login';
+      for(const [name,row] of Object.entries(modes)){
+        const active=name===next;row.pane.hidden=window.matchMedia('(max-width:999px)').matches&&!active;
+        row.tab.setAttribute('aria-selected',String(active));row.tab.tabIndex=active?0:-1;
+      }
+      panel.dataset.authMode=next;
+      // State-only fragments deliberately have no matching element ID. Changing
+      // a tab must not trigger the browser's anchor scrolling or form submit.
+      if(updateHash&&location.hash!==modes[next].hash){
+        history.replaceState(history.state,'',modes[next].hash);
+      }
+      if(focusTab)modes[next].tab.focus({preventScroll:true});
+      if(focusField)modes[next].pane.querySelector(modes[next].field)?.focus({preventScroll:true});
+    }
+    signIn.addEventListener('click',()=>showAuth('login',{focusField:true,updateHash:true}));
+    register.addEventListener('click',()=>showAuth('signup',{focusField:true,updateHash:true}));
+    tabs.addEventListener('keydown',event=>{
+      const keys=['ArrowLeft','ArrowRight','Home','End'];if(!keys.includes(event.key))return;
+      event.preventDefault();
+      const mode=event.key==='Home'?'login':event.key==='End'?'signup':panel.dataset.authMode==='login'?'signup':'login';
+      showAuth(mode,{focusTab:true,updateHash:true});
+    });
+    window.addEventListener('hashchange',()=>showAuth(modeFromHash()));
+    const submittedMode=body.dataset.authInitialTab;
+    showAuth(submittedMode==='login'||submittedMode==='signup'?submittedMode:modeFromHash());
+    // Restore the previous desktop composition; keep the tested compact tabs on mobile.
+    const title=element('img','public-register-title');title.src=A+'en/txt_form.png';title.alt='The fight for essential resources has begun';signupSlot.prepend(title);
+    const character=element('img','public-nyx');character.src=A+'global/nyx.png';character.alt='';character.setAttribute('aria-hidden','true');canvas.append(character);
+    const scene=element('img','public-historical-scene');scene.src=A+'global/trailer_FALLBACK.png';scene.alt='Historical DarkOrbit space battle illustration';canvas.append(scene);
+    const intro=element('section','public-introduction');intro.setAttribute('aria-label','Andromeda');intro.append(element('h1','','Andromeda'),element('p','','Enter your account details to access your hangar, clan and the Andromeda universe.'));canvas.append(intro);
+    const authNav=element('span','vp-desktop-auth-nav');
+    for(const [label,mode] of [['Sign in','login'],['Create account','signup']]){const shortcut=element('a','',label);shortcut.href=modes[mode].hash;shortcut.addEventListener('click',event=>{event.preventDefault();showAuth(mode,{focusField:true,updateHash:true});});authNav.append(shortcut);}
+    window.matchMedia('(max-width:999px)').addEventListener('change',()=>showAuth(panel.dataset.authMode));
+    auxNavigation();header.querySelector('.public-navigation').prepend(authNav);previous.replaceWith(viewport);
   }else if(isTerms){
     body.classList.add('public-terms');
-    const previous=document.querySelector('.landing');const panel=element('section','public-flow-panel');
+    const previous=document.querySelector('.landing');const panel=element('section','public-flow-panel public-terms-panel');
     const article=document.querySelector('.terms-card');const consent=document.querySelector('.terms-consent');
+    const legalContent=article?.querySelector('.terms-card__content');if(legalContent)legalContent.tabIndex=0;
     panel.append(article,consent);canvas.append(panel);
     const originalFooter=document.querySelector('.landing-footer');
     if(originalFooter){originalFooter.className='public-footer';canvas.append(originalFooter);}else canvas.append(footer);
