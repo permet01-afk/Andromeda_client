@@ -1,0 +1,70 @@
+/* DoPs proves the 677x439 page and 440px Date/Action table. Its original
+ * bg_auktion.jpg is absent; the preserved complementary PK panel is 679x439.
+ * Keep that bitmap at native size and place content inside its hinges.
+ * Title, Home, keyset pagination and mobile reflow are Andromeda adaptations.
+ */
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-entire-history{
+  width:677px;max-width:677px;height:439px;min-height:439px;
+  padding:48px 98px 55px 115px;
+  background-size:679px 439px;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-entire-history-header{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:nowrap;
+  min-width:0;gap:12px;margin:0 0 8px;padding:0 0 7px;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-entire-history-header h1{
+  min-width:0;overflow-wrap:anywhere;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-entire-history-header>a{
+  flex:0 0 auto;white-space:nowrap;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-entire-history-scroll{
+  box-sizing:border-box;min-width:0;width:100%;overflow:auto;
+  scrollbar-gutter:stable;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-entire-history-table{
+  box-sizing:border-box;width:440px;max-width:100%;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-history-pagination{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;
+  gap:8px;margin:8px 0 0;padding:7px 0 0;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-history-pagination>a{
+  display:flex;align-items:center;min-width:0;min-height:18px;
+  overflow-wrap:anywhere;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-history-newest{
+  grid-column:1;grid-row:1;justify-content:flex-start;text-align:left;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-history-newer{
+  grid-column:2;grid-row:1;justify-content:center;text-align:center;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-history-older{
+  grid-column:3;grid-row:1;justify-content:flex-end;text-align:right;
+}
+body.historical-site.hist-page-history.visual-proposal-pilot .hist-entire-history a:focus-visible{
+  outline:2px solid #fcce00;outline-offset:2px;
+}
+@media(max-width:900px){
+  /* Nine-slice the complete native hinge/frame bands, not just their outside
+   * edges. Native source slices: top48, right98, bottom55, left115.
+   */
+  body.historical-site.hist-page-history.hist-responsive.visual-proposal-pilot .hist-entire-history{
+    width:100%;max-width:100%;height:auto;min-height:0;
+    padding:8px;border-width:26px 32px 30px 40px;
+    border-image-slice:48 98 55 115 fill;background-size:auto;
+  }
+  body.historical-site.hist-page-history.hist-responsive.visual-proposal-pilot .hist-entire-history-scroll{
+    flex:0 1 auto;max-height:60vh;
+  }
+  body.historical-site.hist-page-history.hist-responsive.visual-proposal-pilot .hist-entire-history-table :is(th,td):first-child{
+    width:90px;white-space:normal;
+  }
+  body.historical-site.hist-page-history.hist-responsive.visual-proposal-pilot .hist-history-pagination{
+    gap:8px;
+  }
+  body.historical-site.hist-page-history.hist-responsive.visual-proposal-pilot .hist-history-pagination>a,
+  body.historical-site.hist-page-history.hist-responsive.visual-proposal-pilot .hist-entire-history-header>a{
+    min-height:44px;
+  }
+}

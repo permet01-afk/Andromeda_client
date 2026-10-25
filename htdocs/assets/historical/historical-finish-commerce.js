@@ -53,6 +53,7 @@
   }
   function finishShop(report) {
     document.body.classList.add('finish-commerce-shop');
+    finishShopFeedback(report);
     const designNames = {56:'enforcer',59:'bastion',63:'solace',64:'diminisher',65:'spectrum',66:'sentinel',67:'venom'};
     const rows = qa('.hist-shop-detail>.ship-row,.hist-shop-detail>.design-row,.hist-shop-detail>.item-tile,.hist-shop-detail>.item-row');
     const choices = qa('.hist-shop-catalog>.hist-catalog-choice');
@@ -166,6 +167,27 @@
     finishAnimatedPreviews(rows,choices,report);
     finishHistoricalInformation(rows,report);
     finishCatalogueControls(report);
+  }
+  function finishShopFeedback(report) {
+    const popup = q('dialog#popup_box');
+    const close = popup && q('#popupBoxClose',popup);
+    if (!popup || !close || popup.dataset.feedbackInitialized === 'true') return;
+    popup.dataset.feedbackInitialized = 'true';
+    const previousFocus = document.activeElement;
+    const dismiss = () => {
+      // Closing removes the one consumed PRG flash. No queued fade-in or second
+      // inline message can resurface, and no purchase action is registered here.
+      if (popup.open) popup.close();
+      popup.remove();
+      if (previousFocus?.isConnected && typeof previousFocus.focus === 'function') {
+        previousFocus.focus({preventScroll:true});
+      }
+    };
+    close.addEventListener('click',dismiss,{once:true});
+    popup.addEventListener('cancel',event => { event.preventDefault(); dismiss(); },{once:true});
+    popup.showModal();
+    close.focus({preventScroll:true});
+    report.feedback = {presentation:'single-native-modal',historicalFrame:'DoPs shopInfoPopup',originalServerMessage:true,duplicateInlineMessages:0,purchaseHandlersAdded:0};
   }
   function finishAnimatedPreviews(rows,choices,report) {
     const animated=[];

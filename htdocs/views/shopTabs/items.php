@@ -351,9 +351,6 @@ if ($currentDroneCountEffective < 8) {
 
 <div id="shop-items-container">
 
-    <?php if(!empty($buymessage)): ?>
-        <div class="msg-box"><?= htmlspecialchars($buymessage) ?></div>
-    <?php endif; ?>
 
     <div class="shop-nav">
         <a href="view.php?page=shop&tab=items&cat=ammo" class="<?= $category == 'ammo' ? 'active' : '' ?>">Ammo</a>

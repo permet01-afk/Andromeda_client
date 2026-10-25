@@ -223,3 +223,16 @@ body.historical-site.finish-commerce-shop .finish-preview-stage.has-rev9-animati
  body.historical-site.hist-page-shop.finish-commerce-shop .hist-shop-detail :is(.equipped-label,.owned-label){position:static!important;grid-column:1/-1;order:5;width:100%!important;margin:0!important;padding:3px!important}
  body.historical-site.hist-page-shop.finish-commerce-shop .msg-box{box-sizing:border-box;max-width:100%!important;margin:0 0 8px!important;overflow-wrap:anywhere}
 }
+
+/* One consumed Shop flash; DoPs internalDock.css shopInfoPopup, native359px.
+ * Native dialog owns modality; no app opacity changes or jQuery fade queues. */
+body.historical-site.hist-page-shop dialog#popup_box{box-sizing:border-box;max-height:calc(100dvh - 24px);overflow:auto}
+body.historical-site.hist-page-shop dialog#popup_box[open]{display:block!important}
+body.historical-site.hist-page-shop dialog#popup_box::backdrop{background:rgba(0,0,0,.7)}
+body.historical-site.hist-page-shop #popupBoxClose{left:50%;transform:translateX(-50%);width:150px;height:32px;background:url('dops/global/popups/hangar/button_sprite_150x32px.png') 0 -96px no-repeat!important}
+body.historical-site.hist-page-shop #popupBoxClose:hover,body.historical-site.hist-page-shop #popupBoxClose:focus-visible{background-position:0 -128px!important}
+body.historical-site.hist-page-shop #popupBoxClose:focus-visible{outline:1px solid #d1e0e5;outline-offset:2px}
+@media(max-width:390px){
+ body.historical-site.hist-page-shop dialog#popup_box{width:calc(100vw - 16px)!important;min-width:0;max-width:359px;padding-left:16px!important;padding-right:16px!important;background-size:100% auto!important}
+ body.historical-site.hist-page-shop dialog#popup_box:before,body.historical-site.hist-page-shop dialog#popup_box:after{width:100%;background-size:100% 100%}
+}

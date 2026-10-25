@@ -60,30 +60,10 @@ if (file_exists($filePath)) {
 
 if (!empty($buymessage)) {
 ?>
-    <div id="popup_box">
-        <div id="popupContent"><?= htmlspecialchars($buymessage) ?></div>
-        <a id="popupBoxClose">Close</a>    
-    </div>
-
-    <script src="/views/userTabs/jquery.min.js"></script>
-    <script type="text/javascript">
-        $(document).ready(function() {
-            loadPopupBox();
-
-            $('#popupBoxClose').click(function() { unloadPopupBox(); });
-            
-
-            function unloadPopupBox() {
-                $('#popup_box').fadeOut("slow");
-                $(".app-shell").css({ "opacity": "1" }); 
-            }
-
-            function loadPopupBox() {
-                $('#popup_box').fadeIn("slow");
-                $(".app-shell").css({ "opacity": "0.3" });          
-            }
-        });
-    </script>
+    <dialog id="popup_box" aria-label="Shop transaction" aria-describedby="popupContent">
+        <div id="popupContent"><?= htmlspecialchars($buymessage, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></div>
+        <button id="popupBoxClose" type="button">Close</button>
+    </dialog>
 <?php
 }
 ?>

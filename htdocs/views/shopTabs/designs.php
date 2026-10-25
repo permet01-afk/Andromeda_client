@@ -84,9 +84,6 @@ $user = $uStmt->fetch();
 <div class="shop-card">
     <h2 class="shop-title">Hangar • Ship Designs</h2>
 
-    <?php if(!empty($buymessage)): ?>
-        <div class="msg-box"><?= htmlspecialchars($buymessage) ?></div>
-    <?php endif; ?>
 
     <div class="design-list">
         <?php foreach ($DESIGNS as $id => $d): 

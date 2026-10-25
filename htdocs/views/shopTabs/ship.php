@@ -173,11 +173,6 @@ $u = $sth->fetch(PDO::FETCH_ASSOC);
 <div class="shop-card">
     <h2 class="shop-title">Hangar • Ship Yard</h2>
 
-    <?php if(!empty($buymessage)): ?>
-        <div class="msg-box">
-            <?= htmlspecialchars($buymessage) ?>
-        </div>
-    <?php endif; ?>
 
     <div class="ship-list">
         <?php foreach ($SHIPS as $id => $s): 

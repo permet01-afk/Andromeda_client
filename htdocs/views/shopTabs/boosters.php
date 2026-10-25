@@ -228,9 +228,6 @@ $booster_shd_display = calculateBoosterTime($datauser[0]['booster_shd_time']);
 
 <div id="shop-items-container">
 
-    <?php if(!empty($buymessage)): ?>
-        <div class="msg-box"><?= htmlspecialchars($buymessage) ?></div>
-    <?php endif; ?>
 
     <div class="shop-card">
         <h2 class="shop-title">Ship Boosters</h2>

@@ -44,8 +44,8 @@ $historyEscape = static fn($value): string => htmlspecialchars((string)$value, E
         </table>
     </div>
     <nav class="hist-history-pagination" aria-label="Logbook pages">
-        <a href="view.php?page=history">Newest entries</a>
-        <?php if ($historyPage['newer'] !== null) { ?><a rel="prev" href="view.php?page=history&amp;after=<?php echo $historyEscape($historyPage['newer']); ?>">Newer entries</a><?php } ?>
-        <?php if ($historyPage['older'] !== null) { ?><a rel="next" href="view.php?page=history&amp;before=<?php echo $historyEscape($historyPage['older']); ?>">Older entries</a><?php } ?>
+        <a class="hist-history-newest" href="view.php?page=history">Newest entries</a>
+        <?php if ($historyPage['newer'] !== null) { ?><a class="hist-history-newer" rel="prev" href="view.php?page=history&amp;after=<?php echo $historyEscape($historyPage['newer']); ?>">Newer entries</a><?php } ?>
+        <?php if ($historyPage['older'] !== null) { ?><a class="hist-history-older" rel="next" href="view.php?page=history&amp;before=<?php echo $historyEscape($historyPage['older']); ?>">Older entries</a><?php } ?>
     </nav>
 </section>
