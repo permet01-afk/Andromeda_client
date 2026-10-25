@@ -110,12 +110,12 @@ body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview>.s
 body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview>.ship-lifecycle-badge{position:absolute;left:510px;top:121px;height:18px;padding:0;border:0;background:none;font:10px/18px Verdana,Arial,sans-serif;color:#d3bc77}
 body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview #ship-panel-stats{display:block;padding:0;margin:0;border:0;background:none}
 body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table{border-collapse:collapse;table-layout:fixed;width:259px;margin:0;padding:0;font:10px/19px Verdana,Arial,sans-serif}
-body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table tr:nth-child(odd){background:url('dops/global/hangar/overview/text_bg.png') repeat-x}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table tr:nth-child(odd){background:url('dops/global/hangar/overview/text_bg.png') repeat}
 body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table td{padding:4px 3px;border:0;vertical-align:top;background:none;width:50%;font:10px/17px Verdana,Arial,sans-serif}
 body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table td:first-child{color:#b7c4cc}
 body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table td:last-child{text-align:right;color:#d2c98b}
 body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table strong,body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table strong b{font:10px/17px Verdana,Arial,sans-serif;white-space:normal}
-body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table strong small{font:9px/17px Verdana,Arial,sans-serif}
+body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table strong small{font:10px/17px Verdana,Arial,sans-serif}
 body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-stat-table .ship-lifecycle-stat{display:block;min-height:0;margin:0;padding:0;border:0;background:none}
 body.historical-site.hist-finish-shell.hist-overview-page .hist-rev5-overview .ship-lifecycle-track{display:none}
 body.historical-site.hist-finish-shell.hist-overview-page .hist-overview-config-field{display:block;margin:17px 0 0;padding:0;font:10px/18px Verdana,Arial,sans-serif;color:#a8b5bc}
