@@ -104,6 +104,8 @@
     <Compile Include="Game\GalaxyGates\GalaxyGateRewardStore.cs" />
     <Compile Include="Game\GalaxyGates\GalaxyGateWaveService.cs" />
     <Compile Include="Game\GalaxyGates\GalaxyGateProtection.cs" />
+    <Compile Include="Game\GalaxyGates\GalaxyGateTiming.cs" />
+    <Compile Include="Game\GalaxyGates\GalaxyGateTimingStore.cs" />
     <Compile Include="Game\Handlers\GroupManager.cs" />
     <Compile Include="Game\Handlers\Groupsystem.cs" />
     <Compile Include="Game\Maps\Collectables\ApocalypseBox.cs" />
@@ -153,6 +155,9 @@
     <Compile Include="Game\Event\Survivor.cs" />
     <Compile Include="Game\Event\Spaceball.cs" />
     <Compile Include="Game\Event\TeamDeathMatch.cs" />
+    <Compile Include="Game\Event\Rankings\EventRankingSnapshot.cs" />
+    <Compile Include="Game\Event\Rankings\EventRankingStore.cs" />
+    <Compile Include="Game\Event\Rankings\EventRankingRuntime.cs" />
     <Compile Include="Game\Event\Tdm\TdmRules.cs" />
     <Compile Include="Game\Event\Tdm\TdmEventService.cs" />
     <Compile Include="Game\Event\Tdm\TdmRewards.cs" />

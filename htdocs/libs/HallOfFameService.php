@@ -3,17 +3,19 @@
 require_once __DIR__ . '/HomeLeaderboardService.php';
 require_once __DIR__ . '/BeginnerStatusService.php';
 require_once __DIR__ . '/TitleService.php';
+require_once __DIR__ . '/HistoricalResultsService.php';
+require_once __DIR__ . '/GradeProgressionService.php';
 
 /** Read-only Hall of Fame views over existing authoritative statistics.
  * No schema creation, rewards, old Rankpoints or PvP-point score are used here.
  */
 final class HallOfFameService
 {
-    const CACHE_VERSION = 'hof_existing_stats_v1';
-    const CATEGORIES = ['your_rank', 'top_user', 'experience', 'honor', 'ships_destroyed', 'clans', 'companies', 'titles'];
+    const CACHE_VERSION = 'hof_results_v2';
+    const CATEGORIES = ['your_rank', 'top_user', 'experience', 'honor', 'ships_destroyed', 'clans', 'companies', 'titles', 'gates', 'events'];
     const TOP_USER_EXPRESSION = '(CAST(u.experience AS DECIMAL(30,3)) / 1000 + CAST(u.honor AS DECIMAL(30,3)) / 100)';
 
-    public static function getCategory($db, string $category, int $limit = 100, int $faction = 0, int $playerId = 0, string $metric = ''): array
+    public static function getCategory($db, string $category, int $limit = 100, int $faction = 0, int $playerId = 0, string $metric = '', array $options = []): array
     {
         if (!in_array($category, self::CATEGORIES, true)) {
             throw new InvalidArgumentException('Unknown Hall of Fame category.');
@@ -28,12 +30,15 @@ final class HallOfFameService
             $metric = 'experience'; // Owner-approved comparison; no original DoPs formula claimed.
         }
         $limit = max(1, min(100, $limit));
+        if ($category === 'gates' || $category === 'events') {
+            return HistoricalResultsService::getCategory($db, $category, $limit, $options);
+        }
         $meta = [
             'limit' => $limit,
             'faction' => $faction,
             'mode' => 'total',
             'cache_ttl_seconds' => $category === 'your_rank' ? 0 : ($category === 'titles' ? 10 : HomeLeaderboardService::CACHE_TTL_SECONDS),
-            'pending_categories' => ['aliens_destroyed', 'galaxy_gates', 'events', 'last_week', 'highest_climbers'],
+            'pending_categories' => ['aliens_destroyed', 'last_week', 'highest_climbers'],
         ];
         if ($category === 'your_rank') {
             $meta['player'] = self::getPlayerGrade($db, $playerId);
@@ -223,10 +228,60 @@ final class HallOfFameService
             return [];
         }
         $row = $rows[0];
+        $progression = GradeProgressionService::getForPlayer($db, $playerId);
+        if ($progression['current'] !== null) {
+            // Grade, company and comparator statistics share one read snapshot.
+            // The existing username/clan display and Top User cache stay separate.
+            $row['grade'] = $progression['current_grade'];
+            $row['factionid'] = $progression['current_company'];
+            $row['honor'] = $progression['current']['honor'];
+            $row['experience'] = $progression['current']['experience'];
+        }
+        foreach (['current', 'projected', 'target'] as $kind) {
+            $grade = $progression[$kind . '_grade'];
+            $progression[$kind . '_grade_name'] = $grade === null ? null : self::gradeName((int)$grade);
+        }
+        $row['grade_progression'] = $progression;
         $row['level'] = BeginnerStatusService::levelFromExperience($row['experience']);
         $row['beginner'] = BeginnerStatusService::isBeginnerLevel($row['level']);
         $row['rank_icon'] = 'img/ranks/' . max(0, (int)$row['grade']) . '.png';
+        $row['grade_name'] = self::gradeName((int)$row['grade']);
+        $row['position'] = self::getPlayerPosition($db, $playerId);
         return $row;
+    }
+
+    /** Same display dictionary as the existing Pilot Sheet; no grade calculation. */
+    public static function gradeName(int $grade): string
+    {
+        $names = [1 => 'Basic Space Pilot', 2 => 'Space Pilot', 3 => 'Chief Space Pilot',
+            4 => 'Basic Sergeant', 5 => 'Sergeant', 6 => 'Chief Sergeant', 7 => 'Basic Lieutenant',
+            8 => 'Lieutenant', 9 => 'Chief Lieutenant', 10 => 'Basic Captain', 11 => 'Captain',
+            12 => 'Chief Captain', 13 => 'Basic Major', 14 => 'Major', 15 => 'Chief Major',
+            16 => 'Basic Colonel', 17 => 'Colonel', 18 => 'Chief Colonel', 19 => 'Basic General',
+            20 => 'General', 21 => 'Game Administrator', 22 => 'Outlaw', 23 => 'Supreme General'];
+        return $names[$grade] ?? 'Unranked';
+    }
+
+    private static function getPlayerPosition($db, int $playerId): ?int
+    {
+        $context = (defined('DB_HOST') ? DB_HOST : '') . '|' . (defined('DB_NAME') ? DB_NAME : '');
+        return HomeLeaderboardService::remember(self::CACHE_VERSION . '_position_' . substr(hash('sha256', $context), 0, 20) . '_' . $playerId,
+            HomeLeaderboardService::CACHE_TTL_SECONDS, function () use ($db, $playerId) {
+                $eligible = self::fetchAll($db, 'SELECT ' . self::TOP_USER_EXPRESSION . ' AS score FROM users u
+                    WHERE u.id = :player_id AND u.lastlogin > :last_active_limit
+                    AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.user_id = u.id AND b.timestamp_expire > UNIX_TIMESTAMP()) LIMIT 1',
+                    [':player_id' => $playerId, ':last_active_limit' => time() - 3600 * 14 * 24]);
+                if (!$eligible) {
+                    return null;
+                }
+                $rows = self::fetchAll($db, 'SELECT COUNT(*) + 1 AS position FROM users u
+                    WHERE u.lastlogin > :last_active_limit
+                    AND NOT EXISTS (SELECT 1 FROM bans b WHERE b.user_id = u.id AND b.timestamp_expire > UNIX_TIMESTAMP())
+                    AND (' . self::TOP_USER_EXPRESSION . ' > :higher_score OR (' . self::TOP_USER_EXPRESSION . ' = :equal_score AND u.id < :player_id))',
+                    [':last_active_limit' => time() - 3600 * 14 * 24, ':higher_score' => (string)$eligible[0]['score'],
+                        ':equal_score' => (string)$eligible[0]['score'], ':player_id' => $playerId]);
+                return $rows ? (int)$rows[0]['position'] : null;
+            });
     }
 
     private static function companyWhere(int $faction, array &$params): string

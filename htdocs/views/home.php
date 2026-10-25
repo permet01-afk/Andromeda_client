@@ -251,6 +251,8 @@ $credits = number_format((int)($currentUser['credits'] ?? 0));
 $uridium = number_format((int)($currentUser['uridium'] ?? 0));
 $experience = number_format((int)($currentUser['experience'] ?? 0));
 $honor = number_format((int)($currentUser['honor'] ?? 0));
+$pilotLevel = BeginnerStatusService::levelFromExperience($currentUser['experience'] ?? 0);
+$gradeName = HallOfFameService::gradeName((int)($currentUser['grade'] ?? 0));
 $onlinePlayers = number_format(max(0, (int)($serverStats['active_connections'] ?? 0)));
 
 $companyCounts = [
@@ -337,7 +339,7 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                             <dt>Grade</dt>
                             <dd class="stat-media">
                                 <img src="img/ranks/<?php echo (int)($currentUser['grade'] ?? 0); ?>.png" alt="Grade <?php echo (int)($currentUser['grade'] ?? 0); ?>" />
-                                <span><?php echo (int)($currentUser['grade'] ?? 0); ?></span>
+                                <span><?php echo htmlspecialchars($gradeName, ENT_QUOTES, 'UTF-8'); ?></span>
                             </dd>
                         </div>
 
@@ -360,6 +362,10 @@ $dailyLoginStateJson = json_encode($dailyLoginState, JSON_UNESCAPED_UNICODE | JS
                         <div class="stat-row">
                             <dt>Uridium</dt>
                             <dd><?php echo $uridium; ?></dd>
+                        </div>
+                        <div class="stat-row">
+                            <dt>Level</dt>
+                            <dd><?php echo (int)$pilotLevel; ?></dd>
                         </div>
                     </dl>
                 </div>

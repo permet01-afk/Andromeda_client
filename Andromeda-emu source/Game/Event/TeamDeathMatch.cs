@@ -9,6 +9,7 @@ using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Game.Event.Tdm;
+using OrbitReborn_Emulator.Game.Event.Rankings;
 using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Handlers;
 using OrbitReborn_Emulator.Game.Maps;
@@ -37,7 +38,7 @@ namespace OrbitReborn_Emulator.Game.Event
         public static bool IsActive() { return State.Active; }
         public static bool SafeBattle() { return State.Safe; }
         public static void Enable(string occurrenceId = null) { State.Enable(occurrenceId); PublishAll(); }
-        public static void Disable() { State.Disable(); TdmRewardRuntime.Capture(State); Pump(); PublishAll(); }
+        public static void Disable() { State.Disable(); TdmRewardRuntime.Capture(State); EventRankingRuntime.CaptureTdm(State); Pump(); PublishAll(); }
         public static bool IsParticipant(Session s) { return s != null && State.Contains(s.CharacterId); }
         public static bool IsTdm(Session s) { return s != null && s.CharacterInfo != null && s.CharacterInfo.MapId == TdmRules.Map; }
         private static TdmPresence Read(Session s)
@@ -94,7 +95,7 @@ namespace OrbitReborn_Emulator.Game.Event
                     State.Observe(Read(s));
                     if (s.StoppedPlayer && !State.Contains(item.Key)) { Session ignored; Clients.TryRemove(item.Key, out ignored); }
                 }
-                State.Tick(); TdmRewardRuntime.Capture(State); Pump();
+                State.Tick(); EventRankingRuntime.CaptureTdm(State); TdmRewardRuntime.Capture(State); Pump();
                 long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 if (now - Interlocked.Read(ref LastPublish) >= 1000) { Interlocked.Exchange(ref LastPublish, now); PublishAll(); }
             }
@@ -227,6 +228,7 @@ namespace OrbitReborn_Emulator.Game.Event
             if (Interlocked.CompareExchange(ref Pumping, 1, 0) != 0) return;
             try
             {
+                EventRankingRuntime.CaptureTdm(State); // durable start before ENTER effects; outside player/core locks
                 TdmEffect[] work;
                 while ((work = State.DrainEffects()).Length > 0) foreach (var e in work)
                 {
@@ -281,7 +283,7 @@ namespace OrbitReborn_Emulator.Game.Event
                     catch (Exception ex) { State.TransferFailed(e.MatchId); Output.WriteLine("[TDM] transfer/cleanup: " + ex, OutputLevel.CriticalError); }
                 }
             }
-            finally { Interlocked.Exchange(ref Pumping, 0); }
+            finally { EventRankingRuntime.CaptureTdm(State); Interlocked.Exchange(ref Pumping, 0); }
         }
         private static void PublishDeath(Session s)
         {

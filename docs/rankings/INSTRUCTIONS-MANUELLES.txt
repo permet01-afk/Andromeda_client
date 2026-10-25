@@ -1,0 +1,210 @@
+ANDROMEDA REBORN — classements : mise à jour locale et migration manuelle
+Référence du candidat : 2f80260762b014e40611b083073187d8eb981879
+
+Procédure destinée à l'opérateur après approbation du candidat. Ni ce document
+ni le code PHP/C# ne déclenchent automatiquement la migration. Les requêtes de
+l'annexe sont uniquement des SELECT. Ne pas réutiliser les paramètres d'un
+environnement de validation pour mettre à jour une installation réelle.
+
+1. PRÉPARER UNE MISE À JOUR COHÉRENTE
+
+Arrêter proprement l'émulateur concerné et mettre les écritures web concernées
+en maintenance. Identifier explicitement le serveur, le port, la base, le compte
+SQL et le répertoire de données de l'installation à mettre à jour.
+
+Sauvegarder et vérifier séparément :
+- la base sélectionnée, avec une sauvegarde cohérente des tables transactionnelles ;
+- les fichiers web installés et le binaire C# avec ses dépendances ;
+- les configurations locales et leurs secrets, à conserver hors du patch ;
+- les données du serveur, notamment data/event_ranking_outbox.json.
+
+Vérifier la lisibilité des sauvegardes. Conserver la référence précédente,
+le manifeste et les SHA-256 du candidat. Ne pas effacer l'outbox ni remplacer
+le dossier data par celui d'une autre installation ou d'une simulation.
+
+2. CONTRÔLER LE SCHÉMA AVANT TOUTE MODIFICATION
+
+Sélectionner explicitement la base voulue, puis utiliser les SELECT de l'annexe.
+DATABASE() ne doit pas être NULL. Vérifier les moteurs InnoDB de users et
+player_galaxy_gates, ainsi que l'unicité existante (user_id, gate_id).
+Vérifier DATETIME(3), UTC_TIMESTAMP(3), ascii_bin et utf8mb4. Ne jamais convertir
+implicitement le moteur d'une table contenant des joueurs.
+
+Avant la PREMIÈRE application du forward, constater l'absence de :
+- gg_completed_runs, event_ranking_runs et event_ranking_results ;
+- timing_run_id, timing_started_at, timing_boot_id, timing_company_id,
+  timing_rule_version et timing_eligible dans player_galaxy_gates.
+
+Si une partie existe, ARRÊTER l'application du forward complet. Comparer chaque
+champ, moteur, clé et contrainte avec le SQL validé ; préparer une intervention
+ciblée après sauvegarde. Un schéma entièrement présent doit aussi être vérifié,
+mais ne nécessite pas une seconde application du forward.
+
+Le DDL MySQL peut provoquer des validations implicites : les quatre instructions
+du forward ne constituent pas une transaction globale annulable. Après un échec,
+ne pas relancer aveuglément le fichier ; contrôler ce qui a déjà été appliqué.
+Ne supprimer aucune donnée de joueur pour résoudre un état partiel.
+
+3. APPLIQUER LA MIGRATION MANUELLE UNE SEULE FOIS
+
+Après sauvegarde, sélection explicite de la base et validation des prérequis,
+appliquer docs/rankings/RANKINGS-FORWARD-MANUAL.sql UNE SEULE FOIS. Il contient
+un ALTER TABLE et trois CREATE TABLE, sans données de démonstration, sans
+reconstitution de résultats et sans modification des récompenses déjà reçues.
+
+Répéter les SELECT de l'annexe après application et comparer les définitions
+au forward. Les éléments structurants attendus sont les suivants.
+
+player_galaxy_gates — six champs nouveaux :
+- timing_run_id et timing_boot_id : CHAR(32), ascii/ascii_bin, NULL autorisé ;
+- timing_started_at : DATETIME(3), NULL autorisé ;
+- timing_company_id : TINYINT UNSIGNED, NULL autorisé ;
+- timing_rule_version : SMALLINT UNSIGNED, NULL autorisé ;
+- timing_eligible : TINYINT UNSIGNED NOT NULL DEFAULT 0.
+L'unicité préexistante (user_id, gate_id) doit rester intacte.
+
+gg_completed_runs — InnoDB, utf8mb4/utf8mb4_bin :
+- run_id : CHAR(32), ascii/ascii_bin, NOT NULL, PRIMARY KEY ;
+- player_id : INT ; gate_id et company_at_start : TINYINT UNSIGNED ;
+- started_at : DATETIME(3), NULL autorisé ; completed_at : DATETIME(3) NOT NULL ;
+- elapsed_ms : BIGINT UNSIGNED, NULL autorisé ;
+- rule_version : SMALLINT UNSIGNED ; rank_eligible : TINYINT UNSIGNED ;
+- exclusion_reason : VARCHAR(32), ascii/ascii_bin, NULL autorisé ;
+- index gg_time_ranking :
+  (gate_id, rank_eligible, elapsed_ms, completed_at, player_id) ;
+- index gg_player_runs : (player_id, gate_id, completed_at).
+Les autres champs sont NOT NULL. Aucun temps n'est généré pour une ancienne
+porte déjà commencée.
+
+event_ranking_runs — InnoDB, utf8mb4 :
+- run_key : CHAR(32), ascii/ascii_bin, NOT NULL, PRIMARY KEY ;
+- event_type : VARCHAR(16) ; occurrence_key : VARCHAR(160) ;
+- status : VARCHAR(16) ; end_reason : VARCHAR(64) ; snapshot_hash : CHAR(64) ;
+  ces cinq champs texte sont ascii/ascii_bin ;
+- started_at et recorded_at : DATETIME(3) NOT NULL ;
+- ended_at : DATETIME(3), NULL autorisé ;
+- rules_version : SMALLINT UNSIGNED NOT NULL ;
+- index ix_event_latest : (event_type, started_at, run_key) ;
+- index ix_event_finished : (event_type, status, ended_at, run_key).
+Tous les champs sont NOT NULL sauf ended_at.
+
+event_ranking_results — InnoDB, utf8mb4 :
+- run_key : CHAR(32), ascii/ascii_bin ; entity_type : VARCHAR(8), ascii/ascii_bin ;
+- entity_id : INT ; company_at_event : TINYINT UNSIGNED ;
+- metric : VARCHAR(24), ascii/ascii_bin ; score : BIGINT signé ;
+- outcome : VARCHAR(16), ascii/ascii_bin ; details_json : TEXT, NULL autorisé ;
+- PRIMARY KEY (run_key, entity_type, entity_id, metric) ;
+- index ix_event_entity_metric : (entity_type, metric, entity_id, run_key) ;
+- fk_event_result_run : run_key vers event_ranking_runs(run_key), ON DELETE CASCADE.
+Tous les champs sont NOT NULL sauf details_json. Le type et la collation de
+run_key doivent correspondre exactement entre les tables parent et enfant.
+
+DISTINGUER LES DEUX IDEMPOTENCES
+Le DDL s'applique une fois ; il n'est pas un script de réparation rejouable.
+L'idempotence métier concerne seulement le rejeu d'une même clôture :
+- GG : run_id unique, faits immuables, archive et completed dans une transaction ;
+- événements : run_key unique, clé enfant composite, empreinte canonique des
+  faits et transaction. Une même clé ne doit pas accepter des faits contradictoires.
+
+4. METTRE À JOUR LE WEB ET LE SERVEUR C# ENSEMBLE
+
+Utiliser exclusivement le ZIP produit approuvé et vérifier ses SHA-256 avec
+le manifeste. Appliquer seulement les chemins prévus en gardant les paramètres
+locaux. Ne copier ni rapport, capture, outil de test, compte synthétique, base
+clonée, configuration privée ou adaptateur d'un environnement de validation.
+
+Compiler les sources C# du même candidat en Release avec les références DLL du
+projet et la chaîne de compilation qualifiée. Exemple à adapter au chemin local :
+
+MSBuild "<projet>\Andromeda-emu source\Andromeda Emulator.csproj" /m:1 /p:Configuration=Release
+
+Installer le binaire produit et les dépendances de cette compilation, en gardant
+la configuration de connexion et les données de l'installation concernée.
+Ne pas utiliser de binaire headless ou de Program.cs/Output.cs adaptés à un banc.
+Ne pas remplacer App.config/server-main.cfg par des fichiers de test.
+
+Redémarrer les workers PHP concernés, puis l'émulateur. Les classements utilisent
+un cache court ; le redémarrage évite de conserver un ancien état de schéma
+« indisponible » après installation de la migration.
+
+5. CONTRÔLER LES RÉSULTATS SANS INVENTER D'HISTORIQUE
+
+Vérifier Your Rank, User Info et les pages GG/Events, les erreurs et l'outbox.
+Un classement initialement vide est normal : ne pas copier de performances ou
+événements synthétiques dans l'installation mise à jour.
+
+Une préparation de porte ne lance pas son chronomètre : la première entrée
+réelle d'une nouvelle porte le démarre. Une porte ancienne sans début certifié
+reste exclue du classement. Sortie, mort avec vies restantes et reconnexion au
+même processus conservent le passage. Après redémarrage de l'émulateur, le passage
+continue mais son temps non certifiable est exclu ; aucun début n'est inventé.
+
+Les totaux d'événements utilisent seulement les occurrences finished. Les états
+cancelled et interrupted restent consultables. interrupted n'invente ni scores
+ni date de fin. Contrôler une fin et son rejeu idempotent dans un environnement
+autorisé ; une simulation technique ne constitue pas un événement normal complet.
+
+Si le schéma est absent ou incohérent, un classement « indisponible » ne prouve
+pas qu'il est correctement installé. Ne pas lancer le forward à l'aveugle pour
+masquer une erreur SQL. Revenir au préflight et préserver les données existantes.
+
+6. RETOUR ARRIÈRE PRÉFÉRÉ
+
+Arrêter les nouveaux workers et l'émulateur. Sauvegarder les faits de classement
+et l'outbox, puis restaurer ensemble l'ancien code web et le binaire/dépendances
+correspondants. Préférer conserver les trois tables additives et leurs résultats.
+
+RANKINGS-ROLLBACK-MANUAL.sql contient un UPDATE actif limité aux six métadonnées
+timing_*. Il n'est applicable que si les six champs existent : vérifier avant
+exécution. L'appliquer avant que l'ancien code reprenne les portes, pour éviter
+de réutiliser ultérieurement un ancien UUID/chrono. Il ne réinitialise ni portes,
+vagues, vies, ressources, récompenses, expérience, honneur, grades ou anciens
+compteurs. Il exclut uniquement les chronos actifs non certifiables.
+
+La suppression complète des ajouts est volontairement commentée et n'est pas
+le retour arrière conseillé. Après export et sauvegarde seulement : résultats
+enfants avant occurrences parentes, puis archive GG, puis les six champs.
+Une suppression DDL n'est pas annulable par simple ROLLBACK transactionnel.
+Conserver l'outbox pour un éventuel rejeu après réinstallation du même schéma.
+
+ANNEXE — PRÉFLIGHT EN LECTURE SEULE, AVANT ET APRÈS MIGRATION
+
+Sélectionner d'abord explicitement la base voulue dans le client SQL. Les SELECT
+suivants ne modifient ni schéma ni données. Comparer leurs résultats avec les
+définitions ci-dessus et le forward validé ; aucune correction n'est automatique.
+
+SELECT DATABASE() AS selected_database, @@port AS selected_port,
+       VERSION() AS server_version, CURRENT_USER() AS connected_identity;
+
+SELECT TABLE_NAME, ENGINE
+FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME IN ('users','player_galaxy_gates','gg_completed_runs',
+                     'event_ranking_runs','event_ranking_results')
+ORDER BY TABLE_NAME;
+
+SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT,
+       DATETIME_PRECISION, CHARACTER_SET_NAME, COLLATION_NAME
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE()
+  AND (TABLE_NAME IN ('gg_completed_runs','event_ranking_runs','event_ranking_results')
+       OR (TABLE_NAME = 'player_galaxy_gates' AND COLUMN_NAME IN
+           ('timing_run_id','timing_started_at','timing_boot_id',
+            'timing_company_id','timing_rule_version','timing_eligible')))
+ORDER BY TABLE_NAME, ORDINAL_POSITION;
+
+SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE, SEQ_IN_INDEX, COLUMN_NAME
+FROM information_schema.STATISTICS
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME IN ('player_galaxy_gates','gg_completed_runs',
+                     'event_ranking_runs','event_ranking_results')
+ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX;
+
+SELECT TABLE_NAME, CONSTRAINT_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME,
+       REFERENCED_COLUMN_NAME
+FROM information_schema.KEY_COLUMN_USAGE
+WHERE TABLE_SCHEMA = DATABASE()
+  AND TABLE_NAME IN ('gg_completed_runs','event_ranking_runs','event_ranking_results')
+ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION;
+
+SELECT CAST(UTC_TIMESTAMP(3) AS DATETIME(3)) AS millisecond_datetime_capability;

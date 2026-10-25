@@ -310,11 +310,22 @@ try {
             exit();
         }
 
+        $prepareAssignments = "parts = '[]', on_map = 1, completed = 0, lives = 3, current_wave = 1";
         if (gg_has_column($db, 'player_galaxy_gates', 'life_purchases')) {
-            $stmt = $db->prepare("UPDATE player_galaxy_gates SET parts = '[]', on_map = 1, completed = 0, lives = 3, life_purchases = 0, current_wave = 1 WHERE user_id = :uid AND gate_id = :gid");
-        } else {
-            $stmt = $db->prepare("UPDATE player_galaxy_gates SET parts = '[]', on_map = 1, completed = 0, lives = 3, current_wave = 1 WHERE user_id = :uid AND gate_id = :gid");
+            $prepareAssignments .= ', life_purchases = 0';
         }
+        $timingColumnsPresent = true;
+        foreach (['timing_run_id', 'timing_started_at', 'timing_boot_id', 'timing_company_id', 'timing_rule_version', 'timing_eligible'] as $timingColumn) {
+            if (!gg_has_column($db, 'player_galaxy_gates', $timingColumn)) {
+                $timingColumnsPresent = false;
+                break;
+            }
+        }
+        if ($timingColumnsPresent) {
+            // A prepared gate has not been entered: the server starts its clock on first real entry.
+            $prepareAssignments .= ', timing_run_id = NULL, timing_started_at = NULL, timing_boot_id = NULL, timing_company_id = NULL, timing_rule_version = 1, timing_eligible = 0';
+        }
+        $stmt = $db->prepare('UPDATE player_galaxy_gates SET ' . $prepareAssignments . ' WHERE user_id = :uid AND gate_id = :gid');
         $stmt->execute([':uid' => $userId, ':gid' => $gateId]);
 
         $db->commit();

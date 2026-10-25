@@ -628,11 +628,13 @@
       if(list){
         Array.from(list.querySelectorAll(':scope>.stat-row')).forEach(row=>{
           const label=row.querySelector('dt');
-          if(label?.textContent.trim()==='Experience')label.textContent='XP';
+          if(label?.textContent.trim()==='XP')label.textContent='Experience';
         });
         for(const [label,id] of [['Credits','pilot-credits'],['Uridium','pilot-uridium']]){
           const row=el('div','stat-row hist-rev6-wallet-alias');const value=el('dd');row.append(el('dt','',label),value);list.appendChild(row);mirror(document.getElementById(id),value);
         }
+        const levelRow=Array.from(list.querySelectorAll(':scope>.stat-row')).find(row=>row.querySelector('dt')?.textContent.trim()==='Level');
+        if(levelRow)list.appendChild(levelRow);
       }
       list?.querySelectorAll('.stat-row dd').forEach(node=>{const full=node.textContent.trim();if(full){node.title=full;node.setAttribute('aria-label',full);}});
       document.querySelectorAll('.hist-dashboard-native .hof-card .leaderboard-name,.hist-dashboard-native .hof-card .leaderboard-score').forEach(node=>{const full=node.textContent.trim();node.title=full;node.setAttribute('aria-label',full);});

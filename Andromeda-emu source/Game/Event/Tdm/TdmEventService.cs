@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OrbitReborn_Emulator.Game.Event.Rankings;
 
 namespace OrbitReborn_Emulator.Game.Event.Tdm
 {
@@ -18,6 +19,8 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
         private readonly List<TdmEffect> Effects = new List<TdmEffect>();
         private readonly Dictionary<int, EndState> Results = new Dictionary<int, EndState>();
         private readonly Dictionary<string, TdmRewardClaim> RewardClaims = new Dictionary<string, TdmRewardClaim>();
+        private readonly Dictionary<string, EventRankingStart> RankingStarts = new Dictionary<string, EventRankingStart>();
+        private readonly Dictionary<string, EventRankingSnapshot> RankingFinals = new Dictionary<string, EventRankingSnapshot>();
         private long Sequence, Generation, Revision, EventSequence, Round;
         private readonly string Boot = Guid.NewGuid().ToString("N");
         private bool On;
@@ -41,6 +44,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
         private sealed class Member
         {
             public int Id, Company, Side, Seat, Lives = TdmRules.Lives;
+            public int RankingKills, RankingDeaths; // accepted deaths, not distinct victims/reward q
             public long Life, Naz, RepairEnd, MissingSince;
             public bool Dead, Gone, Spent, Arrived, Connected = true;
             public string Death = "";
@@ -52,6 +56,7 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
             public int[] Score = new int[2]; public long[] EmptySince = new long[2];
             public Dictionary<int, Member> Members = new Dictionary<int, Member>();
             public HashSet<int> Entered = new HashSet<int>();
+            public EventRankingStart RankingStart;
         }
         private sealed class EndState
         {
@@ -270,6 +275,9 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
             if (n < TdmRules.Min) { Changed(); return; }
             Current = new Match { Id = offer.Id, Round = ++Round, A = offer.A, B = offer.B, Bracket = offer.Bracket, Size = n,
                 SafeEnd = Now + TdmRules.SafeMs, End = Now + TdmRules.SafeMs + TdmRules.MatchMs };
+            Current.RankingStart = new EventRankingStart { RunKey = EventRankingStart.Key("tdm", Current.Id), EventType = "tdm",
+                OccurrenceKey = OccurrenceId, StartedAtUtc = DateTimeOffset.FromUnixTimeMilliseconds(Now).UtcDateTime };
+            RankingStarts[Current.RankingStart.RunKey] = Current.RankingStart;
             Admit(accepted.Where(t => t.Company == offer.A).Take(n).Concat(accepted.Where(t => t.Company == offer.B).Take(n)), false);
             PreferCompany = AvoidCompany = 0;
         }
@@ -349,7 +357,8 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                 if (v == null || v.Gone || v.Dead || v.Life != life || !v.Connected || Now < Current.SafeEnd || Now >= Current.End) return false;
                 var a = MemberFor(killer);
                 if (a != null && !a.Gone && a.Company != v.Company && a.Connected)
-                { ++Current.Score[a.Side]; a.Participation.Kill(victim); }
+                { ++Current.Score[a.Side]; ++a.RankingKills; a.Participation.Kill(victim); }
+                ++v.RankingDeaths;
                 v.Dead = true; --v.Lives; v.Naz = 0; v.Death = Current.Id + "-death-" + (++Sequence); v.RepairEnd = Now + TdmRules.RepairMs;
                 if (v.Lives == 0) LeaveMember(v, true); else Effect("DEATH", v);
                 Changed(); return true;
@@ -397,18 +406,36 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
             if (Current == null) return;
             var match = Current; Pending = null;
             if (winner > 0) ++Wins[winner];
+            var rankingRows = new List<EventRankingRow>();
+            foreach (int company in new[] { match.A, match.B })
+                rankingRows.Add(new EventRankingRow { EntityType = "company", EntityId = company, CompanyAtEvent = company,
+                    Metric = "match_wins", Score = winner == company ? 1 : 0,
+                    Outcome = winner < 0 ? "CANCELLED" : winner == 0 ? "DRAW" : winner == company ? "WIN" : "LOSS",
+                    DetailsJson = EventRankingSnapshot.Json().Serialize(new { match_id = match.Id, company_a = match.A, company_b = match.B,
+                        score_a = match.Score[0], score_b = match.Score[1], bracket = match.Bracket, reason = reason }) });
             foreach (var p in match.Members.Values)
             {
                 string outcome = winner < 0 ? "CANCELLED" : winner == 0 ? "DRAW" : p.Company == winner ? "WIN" : "LOSS";
                 var claim = p.Participation.Finish(p.Id, match.Id, OccurrenceId, outcome, reason, Now, match.SafeEnd, match.End,
                     winner >= 0 && match.Score.Any(s => s >= TdmRules.Target));
                 RewardClaims[claim.Key] = claim;
+                string rankingDetails = EventRankingSnapshot.Json().Serialize(new { match_id = match.Id, active_ms = claim.ActiveMs,
+                    distinct_victims = claim.Victims.Length, abandoned = claim.Abandoned });
+                foreach (var metric in new[] { new { Key = "kills", Value = (long)p.RankingKills },
+                    new { Key = "deaths", Value = (long)p.RankingDeaths }, new { Key = "damage", Value = claim.Damage } })
+                    rankingRows.Add(new EventRankingRow { EntityType = "player", EntityId = p.Id, CompanyAtEvent = p.Company,
+                        Metric = metric.Key, Score = metric.Value, Outcome = outcome, DetailsJson = rankingDetails });
                 if (p.Gone && !p.Spent) continue;
                 Results[p.Id] = new EndState { MatchId = match.Id, Round = match.Round, A = match.A, B = match.B,
                     ScoreA = match.Score[0], ScoreB = match.Score[1], Winner = winner, Reason = reason,
                     Outcome = outcome, End = Now + TdmRules.ResultMs, Reward = new TdmRewardReceipt { status = claim.Eligible ? "PENDING" : "INELIGIBLE" } };
                 if (!p.Gone) Home(p.Id);
             }
+            RankingFinals[match.RankingStart.RunKey] = new EventRankingSnapshot { Start = match.RankingStart,
+                EndedAtUtc = DateTimeOffset.FromUnixTimeMilliseconds(Now).UtcDateTime,
+                Status = winner < 0 ? "cancelled" : "finished",
+                EndReason = winner < 0 ? (reason == TdmRules.EmptyResult ? "empty_team" : "cancelled") :
+                    match.Score.Any(s => s >= TdmRules.Target) ? "target_score" : "time_limit", Rows = rankingRows.ToArray() };
             Current = null; Changed();
         }
         public void SetRewardAvailability(bool ready)
@@ -419,6 +446,10 @@ namespace OrbitReborn_Emulator.Game.Event.Tdm
                 if (RewardStatus != status) { RewardStatus = status; Changed(); }
             }
         }
+        public EventRankingStart[] PendingRankingStarts() { lock (Sync) return RankingStarts.Values.ToArray(); }
+        public EventRankingSnapshot[] PendingRankings() { lock (Sync) return RankingFinals.Values.Select(s => s.Copy()).ToArray(); }
+        public void AcknowledgeRankings(IEnumerable<string> starts, IEnumerable<string> finals)
+        { lock (Sync) { foreach (string key in starts) RankingStarts.Remove(key); foreach (string key in finals) RankingFinals.Remove(key); } }
         public TdmRewardClaim[] PendingRewards() { lock (Sync) return RewardClaims.Values.ToArray(); }
         public void AcknowledgeRewards(IEnumerable<string> keys) { lock (Sync) foreach (var key in keys) RewardClaims.Remove(key); }
         public void SetRewardReceipt(int id, string match, TdmRewardReceipt receipt)

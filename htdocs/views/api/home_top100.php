@@ -26,9 +26,9 @@ function homeApiDecodeLegacyHtmlEntitiesForDisplay($value)
 
 function homeApiHallOfFamePayload(array $payload): array
 {
-    $textFields = ['username', 'clan_tag', 'clan_name', 'name', 'title_key', 'label', 'scope', 'holder_type', 'holder_name', 'expires_at'];
+    $textFields = ['username', 'clan_tag', 'clan_name', 'name', 'title_key', 'label', 'scope', 'holder_type', 'holder_name', 'expires_at', 'completed_at', 'outcome'];
     $intFields = ['position', 'player_id', 'clanid', 'factionid', 'grade', 'members', 'holder_player_id', 'holder_npc_id', 'holder_map_id'];
-    $numericFields = ['score', 'total_experience', 'experience', 'honor', 'ships_destroyed'];
+    $numericFields = ['score', 'total_experience', 'experience', 'honor', 'ships_destroyed', 'elapsed_ms', 'goals', 'match_wins', 'damage', 'kills', 'deaths', 'progress'];
     $rows = [];
     foreach ($payload['rows'] as $row) {
         $clean = [];
@@ -53,12 +53,12 @@ function homeApiHallOfFamePayload(array $payload): array
     $payload['rows'] = $rows;
     if (isset($payload['meta']['player'])) {
         $player = $payload['meta']['player'];
-        foreach (['username', 'clan_tag'] as $field) {
+        foreach (['username', 'clan_tag', 'grade_name'] as $field) {
             if (isset($player[$field])) {
                 $player[$field] = homeApiDecodeLegacyHtmlEntitiesForDisplay($player[$field]);
             }
         }
-        foreach (['player_id', 'grade', 'factionid', 'level'] as $field) {
+        foreach (['player_id', 'grade', 'factionid', 'level', 'position'] as $field) {
             if (isset($player[$field])) {
                 $player[$field] = (int)$player[$field];
             }
@@ -87,6 +87,13 @@ try {
     $faction = 0;
     $limit = 100;
     $metric = homeApiQueryText('metric');
+    $options = [];
+    foreach (['gate', 'event', 'scope', 'period', 'occurrence'] as $option) {
+        $value = homeApiQueryText($option);
+        if ($value !== '') {
+            $options[$option] = $value;
+        }
+    }
     if ($category !== '') {
         if (!in_array($category, HallOfFameService::CATEGORIES, true)) {
             throw new InvalidArgumentException('Unknown Hall of Fame category.');
@@ -112,7 +119,7 @@ try {
     $playerId = (int)($_SESSION['player_id'] ?? 0);
     session_write_close();
     $db = new Database(DB_TYPE, DB_HOST, DB_NAME, DB_USER, DB_PASS);
-    $payload = homeApiHallOfFamePayload(HallOfFameService::getCategory($db, $category, $limit, $faction, $playerId, $metric));
+    $payload = homeApiHallOfFamePayload(HallOfFameService::getCategory($db, $category, $limit, $faction, $playerId, $metric, $options));
     echo json_encode(['success' => true, 'generatedAt' => time()] + $payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (InvalidArgumentException $e) {
     http_response_code(400);

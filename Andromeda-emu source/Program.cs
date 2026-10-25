@@ -72,6 +72,7 @@ namespace OrbitReborn_Emulator
                 Output.WriteLine((object)Localization.GetValue("core.init.mysql", (string[])null));
                 SqlDatabaseManager.Initialize();
                 OrbitReborn_Emulator.Game.Characters.DroneWearService.Initialize();
+                OrbitReborn_Emulator.Game.Event.Rankings.EventRankingRuntime.Initialize();
 
                 Output.WriteLine((object)Localization.GetValue("core.init.net", ConfigManager.GetValue("net.bind.port").ToString()));
                 Program.mServer = new SocketListener(
@@ -198,6 +199,7 @@ namespace OrbitReborn_Emulator
             OrbitReborn_Emulator.Game.Event.Tdm.TdmScheduleRuntime.Shutdown();
             OrbitReborn_Emulator.Game.Event.TeamDeathMatch.Disable();
             OrbitReborn_Emulator.Game.Event.Tdm.TdmRewardRuntime.Shutdown();
+            OrbitReborn_Emulator.Game.Event.Rankings.EventRankingRuntime.Shutdown();
             // SQL must remain available until every admitted packet/death and
             // pending ammo debit has finished. A failed save aborts clean exit.
             SessionManager.Shutdown();

@@ -323,7 +323,7 @@ function local_entete(bool $mobileEmbed = false)
         '}',
         '</style>',
         '<link rel="stylesheet" href="/assets/historical/historical-site.css?v=14d04cb6e3184c7d">',
-        '<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=mechanics-20261024-2">',
+        '<link rel="stylesheet" href="/assets/historical/historical-finish-shell.css?v=hof-progression-20261025-1">',
         '<link rel="stylesheet" href="/assets/historical/historical-finish-commerce.css?v=06a9ce6c05eed8c0">',
         '<link rel="stylesheet" href="/assets/historical/historical-finish-activities.css?v=78dc86ba8f9c19d3">',
         '<link rel="stylesheet" href="/assets/historical/historical-finish-account.css?v=e0a7d2f0f6ac3e71">',
@@ -343,7 +343,7 @@ function local_entete(bool $mobileEmbed = false)
         '<link rel="stylesheet" href="/assets/historical/final-six-titles.css?v=final6-1">',
         '<link rel="stylesheet" href="/assets/historical/last-four-profile-treasury.css?v=last4-1">',
         '<link rel="stylesheet" href="/assets/historical/last-four-shop.css?v=last4-1">',
-        '<link rel="stylesheet" href="/assets/historical/historical-hof.css?v=mechanics-20261024-3">',
+        '<link rel="stylesheet" href="/assets/historical/historical-hof.css?v=hof-thresholds-20261025-4">',
         '</head>',
         $mobileEmbed ? '<body class="mobile-embed historical-site">' : '<body class="historical-site">';
 }
@@ -362,7 +362,7 @@ function local_pied(bool $mobileEmbed = false)
         '});',
         '</script>',
         '<script src="/assets/historical/historical-site.js?v=mechanics-20261024-1" defer></script>',
-        '<script src="/assets/historical/historical-finish-shell.js?v=mechanics-20261024-1" defer></script>',
+        '<script src="/assets/historical/historical-finish-shell.js?v=hof-progression-20261025-1" defer></script>',
         '<script src="/assets/historical/historical-finish-commerce.js?v=1db15d604fd34fea" defer></script>',
         '<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>',
         '<script src="/assets/historical/historical-finish-account.js?v=437fb29aaf93df61" defer></script>',
@@ -378,7 +378,7 @@ function local_pied(bool $mobileEmbed = false)
         '<script src="/assets/historical/historical-actions-header.js?v=initial-brand-footer1" defer></script>',
         '<script src="/assets/historical/final-six-media.js?v=final6-1" defer></script>',
         '<script src="/assets/historical/final-six-titles.js?v=final6-1" defer></script>',
-        '<script src="/assets/historical/historical-hof.js?v=mechanics-20261024-1" defer></script>',
+        '<script src="/assets/historical/historical-hof.js?v=hof-thresholds-20261025-4" defer></script>',
         '</body>',
         '</html>';
         return;
@@ -436,7 +436,7 @@ function local_pied(bool $mobileEmbed = false)
         '});',
         '</script>',
         '<script src="/assets/historical/historical-site.js?v=mechanics-20261024-1" defer></script>',
-        '<script src="/assets/historical/historical-finish-shell.js?v=mechanics-20261024-1" defer></script>',
+        '<script src="/assets/historical/historical-finish-shell.js?v=hof-progression-20261025-1" defer></script>',
         '<script src="/assets/historical/historical-finish-commerce.js?v=1db15d604fd34fea" defer></script>',
         '<script src="/assets/historical/historical-finish-activities.js?v=99eecbe9eb3bad9e" defer></script>',
         '<script src="/assets/historical/historical-finish-account.js?v=437fb29aaf93df61" defer></script>',
@@ -452,7 +452,7 @@ function local_pied(bool $mobileEmbed = false)
         '<script src="/assets/historical/historical-actions-header.js?v=initial-brand-footer1" defer></script>',
         '<script src="/assets/historical/final-six-media.js?v=final6-1" defer></script>',
         '<script src="/assets/historical/final-six-titles.js?v=final6-1" defer></script>',
-        '<script src="/assets/historical/historical-hof.js?v=mechanics-20261024-1" defer></script>',
+        '<script src="/assets/historical/historical-hof.js?v=hof-thresholds-20261025-4" defer></script>',
         '</body>',
         '</html>';
 }

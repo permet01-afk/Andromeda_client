@@ -369,6 +369,13 @@ body.historical-site.hist-finish-shell.hist-rev7-shell .hist-rev6-header-stat{po
 /* Compact source rows stay single-line; full original values remain in DOM,
    title and accessible label. Override only the old Home flex-wrap rules. */
 body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .user-card .stat-row dd{flex-wrap:nowrap;min-width:0;max-height:15px}
+/* Eight real fields fit the existing 131px User Info cell above its three links. */
+@media(min-width:860px){
+ body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .stat-row{height:14px;min-height:14px;line-height:14px}
+ body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .stat-row dt,
+ body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .stat-row dd{line-height:14px;max-height:14px}
+ body.historical-site.hist-finish-shell.hist-rev6-shell .hist-dashboard-native .user-card .stat-row:first-child dd{height:14px}
+}
 body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .user-card .stat-row:first-child dd{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:15px}
 body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .user-card .stat-row:first-child dd>span{display:inline;white-space:nowrap;overflow-wrap:normal}
 body.historical-site.hist-finish-shell.hist-rev7-shell .hist-dashboard-native .hof-card .leaderboard-row{height:12px;min-height:12px;max-height:12px;align-items:center;overflow:hidden}

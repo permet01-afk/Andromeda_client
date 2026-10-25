@@ -13,6 +13,7 @@ using OrbitReborn_Emulator.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using OrbitReborn_Emulator.Game.Event.Rankings;
 using System.Threading;
 
 namespace OrbitReborn_Emulator.Game.Event
@@ -59,6 +60,8 @@ namespace OrbitReborn_Emulator.Game.Event
         private static readonly Dictionary<int, InvasionRun> RunsByNpcId = new Dictionary<int, InvasionRun>();
         private static readonly int[] WaveCounts = { 10, 20, 25 };
 
+        private static EventRankingStart RankingStart;
+        private static readonly Dictionary<int, InvasionRun> RankingRuns = new Dictionary<int, InvasionRun>();
         private static bool mActive;
         private static bool mStarting;
         private static bool mSafeBattle;
@@ -92,6 +95,7 @@ namespace OrbitReborn_Emulator.Game.Event
             public readonly Dictionary<int, long> DamageByCharacter = new Dictionary<int, long>();
             public readonly HashSet<int> FinalRewarded = new HashSet<int>();
             public long TotalDamage;
+            public int RankingNpcKills;
         }
 
         public static bool Active
@@ -346,7 +350,7 @@ namespace OrbitReborn_Emulator.Game.Event
                         AddRunDamage(run, share.BeneficiaryId, share.Damage);
                     if (createCargo) SpawnInvaderCargoBox(run, npc);
                     RunsByNpcId.Remove(npc.Id);
-                    run.Npcs.Remove(npc.Id);
+                    if (run.Npcs.Remove(npc.Id)) ++run.RankingNpcKills;
                     SendMarkerHide(run, npc.Id);
                 }
             });
@@ -429,6 +433,9 @@ namespace OrbitReborn_Emulator.Game.Event
             RunsByMapId.Clear();
             RunsByNpcId.Clear();
 
+            RankingRuns.Clear();
+            RankingStart = EventRankingRuntime.NewStart("invasion");
+            EventRankingRuntime.Begin(RankingStart);
             AddRun(17, 1, "1-5");
             AddRun(21, 2, "2-5");
             AddRun(25, 3, "3-5");
@@ -443,6 +450,7 @@ namespace OrbitReborn_Emulator.Game.Event
             if (!HasRunningRuns())
             {
                 Output.WriteLine((object)"[Invasion] Start aborted because no Invader could be spawned.", OutputLevel.Warning);
+                CompleteRanking("cancelled", "spawn_failed", 0);
                 RunsByMapId.Clear();
                 RunsByNpcId.Clear();
                 mActive = false;
@@ -470,6 +478,7 @@ namespace OrbitReborn_Emulator.Game.Event
             run.Running = true;
             run.NextStatusAtUtc = DateTime.UtcNow.AddSeconds(30);
             RunsByMapId[mapId] = run;
+            RankingRuns[factionId] = run;
         }
 
         private static int SpawnNextWave(InvasionRun run)
@@ -647,6 +656,7 @@ namespace OrbitReborn_Emulator.Game.Event
             if (winningRun == null || !winningRun.Running)
                 return;
 
+            CompleteRanking("finished", "first_company_completed", winningRun.FactionId);
             FinishRun(winningRun, true, false);
 
             foreach (InvasionRun run in new List<InvasionRun>(RunsByMapId.Values))
@@ -667,6 +677,7 @@ namespace OrbitReborn_Emulator.Game.Event
         private static void FinishEvent(bool completed, bool manualStop)
         {
             bool hadRuns = RunsByMapId.Count > 0;
+            CompleteRanking(manualStop ? "cancelled" : "finished", manualStop ? "manual_stop" : "time_limit", 0);
 
             foreach (InvasionRun run in new List<InvasionRun>(RunsByMapId.Values))
             {
@@ -691,12 +702,32 @@ namespace OrbitReborn_Emulator.Game.Event
             if (HasRunningRuns())
                 return;
 
+            CompleteRanking("cancelled", "no_running_companies", 0);
             RunsByMapId.Clear();
             RunsByNpcId.Clear();
             mActive = false;
             mSafeBattle = false;
             StopTimers();
             SetDatabaseActive(false);
+        }
+
+        private static void CompleteRanking(string status, string reason, int winner)
+        {
+            if (RankingStart == null) return;
+            var rows = new List<EventRankingRow>();
+            foreach (var run in RankingRuns.Values)
+            {
+                string outcome = status == "cancelled" ? "CANCELLED" : winner == run.FactionId ? "WIN" : winner > 0 ? "LOSS" : "INCOMPLETE";
+                string details = EventRankingSnapshot.Json().Serialize(new { map_id = run.MapId, wave_index = run.WaveIndex,
+                    total_waves = WaveCounts.Length, total_npcs = 55, npc_kills = run.RankingNpcKills, winner_company = winner });
+                rows.Add(new EventRankingRow { EntityType = "company", EntityId = run.FactionId, CompanyAtEvent = run.FactionId,
+                    Metric = "progress", Score = run.RankingNpcKills, Outcome = outcome, DetailsJson = details });
+                rows.Add(new EventRankingRow { EntityType = "company", EntityId = run.FactionId, CompanyAtEvent = run.FactionId,
+                    Metric = "damage", Score = run.TotalDamage, Outcome = outcome, DetailsJson = details });
+            }
+            EventRankingRuntime.Finish(new EventRankingSnapshot { Start = RankingStart, EndedAtUtc = EventRankingClock.UtcNow,
+                Status = status, EndReason = reason, Rows = rows.ToArray() });
+            RankingStart = null; RankingRuns.Clear();
         }
 
         private static bool HasRunningRuns()

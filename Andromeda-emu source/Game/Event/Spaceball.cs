@@ -11,6 +11,7 @@ using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
 using System;
 using System.Collections.Generic;
+using OrbitReborn_Emulator.Game.Event.Rankings;
 using System.Threading;
 
 namespace OrbitReborn_Emulator.Game.Event
@@ -49,6 +50,7 @@ namespace OrbitReborn_Emulator.Game.Event
         private static Npc mNpc;
         private static bool mActive;
         private static bool mFinalRewardGranted;
+        private static EventRankingStart mRankingStart;
         private static int mMMOScore;
         private static int mEICScore;
         private static int mVRUScore;
@@ -325,6 +327,7 @@ namespace OrbitReborn_Emulator.Game.Event
         {
             Output.WriteLine((object)("[Spaceball] " + reason), OutputLevel.Warning);
             Spaceball.DisposeRuntimeTimers();
+            Spaceball.CompleteRanking("cancelled", "broken_active_state", 0);
             bool wasActive = Spaceball.mActive;
             Spaceball.mActive = false;
             Spaceball.SetEventInformationActive(false);
@@ -635,6 +638,8 @@ namespace OrbitReborn_Emulator.Game.Event
 
                 Spaceball.DisposeRuntimeTimers();
                 Spaceball.mActive = true;
+                Spaceball.mRankingStart = EventRankingRuntime.NewStart("spaceball");
+                EventRankingRuntime.Begin(Spaceball.mRankingStart);
                 Spaceball.SetEventInformationActive(true);
                 SessionManager.BroadcastToUser(PacketComposer.Compose("n", "ssi|" + (object)Spaceball.mMMOScore + "|" + (object)Spaceball.mEICScore + "|" + (object)Spaceball.mVRUScore + "|" + (object)Spaceball.mBallSpeed + "|" + (object)Spaceball.mMoveToFirm));
                 Spaceball.BroadcastSpaceballLog("Spaceball event has started on 4-4.");
@@ -643,12 +648,28 @@ namespace OrbitReborn_Emulator.Game.Event
             }
         }
 
-        public static void StopSpaceball()
+        private static void CompleteRanking(string status, string reason, int winner)
+        {
+            if (Spaceball.mRankingStart == null) return;
+            var rows = new List<EventRankingRow>();
+            int[] scores = { 0, Spaceball.mMMOScore, Spaceball.mEICScore, Spaceball.mVRUScore };
+            for (int company = 1; company <= 3; ++company)
+                rows.Add(new EventRankingRow { EntityType = "company", EntityId = company, CompanyAtEvent = company,
+                    Metric = "goals", Score = scores[company], Outcome = status == "cancelled" ? "CANCELLED" : winner == 0 ? "NONE" : winner == company ? "WIN" : "LOSS",
+                    DetailsJson = EventRankingSnapshot.Json().Serialize(new { target_goals = WinScore, winner_company = winner }) });
+            EventRankingRuntime.Finish(new EventRankingSnapshot { Start = Spaceball.mRankingStart, EndedAtUtc = EventRankingClock.UtcNow,
+                Status = status, EndReason = reason, Rows = rows.ToArray() });
+            Spaceball.mRankingStart = null;
+        }
+
+        public static void StopSpaceball() { StopSpaceball(true); }
+        private static void StopSpaceball(bool manualStop)
         {
             lock (Spaceball.mStateSyncRoot)
             {
                 Spaceball.DisposeRuntimeTimers();
                 bool wasActive = Spaceball.mActive;
+                if (wasActive) Spaceball.CompleteRanking(manualStop ? "cancelled" : "finished", manualStop ? "manual_stop" : "time_limit", 0);
                 if (Spaceball.mActive)
                 {
                     Spaceball.mBallSpeed = 0;
@@ -678,7 +699,7 @@ namespace OrbitReborn_Emulator.Game.Event
 
         private static void CbStopSpaceball(object state)
         {
-            Spaceball.StopSpaceball();
+            Spaceball.StopSpaceball(false);
         }
 
         public static void DoDamage(int Damage, int FactionId)
@@ -815,6 +836,9 @@ namespace OrbitReborn_Emulator.Game.Event
 
         private static void SpaceBallReward()
         {
+            lock (Spaceball.mStateSyncRoot)
+            {
+            if (!Spaceball.mActive) return;
             Spaceball.Loot();
             if (Spaceball.mMoveToFirm == 1)
             {
@@ -842,11 +866,13 @@ namespace OrbitReborn_Emulator.Game.Event
             {
                 int winningFactionId = Spaceball.mMoveToFirm;
                 Spaceball.BroadcastSpaceballLog(Spaceball.GetCompanyName(winningFactionId) + " has won the Spaceball event.");
+                Spaceball.CompleteRanking("finished", "target_score", winningFactionId);
                 Spaceball.GrantWinningFactionReward(winningFactionId);
                 Spaceball.StopSpaceball();
                 return;
             }
             Spaceball.ResetBall();
+            }
         }
 
         private static void Loot()

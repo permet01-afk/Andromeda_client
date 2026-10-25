@@ -42,6 +42,8 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
         private static CDictionnary<int, int> NpcOwners = new CDictionnary<int, int>();
 
         private static CDictionnary<int, GateRun> Runs = new CDictionnary<int, GateRun>();
+        private static readonly Dictionary<string, GateRun> PendingCompletions = new Dictionary<string, GateRun>();
+        private static readonly GalaxyGateTimingStore TimingStore = new GalaxyGateTimingStore();
 
         private static CDictionnary<int, DateTime> LastDeathTime = new CDictionnary<int, DateTime>();
 
@@ -72,6 +74,11 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             public bool Completed;
             public bool Retired;
             public bool WaveFinished;
+            public GalaxyGateTimingRun Timing;
+            public GalaxyGateCompletion Completion;
+            public bool CompletionPersisting, CompletionPersisted;
+            public int CompletionFailures;
+            public Timer CompletionRetry;
             public Dictionary<int, GalaxyGateProtection> Escorts = new Dictionary<int, GalaxyGateProtection>();
         }
 
@@ -382,7 +389,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     client.ClearParameters();
                     client.SetParameter("uid", (object)session.CharacterInfo.Id);
                     client.SetParameter("gid", (object)gateId);
-                    client.ExecuteNonQuery("UPDATE player_galaxy_gates SET on_map=0, completed=0, current_wave=0, lives=0 WHERE user_id=@uid AND gate_id=@gid");
+                    client.ExecuteNonQuery("UPDATE player_galaxy_gates SET on_map=0, completed=0, current_wave=0, lives=0" + GalaxyGateTimingStore.ResetIfAvailable(s => client.ExecuteQueryTable(s)) + " WHERE user_id=@uid AND gate_id=@gid");
                 }
 
                 session.SendData(PacketComposer.Compose("A", "STD|Galaxy Gate failed: no lives left. Returning to X-1."));
@@ -393,6 +400,17 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             }
 
             GateRun run;
+
+            // A final kill waiting for durable closure survives an explicit
+            // session cleanup. Never spawn that final wave again while retrying.
+            GateRun pendingCompletion;
+            lock (SyncRoot) PendingCompletions.TryGetValue(TimingKey(session.CharacterInfo.Id, gateId), out pendingCompletion);
+            if (pendingCompletion != null)
+            {
+                TryPersistCompletion(pendingCompletion);
+                lock (SyncRoot) { if (!pendingCompletion.CompletionPersisted) return; }
+                completed = 1;
+            }
 
             lock (SyncRoot)
             {
@@ -420,6 +438,24 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     run.Lives = lives;
                 }
                 run.OwnerSession = session;
+            }
+
+            if (completed != 1 && run.Timing == null)
+            {
+                try
+                {
+                    int company = session.CharacterInfo.RealFaction > 0 ? session.CharacterInfo.RealFaction : session.CharacterInfo.FactionId;
+                    GalaxyGateTimingRun timing = TimingStore.Enter(session.CharacterInfo.Id, gateId, company);
+                    lock (SyncRoot) run.Timing = timing;
+                    if (!timing.TrackingAvailable) Output.WriteLine("[GG timing] Manual timing migration unavailable; existing Gate progression preserved without a ranking time.", OutputLevel.Warning);
+                    if (timing.GateCompleted) completed = 1;
+                }
+                catch (Exception ex)
+                {
+                    Output.WriteLine("[GG timing] Entry deferred: " + ex.Message, OutputLevel.Warning);
+                    session.SendData(PacketComposer.Compose("A", "STD|Galaxy Gate is temporarily unavailable. Please reconnect to retry."));
+                    return;
+                }
             }
 
             if (completed == 1)
@@ -833,6 +869,8 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     if (run.CurrentWave >= totalWaves)
                     {
                         run.Completed = true;
+                        run.Completion = GalaxyGateCompletion.Finish(run.Timing, GalaxyGateTimingClock.Instance);
+                        PendingCompletions[TimingKey(run.UserId, run.GateId)] = run;
                         completedNow = true;
                     }
                     else
@@ -843,24 +881,14 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 }
             }
 
-            Session ownerSession = SessionManager.GetSessionByCharacterId(ownerCharacterId);
-            if (ownerSession == null || ownerSession.CharacterInfo == null) return;
-
             if (completedNow)
             {
-                using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
-                {
-                    client.ClearParameters();
-                    client.SetParameter("uid", (object)ownerSession.CharacterInfo.Id);
-                    client.SetParameter("gid", (object)run.GateId);
-                    client.SetParameter("w", (object)totalWaves);
-                    client.ExecuteNonQuery("UPDATE player_galaxy_gates SET completed=1, current_wave=@w WHERE user_id=@uid AND gate_id=@gid");
-                }
-
-                EnsureExitPortal(ownerSession, run.GateId);
-                ownerSession.SendData(PacketComposer.Compose("A", "STD|Galaxy Gate finished! Exit portal spawned."));
+                TryPersistCompletion(run);
                 return;
             }
+
+            Session ownerSession = SessionManager.GetSessionByCharacterId(ownerCharacterId);
+            if (ownerSession == null || ownerSession.CharacterInfo == null) return;
 
             if (!waveFinishedNow)
                 return;
@@ -880,6 +908,73 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 "A",
                 "STD|Wave completed! Jump the Galaxy Gate to start the next wave, or use the exit portal to return to X-1."
             ));
+        }
+
+        private static string TimingKey(int player, int gate) { return player + ":" + gate; }
+
+        private static void TryPersistCompletion(GateRun run)
+        {
+            lock (SyncRoot)
+            {
+                if (run.Completion == null || run.CompletionPersisting || run.CompletionPersisted) return;
+                if (!run.Completion.TrackingAvailable && (!IsCurrentRun(run) || run.Retired))
+                {
+                    if (run.CompletionRetry != null) { run.CompletionRetry.Dispose(); run.CompletionRetry = null; }
+                    GateRun pending;
+                    string key = TimingKey(run.UserId, run.GateId);
+                    if (PendingCompletions.TryGetValue(key, out pending) && ReferenceEquals(pending, run)) PendingCompletions.Remove(key);
+                    return;
+                }
+                run.CompletionPersisting = true;
+            }
+            try
+            {
+                bool committed = TimingStore.Complete(run.Completion, TotalWaves(run.GateId));
+                lock (SyncRoot)
+                {
+                    run.CompletionPersisted = committed;
+                    if (run.CompletionRetry != null) { run.CompletionRetry.Dispose(); run.CompletionRetry = null; }
+                    GateRun pending;
+                    string key = TimingKey(run.UserId, run.GateId);
+                    if (PendingCompletions.TryGetValue(key, out pending) && ReferenceEquals(pending, run)) PendingCompletions.Remove(key);
+                }
+                if (!committed) return; // Last life lost / portal replaced: never resurrect it.
+                Session owner = SessionManager.GetSessionByCharacterId(run.CharacterId);
+                bool samePassage;
+                lock (SyncRoot)
+                {
+                    GateRun active = Runs.ContainsKey(run.CharacterId) ? Runs[run.CharacterId] : null;
+                    samePassage = CanPublishTimingCompletion(run.Completion, active == null ? null : active.Timing);
+                }
+                if (owner != null && owner.CharacterInfo != null && !owner.Stopped && !owner.StoppedPlayer
+                    && owner.CharacterInfo.MapId == run.MapId && !owner.CharacterInfo.Disconnected && samePassage)
+                {
+                    try
+                    {
+                        EnsureExitPortal(owner, run.GateId);
+                        owner.SendData(PacketComposer.Compose("A", "STD|Galaxy Gate finished! Exit portal spawned."));
+                    }
+                    catch (Exception ex) { Output.WriteLine("[GG timing] Exit portal refresh deferred: " + ex.Message, OutputLevel.Warning); }
+                }
+            }
+            catch (Exception ex)
+            {
+                Output.WriteLine("[GG timing] Completion deferred: " + ex.Message, OutputLevel.Warning);
+                lock (SyncRoot)
+                {
+                    int delay = Math.Min(30000, 1000 << Math.Min(run.CompletionFailures++, 5));
+                    if (run.CompletionRetry == null)
+                        run.CompletionRetry = new Timer(_ => TryPersistCompletion(run), null, Timeout.Infinite, Timeout.Infinite);
+                    run.CompletionRetry.Change(delay, Timeout.Infinite);
+                }
+            }
+            finally { lock (SyncRoot) run.CompletionPersisting = false; }
+        }
+
+        internal static bool CanPublishTimingCompletion(GalaxyGateCompletion completion, GalaxyGateTimingRun active)
+        {
+            return completion != null && active != null && completion.RunId == active.RunId
+                && completion.PlayerId == active.PlayerId && completion.GateId == active.GateId;
         }
 
         private static void SpawnWaveTransitionPortals(Session session, int gateId)
@@ -966,7 +1061,8 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             var rows = db.Query("SELECT on_map,lives FROM player_galaxy_gates WHERE user_id=@p AND gate_id=@g FOR UPDATE", "@p",playerId,"@g",gateId);
             if (rows.Rows.Count == 0 || Convert.ToInt32(rows.Rows[0]["on_map"]) != 1) return -1;
             int lives = Math.Max(0, Convert.ToInt32(rows.Rows[0]["lives"]) - 1);
-            db.Execute("UPDATE player_galaxy_gates SET lives=@l,on_map=IF(@l=0,0,on_map),completed=IF(@l=0,0,completed),current_wave=IF(@l=0,0,current_wave) WHERE user_id=@p AND gate_id=@g", "@l",lives,"@p",playerId,"@g",gateId);
+            string timingReset = lives == 0 ? GalaxyGateTimingStore.ResetIfAvailable(s => db.Query(s)) : "";
+            db.Execute("UPDATE player_galaxy_gates SET lives=@l,on_map=IF(@l=0,0,on_map),completed=IF(@l=0,0,completed),current_wave=IF(@l=0,0,current_wave)" + timingReset + " WHERE user_id=@p AND gate_id=@g", "@l",lives,"@p",playerId,"@g",gateId);
             return lives;
         }
 
@@ -1050,7 +1146,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     client.ClearParameters();
                     client.SetParameter("uid", (object)session.CharacterInfo.Id);
                     client.SetParameter("gid", (object)gateId);
-                    client.ExecuteNonQuery("UPDATE player_galaxy_gates SET on_map=0, completed=0, current_wave=0, lives=0 WHERE user_id=@uid AND gate_id=@gid");
+                    client.ExecuteNonQuery("UPDATE player_galaxy_gates SET on_map=0, completed=0, current_wave=0, lives=0" + GalaxyGateTimingStore.ResetIfAvailable(s => client.ExecuteQueryTable(s)) + " WHERE user_id=@uid AND gate_id=@gid");
                 }
                 session.SendData(PacketComposer.Compose("A", "STD|Galaxy Gate failed: no lives left."));
             }

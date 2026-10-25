@@ -69,7 +69,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                         "@cre", reward.Credits, "@uri", reward.Uridium, "@xp", reward.Experience, "@hon", reward.Honor,
                         "@ammo", reward.Ucb100, "@level", ExperienceSystem.GetLevelFromExperience(experience), "@rings", rings, "@uid", userId));
                     RequireOne(tx.Execute("UPDATE player_cargo SET seprom=seprom+@seprom WHERE id=@uid", "@seprom", reward.Seprom, "@uid", userId));
-                    RequireOne(tx.Execute("UPDATE player_galaxy_gates SET on_map=0,completed=0,current_wave=0,lives=0,parts='[]' WHERE user_id=@uid AND gate_id=@gid AND completed=1", "@uid", userId, "@gid", gateId));
+                    RequireOne(tx.Execute("UPDATE player_galaxy_gates SET on_map=0,completed=0,current_wave=0,lives=0,parts='[]'" + GalaxyGateTimingStore.ResetIfAvailable(s => tx.Query(s)) + " WHERE user_id=@uid AND gate_id=@gid AND completed=1", "@uid", userId, "@gid", gateId));
                 }
                 var receipt = new GalaxyGateRewardReceipt {
                     Paid = paid,
