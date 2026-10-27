@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Communication;
+﻿using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
@@ -140,6 +140,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             try
             {
                 Session.CharacterInfo.RefreshQuestRewardData();
+                Session.CharacterInfo.RefreshHistoricalQuestCargo();
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.RefreshHistoricalProgress(Session);
+                Session.SendData(Session.CharacterInfo.GetCargoMessage());
                 Session.SendData(UserDataComposer.Compose(Session));
                 Session.SendData(PacketComposer.Compose("B", Session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                 Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
@@ -515,7 +518,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 session.CharacterInfo.DisconnectTimer = (Timer)null;
                 --TimerManager.TimerRunning;
 
-                session.EndGameplay(true);
+                session.EndGameplayFromTimer(true);
                 return;
             }
 

@@ -41,7 +41,8 @@ try {
     $questService = new QuestService($db, $playerId);
     $weeklyMissionService = new WeeklyMissionService($db, $playerId);
 } catch (Exception $e) {
-    quest_api_response(['ok' => false, 'error' => 'Quest service unavailable: ' . $e->getMessage()], 500);
+    error_log('Quest API initialization failed: ' . get_class($e) . ': ' . $e->getMessage());
+    quest_api_response(['ok' => false, 'error' => 'Quest service is temporarily unavailable. Please try again.'], 500);
 }
 
 function quest_api_payload(QuestService $questService, WeeklyMissionService $weeklyMissionService, string $csrfToken, string $message = '', bool $includeCatalog = false, bool $includePlayerState = false): array
@@ -71,12 +72,22 @@ function quest_api_payload(QuestService $questService, WeeklyMissionService $wee
         'weekly' => $weeklyState,
     ];
 
+    $historicalActive = method_exists($questService, 'isHistoricalCatalogActive') && $questService->isHistoricalCatalogActive();
+    $payload['questCatalogueMode'] = $historicalActive ? 'historical' : 'legacy';
+    if ($historicalActive) {
+        $payload['historical'] = $questService->getHistoricalMeta();
+        $payload['runtime_reason_labels'] = HistoricalQuestLabels::runtimeReasons();
+    }
+
     if ($includeCatalog) {
         $payload['quests'] = [
-            'basic' => $questService->getBasicQuests(),
-            'pvp' => $questService->getPvpQuests(),
+            'basic' => $historicalActive ? [] : $questService->getBasicQuests(),
+            'pvp' => $historicalActive ? [] : $questService->getPvpQuests(),
             'havok' => $questService->getHavokQuests(),
         ];
+        if ($historicalActive) {
+            $payload['quests']['historical'] = $questService->getHistoricalQuests();
+        }
     }
 
     if ($includePlayerState) {
@@ -113,7 +124,9 @@ try {
         if ($code === '') {
             throw new Exception('Missing quest code.');
         }
-        if ($group === 'pvp') {
+        if (in_array($group, ['historical', 'normal', 'challenges', 'daily', 'event'], true)) {
+            $message = $questService->acceptHistoricalQuest($code);
+        } elseif ($group === 'pvp') {
             $message = $questService->acceptPvpQuest($code);
         } elseif ($group === 'havok') {
             $message = $questService->acceptHavokQuest($code);
@@ -134,7 +147,9 @@ try {
         if ($code === '') {
             throw new Exception('Missing quest code.');
         }
-        if ($group === 'pvp') {
+        if (in_array($group, ['historical', 'normal', 'challenges', 'daily', 'event'], true)) {
+            $message = $questService->claimHistoricalQuest($code);
+        } elseif ($group === 'pvp') {
             $message = $questService->claimPvpQuest($code);
         } elseif ($group === 'havok') {
             $message = $questService->claimHavokQuest($code);
@@ -155,7 +170,9 @@ try {
         if ($code === '') {
             throw new Exception('Missing quest code.');
         }
-        if ($group === 'pvp') {
+        if (in_array($group, ['historical', 'normal', 'challenges', 'daily', 'event'], true)) {
+            $message = $questService->abortHistoricalQuest($code);
+        } elseif ($group === 'pvp') {
             $message = $questService->abortPvpQuest($code);
         } elseif ($group === 'havok') {
             $message = $questService->abortHavokQuest($code);
@@ -169,6 +186,10 @@ try {
 
     throw new Exception('Unknown action.');
 } catch (Exception $e) {
+    if ($e instanceof PDOException) {
+        error_log('Quest API database operation failed: ' . $e->getMessage());
+        quest_api_response(['ok' => false, 'error' => 'Quest service is temporarily unavailable. Please try again.', 'csrfToken' => $csrfToken], 500);
+    }
     quest_api_response([
         'ok' => false,
         'error' => $e->getMessage(),

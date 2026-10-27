@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!--Project was exported from assembly: C:\Totally not GTA\andromedaserver\Emulator\MilkyWay Emulator.exe-->
   <PropertyGroup>
@@ -201,6 +201,12 @@
     <Compile Include="Game\Moderation\ModerationBanManager.cs" />
     <Compile Include="Game\Quests\QuestOreProgress.cs" />
     <Compile Include="Game\Quests\QuestObjectiveProgress.cs" />
+    <Compile Include="Game\Quests\QuestObjectiveProgress.Historical.cs" />
+    <Compile Include="Game\Quests\QuestObjectiveProgress.Persistence.cs" />
+    <Compile Include="Game\Quests\QuestObjectiveProgress.BufferedLegacy.cs" />
+    <Compile Include="Game\Quests\QuestObjectiveProgress.GalaxyGate.cs" />
+    <Compile Include="Game\Characters\CharacterInfo.HistoricalQuests.cs" />
+    <Compile Include="Game\Maps\Collectables\NaturalOre.cs" />
     <Compile Include="Game\Npcs\Npc.cs" />
     <Compile Include="Game\Npcs\NpcAI.cs" />
     <Compile Include="Game\Npcs\NpcManager.cs" />

@@ -14,6 +14,8 @@ namespace OrbitReborn_Emulator.Game.Maps
         private double mCacheAge;
         private int mMaxUsers;
         public CDictionnary<int, Collectable> Collectables;
+        internal readonly System.Collections.Generic.List<NaturalOre> NaturalOres = new System.Collections.Generic.List<NaturalOre>();
+        internal bool NaturalOresInitialized;
 
         public int Id
         {

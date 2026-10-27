@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Game.Characters;
+﻿using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Event;
@@ -24,6 +24,8 @@ namespace OrbitReborn_Emulator.Game.Npcs
 {
     public class Npc
     {
+        internal readonly System.Collections.Concurrent.ConcurrentDictionary<int, Tuple<long, string, int>> HistoricalWeapons = new System.Collections.Concurrent.ConcurrentDictionary<int, Tuple<long, string, int>>();
+
         public ConcurrentDictionary<int, byte> SpawnedMinions = new ConcurrentDictionary<int, byte>();
 
         public double CubikonLastSpawnTick = 0.0;
@@ -1946,6 +1948,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
         private void CompleteRespawnCycle()
         {
             this.mSpawnSeq++;
+            this.HistoricalWeapons.Clear();
 
             this.SpawnedMinions.Clear();
             this.Attackers.Clear();
@@ -2426,6 +2429,7 @@ namespace OrbitReborn_Emulator.Game.Npcs
 
             long perfQuestStart = PerformanceProfiler.Start();
             questProgressChanged = QuestObjectiveProgress.AddNpcKillProgress(sessionByCharacterId.CharacterInfo.Id, values.NpcName, values.MapId);
+                    questProgressChanged = QuestObjectiveProgress.AddHistoricalNpcKill(sessionByCharacterId, values.NpcName, values.MapId, this) || questProgressChanged;
             SqlFailureScope.ThrowIfCurrentFailed();
             perfQuestMs += PerformanceProfiler.ElapsedMilliseconds(perfQuestStart);
 
@@ -2684,10 +2688,12 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     }
                 }
 
+                int historicalApplied = 0;
                 var deathContext = DroneWearService.Capture(sessionByCharacterId, GameplayDeathCause.Npc);
                 lock (sessionByCharacterId.CharacterInfo.DroneImpactSyncRoot)
                 {
                 if (!DroneWearService.IsCurrentLife(sessionByCharacterId, deathContext) || sessionByCharacterId.CharacterInfo.ShipHp <= 0) return;
+                long historicalBefore = (long)Math.Max(0, sessionByCharacterId.CharacterInfo.ShipHp) + Math.Max(0, sessionByCharacterId.CharacterInfo.ShipShield);
                 int shieldDmg = Convert.ToInt32((double)dmg * sessionByCharacterId.CharacterInfo.ShieldAbsorption);
                 int hpDmg = dmg - shieldDmg;
 
@@ -2718,9 +2724,11 @@ namespace OrbitReborn_Emulator.Game.Npcs
                     sessionByCharacterId.CharacterInfo.ShipShield = 0;
 
                 sessionByCharacterId.CharacterInfo.ShipHp -= hpDmg;
+                historicalApplied = (int)Math.Max(0, historicalBefore - Math.Max(0, sessionByCharacterId.CharacterInfo.ShipHp) - Math.Max(0, sessionByCharacterId.CharacterInfo.ShipShield));
                 DroneWearService.MarkLethalImpact(sessionByCharacterId, deathContext);
                 }
 
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalDamageReceived(sessionByCharacterId, historicalApplied);
                 sessionByCharacterId.CharacterInfo.RegisterIncomingAttackActivity();
 
                 ServerMessage npcDamageMessage = PacketComposer.Compose(

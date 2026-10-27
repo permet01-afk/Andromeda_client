@@ -1320,6 +1320,7 @@ const PACKET_HANDLERS = {
     RDY: handlePacket_RDY,
     ES: handlePacket_expansionStage,
     c: handlePacket_c,
+    e: handlePacket_oreCollected,
     f: handlePacket_f,
     H: handlePacket_H,
     HPT: handlePacket_HPT,
@@ -6871,6 +6872,20 @@ function handlePacket_W(parts, i) {
     }
 }
 
+function handlePacket_oreCollected(parts, i) {
+    // Flash ORE_COLLECTED_BY_HERO (e), distinct from cargo rewards (y|CAR).
+    // The confirmed natural-ore message uses oksammel, without a quantity.
+    // E remains the authoritative cargo snapshot; this packet is display only.
+    const rawOreId = String(parts[i] == null ? "" : parts[i]);
+    if (!/^[123]$/.test(rawOreId)) return;
+    const oreIndex = Number(rawOreId) - 1;
+    const oreKeys = [ "ore_prometium", "ore_endurium", "ore_terbium" ];
+    const oreNames = [ "Prometium", "Endurium", "Terbium" ];
+    const oreName = flashLocaleGetTextRaw(oreKeys[oreIndex]) || oreNames[oreIndex];
+    const template = flashLocaleGetTextRaw("oksammel") || "%! collected";
+    addServerInfoLogMessage(template.replace(/%!/, oreName), "ST");
+}
+
 function handlePacket_y(parts, i) {
     const type = parts[i];
     if (!type) return;
@@ -6915,6 +6930,26 @@ function handlePacket_y(parts, i) {
         } else {
             if (typeof stopHeroCollectorBeam === "function") stopHeroCollectorBeam();
             if (typeof pendingCollectBoxId !== "undefined") pendingCollectBoxId = null;
+        }
+        return;
+    }
+    if (type === "CAR") {
+        // Flash BoxCollectAssembly.assembleOre: one confirmed reward message
+        // feeds both the buffered client Log and the standard instant log.
+        // E remains the authoritative absolute cargo snapshot; CAR is display only.
+        const oreKeys = [ "ore_prometium", "ore_endurium", "ore_terbium", "ore_xenomit", "ore_prometid", "ore_duranium", "ore_promerium" ];
+        const oreNames = [ "Prometium", "Endurium", "Terbium", "Xenomit", "Prometid", "Duranium", "Promerium" ];
+        const lines = [];
+        for (let n = 0; n < oreKeys.length; n++) {
+            const rawAmount = String(parts[i + 1 + n] == null ? "" : parts[i + 1 + n]);
+            if (!/^\d+$/.test(rawAmount)) return;
+            const amount = Number(rawAmount);
+            if (!Number.isSafeInteger(amount) || amount < 0) return;
+            if (amount > 0) lines.push(amount + " " + (flashLocaleGetTextRaw(oreKeys[n]) || oreNames[n]));
+        }
+        if (lines.length) {
+            const prefix = flashLocaleGetTextRaw("farmresult") || "You collected: ";
+            addServerInfoLogMessage(prefix + "\n" + lines.join("\n"), "ST");
         }
         return;
     }
@@ -7719,9 +7754,19 @@ function handlePacket_7(parts, i) {
 
 function handlePacket_QST(parts, i) {
     const sub = String(parts[i] || "").toUpperCase();
+    if (sub === "STATE") {
+        const payload = parts.slice(i + 1).join("|");
+        if (!payload || payload.length > 131072 || typeof window.receiveQuestServerState !== "function") return;
+        try {
+            window.receiveQuestServerState(JSON.parse(payload));
+        } catch (_) {
+            console.warn("[QUEST] Invalid state snapshot ignored.");
+        }
+        return;
+    }
     if (sub === "UPD" || sub === "UPDATE" || sub === "") {
         if (typeof window.scheduleQuestRefreshFromServer === "function") {
-            window.scheduleQuestRefreshFromServer();
+            window.scheduleQuestRefreshFromServer("progress");
         }
         return;
     }
@@ -7732,6 +7777,15 @@ function handlePacket_QST(parts, i) {
 function handlePacket_QuestFM(parts, i) {
     if (parts.length < i + 1) return;
     const sub = parts[i];
+    const legacyHandlers = { ini: "initQuestFromServer", upd: "updateQuestCondition", p: "privilegeQuestById",
+        a: "setQuestAccomplished", c: "setQuestCancelled", f: "setQuestFailed" };
+    if (Object.prototype.hasOwnProperty.call(legacyHandlers, sub) && typeof window[legacyHandlers[sub]] !== "function") {
+        // Old Flash packets are invalidation hints when no legacy renderer is
+        // installed. Reuse the authoritative PHP tracker instead of executing
+        // missing callbacks or introducing another XML quest engine.
+        if (typeof window.scheduleQuestRefreshFromServer === "function") window.scheduleQuestRefreshFromServer();
+        return;
+    }
     switch (sub) {
       case "ini":
         {

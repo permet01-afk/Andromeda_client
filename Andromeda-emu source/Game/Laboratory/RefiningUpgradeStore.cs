@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Storage;
+﻿using OrbitReborn_Emulator.Storage;
 using MySqlConnector;
 using System;
 using System.Data;
@@ -137,6 +137,24 @@ namespace OrbitReborn_Emulator.Game.Laboratory
             string guard = remove ? column + ">=@amount" : column + "<=2147483647-@amount";
             ExecuteSingle("UPDATE player_cargo SET " + column + "=" + column + (remove ? "-" : "+") + "@amount WHERE id=@id AND " + guard,
                 "@amount", amount, "@id", playerId);
+        }
+
+        // A natural pickup is one unit. The capacity check and increment share
+        // the cargo row lock, including concurrent web reward/refinement writes.
+        public static bool TryCollectNaturalOre(int playerId, int oreId, int capacity, out DataRow snapshot)
+        {
+            snapshot = null;
+            string column = oreId == 1 ? "prometium" : oreId == 2 ? "endurium" : oreId == 3 ? "terbium" : null;
+            if (column == null || capacity <= 0) return false;
+            using (var tx = new SqlDatabaseTransaction(SqlDatabaseManager.GenerateConnectionString()))
+            {
+                int changed = tx.Execute("UPDATE player_cargo SET " + column + "=" + column + "+1 WHERE id=@id AND " + column + "<2147483647 AND (CAST(prometium AS SIGNED)+endurium+terbium+palladium+prometid+duranium+promerium+seprom)<@capacity",
+                    "@id", playerId, "@capacity", capacity);
+                if (changed != 1) return false;
+                var rows = tx.Query("SELECT prometium,endurium,terbium,xenomit,palladium,prometid,duranium,promerium,seprom FROM player_cargo WHERE id=@id", "@id", playerId);
+                if (rows.Rows.Count != 1) throw new InvalidOperationException("Collected cargo unavailable.");
+                tx.Commit(); snapshot = rows.Rows[0]; return true;
+            }
         }
 
         public bool TryApply(int playerId, string target, int ore, int amount, long now,

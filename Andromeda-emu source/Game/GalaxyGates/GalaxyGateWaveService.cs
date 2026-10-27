@@ -3,6 +3,7 @@ using OrbitReborn_Emulator.Game.Maps;
 using OrbitReborn_Emulator.Game.Npcs;
 using OrbitReborn_Emulator.Game.Portal;
 using OrbitReborn_Emulator.Game.Sessions;
+using OrbitReborn_Emulator.Game.Quests;
 using OrbitReborn_Emulator.Game.Techs;
 using OrbitReborn_Emulator.Libs;
 using OrbitReborn_Emulator.Storage;
@@ -929,6 +930,8 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             }
             try
             {
+                Session questOwner = SessionManager.GetSessionByCharacterId(run.CharacterId);
+                QuestObjectiveProgress.CheckpointHistoricalProgress(questOwner);
                 bool committed = TimingStore.Complete(run.Completion, TotalWaves(run.GateId));
                 lock (SyncRoot)
                 {
@@ -940,6 +943,11 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 }
                 if (!committed) return; // Last life lost / portal replaced: never resurrect it.
                 Session owner = SessionManager.GetSessionByCharacterId(run.CharacterId);
+                if (owner != null && owner.CharacterInfo != null)
+                {
+                    QuestObjectiveProgress.RefreshHistoricalProgress(owner);
+                    owner.SendData(PacketComposer.Compose("QST", "UPD"));
+                }
                 bool samePassage;
                 lock (SyncRoot)
                 {

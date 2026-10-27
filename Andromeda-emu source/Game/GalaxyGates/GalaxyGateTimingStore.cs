@@ -2,6 +2,8 @@ using OrbitReborn_Emulator.Storage;
 using System;
 using System.Data;
 using System.Linq;
+using OrbitReborn_Emulator.Game.Quests;
+using OrbitReborn_Emulator.Game.Sessions;
 
 namespace OrbitReborn_Emulator.Game.GalaxyGates
 {
@@ -135,8 +137,12 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     if (Convert.ToInt32(row["on_map"]) != 1 || Convert.ToInt32(row["lives"]) <= 0 || Convert.ToInt32(row["current_wave"]) != totalWaves)
                     { tx.Commit(); return false; }
                     if (Convert.ToInt32(row["completed"]) != 1)
+                    {
                         RequireOne(tx.Execute("UPDATE player_galaxy_gates SET completed=1,current_wave=@wave WHERE user_id=@uid AND gate_id=@gid AND on_map=1 AND lives>0 AND current_wave=@wave",
                             "@wave", totalWaves, "@uid", done.PlayerId, "@gid", done.GateId));
+                        var owner = SessionManager.GetSessionByCharacterId(done.PlayerId);
+                        QuestObjectiveProgress.ApplyGalaxyGateCompletionInTransaction(tx, done.PlayerId, done.GateId, owner == null ? null : owner.CharacterInfo);
+                    }
                     tx.Commit(); return true;
                 }
                 if (!SchemaReady(tx)) throw new InvalidOperationException("Galaxy Gate timing schema became unavailable; completion retained for retry.");
@@ -157,6 +163,8 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                     "@version", done.RuleVersion, "@eligible", done.RankEligible ? 1 : 0, "@reason", (object)done.ExclusionReason ?? DBNull.Value));
                 RequireOne(tx.Execute("UPDATE player_galaxy_gates SET completed=1,current_wave=@wave WHERE user_id=@uid AND gate_id=@gid AND timing_run_id=@run AND on_map=1 AND lives>0",
                     "@wave", totalWaves, "@uid", done.PlayerId, "@gid", done.GateId, "@run", done.RunId));
+                var liveOwner = SessionManager.GetSessionByCharacterId(done.PlayerId);
+                QuestObjectiveProgress.ApplyGalaxyGateCompletionInTransaction(tx, done.PlayerId, done.GateId, liveOwner == null ? null : liveOwner.CharacterInfo);
                 tx.Commit(); return true;
             }
         }

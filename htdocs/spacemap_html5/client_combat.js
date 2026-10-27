@@ -771,7 +771,15 @@ function sendCollectBox(id, options = {}) {
     const serverId = typeof extractCollectableServerId === "function" ? extractCollectableServerId(id) : typeof id === "string" && id.startsWith("c:") ? id.slice(2) : id;
     const packet = `x|${serverId}`;
     sendRaw(packet);
-    if (opts.playFlashFeedback) {
+    if (opts.playFlashOreFeedback) {
+        const ore = typeof entities !== "undefined" ? entities[id] : null;
+        if (ore) {
+            if (typeof playCollectSoundAt === "function") playCollectSoundAt(ore.x, ore.y, 3);
+            if (typeof startCollectableBoxBeam === "function") {
+                startCollectableBoxBeam(ore.x, ore.y, FLASH_ORE_COLLECT_BEAM_DURATION_MS[Number(ore.type)], "ore");
+            }
+        }
+    } else if (opts.playFlashFeedback) {
         if (typeof playFlashExactCollectFeedback === "function") {
             playFlashExactCollectFeedback(id);
         }
@@ -876,6 +884,11 @@ const FLASH_EXACT_COLLECT_EPSILON = 1.5;
 
 const BOX_COLLECT_DELAY_MS = 1500;
 
+// Andromeda visual choice revised on 2026-10-27: one second for all three ores.
+// Original Flash durations were Prometium 1000ms, Endurium 2000ms, Terbium 3500ms.
+// Only beam playback changes: the arrival request is immediate, with no server-side lock.
+const FLASH_ORE_COLLECT_BEAM_DURATION_MS = Object.freeze({ 30: 1000, 31: 1000, 32: 1000 });
+
 function hasReachedCollectApproach(targetBox) {
     if (!targetBox) return false;
     const collectApproach = typeof computeCollectApproach === "function" ? computeCollectApproach(targetBox) : null;
@@ -890,6 +903,13 @@ function handleCollectRange(targetBox, distToBox, collectRequested) {
     const collectApproach = typeof computeCollectApproach === "function" ? computeCollectApproach(targetBox) : null;
     const distToApproach = collectApproach ? Math.hypot((collectApproach.x ?? targetBox.x) - shipX, (collectApproach.y ?? targetBox.y) - shipY) : distToBox;
     const effectiveDistance = collectApproach ? distToApproach : distToBox;
+    if (targetBox.category === "ore" && Object.prototype.hasOwnProperty.call(FLASH_ORE_COLLECT_BEAM_DURATION_MS, Number(targetBox.type))) {
+        if (hasReachedCollectApproach(targetBox)) {
+            return sendCollectBox(targetBox.id, { playFlashOreFeedback: true, suppressStartBeam: true });
+        }
+        if (isCollectDelayActiveFor(targetBox.id)) cancelCollectDelay();
+        return false;
+    }
     if (typeof shouldCollectLikeFlash === "function" && shouldCollectLikeFlash(targetBox)) {
         if (hasReachedCollectApproach(targetBox)) {
             return sendCollectBox(targetBox.id, {

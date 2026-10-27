@@ -1,4 +1,4 @@
-
+﻿
 
 using OrbitReborn_Emulator.Communication.Incoming;
 using OrbitReborn_Emulator.Config;
@@ -128,6 +128,8 @@ namespace OrbitReborn_Emulator
                 }));
                 return;
             }
+
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.InitializeHistoricalProgress();
 
             Output.WriteLine(
                 (object)Localization.GetValue("core.init.ok", Math.Round((DateTime.Now - Program.InitStart).TotalSeconds, 2).ToString()),

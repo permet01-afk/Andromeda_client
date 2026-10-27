@@ -221,7 +221,15 @@ function gg_build_pilot_bar($db, $userId) {
         'uridium' => number_format((int)($freshPilot['uridium'] ?? 0)),
         'experience' => number_format((int)($freshPilot['experience'] ?? 0)),
         'honor' => number_format((int)($freshPilot['honor'] ?? 0)),
+        'free_energy' => gg_free_energy($db, $userId),
     ];
+}
+
+function gg_free_energy($db, $userId) {
+    if (!gg_has_column($db, 'site_player_gg_energy', 'energy')) return 0;
+    $stmt = $db->prepare('SELECT energy FROM site_player_gg_energy WHERE player_id = :id LIMIT 1');
+    $stmt->execute([':id' => $userId]);
+    return max(0, (int)$stmt->fetchColumn());
 }
 
 try {
@@ -273,6 +281,7 @@ try {
             'gates' => gg_build_gate_status($db, $userId, $gatesConfig, $totalWaves),
             'multiplier_next' => $multiplierLevel + 1,
             'csrf' => $_SESSION['gg_csrf'],
+            'free_energy' => gg_free_energy($db, $userId),
             'pilot' => gg_build_pilot_bar($db, $userId)
         ]);
         exit();
@@ -436,9 +445,22 @@ try {
     $stmt->execute([':id' => $userId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    $freeEnergyAvailable = 0;
+    $freeSpinsUsed = 0;
+    if ($user && gg_has_column($db, 'site_player_gg_energy', 'energy')) {
+        $createEnergy = $db->prepare('INSERT IGNORE INTO site_player_gg_energy(player_id,energy) VALUES (:id,0)');
+        $createEnergy->execute([':id' => $userId]);
+        $energyStmt = $db->prepare('SELECT energy FROM site_player_gg_energy WHERE player_id=:id LIMIT 1 FOR UPDATE');
+        $energyStmt->execute([':id' => $userId]);
+        $freeEnergyAvailable = max(0, (int)$energyStmt->fetchColumn());
+        $freeSpinsUsed = min($spinAmount, $freeEnergyAvailable);
+    }
+    $paidSpins = $spinAmount - $freeSpinsUsed;
+    $totalCost = $costPerSpin * $paidSpins;
+
     if (!$user || (int)$user['uridium'] < $totalCost) {
         $db->rollBack();
-        echo json_encode(["status" => "error", "message" => "Not enough Uridium! Need " . number_format($totalCost) . " U."]);
+        echo json_encode(["status" => "error", "message" => "Not enough Uridium! Need " . number_format($totalCost) . " U.", 'free_energy'=>$freeEnergyAvailable, 'cost_uridium'=>$totalCost]);
         exit();
     }
 
@@ -639,8 +661,14 @@ try {
     $sqlUser = "UPDATE users SET " . implode(', ', $updatesUser) . " WHERE id = :id AND uridium >= :cost";
     $updateUser = $db->prepare($sqlUser);
     $updateUser->execute($paramsUser);
-    if ($updateUser->rowCount() < 1) {
+    if ($totalCost > 0 && $updateUser->rowCount() < 1) {
         throw new RuntimeException('Unable to debit Uridium safely.');
+    }
+
+    if ($freeSpinsUsed > 0) {
+        $debitEnergy = $db->prepare('UPDATE site_player_gg_energy SET energy=energy-:amount WHERE player_id=:id AND energy>=:minimum');
+        $debitEnergy->execute([':amount'=>$freeSpinsUsed, ':minimum'=>$freeSpinsUsed, ':id'=>$userId]);
+        if ($debitEnergy->rowCount() !== 1) throw new RuntimeException('Unable to consume free energy safely.');
     }
 
     $updatesCargo = [];
@@ -759,6 +787,10 @@ try {
         'multiplier_next' => $currentMultLvl + 1,
         'gate_updates' => array_values($gatesStatus),
         'type' => $hasGatePartEvent ? 'part' : 'item',
+        'free_energy' => max(0, $freeEnergyAvailable - $freeSpinsUsed),
+        'free_spins_used' => $freeSpinsUsed,
+        'paid_spins' => $paidSpins,
+        'cost_uridium' => $totalCost,
         'pilot' => $pilotBarStats
     ]);
 

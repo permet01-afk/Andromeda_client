@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Storage;
+﻿using OrbitReborn_Emulator.Storage;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,7 +6,7 @@ using System.Globalization;
 
 namespace OrbitReborn_Emulator.Game.Quests
 {
-    internal static class QuestObjectiveProgress
+    internal static partial class QuestObjectiveProgress
     {
         private static readonly object SchemaSync = new object();
         private static bool SchemaEnsured = false;
@@ -71,6 +71,18 @@ namespace OrbitReborn_Emulator.Game.Quests
         }
 
         private static bool AddProgress(int playerId, string objectiveType, string targetKey, int amount, bool distributeSurplus)
+        {
+            if (playerId <= 0 || amount <= 0 || string.IsNullOrEmpty(objectiveType) || string.IsNullOrEmpty(targetKey))
+                return false;
+            // Loading errors remain visible to the caller. A live quest cache
+            // must not silently fall back to an independent additive SQL write.
+            HistoricalPlayer player = GetQuestPlayerForLegacy(playerId);
+            return player == null
+                ? AddProgressSynchronously(playerId, objectiveType, targetKey, amount, distributeSurplus)
+                : AddBufferedLegacyProgress(playerId, player, objectiveType, targetKey, amount, distributeSurplus);
+        }
+
+        private static bool AddProgressSynchronously(int playerId, string objectiveType, string targetKey, int amount, bool distributeSurplus)
         {
             if (playerId <= 0 || amount <= 0 || string.IsNullOrEmpty(objectiveType) || string.IsNullOrEmpty(targetKey))
                 return false;
@@ -140,6 +152,16 @@ namespace OrbitReborn_Emulator.Game.Quests
         }
 
         private static bool AddWeeklyProgress(int playerId, string objectiveType, List<string> targetKeys, int amount)
+        {
+            if (playerId <= 0 || amount <= 0 || string.IsNullOrEmpty(objectiveType) || targetKeys == null || targetKeys.Count == 0)
+                return false;
+            HistoricalPlayer player = GetQuestPlayerForLegacy(playerId);
+            return player == null
+                ? AddWeeklyProgressSynchronously(playerId, objectiveType, targetKeys, amount)
+                : AddBufferedWeeklyProgress(playerId, player, objectiveType, targetKeys, amount);
+        }
+
+        private static bool AddWeeklyProgressSynchronously(int playerId, string objectiveType, List<string> targetKeys, int amount)
         {
             if (playerId <= 0 || amount <= 0 || string.IsNullOrEmpty(objectiveType) || targetKeys == null || targetKeys.Count == 0)
                 return false;
@@ -334,8 +356,8 @@ namespace OrbitReborn_Emulator.Game.Quests
             return client.ExecuteNonQuery(
                 "INSERT INTO site_player_quest_objective_progress " +
                 "    (player_id, quest_id, objective_type, target_key, current_amount, updated_at) " +
-                "VALUES " +
-                "    (@player_id, @quest_id, @objective_type, @target_key, LEAST(@amount, @required_amount), NOW()) " +
+                "SELECT @player_id, @quest_id, @objective_type, @target_key, LEAST(@amount, @required_amount), NOW() " +
+                "FROM site_quests q WHERE q.id=@quest_id AND q.enabled=1 " +
                 "ON DUPLICATE KEY UPDATE " +
                 "    current_amount = LEAST(current_amount + @amount, @required_amount), " +
                 "    updated_at = NOW()"

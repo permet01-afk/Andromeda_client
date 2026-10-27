@@ -1170,6 +1170,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 SendPlayerScopedCombatMessage(instanceByMapId, Session, SessionManager.GetSessionByCharacterId(targetId), launcherMessage);
             SendRocketLauncherStatus(Session);
 
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalWeapon(Session, "rocket", rocketId);
             int[] missileDamages = BuildRocketLauncherMissileDamages(Session, rocketId, loadedCount, targetIsNpc, targetNpcShipId);
             for (int missileIndex = 0; missileIndex < missileDamages.Length; missileIndex++)
             {
@@ -1251,7 +1252,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                     else
                     {
-                        ApplyDamageToNpc(session, npc, damage, instanceByMapId);
+                        ApplyDamageToNpc(session, npc, damage, instanceByMapId, "L", "rocket", context.RocketId);
                     }
                     return;
                 }
@@ -1268,7 +1269,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     return;
 
                 if (context == null || context.TargetLife == null || !DroneWearService.IsCurrentLife(targetSession, context.TargetLife)) return;
-                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId, context.TargetLife);
+                ApplyDamageToPlayer(session, targetSession, damage, instanceByMapId, context.TargetLife, "L", "rocket", context.RocketId);
 
             }
             catch (Exception ex)
@@ -1750,6 +1751,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (chainImpulseTargets.Count == 0)
                 return;
 
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalWeapon(session, "tech", 0);
             session.CharacterInfo.LastTechEci = session.TechState.Records[2].CooldownUntil - TECH_CHAIN_IMPULSE_COOLDOWN_SECONDS;
             session.SendData(PacketComposer.Compose("A", "CLD|ECI|" + (object)TECH_CHAIN_IMPULSE_COOLDOWN_SECONDS));
 
@@ -2201,6 +2203,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                     try
                     {
+                    OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalPlayerDamage(attacker, target, damagePerTick, "skill", 0);
                     target.CharacterInfo.TouchFightUntilDatabase(attackTime);
                     if (damagePerTick > 0)
                         target.CharacterInfo.RegisterShieldDamageReceived();
@@ -2242,6 +2245,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     npcTarget.ShipHp = 0;
                 }
 
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalNpcDamage(attacker, npcTarget, damagePerTick, "skill", 0);
                 foreach (MapActor key in instanceByMapId.GetActorSnapshot())
                 {
                     if (key.Type == MapActorType.UserCharacter)
@@ -2912,6 +2916,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
                     return;
                 }
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalWeapon(Session, "rocket", rocketId);
                 Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
 
                 referenceObject.UpdateAttackers(Session.CharacterId, 0);
@@ -2986,6 +2991,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
                     return;
                 }
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalWeapon(Session, "rocket", rocketId);
                 Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
 
 
@@ -3540,6 +3546,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         return;
                     }
 
+                    OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalWeapon(Session, "laser", Ammo);
                     Session.SendData(PacketComposer.Compose("B", Session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                 }
 
@@ -3712,6 +3719,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (damageObserverInstance != null)
                     SendNpcDamageUpdate(damageObserverInstance, Session, Npc, num2);
 
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalNpcDamage(Session, Npc, num2, "laser", Ammo);
                 Npc.UpdateAttackers(Session.CharacterId, num2);
 
                 if (Npc.ShipHp > 0)
@@ -3808,6 +3816,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         return;
                     }
 
+                    OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalWeapon(Session, "laser", Ammo);
                     Session.SendData(PacketComposer.Compose("B", Session.CharacterInfo.GetPrimaryWeaponInfoPayload()));
                 }
 
@@ -3991,7 +4000,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 TeamDeathMatch.RecordDamage(Session, Ennemy, num2);
                 DroneWearService.MarkLethalImpact(Ennemy, deathContext);
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.CaptureHistoricalLethalPlayerWeapon(Session, Ennemy, deathContext, "laser", Ammo);
                 }
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalPlayerDamage(Session, Ennemy, num2, "laser", Ammo);
                 Ennemy.CharacterInfo.TouchFightUntilDatabase(attackTime);
                 Fight.ApplyEnergyLeech(Session, num2, Ammo, Instance);
 
@@ -4332,6 +4343,9 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Session.SendData(Session.CharacterInfo.GetCargoMessage());
 
             CargoBox cargoBox = new CargoBox(num, locX, locY, instance.MapId);
+            cargoBox.SourcePlayerId = Session.CharacterId;
+            cargoBox.SourceFactionId = Session.CharacterInfo.FactionId;
+            cargoBox.SourceShipId = Session.CharacterInfo.ShipId;
 
             cargoBox.Prometium = lostPrometium;
             cargoBox.Endurium = lostEndurium;
@@ -4783,7 +4797,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
         }
 
-        private static void ApplyDamageToNpc(Session session, Npc npc, int damage, MapInstance instance, string damageType = "L")
+        private static void ApplyDamageToNpc(Session session, Npc npc, int damage, MapInstance instance, string damageType = "L", string questWeapon = null, int questAmmo = 0)
         {
             if (session == null || session.CharacterInfo == null || npc == null || instance == null)
                 return;
@@ -4816,6 +4830,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             SendNpcDamageUpdate(instance, session, npc, applied, damageType);
 
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalNpcDamage(session, npc, applied, questWeapon ?? (damageType == "R" ? "rocket" : "laser"), questAmmo);
             npc.UpdateAttackers(session.CharacterId, applied);
 
             if (!npc.IsDestroying && npc.TargetId == 0)
@@ -4841,13 +4856,14 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             SendNpcDamageUpdate(instance, session, npc, applied);
 
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalNpcDamage(session, npc, applied, "tech", 0);
             npc.UpdateAttackers(session.CharacterId, applied);
 
             if (!npc.IsDestroying && npc.TargetId == 0)
                 npc.LockTarget(session.CharacterId);
         }
 
-        private static void ApplyDamageToPlayer(Session attacker, Session target, int damage, MapInstance instance, GameplayDeathContext launchedLife = null, string damageType = "L")
+        private static void ApplyDamageToPlayer(Session attacker, Session target, int damage, MapInstance instance, GameplayDeathContext launchedLife = null, string damageType = "L", string questWeapon = null, int questAmmo = 0)
         {
             if (attacker == null || attacker.CharacterInfo == null || target == null || target.CharacterInfo == null || instance == null)
                 return;
@@ -4858,7 +4874,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             target.CharacterInfo.UpdateAttacker(attacker);
 
             var deathContext = DroneWearService.Capture(target, GameplayDeathCause.Pvp);
-            int shieldPart, hpPart;
+            int shieldPart, hpPart, historicalApplied = 0;
             lock (target.CharacterInfo.DroneImpactSyncRoot)
             {
             if (!DroneWearService.IsCurrentLife(target, deathContext) || (launchedLife != null && !DroneWearService.IsCurrentLife(target, launchedLife)) || target.CharacterInfo.ShipHp <= 0) return;
@@ -4882,9 +4898,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
             else
                 target.CharacterInfo.ShipHp = 0;
 
+            historicalApplied = (int)Math.Max(0, beforeVitals - Math.Max(0, target.CharacterInfo.ShipHp) - Math.Max(0, target.CharacterInfo.ShipShield));
             TeamDeathMatch.RecordDamage(attacker, target, beforeVitals - target.CharacterInfo.ShipHp - target.CharacterInfo.ShipShield);
             DroneWearService.MarkLethalImpact(target, deathContext);
             }
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalPlayerDamage(attacker, target, historicalApplied, questWeapon ?? (damageType == "R" ? "rocket" : "laser"), questAmmo);
             if (shieldPart + hpPart > 0)
                 target.CharacterInfo.RegisterShieldDamageReceived();
 
@@ -4937,6 +4955,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
             }
             }
 
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalPlayerDamage(attacker, target, applied, "tech", 0);
             foreach (MapActor key in instance.GetActorSnapshot())
             {
                 if (key.Type == MapActorType.UserCharacter)

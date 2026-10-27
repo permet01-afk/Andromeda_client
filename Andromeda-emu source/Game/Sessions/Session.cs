@@ -1,4 +1,4 @@
-
+﻿
 
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Incoming;
@@ -88,6 +88,16 @@ namespace OrbitReborn_Emulator.Game.Sessions
         internal bool RetirementIncomplete { get { return this.mShutdownRetirementIncomplete; } }
         internal Socket CurrentTransport { get { return this.mSocket; } }
         private bool mShutdownRetirementIncomplete;
+        private int mRetirementFailures;
+        private long mRetirementRetryAfter;
+        internal bool AutomaticRetirementRetryDue
+        {
+            get
+            {
+                int failures = Volatile.Read(ref mRetirementFailures);
+                return failures == 0 || (failures <= 3 && DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() >= Interlocked.Read(ref mRetirementRetryAfter));
+            }
+        }
         private int mMapId;
         private bool mMapAuthed;
         private bool mMapJoined;
@@ -489,7 +499,59 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 SessionManager.ForgetSession(this);
                 return;
             }
-            EndGameplayCore(confirmLogout, true);
+            try
+            {
+                EndGameplayCore(confirmLogout, true);
+                if (!this.mShutdownRetirementIncomplete)
+                {
+                    Interlocked.Exchange(ref this.mRetirementFailures, 0);
+                    Interlocked.Exchange(ref this.mRetirementRetryAfter, 0);
+                }
+            }
+            catch (Exception error)
+            {
+                RecordRetirementFailure(error);
+                throw; // Synchronous callers must still observe persistence failure.
+            }
+        }
+
+        // Timer callbacks cannot propagate a storage exception to the CLR.
+        // EndGameplay records the complete exception and retains the failed
+        // retirement; the existing session monitor performs bounded retries.
+        internal bool EndGameplayFromTimer(bool confirmLogout)
+        {
+            try { EndGameplay(confirmLogout); return !this.mShutdownRetirementIncomplete; }
+            catch (Exception) { return false; }
+        }
+
+        private void RecordRetirementFailure(Exception error)
+        {
+            int failures;
+            lock (TechInventoryService.SyncRoot(this.CharacterId))
+            lock (this.CharacterInfo != null ? this.CharacterInfo.DroneImpactSyncRoot : TechInventoryService.SyncRoot(this.CharacterId))
+            {
+                this.mShutdownRetirementIncomplete = true;
+                this.mGameplayReady = false;
+                this.mChatAuthorityRevoked = true;
+                if (this.CharacterInfo != null) this.CharacterInfo.Disconnected = true;
+                failures = Interlocked.Increment(ref this.mRetirementFailures);
+                int delay = failures == 1 ? 1000 : failures == 2 ? 5000 : 15000;
+                Interlocked.Exchange(ref this.mRetirementRetryAfter, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + delay);
+                this.mStoppedTimestamp = UnixTimestamp.GetCurrent();
+                Socket socket = this.mSocket;
+                this.mSocket = null;
+                try { if (socket != null) socket.Close(); } catch { }
+            }
+            string message = "[Session retirement] player=" + this.CharacterId + " session=" + this.Id
+                + " persistence NOT confirmed; failed attempt=" + failures
+                + (failures <= 3 ? "; bounded automatic retry pending: " : "; automatic retries exhausted; state retained for explicit retry/reconnect or shutdown: ")
+                + error;
+            try { Output.WriteLine(message, OutputLevel.CriticalError); }
+            catch (Exception loggingError)
+            {
+                try { Console.Error.WriteLine(message + "; logging failed: " + loggingError); }
+                catch { }
+            }
         }
 
         private void EndGameplayCore(bool confirmLogout, bool strictAmmoFlush)
@@ -523,6 +585,10 @@ namespace OrbitReborn_Emulator.Game.Sessions
                     }
                     MapManager.RemoveUserFromMap(this);
                     TeamDeathMatch.BeforeDisconnect(this, confirmLogout);
+                    // The final quest batch must be confirmed while this owner
+                    // still holds its gameplay lease. A failed flush retains the
+                    // cache and retirement for retry, never an acknowledged save.
+                    OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.HistoricalDisconnected(this);
                     DisposeCore(true, true, strictAmmoFlush); // Stop callbacks and flush pending ammo before acknowledging logout.
                     if (!this.mRewardFailure)
                         using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
@@ -554,6 +620,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
         {
             if (CharacterInfo == null || !CharacterInfo.DeadCommitted) throw new InvalidOperationException("Death is not committed.");
             LocalRewardOperations.CloseAndDrain(this);
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalDeath(this);
             this.mGameplayReady = false;
             CharacterInfo.Disconnected = true;
             LaserVisualService.Remove(this);

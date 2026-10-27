@@ -25,7 +25,7 @@ using OrbitReborn_Emulator.Game.Techs;
 
 namespace OrbitReborn_Emulator.Game.Characters
 {
-    public class CharacterInfo
+    public partial class CharacterInfo
     {
         public bool Invincible = false;
         public System.Threading.Timer InvincibilityTimer;
@@ -3451,7 +3451,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 MySqlClient.ExecuteNonQuery("UPDATE users SET canBeginner = CASE WHEN experience < 10240000 THEN 1 ELSE 0 END WHERE id = @id");
             }
 
-            TitleService.RefreshDisplayedTitle(this);
+            TitleService.RefreshDisplayedTitle(this, MySqlClient);
 
             int ringsDb = 0;
             ringsDb = getInt32("gg_rings", 0);
@@ -4496,6 +4496,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                         bool sameWeeklyRemoteAddress = !string.IsNullOrEmpty(attackerRemoteAddress)
                             && attackerRemoteAddress == victimRemoteAddress;
 
+                        questProgressChanged = QuestObjectiveProgress.AddHistoricalPlayerKill(this.Attacker, ennemy, rewardAsEnemy, sameWeeklyGroup, sameWeeklyRemoteAddress) || questProgressChanged;
                         perfStepStart = PerformanceProfiler.Start();
                         bool weeklyProgressChanged = QuestObjectiveProgress.AddWeeklyEligiblePlayerKillProgress(
                             attackerInfo.Id,
@@ -4950,6 +4951,7 @@ namespace OrbitReborn_Emulator.Game.Characters
                 this.mLabInfos.AddCargo(iResId, iAmount);
                 this.mShipCargo = this.GetCurrentCargoTotal();
             }
+            QuestObjectiveProgress.AddHistoricalResource(SessionManager.GetSessionByCharacterId(this.mId), iResId, iAmount);
         }
 
         public void RemoveCargo(long iResId, int iAmount)

@@ -1,9 +1,10 @@
 <?php
 require_once 'libs/QuestService.php';
 require_once 'libs/WeeklyMissionService.php';
+require_once 'libs/MissionControlPresenter.php';
 
 $section = isset($_GET['section']) ? (string)$_GET['section'] : 'contracts';
-$allowedSections = ['contracts', 'basic', 'pvp', 'havok', 'weekly'];
+$allowedSections = ['normal', 'challenges', 'daily', 'event', 'contracts', 'basic', 'pvp', 'havok', 'weekly'];
 if (!in_array($section, $allowedSections, true)) {
     $section = 'contracts';
 }
@@ -14,7 +15,34 @@ $questService = new QuestService($db, $playerId);
 $weeklyMissionService = new WeeklyMissionService($db, $playerId);
 $questError = '';
 $questNotice = '';
+// A successful service action may wake another same-origin game tab. The hint
+// contains no counters or rewards; the game must fetch its authenticated state.
+$questLifecycleNotice = [];
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' && isset($_SESSION['quest_lifecycle_notice'])) {
+    $pendingHint = $_SESSION['quest_lifecycle_notice'];
+    unset($_SESSION['quest_lifecycle_notice']);
+    if (is_array($pendingHint) && (int)($pendingHint['player_id'] ?? 0) === $playerId
+        && in_array($pendingHint['action'] ?? '', ['accept', 'abort', 'claim'], true)
+        && preg_match('/^[a-f0-9]{24}$/D', (string)($pendingHint['nonce'] ?? ''))) $questLifecycleNotice = $pendingHint;
+}
+$queueQuestLifecycleHint = static function (string $action) use ($playerId): void {
+    try { $_SESSION['quest_lifecycle_notice'] = ['player_id' => $playerId, 'nonce' => bin2hex(random_bytes(12)), 'action' => $action]; }
+    catch (Throwable $ignoredHintFailure) { /* The normal refresh path remains available. */ }
+};
 $weeklyError = '';
+$historicalActive = false;
+$historicalMeta = [];
+$historicalCatalogues = ['normal' => [], 'challenges' => [], 'daily' => [], 'event' => []];
+try {
+    $historicalActive = method_exists($questService, 'isHistoricalCatalogActive') && $questService->isHistoricalCatalogActive();
+} catch (Exception $historicalAvailabilityException) {
+    // Existing custom quests remain usable if the optional historical catalogue is not activated.
+}
+if ($historicalActive && (!isset($_GET['section']) || in_array($section, ['basic', 'pvp'], true))) {
+    $section = 'normal';
+} elseif (!$historicalActive && in_array($section, ['normal', 'challenges', 'daily', 'event'], true)) {
+    $section = 'contracts';
+}
 
 $noticeMap = [
     'accepted' => 'Quest accepted.',
@@ -35,69 +63,105 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quest_action'])) {
         }
 
         $action = (string)$_POST['quest_action'];
+        if ($historicalActive && in_array($action, ['accept_basic', 'claim_basic', 'abort_basic', 'accept_pvp', 'claim_pvp', 'abort_pvp'], true)) {
+            throw new Exception('This quest is archived. Select a mission from the Normal category.');
+        }
+        if (in_array($action, ['accept_historical', 'claim_historical', 'abort_historical'], true)) {
+            if (!$historicalActive) {
+                throw new Exception('Historical missions are not available.');
+            }
+            $historicalCode = (string)($_POST['quest_code'] ?? '');
+            if ($action === 'accept_historical') {
+                $questService->acceptHistoricalQuest($historicalCode);
+                $queueQuestLifecycleHint('accept');
+                $historicalNotice = 'accepted';
+            } elseif ($action === 'claim_historical') {
+                $questService->claimHistoricalQuest($historicalCode);
+                $queueQuestLifecycleHint('claim');
+                $historicalNotice = 'claimed';
+            } else {
+                $questService->abortHistoricalQuest($historicalCode);
+                $queueQuestLifecycleHint('abort');
+                $historicalNotice = 'aborted';
+            }
+            $historicalSection = in_array($section, ['normal', 'challenges', 'daily', 'event'], true) ? $section : 'normal';
+            header('Location: ' . MissionControlPresenter::returnUrl($historicalSection, $historicalCode, $historicalNotice));
+            exit;
+        }
         if ($action === 'accept_basic') {
             $questService->acceptBasicQuest((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=basic&quest_msg=accepted');
+            $queueQuestLifecycleHint('accept');
+            header('Location: ' . MissionControlPresenter::returnUrl('basic', (string)($_POST['quest_code'] ?? ''), 'accepted'));
             exit;
         }
 
         if ($action === 'claim_basic') {
             $questService->claimBasicQuest((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=basic&quest_msg=claimed');
+            $queueQuestLifecycleHint('claim');
+            header('Location: ' . MissionControlPresenter::returnUrl('basic', (string)($_POST['quest_code'] ?? ''), 'claimed'));
             exit;
         }
 
         if ($action === 'abort_basic') {
             $questService->abortBasicQuest((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=basic&quest_msg=aborted');
+            $queueQuestLifecycleHint('abort');
+            header('Location: ' . MissionControlPresenter::returnUrl('basic', (string)($_POST['quest_code'] ?? ''), 'aborted'));
             exit;
         }
 
         if ($action === 'accept_pvp') {
             $questService->acceptPvpQuest((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=pvp&quest_msg=accepted');
+            $queueQuestLifecycleHint('accept');
+            header('Location: ' . MissionControlPresenter::returnUrl('pvp', (string)($_POST['quest_code'] ?? ''), 'accepted'));
             exit;
         }
 
         if ($action === 'claim_pvp') {
             $questService->claimPvpQuest((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=pvp&quest_msg=claimed');
+            $queueQuestLifecycleHint('claim');
+            header('Location: ' . MissionControlPresenter::returnUrl('pvp', (string)($_POST['quest_code'] ?? ''), 'claimed'));
             exit;
         }
 
         if ($action === 'abort_pvp') {
             $questService->abortPvpQuest((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=pvp&quest_msg=aborted');
+            $queueQuestLifecycleHint('abort');
+            header('Location: ' . MissionControlPresenter::returnUrl('pvp', (string)($_POST['quest_code'] ?? ''), 'aborted'));
             exit;
         }
 
         if ($action === 'accept_havok') {
             $questService->acceptHavokQuest((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=havok&quest_msg=accepted');
+            $queueQuestLifecycleHint('accept');
+            header('Location: ' . MissionControlPresenter::returnUrl('havok', (string)($_POST['quest_code'] ?? ''), 'accepted'));
             exit;
         }
 
         if ($action === 'claim_havok') {
             $questService->claimHavokQuest((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=havok&quest_msg=claimed');
+            $queueQuestLifecycleHint('claim');
+            header('Location: ' . MissionControlPresenter::returnUrl('havok', (string)($_POST['quest_code'] ?? ''), 'claimed'));
             exit;
         }
 
         if ($action === 'claim_weekly') {
             $weeklyMissionService->claimWeeklyMission((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=weekly&quest_msg=weekly_claimed');
+            $queueQuestLifecycleHint('claim');
+            header('Location: ' . MissionControlPresenter::returnUrl('weekly', (string)($_POST['quest_code'] ?? ''), 'weekly_claimed'));
             exit;
         }
 
         if ($action === 'abort_havok') {
             $questService->abortHavokQuest((string)($_POST['quest_code'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=havok&quest_msg=aborted');
+            $queueQuestLifecycleHint('abort');
+            header('Location: ' . MissionControlPresenter::returnUrl('havok', (string)($_POST['quest_code'] ?? ''), 'aborted'));
             exit;
         }
 
         if ($action === 'claim_contract') {
             $questService->claimHuntingContract((string)($_POST['npc_name'] ?? ''));
-            header('Location: view.php?page=user&tab=quests&section=contracts&quest_msg=contract_claimed');
+            $queueQuestLifecycleHint('claim');
+            header('Location: ' . MissionControlPresenter::returnUrl('contracts', (string)($_POST['npc_name'] ?? ''), 'contract_claimed'));
             exit;
         }
     } catch (Exception $e) {
@@ -108,8 +172,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['quest_action'])) {
 try {
     $questService->preparePage();
     $huntingContracts = $questService->getHuntingContracts();
-    $basicQuests = $questService->getBasicQuests();
-    $pvpQuests = $questService->getPvpQuests();
+    $basicQuests = $historicalActive ? [] : $questService->getBasicQuests();
+    $pvpQuests = $historicalActive ? [] : $questService->getPvpQuests();
+    if ($historicalActive) {
+        $historicalRows = $questService->getHistoricalQuests();
+        $historicalMeta = $questService->getHistoricalMeta();
+        $historicalCategoryGroups = ['normal' => 'normal', 'challenges' => 'challenges', 'daily' => 'daily', 'event' => 'event'];
+        foreach ($historicalRows as $historicalRow) {
+            $historicalCategory = strtolower((string)($historicalRow['historical_category'] ?? 'Normal'));
+            if (isset($historicalCategoryGroups[$historicalCategory])) {
+                $historicalCatalogues[$historicalCategoryGroups[$historicalCategory]][] = $historicalRow;
+            }
+        }
+    }
     $havokQuests = $questService->getHavokQuests();
     try {
         $weeklyState = $weeklyMissionService->getWeeklyState();
@@ -135,212 +210,58 @@ try {
     $questError = $questError !== '' ? $questError : $e->getMessage();
 }
 
-function quest_h($value): string
-{
-    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+// Use the same cached player context that produced the historical objectives.
+// The legacy fallback needs one indexed lookup; neither path polls or mutates it.
+$mcCompany = (int)($historicalMeta['company'] ?? 0);
+if ($playerId > 0 && !in_array($mcCompany, [1, 2, 3], true)) {
+    try {
+        $mcCompanyStmt = $db->prepare('SELECT factionid FROM users WHERE id = :player_id LIMIT 1');
+        $mcCompanyStmt->execute([':player_id' => $playerId]);
+        $mcCompany = (int)$mcCompanyStmt->fetchColumn();
+    } catch (Exception $portraitException) {
+        // The common Nyx portrait remains valid when company context is unavailable.
+    }
+}
+$mcMinimumLevels = [];
+try {
+    // One batch projection, not another catalogue engine or an eligibility check.
+    $mcLevelRows = $db->query('SELECT code, min_level FROM site_quests WHERE enabled = 1')->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($mcLevelRows as $mcLevelRow) {
+        $mcMinimumLevels[(string)$mcLevelRow['code']] = (int)$mcLevelRow['min_level'] > 0 ? (int)$mcLevelRow['min_level'] : null;
+    }
+} catch (Exception $levelMetadataException) {
+    // Missing metadata leaves the sort disabled rather than fabricating levels.
 }
 
-function quest_status_data(array $quest): array
-{
-    $status = (string)($quest['status'] ?? 'available');
-    $isAccepted = $status === 'in_progress';
-    $isCompleted = $status === 'completed' || $status === 'claimed';
-    $isReady = $isAccepted && !empty($quest['is_complete']);
+$mcState = MissionControlPresenter::build([
+    'normal' => $historicalCatalogues['normal'],
+    'challenges' => $historicalCatalogues['challenges'],
+    'daily' => $historicalCatalogues['daily'],
+    'event' => $historicalCatalogues['event'],
+    'contracts' => $huntingContracts,
+    'basic' => $basicQuests,
+    'pvp' => $pvpQuests,
+    'havok' => $havokQuests,
+    'weekly' => $weeklyMissions,
+], [
+    'section' => $section,
+    'filter' => $_GET['mc_filter'] ?? 'all',
+    'states' => $_GET['mc_states'] ?? null,
+    'selectedKey' => $_GET['mc_selected'] ?? ($_POST['mc_selected'] ?? ''),
+    'activeCount' => $activeQuestCount,
+    'maxActiveCount' => $maxActiveQuestCount,
+    'company' => $mcCompany,
+    'minimumLevels' => $mcMinimumLevels,
+    'weeklyMeta' => $weeklyMeta,
+    'csrfToken' => $questToken,
+    'notice' => $questNotice,
+    'lifecycleNotice' => $questLifecycleNotice,
+    'playerId' => $playerId,
+    'runtimeReasonLabels' => HistoricalQuestLabels::runtimeReasons(),
+    'error' => $questError,
+    'weeklyError' => $weeklyError,
+    'historicalMode' => $historicalActive,
+    'historicalMeta' => $historicalMeta,
+]);
 
-    return [
-        'isAccepted' => $isAccepted,
-        'isCompleted' => $isCompleted,
-        'isReady' => $isReady,
-        'class' => $isCompleted ? 'quest-status--completed' : ($isReady ? 'quest-status--ready' : ($isAccepted ? 'quest-status--progress' : 'quest-status--available')),
-        'label' => $status === 'claimed' ? 'Claimed' : ($isCompleted ? 'Completed' : ($isReady ? 'Ready' : ($isAccepted ? 'In progress' : 'Available'))),
-    ];
-}
-
-function quest_has_priority_open(array $quests): bool
-{
-    foreach ($quests as $quest) {
-        $data = quest_status_data($quest);
-        if (!$data['isCompleted'] && ($data['isReady'] || $data['isAccepted'])) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-function quest_should_open_default(array $quest, bool $hasPriorityOpen, bool &$openedFirstAvailable): bool
-{
-    $data = quest_status_data($quest);
-    if ($data['isCompleted']) {
-        return false;
-    }
-    if ($data['isReady'] || $data['isAccepted']) {
-        return true;
-    }
-    if (!$hasPriorityOpen && !$openedFirstAvailable) {
-        $openedFirstAvailable = true;
-        return true;
-    }
-
-    return false;
-}
-
-function quest_progress_summary(array $objectives): string
-{
-    if (!$objectives) {
-        return 'No objective.';
-    }
-
-    $firstObjective = $objectives[0];
-    foreach ($objectives as $objective) {
-        if (empty($objective['complete'])) {
-            $firstObjective = $objective;
-            break;
-        }
-    }
-
-    return sprintf(
-        '%s: %s / %s',
-        (string)($firstObjective['label'] ?? 'Progress'),
-        number_format((int)($firstObjective['current'] ?? 0)),
-        number_format((int)($firstObjective['required'] ?? 0))
-    );
-}
-
-function quest_card_dom_id(string $prefix, array $quest): string
-{
-    $safeCode = preg_replace('/[^a-zA-Z0-9_-]+/', '-', (string)($quest['code'] ?? $quest['id'] ?? uniqid('quest', false)));
-    return $prefix . '-' . trim($safeCode, '-');
-}
-?>
-
-<div class="quest-page" data-quest-root data-current-section="<?php echo quest_h($section); ?>">
-    <header class="quest-page__header">
-        <div>
-            <h2>Quest</h2>
-            <p>Complete hunting contracts, basic assignments, PvP missions, Havok trials and Weekly Missions to earn rewards.</p>
-        </div>
-    </header>
-
-    <nav class="quest-tabs" aria-label="Quest sections" role="tablist">
-        <a class="quest-tab<?php echo $section === 'contracts' ? ' is-active' : ''; ?>" href="view.php?page=user&amp;tab=quests&amp;section=contracts" data-quest-tab="contracts" role="tab" aria-selected="<?php echo $section === 'contracts' ? 'true' : 'false'; ?>">Hunting Contracts</a>
-        <a class="quest-tab<?php echo $section === 'basic' ? ' is-active' : ''; ?>" href="view.php?page=user&amp;tab=quests&amp;section=basic" data-quest-tab="basic" role="tab" aria-selected="<?php echo $section === 'basic' ? 'true' : 'false'; ?>">Basic Quests</a>
-        <a class="quest-tab<?php echo $section === 'pvp' ? ' is-active' : ''; ?>" href="view.php?page=user&amp;tab=quests&amp;section=pvp" data-quest-tab="pvp" role="tab" aria-selected="<?php echo $section === 'pvp' ? 'true' : 'false'; ?>">PVP</a>
-        <a class="quest-tab<?php echo $section === 'havok' ? ' is-active' : ''; ?>" href="view.php?page=user&amp;tab=quests&amp;section=havok" data-quest-tab="havok" role="tab" aria-selected="<?php echo $section === 'havok' ? 'true' : 'false'; ?>">Havok Quests</a>
-        <a class="quest-tab<?php echo $section === 'weekly' ? ' is-active' : ''; ?>" href="view.php?page=user&amp;tab=quests&amp;section=weekly" data-quest-tab="weekly" role="tab" aria-selected="<?php echo $section === 'weekly' ? 'true' : 'false'; ?>">Weekly Missions</a>
-    </nav>
-
-    <?php if ($questNotice !== '') { ?>
-        <div class="quest-feedback quest-feedback--success"><?php echo quest_h($questNotice); ?></div>
-    <?php } ?>
-
-    <?php if ($questError !== '') { ?>
-        <div class="quest-feedback quest-feedback--error"><?php echo quest_h($questError); ?></div>
-    <?php } ?>
-
-    <div class="quest-panels" data-quest-panels>
-        <div class="quest-panel<?php echo $section === 'contracts' ? ' is-active' : ''; ?>" data-quest-section="contracts" role="tabpanel"<?php echo $section === 'contracts' ? '' : ' hidden'; ?>>
-            <?php include __DIR__ . '/questSections/hunting_contracts.php'; ?>
-        </div>
-
-        <div class="quest-panel<?php echo $section === 'basic' ? ' is-active' : ''; ?>" data-quest-section="basic" role="tabpanel"<?php echo $section === 'basic' ? '' : ' hidden'; ?>>
-            <?php include __DIR__ . '/questSections/basic_quests.php'; ?>
-        </div>
-
-        <div class="quest-panel<?php echo $section === 'pvp' ? ' is-active' : ''; ?>" data-quest-section="pvp" role="tabpanel"<?php echo $section === 'pvp' ? '' : ' hidden'; ?>>
-            <?php include __DIR__ . '/questSections/pvp_quests.php'; ?>
-        </div>
-
-        <div class="quest-panel<?php echo $section === 'havok' ? ' is-active' : ''; ?>" data-quest-section="havok" role="tabpanel"<?php echo $section === 'havok' ? '' : ' hidden'; ?>>
-            <?php include __DIR__ . '/questSections/havok_quests.php'; ?>
-        </div>
-
-        <div class="quest-panel<?php echo $section === 'weekly' ? ' is-active' : ''; ?>" data-quest-section="weekly" role="tabpanel"<?php echo $section === 'weekly' ? '' : ' hidden'; ?>>
-            <?php include __DIR__ . '/questSections/weekly_missions.php'; ?>
-        </div>
-    </div>
-</div>
-
-<script>
-(function(){
-    const boot = function(){
-        const root = document.querySelector('[data-quest-root]');
-        if (!root || root.dataset.questReady === '1') return;
-        root.dataset.questReady = '1';
-
-        const tabs = Array.from(root.querySelectorAll('[data-quest-tab]'));
-        const panels = Array.from(root.querySelectorAll('[data-quest-section]'));
-        const allowedSections = new Set(tabs.map(tab => tab.dataset.questTab));
-
-        const normalizeSection = function(section){
-            return allowedSections.has(section) ? section : 'contracts';
-        };
-
-        const setSection = function(section, updateHistory){
-            section = normalizeSection(section);
-            root.dataset.currentSection = section;
-
-            tabs.forEach(function(tab){
-                const active = tab.dataset.questTab === section;
-                tab.classList.toggle('is-active', active);
-                tab.setAttribute('aria-selected', active ? 'true' : 'false');
-            });
-
-            panels.forEach(function(panel){
-                const active = panel.dataset.questSection === section;
-                panel.classList.toggle('is-active', active);
-                if (active) {
-                    panel.removeAttribute('hidden');
-                } else {
-                    panel.setAttribute('hidden', 'hidden');
-                }
-            });
-
-            if (updateHistory && window.history && window.URL) {
-                const url = new URL(window.location.href);
-                url.searchParams.set('page', 'user');
-                url.searchParams.set('tab', 'quests');
-                url.searchParams.set('section', section);
-                url.searchParams.delete('quest_msg');
-                window.history.pushState({questSection: section}, '', url.toString());
-            }
-        };
-
-        tabs.forEach(function(tab){
-            tab.addEventListener('click', function(event){
-                event.preventDefault();
-                setSection(tab.dataset.questTab, true);
-            });
-        });
-
-        root.querySelectorAll('[data-quest-toggle]').forEach(function(toggle){
-            toggle.addEventListener('click', function(){
-                const card = toggle.closest('[data-quest-card]');
-                const contentId = toggle.getAttribute('aria-controls');
-                const content = contentId ? document.getElementById(contentId) : null;
-                if (!card || !content) return;
-
-                const expanded = toggle.getAttribute('aria-expanded') === 'true';
-                toggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-                card.classList.toggle('is-open', !expanded);
-                if (expanded) {
-                    content.setAttribute('hidden', 'hidden');
-                } else {
-                    content.removeAttribute('hidden');
-                }
-            });
-        });
-
-        window.addEventListener('popstate', function(){
-            const url = new URL(window.location.href);
-            setSection(url.searchParams.get('section') || 'contracts', false);
-        });
-    };
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot);
-    } else {
-        boot();
-    }
-})();
-</script>
+include __DIR__ . '/questSections/mission_control.php';

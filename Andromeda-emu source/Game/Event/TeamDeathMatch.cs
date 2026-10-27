@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Text;
@@ -287,6 +287,7 @@ namespace OrbitReborn_Emulator.Game.Event
         }
         private static void PublishDeath(Session s)
         {
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalDeath(s);
             var map = MapManager.GetInstanceByMapId(s.CurrentMapId);
             if (map == null) return;
             foreach (var actor in map.GetUserActorSnapshot())

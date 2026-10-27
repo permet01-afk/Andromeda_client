@@ -116,6 +116,7 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                 }
             }
 
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalBonusBox(user);
             instanceByMapId.BroadcastMessage(PacketComposer.Compose("2", this.Id.ToString()), false);
 
             this.MoveToRandomPosition(random);

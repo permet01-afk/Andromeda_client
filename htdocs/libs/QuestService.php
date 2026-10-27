@@ -1,9 +1,11 @@
 <?php
 
 require_once __DIR__ . '/BeginnerStatusService.php';
+require_once __DIR__ . '/HistoricalQuestSupport.php';
 
 class QuestService
 {
+    use HistoricalQuestSupport;
     const MAX_ACTIVE_SITE_QUESTS = 5;
     const MAX_ACTIVE_BASIC_QUESTS = 5; // Backward-compatible alias.
     const HAVOK_ITEM_ID = 9001;
@@ -52,8 +54,10 @@ class QuestService
         }
 
         $this->ensureSchemaInstalled();
-        $this->syncBasicQuestCatalog();
-        $this->syncPvpQuestCatalog();
+        if (!$this->isHistoricalEnabled()) {
+            $this->syncBasicQuestCatalog();
+            $this->syncPvpQuestCatalog();
+        }
         $this->syncHavokQuestCatalog();
         $this->questCatalogSynced = true;
         $this->clearQuestReadCaches();
@@ -108,6 +112,9 @@ class QuestService
 
     private function acceptQuest(string $code, array $allowedCategories): string
     {
+        if ($this->isHistoricalEnabled() && !in_array('Havok', $allowedCategories, true)) {
+            throw new Exception('These Basic/PvP definitions are archived. Use Historical missions.');
+        }
         $this->ensureQuestCatalog();
         $this->ensureNpcRowsOnce();
 
@@ -134,19 +141,30 @@ class QuestService
         $objectives = $this->getObjectivesForQuest((int)$quest['id']);
         $baseline = $this->buildBaseline($objectives);
 
-        $stmt = $this->db->prepare(
-            'INSERT INTO site_player_quests (player_id, quest_id, status, baseline_json, progress_json, accepted_at)
-             VALUES (:player_id, :quest_id, :status, :baseline_json, NULL, NOW())
-             ON DUPLICATE KEY UPDATE status = VALUES(status), baseline_json = VALUES(baseline_json), progress_json = NULL, accepted_at = VALUES(accepted_at), claimed_at = NULL'
-        );
-        $stmt->execute([
-            ':player_id' => $this->playerId,
-            ':quest_id' => (int)$quest['id'],
-            ':status' => 'in_progress',
-            ':baseline_json' => json_encode($baseline),
-        ]);
-
-        $this->resetObjectiveProgressRows((int)$quest['id'], $objectives);
+        // A distinct durable cycle protects delayed progress from an abandon /
+        // reaccept in the same second. These columns already belong to the
+        // installed historical lifecycle; no new table or migration is needed.
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare(
+                'INSERT INTO site_player_quests (player_id, quest_id, status, baseline_json, progress_json, accepted_at, attempt_id, state_version)
+                 VALUES (:player_id, :quest_id, :status, :baseline_json, NULL, NOW(), :attempt_id, 0)
+                 ON DUPLICATE KEY UPDATE status = VALUES(status), baseline_json = VALUES(baseline_json), progress_json = NULL, accepted_at = VALUES(accepted_at), claimed_at = NULL, attempt_id = VALUES(attempt_id), state_version = state_version + 1'
+            );
+            $stmt->execute([
+                ':player_id' => $this->playerId,
+                ':quest_id' => (int)$quest['id'],
+                ':status' => 'in_progress',
+                ':baseline_json' => json_encode($baseline),
+                ':attempt_id' => bin2hex(random_bytes(16)),
+            ]);
+            $this->resetObjectiveProgressRows((int)$quest['id'], $objectives);
+            if ($this->isHistoricalEnabled()) $this->historicalBumpRevision();
+            $this->db->commit();
+        } catch (Throwable $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            throw $e;
+        }
         $this->clearQuestReadCaches();
 
         return 'Quest accepted.';
@@ -169,6 +187,9 @@ class QuestService
 
     private function claimQuest(string $code, array $allowedCategories): string
     {
+        if ($this->isHistoricalEnabled() && !in_array('Havok', $allowedCategories, true)) {
+            throw new Exception('These Basic/PvP definitions are archived. Use Historical missions.');
+        }
         $this->ensureQuestCatalog();
         $this->ensureNpcRowsOnce();
 
@@ -261,6 +282,7 @@ class QuestService
                 ':quest_id' => (int)$quest['id'],
             ]);
 
+            if ($this->isHistoricalEnabled()) $this->historicalBumpRevision();
             $this->db->commit();
             $this->clearQuestReadCaches();
             return 'Quest reward claimed.';
@@ -274,6 +296,9 @@ class QuestService
 
     private function abortQuest(string $code, array $allowedCategories): string
     {
+        if ($this->isHistoricalEnabled() && !in_array('Havok', $allowedCategories, true)) {
+            throw new Exception('These Basic/PvP definitions are archived. Use Historical missions.');
+        }
         $this->ensureQuestCatalog();
 
         $quest = $this->getQuestByCode($code);
@@ -317,6 +342,7 @@ class QuestService
                 ':status' => 'in_progress',
             ]);
 
+            if ($this->isHistoricalEnabled()) $this->historicalBumpRevision();
             $this->db->commit();
             $this->clearQuestReadCaches();
             return 'Quest aborted.';
@@ -330,8 +356,16 @@ class QuestService
 
     public function getRewardSyncState(): array
     {
+        // This path runs after a claim, not during tracker polling. Return only
+        // ammunition columns actually present in this installation; never send
+        // an invented zero stock for a missing column.
+        $ammoCandidates = ['ammo_lcb10', 'ammo_mcb25', 'ammo_mcb50', 'ammo_ucb100', 'ammo_sab50', 'ammo_sab', 'ammo_rsb75',
+            'ammo_plt2021', 'ammo_plt2026', 'ammo_plt3030', 'ammo_r310', 'ammo_emp01'];
+        $columnNames = $this->db->query("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users'")->fetchAll(PDO::FETCH_COLUMN);
+        $ammoColumns = array_values(array_intersect($ammoCandidates, $columnNames));
+        $selectedAmmo = $ammoColumns ? ', ' . implode(', ', array_map(static function (string $column): string { return '`' . $column . '`'; }, $ammoColumns)) : '';
         $stmt = $this->db->prepare(
-            'SELECT credits, uridium, experience, honor, level, ammo_ucb100, ammo_rsb75
+            'SELECT credits, uridium, experience, honor, level' . $selectedAmmo . '
              FROM users
              WHERE id = :player_id
              LIMIT 1'
@@ -348,16 +382,18 @@ class QuestService
             $level = self::getLevelFromExperience($experience);
         }
 
-        return [
+        $state = [
             'credits' => (int)($row['credits'] ?? 0),
             'uridium' => (int)($row['uridium'] ?? 0),
             'experience' => $experience,
             'honor' => (int)($row['honor'] ?? 0),
             'level' => $level,
-            'ammo_ucb100' => (int)($row['ammo_ucb100'] ?? 0),
-            'ammo_rsb75' => (int)($row['ammo_rsb75'] ?? 0),
             'cargo_seprom' => $this->getCargoSepromAmount(),
         ];
+        foreach ($ammoColumns as $column) {
+            if (array_key_exists($column, $row)) $state[$column] = (int)$row[$column];
+        }
+        return $state;
     }
 
     private static function getLevelFromExperience(int $experience): int
@@ -485,6 +521,8 @@ class QuestService
                     pq.status AS player_status,
                     pq.baseline_json AS player_baseline_json,
                     pq.progress_json AS player_progress_json,
+                    pq.attempt_id AS player_attempt_id,
+                    pq.state_version AS player_state_version,
                     pq.accepted_at AS player_accepted_at,
                     pq.claimed_at AS player_claimed_at
              FROM site_player_quests pq
@@ -508,6 +546,14 @@ class QuestService
         $result = [];
         foreach ($rows as $row) {
             $questId = (int)$row['id'];
+            if (($row['source_domain'] ?? 'legacy') === 'historical') {
+                if ($this->isHistoricalEnabled()) {
+                    $completed = $this->historicalCompletedCodes();
+                    $historyRow = array_merge($row, ['player_status'=>$row['player_status'], 'player_progress_json'=>$row['player_progress_json']]);
+                    $result[] = $this->formatHistoricalQuest($historyRow, $this->historicalPlayer(), $completed);
+                }
+                continue;
+            }
             $playerQuest = [
                 'id' => (int)$row['player_quest_row_id'],
                 'player_id' => $this->playerId,
@@ -515,6 +561,8 @@ class QuestService
                 'status' => (string)$row['player_status'],
                 'baseline_json' => $row['player_baseline_json'],
                 'progress_json' => $row['player_progress_json'],
+                'attempt_id' => $row['player_attempt_id'],
+                'state_version' => (int)$row['player_state_version'],
                 'accepted_at' => $row['player_accepted_at'],
                 'claimed_at' => $row['player_claimed_at'],
             ];
@@ -592,6 +640,8 @@ class QuestService
             'category' => (string)$quest['category'],
             'sort_order' => (int)($quest['sort_order'] ?? 0),
             'status' => $status,
+            'attempt_id' => $playerQuest['attempt_id'] ?? null,
+            'state_version' => (int)($playerQuest['state_version'] ?? 0),
             'accepted_at' => $playerQuest['accepted_at'] ?? null,
             'claimed_at' => $playerQuest['claimed_at'] ?? null,
             'objectives' => $progress['objectives'],
@@ -819,6 +869,22 @@ class QuestService
                 $questId = (int)$idStmt->fetchColumn();
             }
 
+            // Preserve objective identity (notably all eight Havok) when the definition is unchanged.
+            $readObjectives = $this->db->prepare('SELECT objective_type,target_key,required_amount,sort_order FROM site_quest_objectives WHERE quest_id=:quest_id ORDER BY sort_order,id');
+            $readObjectives->execute([':quest_id'=>$questId]);
+            $existingObjectives = $readObjectives->fetchAll(PDO::FETCH_ASSOC);
+            $expectedObjectives = [];
+            foreach ($quest['objectives'] as $idx => $objective) {
+                $expectedObjectives[] = ['objective_type'=>(string)$objective['type'],'target_key'=>(string)$objective['target'],'required_amount'=>(int)$objective['amount'],'sort_order'=>($idx+1)*10];
+            }
+            $sameObjectives = count($existingObjectives) === count($expectedObjectives);
+            foreach ($existingObjectives as $idx => $objective) {
+                if (!isset($expectedObjectives[$idx]) || (string)$objective['objective_type'] !== $expectedObjectives[$idx]['objective_type'] || (string)$objective['target_key'] !== $expectedObjectives[$idx]['target_key'] || (int)$objective['required_amount'] !== $expectedObjectives[$idx]['required_amount'] || (int)$objective['sort_order'] !== $expectedObjectives[$idx]['sort_order']) {
+                    $sameObjectives = false;
+                    break;
+                }
+            }
+            if ($sameObjectives) continue;
             $this->db->prepare('DELETE FROM site_quest_objectives WHERE quest_id = :quest_id')->execute([':quest_id' => $questId]);
             foreach ($quest['objectives'] as $idx => $objective) {
                 $objStmt = $this->db->prepare(
@@ -998,7 +1064,10 @@ class QuestService
 
     private function getActiveSiteQuestCount(): int
     {
-        $stmt = $this->db->prepare('SELECT COUNT(*) FROM site_player_quests WHERE player_id = :player_id AND status = :status');
+        $sql = $this->isHistoricalEnabled()
+            ? "SELECT COUNT(*) FROM site_player_quests pq INNER JOIN site_quests q ON q.id=pq.quest_id WHERE pq.player_id=:player_id AND pq.status=:status AND q.source_domain <> 'historical'"
+            : 'SELECT COUNT(*) FROM site_player_quests WHERE player_id = :player_id AND status = :status';
+        $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':player_id' => $this->playerId,
             ':status' => 'in_progress',

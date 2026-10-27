@@ -80,19 +80,25 @@ namespace OrbitReborn_Emulator.Game.Titles
 
         public static bool RefreshDisplayedTitle(Session session, bool notify)
         {
+            return RefreshDisplayedTitle(session, notify, null);
+        }
+
+        public static bool RefreshDisplayedTitle(Session session, bool notify, SqlDatabaseClient client)
+        {
             if (session == null || session.CharacterInfo == null)
             {
                 return false;
             }
 
             CharacterInfo information = session.CharacterInfo;
-            string resolvedTitle = ResolveDisplayedTitle(information);
+            string resolvedTitle = client == null ? ResolveDisplayedTitle(information) : ResolveDisplayedTitle(information, client);
             bool changed = !string.Equals(information.GameTitle, resolvedTitle, StringComparison.Ordinal);
 
             if (changed)
             {
                 information.GameTitle = resolvedTitle;
-                UpdateUserGameTitle(information.Id, resolvedTitle);
+                if (client == null) UpdateUserGameTitle(information.Id, resolvedTitle);
+                else UpdateUserGameTitle(information.Id, resolvedTitle, client);
             }
 
             if (notify || changed)
@@ -105,18 +111,26 @@ namespace OrbitReborn_Emulator.Game.Titles
 
         public static bool RefreshDisplayedTitle(CharacterInfo information)
         {
+            return RefreshDisplayedTitle(information, null);
+        }
+
+        // Loading/reward callers already own a pooled client. Reuse it for both
+        // resolution and persistence; never dispose a client supplied by them.
+        public static bool RefreshDisplayedTitle(CharacterInfo information, SqlDatabaseClient client)
+        {
             if (information == null)
             {
                 return false;
             }
 
-            string resolvedTitle = ResolveDisplayedTitle(information);
+            string resolvedTitle = client == null ? ResolveDisplayedTitle(information) : ResolveDisplayedTitle(information, client);
             bool changed = !string.Equals(information.GameTitle, resolvedTitle, StringComparison.Ordinal);
 
             if (changed)
             {
                 information.GameTitle = resolvedTitle;
-                UpdateUserGameTitle(information.Id, resolvedTitle);
+                if (client == null) UpdateUserGameTitle(information.Id, resolvedTitle);
+                else UpdateUserGameTitle(information.Id, resolvedTitle, client);
             }
 
             return changed;
@@ -318,7 +332,7 @@ namespace OrbitReborn_Emulator.Game.Titles
 
                         RevokeTemporaryTitle(client, victim.CharacterInfo.Id, MostWantedTitleKey);
                         AssignMostWantedToRandomNpc(client);
-                        RefreshDisplayedTitle(victim, true);
+                        RefreshDisplayedTitle(victim, true, client);
                     }
                 }
             }
@@ -442,7 +456,7 @@ namespace OrbitReborn_Emulator.Game.Titles
                     foreach (Session winner in winners)
                     {
                         GrantTemporaryTitle(client, winner.CharacterInfo.Id, SpaceballChampionTitleKey, "spaceball_champion", null);
-                        RefreshDisplayedTitle(winner, true);
+                        RefreshDisplayedTitle(winner, true, client);
                     }
                 }
             }
@@ -475,7 +489,7 @@ namespace OrbitReborn_Emulator.Game.Titles
                         Session session = SessionManager.GetSessionByCharacterId(GetInt(row, "player_id"));
                         if (session != null)
                         {
-                            RefreshDisplayedTitle(session, true);
+                            RefreshDisplayedTitle(session, true, client);
                         }
                     }
                 }
@@ -551,10 +565,10 @@ namespace OrbitReborn_Emulator.Game.Titles
 
             if (oldPlayerSession != null && oldPlayerSession != newHolder)
             {
-                RefreshDisplayedTitle(oldPlayerSession, true);
+                RefreshDisplayedTitle(oldPlayerSession, true, client);
             }
 
-            RefreshDisplayedTitle(newHolder, true);
+            RefreshDisplayedTitle(newHolder, true, client);
         }
 
         private static void AssignMostWantedToRandomNpc(SqlDatabaseClient client)
@@ -596,7 +610,7 @@ namespace OrbitReborn_Emulator.Game.Titles
             AssignMostWantedToRandomNpc(client);
             if (session != null)
             {
-                RefreshDisplayedTitle(session, true);
+                RefreshDisplayedTitle(session, true, client);
             }
         }
 
@@ -759,7 +773,7 @@ namespace OrbitReborn_Emulator.Game.Titles
                 Session session = SessionManager.GetSessionByCharacterId(playerId);
                 if (session != null)
                 {
-                    RefreshDisplayedTitle(session, true);
+                    RefreshDisplayedTitle(session, true, client);
                 }
             }
 
@@ -863,11 +877,22 @@ namespace OrbitReborn_Emulator.Game.Titles
             {
                 using (SqlDatabaseClient client = SqlDatabaseManager.GetClient())
                 {
-                    client.ClearParameters();
-                    client.SetParameter("playerId", playerId);
-                    client.SetParameter("titleKey", titleKey ?? string.Empty);
-                    client.ExecuteNonQuery("UPDATE users SET game_title = @titleKey WHERE id = @playerId LIMIT 1");
+                    UpdateUserGameTitle(playerId, titleKey, client);
                 }
+            }
+            catch
+            {
+            }
+        }
+
+        private static void UpdateUserGameTitle(int playerId, string titleKey, SqlDatabaseClient client)
+        {
+            try
+            {
+                client.ClearParameters();
+                client.SetParameter("playerId", playerId);
+                client.SetParameter("titleKey", titleKey ?? string.Empty);
+                client.ExecuteNonQuery("UPDATE users SET game_title = @titleKey WHERE id = @playerId LIMIT 1");
             }
             catch
             {

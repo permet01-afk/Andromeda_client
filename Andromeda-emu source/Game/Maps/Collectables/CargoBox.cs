@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Communication.Outgoing;
+﻿using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.GalaxyGates;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Game.Quests;
@@ -25,6 +25,10 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
         public long SpawnSequence { get; private set; }
 
         public int OwnerCharacterId { get; set; }
+        public int SourcePlayerId { get; set; }
+        public int SourceFactionId { get; set; }
+        public int SourceShipId { get; set; }
+        private readonly System.Collections.Generic.HashSet<int> historicalCollectors = new System.Collections.Generic.HashSet<int>();
 
         public int Prometium
         {
@@ -268,6 +272,7 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
             if (got > 0)
             {
                 user.CharacterInfo.AddCargo(1L, got);
+                QuestObjectiveProgress.AddHistoricalOre(user, 1L, got, false);
                 if (QuestOreProgress.AddOreProgress(user.CharacterInfo.Id, 1L, got))
                     questProgressChanged = true;
                 user.SendData(PacketComposer.Compose("A", "STD|You received " + got + " Prometium."));
@@ -279,6 +284,7 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
             if (got > 0)
             {
                 user.CharacterInfo.AddCargo(2L, got);
+                QuestObjectiveProgress.AddHistoricalOre(user, 2L, got, false);
                 if (QuestOreProgress.AddOreProgress(user.CharacterInfo.Id, 2L, got))
                     questProgressChanged = true;
                 user.SendData(PacketComposer.Compose("A", "STD|You received " + got + " Endurium."));
@@ -290,6 +296,7 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
             if (got > 0)
             {
                 user.CharacterInfo.AddCargo(3L, got);
+                QuestObjectiveProgress.AddHistoricalOre(user, 3L, got, false);
                 if (QuestOreProgress.AddOreProgress(user.CharacterInfo.Id, 3L, got))
                     questProgressChanged = true;
                 user.SendData(PacketComposer.Compose("A", "STD|You received " + got + " Terbium."));
@@ -439,7 +446,12 @@ namespace OrbitReborn_Emulator.Game.Maps.Collectables
                 }
 
                 if (changedCargo)
+                {
                     user.SendData(user.CharacterInfo.GetCargoMessage());
+                    lock (historicalCollectors)
+                        if (historicalCollectors.Add(user.CharacterId))
+                            QuestObjectiveProgress.AddHistoricalCargoBox(user, SourcePlayerId, SourceFactionId, SourceShipId);
+                }
 
                 if (this.IsEmpty())
                 {

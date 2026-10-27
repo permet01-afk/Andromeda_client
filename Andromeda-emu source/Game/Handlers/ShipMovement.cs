@@ -1,4 +1,4 @@
-
+﻿
 
 using OrbitReborn_Emulator.Game.Characters;
 using OrbitReborn_Emulator.Communication;
@@ -197,6 +197,18 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
         private static void MovePlayer(Session Session, double time)
         {
+            CharacterInfo info = Session == null ? null : Session.CharacterInfo;
+            if (info == null || info.LastMove == null) return;
+            lock (info.LastMove)
+            {
+                if (!Object.ReferenceEquals(Session.CharacterInfo, info)) return;
+                MovePlayerLocked(Session, time);
+            }
+            RefreshAfterMove(Session);
+        }
+
+        private static void MovePlayerLocked(Session Session, double time)
+        {
             Vector vector1 = new Vector((double)Session.CharacterInfo.LocX, (double)Session.CharacterInfo.LocY);
             Vector vector2 = new Vector((double)Session.CharacterInfo.NewLocX, (double)Session.CharacterInfo.NewLocY);
             Vector vector3 = Vector.Subtract(vector2, vector1);
@@ -236,6 +248,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
             }
 
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalMovement(Session, (int)vector1.X, (int)vector1.Y);
+        }
+
+        private static void RefreshAfterMove(Session Session)
+        {
             LaserVisualService.PositionChanged(Session);
             ShipMovement.CheckWarningZone(Session);
             ShipMovement.CheckPeaceZone(Session);
@@ -245,6 +262,23 @@ namespace OrbitReborn_Emulator.Game.Handlers
         }
 
         public static void AdvanceMovingPlayerToCurrentPosition(Session Session)
+        {
+            CharacterInfo info = Session == null ? null : Session.CharacterInfo;
+            if (info == null || info.LastMove == null) return;
+            bool moved;
+            lock (info.LastMove)
+            {
+                if (!Object.ReferenceEquals(Session.CharacterInfo, info)) return;
+                int previousX = info.LocX;
+                int previousY = info.LocY;
+                AdvanceMovingPlayerToCurrentPositionLocked(Session);
+                moved = previousX != info.LocX || previousY != info.LocY;
+            }
+            if (moved && Object.ReferenceEquals(Session.CharacterInfo, info))
+                RefreshAfterMove(Session);
+        }
+
+        private static void AdvanceMovingPlayerToCurrentPositionLocked(Session Session)
         {
             if (Session == null || Session.CharacterInfo == null || !Session.CharacterInfo.IsMoving)
                 return;
@@ -298,6 +332,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                     }
                 }
                 catch { }
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalMovement(Session, locX, locY);
                 LaserVisualService.PositionChanged(Session);
                 return;
             }
@@ -312,15 +347,30 @@ namespace OrbitReborn_Emulator.Game.Handlers
             Session.CharacterInfo.LocX = currentX;
             Session.CharacterInfo.LocY = currentY;
             Session.CharacterInfo.LastMove.Restart();
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalMovement(Session, locX, locY);
             LaserVisualService.PositionChanged(Session);
         }
 
         private static void TryMovePlayer(Session Session)
         {
+            CharacterInfo info = Session == null ? null : Session.CharacterInfo;
+            if (info == null || info.LastMove == null) return;
+            bool moved;
+            lock (info.LastMove)
+            {
+                if (!Object.ReferenceEquals(Session.CharacterInfo, info)) return;
+                moved = TryMovePlayerLocked(Session);
+            }
+            if (moved) RefreshAfterMove(Session);
+        }
+
+        private static bool TryMovePlayerLocked(Session Session)
+        {
             if (Session.CharacterInfo.NewLocX != Session.CharacterInfo.LocX || Session.CharacterInfo.NewLocY != Session.CharacterInfo.LocY)
             {
                 Session.CharacterInfo.LastMove.Stop();
-                ShipMovement.MovePlayer(Session, (double)Session.CharacterInfo.LastMove.ElapsedMilliseconds);
+                ShipMovement.MovePlayerLocked(Session, (double)Session.CharacterInfo.LastMove.ElapsedMilliseconds);
+                return true;
             }
             else
             {
@@ -331,6 +381,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 }
                 Session.CharacterInfo.IsMoving = false;
                 Session.CharacterInfo.LastMove.Stop();
+                return false;
             }
         }
 
@@ -368,16 +419,21 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 return;
 
             if (!TeamDeathMatch.AllowMove(Session, nextInt1, nextInt2)) return;
-            ShipMovement.AdvanceMovingPlayerToCurrentPosition(Session);
-
-            double TimeTaken = ShipMovement.getTimeTaken(Session, nextInt1, nextInt2);
-            if (TimeTaken == -1)
-                return;
-
-            Session.CharacterInfo.NewLocX = nextInt1;
-            Session.CharacterInfo.NewLocY = nextInt2;
-
-            ShipMovement.MoveShip(Session, TimeTaken);
+            CharacterInfo info = Session.CharacterInfo;
+            if (info.LastMove == null) return;
+            double TimeTaken;
+            // LastMove belongs to this character lifetime. Keep interpolation,
+            // the target change and the emitted travelled segment in one order.
+            lock (info.LastMove)
+            {
+                if (!Object.ReferenceEquals(Session.CharacterInfo, info)) return;
+                ShipMovement.AdvanceMovingPlayerToCurrentPosition(Session);
+                TimeTaken = ShipMovement.getTimeTaken(Session, nextInt1, nextInt2);
+                if (TimeTaken == -1) return;
+                info.NewLocX = nextInt1;
+                info.NewLocY = nextInt2;
+                ShipMovement.MoveShip(Session, TimeTaken);
+            }
             ShipMovement.MovementToSeeEveryone(Session, TimeTaken);
 
             MapInstance instanceByMapId = MapManager.GetInstanceByMapId(Session.CurrentMapId);
@@ -1264,12 +1320,16 @@ namespace OrbitReborn_Emulator.Game.Handlers
                 if (totalDamage < 1)
                     totalDamage = 1;
 
+                int historicalApplied = 0;
                 lock (session.CharacterInfo.DroneImpactSyncRoot)
                 {
                     if (!DroneWearService.IsCurrentLife(session, deathContext) || session.CharacterInfo.ShipHp <= 0) return;
+                    historicalApplied = Math.Min(session.CharacterInfo.ShipHp, totalDamage);
                     session.CharacterInfo.ShipHp = Math.Max(0, session.CharacterInfo.ShipHp - totalDamage);
                     DroneWearService.MarkLethalImpact(session, deathContext);
                 }
+
+                OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalDamageReceived(session, historicalApplied);
 
                 var dmgMsg = PacketComposer.Compose(
                     "Y",

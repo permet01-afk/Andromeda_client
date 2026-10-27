@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Communication;
+﻿using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Sessions;
 using OrbitReborn_Emulator.Game.Quests;
@@ -72,6 +72,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
             if (session == null || session.CharacterInfo == null) return false;
             GateReward reward;
             if (!Rewards.TryGetValue(gateId, out reward)) return false;
+            QuestObjectiveProgress.CheckpointHistoricalProgress(session);
             GalaxyGateRewardReceipt receipt;
             try { receipt = session.CharacterInfo.ClaimGalaxyGateReward(gateId); }
             catch (Exception ex)
@@ -80,6 +81,7 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                 session.SendData(PacketComposer.Compose("A", "STD|Reward could not be confirmed. Please retry the exit portal."));
                 return false;
             }
+            QuestObjectiveProgress.RefreshHistoricalProgress(session);
             if (!receipt.Paid)
             {
                 session.SendData(UserDataComposer.Compose(session));
@@ -113,8 +115,9 @@ namespace OrbitReborn_Emulator.Game.GalaxyGates
                               gateId == 3 ? "Gamma" :
                               gateId == 4 ? "Delta" : null;
 
-            bool questProgressChanged = gateName != null &&
-                QuestObjectiveProgress.AddGalaxyGateCompleteProgress(session.CharacterInfo.Id, gateName);
+            // Quest counters were committed with the final NPC completion,
+            // independently of the normal Gate reward claimed at this exit.
+            bool questProgressChanged = gateName != null;
 
             string msg = gateName != null
                 ? "STD|Galaxy Gate " + gateName + " finished! Rewards received."

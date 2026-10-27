@@ -367,6 +367,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
             Session.SendData(PacketComposer.Compose("3", Session.CharacterInfo.GetSecondaryWeaponInfoPayload()));
 
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalWeapon(Session, "mine", 0);
             SendActionVisualEffectScoped(instanceByMapId, Session, "SMB");
             Session.CharacterInfo.LastSMB = UnixTimestamp.GetCurrent();
             Session.SendData(PacketComposer.Compose("A", "CLD|SMB|" + (object)Session.CharacterInfo.CoolDownSMB));
@@ -382,6 +383,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                             && Math.Sqrt(Math.Pow((double)(sessionByCharacterId.CharacterInfo.LocX - Session.CharacterInfo.LocX), 2.0)
                             + Math.Pow((double)(sessionByCharacterId.CharacterInfo.LocY - Session.CharacterInfo.LocY), 2.0)) < 600.0))
                     {
+                        int historicalDamage = 0;
                         lock (sessionByCharacterId.CharacterInfo.DroneImpactSyncRoot)
                         {
                         if ((TeamDeathMatch.IsTdm(Session) || TeamDeathMatch.IsTdm(sessionByCharacterId))
@@ -391,6 +393,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                         if (sessionByCharacterId.CharacterInfo.ShipHp - smbDamages > 0)
                         {
                             sessionByCharacterId.CharacterInfo.ShipHp -= smbDamages;
+                            historicalDamage = smbDamages;
                             TeamDeathMatch.RecordDamage(Session, sessionByCharacterId, smbDamages);
 
                             var msg = PacketComposer.Compose(
@@ -420,6 +423,7 @@ namespace OrbitReborn_Emulator.Game.Handlers
                             }
                         }
                         }
+                        OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.AddHistoricalPlayerDamage(Session, sessionByCharacterId, historicalDamage, "mine", 0);
                     }
                 }
             }

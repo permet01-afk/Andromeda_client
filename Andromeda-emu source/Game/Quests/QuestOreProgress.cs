@@ -18,6 +18,8 @@ namespace OrbitReborn_Emulator.Game.Quests
                 return false;
 
             bool objectiveProgressChanged = false;
+            if (QuestObjectiveProgress.TryBufferOreProgress(playerId, resourceId, amount, out objectiveProgressChanged))
+                return objectiveProgressChanged;
 
             try
             {

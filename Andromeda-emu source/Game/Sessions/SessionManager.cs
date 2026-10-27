@@ -1,4 +1,4 @@
-using OrbitReborn_Emulator.Game.Techs;
+﻿using OrbitReborn_Emulator.Game.Techs;
 using OrbitReborn_Emulator.Communication;
 using OrbitReborn_Emulator.Communication.Outgoing;
 using OrbitReborn_Emulator.Game.Handlers;
@@ -439,6 +439,11 @@ namespace OrbitReborn_Emulator.Game.Sessions
                 }
                 foreach (Session key in (IEnumerable<Session>)SessionManager.mSessions.Values)
                 {
+                    if (key.RetirementIncomplete)
+                    {
+                        if (key.AutomaticRetirementRetryDue && !clist2.ContainsKey(key)) clist1.Add(key);
+                        continue;
+                    }
                     if (!clist2.ContainsKey(key) && ((key.StoppedPlayer && (key.Stopped || key.TimeStopped > STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS))
                         || (key.Stopped && key.TimeStopped > STOPPED_GAMEPLAY_INACTIVITY_LOGOUT_SECONDS)))
                     {
@@ -477,6 +482,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
                                 if (key.HasPendingGameplayDeath) continue;
                                 if (key.RetirementIncomplete)
                                 {
+                                    if (!key.AutomaticRetirementRetryDue) continue;
                                     key.EndGameplay(false);
                                     continue;
                                 }
@@ -516,6 +522,7 @@ namespace OrbitReborn_Emulator.Game.Sessions
 
         internal static void ForgetSession(Session session)
         {
+            OrbitReborn_Emulator.Game.Quests.QuestObjectiveProgress.HistoricalDisconnected(session);
             UnregisterAuthenticatedSession(session);
             CancelStopSession(session.Id);
             Session removed;

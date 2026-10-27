@@ -384,6 +384,41 @@ const ORE_SPRITE_CONFIG = {
 
 const oreAnimationStates = {};
 
+// Keep each native ore frame isolated from neighbouring atlas rows. At a
+// fractional screen position, Canvas filtering can otherwise sample a strip
+// of the preceding collectable (notably the green booty row above Endurium).
+// This cache is bounded to 3 x 26 frames and is reused by all ore entities.
+const oreIsolatedFrameCache = new Map();
+
+const NATIVE_ORE_ATLAS = Object.freeze({
+    path: "graphics/atlas/natural_ores_flash_native_v1.png",
+    width: 48,
+    height: 48,
+    stride: 52,
+    padding: 2,
+    rows: Object.freeze({ oreBlue: 0, oreRed: 1, oreYellow: 2 })
+});
+
+let nativeOreAtlasImage = null;
+
+function getNativeOreAtlasImage() {
+    if (!nativeOreAtlasImage) nativeOreAtlasImage = andromedaCreateImage(NATIVE_ORE_ATLAS.path);
+    return nativeOreAtlasImage;
+}
+
+function getNativeOreAtlasFrame(spriteKey, frameIndex) {
+    const row = NATIVE_ORE_ATLAS.rows[spriteKey];
+    if (!Number.isInteger(row) || !Number.isInteger(frameIndex) || frameIndex < 0 || frameIndex >= 26) return null;
+    const atlas = getNativeOreAtlasImage();
+    if (!atlas || !atlas.complete || atlas.width <= 0 || atlas.height <= 0) {
+        return { pendingAtlas: true, width: 48, height: 48 };
+    }
+    const sx = frameIndex * NATIVE_ORE_ATLAS.stride + NATIVE_ORE_ATLAS.padding;
+    const sy = row * NATIVE_ORE_ATLAS.stride + NATIVE_ORE_ATLAS.padding;
+    if (sx + 48 > atlas.width || sy + 48 > atlas.height) return null;
+    return { atlas, sx, sy, sw: 48, sh: 48, width: 48, height: 48 };
+}
+
 const COLLECTABLES_ATLAS_ENABLED = true;
 
 const COLLECTABLES_ATLAS_PATH = "graphics/atlas/collectables_v1.png";
@@ -445,6 +480,8 @@ function getCollectablesAtlasImage() {
     if (!COLLECTABLES_ATLAS_ENABLED) return null;
     if (!collectablesAtlasImage) {
         collectablesAtlasImage = andromedaCreateImage(COLLECTABLES_ATLAS_PATH);
+        getFlashOreBeamAtlasImage();
+        getNativeOreAtlasImage();
         collectablesAtlasStatus = markCollectablesAtlasReadyIfDecoded(collectablesAtlasImage) ? "ready" : "loading";
     }
     if (!collectablesAtlasListenersBound && collectablesAtlasImage) {
@@ -571,6 +608,16 @@ const FLASH_BOX_BEAM_OFFSET_X = -92;
 
 const FLASH_BOX_BEAM_OFFSET_Y = -144;
 
+// Original Flash beam0: one timeline pass, pivot at the world's ore position.
+// This is distinct from the existing loopingCollectorBeam hero effect.
+const FLASH_ORE_BEAM_ATLAS = Object.freeze({
+    path: "graphics/atlas/natural_ore_beam0_v2.png",
+    width: 200, height: 200, columns: 13, frameCount: 39,
+    offsetX: -95, offsetY: -120
+});
+
+let flashOreBeamAtlasImage = null;
+
 const collectorBeamCache = [];
 
 const flashBoxBeamCache = [];
@@ -667,14 +714,21 @@ function ensureFlashBoxBeamFramesPreloaded() {
     }
 }
 
-function startCollectableBoxBeam(worldX, worldY, durationMs = FLASH_BOX_BEAM_DEFAULT_DURATION_MS) {
+function getFlashOreBeamAtlasImage() {
+    if (!flashOreBeamAtlasImage) flashOreBeamAtlasImage = andromedaCreateImage(FLASH_ORE_BEAM_ATLAS.path);
+    return flashOreBeamAtlasImage;
+}
+
+function startCollectableBoxBeam(worldX, worldY, durationMs = FLASH_BOX_BEAM_DEFAULT_DURATION_MS, effectKind = "box") {
     if (!Number.isFinite(worldX) || !Number.isFinite(worldY)) return;
-    ensureFlashBoxBeamFramesPreloaded();
+    if (effectKind === "ore") getFlashOreBeamAtlasImage();
+    else ensureFlashBoxBeamFramesPreloaded();
     activeCollectableBoxBeams.push({
         x: worldX,
         y: worldY,
         startedAt: performance.now(),
-        durationMs: durationMs || FLASH_BOX_BEAM_DEFAULT_DURATION_MS
+        durationMs: durationMs || FLASH_BOX_BEAM_DEFAULT_DURATION_MS,
+        effectKind: effectKind
     });
     if (activeCollectableBoxBeams.length > 32) {
         activeCollectableBoxBeams.splice(0, activeCollectableBoxBeams.length - 32);
@@ -696,13 +750,23 @@ function drawActiveCollectableBoxBeams(now) {
         }
         activeCollectableBoxBeams[keepCount++] = beam;
         const progress = durationMs > 0 ? Math.max(0, Math.min(.999999, elapsed / durationMs)) : 0;
+        const screenX = mapToScreenX(beam.x);
+        const screenY = mapToScreenY(beam.y);
+        if (beam.effectKind === "ore") {
+            const atlas = getFlashOreBeamAtlasImage();
+            if (atlas && atlas.complete && atlas.width > 0 && atlas.height > 0) {
+                const config = FLASH_ORE_BEAM_ATLAS;
+                const frame = Math.min(config.frameCount - 1, Math.round(progress * (config.frameCount - 1)));
+                ctx.drawImage(atlas, frame % config.columns * config.width, Math.floor(frame / config.columns) * config.height,
+                    config.width, config.height, screenX + config.offsetX, screenY + config.offsetY, config.width, config.height);
+            }
+            continue;
+        }
         const frameIndex = Math.min(FLASH_BOX_BEAM_FRAME_COUNT - 1, Math.floor(progress * FLASH_BOX_BEAM_FRAME_COUNT));
         const img = getFlashBoxBeamFrame(frameIndex);
         if (!img || !img.complete || img.width <= 0 || img.height <= 0) {
             continue;
         }
-        const screenX = mapToScreenX(beam.x);
-        const screenY = mapToScreenY(beam.y);
         ctx.drawImage(img, screenX + FLASH_BOX_BEAM_OFFSET_X, screenY + FLASH_BOX_BEAM_OFFSET_Y);
     }
     activeCollectableBoxBeams.length = keepCount;
@@ -748,6 +812,7 @@ function startCollectableFadeOut(entity, durationMs = FLASH_COLLECTABLE_REMOVE_F
         fade.spriteKey = getOreSpriteKeyFromType(entity.type, entity.oreSprite);
         const oreAnim = entity.id != null ? oreAnimationStates[entity.id] : null;
         fade.frameIndex = oreAnim && Number.isFinite(oreAnim.frameIndex) ? oreAnim.frameIndex : 0;
+        fade.frameLastUpdate = oreAnim && Number.isFinite(oreAnim.lastUpdate) ? oreAnim.lastUpdate : now;
     } else if (category === "bonusBox" || category === "cargoFree" || category === "cargoNotFree" || category === "bootyBox") {
         fade.renderMode = "animatedBox";
         if (category === "bonusBox") {
@@ -782,7 +847,20 @@ function drawCollectableFadeOutEntry(fade, now) {
     ctx.save();
     ctx.globalAlpha *= alpha;
     if (fade.renderMode === "ore") {
+        // Flash leaves the ore in its25ms animation list throughout the500ms
+        // alpha tween, then removes it in onRemoveMovieClip.
+        const lastUpdate = Number.isFinite(fade.frameLastUpdate) ? fade.frameLastUpdate : fade.startedAt;
+        const oreConfig = getOreSpriteConfig(fade.spriteKey);
+        if (oreConfig && now - lastUpdate >= ORE_ANIMATION_FRAME_DURATION) {
+            const steps = Math.floor((now - lastUpdate) / ORE_ANIMATION_FRAME_DURATION);
+            fade.frameIndex = ((fade.frameIndex | 0) + steps) % oreConfig.frameCount;
+            fade.frameLastUpdate = lastUpdate + steps * ORE_ANIMATION_FRAME_DURATION;
+        }
         const frameImg = getOreSpriteFrame(fade.spriteKey, fade.frameIndex | 0);
+        if (frameImg && frameImg.pendingAtlas) {
+            ctx.restore();
+            return;
+        }
         if (frameImg && drawCollectableFrame(frameImg, boxScreenX, boxScreenY)) {
             ctx.restore();
             return;
@@ -1493,7 +1571,29 @@ function getOreSpriteFrame(spriteKey, frameIndex) {
     if (!cfg) return null;
     const frameCount = cfg.frameCount;
     const idx = (frameIndex % frameCount + frameCount) % frameCount;
-    return getCollectablesAtlasFrame(spriteKey, idx);
+    const frame = getNativeOreAtlasFrame(spriteKey, idx);
+    if (!frame || frame.pendingAtlas || !frame.atlas) return frame;
+    const cacheKey = spriteKey + ":" + idx;
+    const cached = oreIsolatedFrameCache.get(cacheKey);
+    if (cached && cached.sourceAtlas === frame.atlas) return cached.frame;
+    const surface = document.createElement("canvas");
+    surface.width = frame.sw;
+    surface.height = frame.sh;
+    const surfaceContext = surface.getContext("2d");
+    if (!surfaceContext) return frame;
+    surfaceContext.imageSmoothingEnabled = false;
+    surfaceContext.drawImage(frame.atlas, frame.sx, frame.sy, frame.sw, frame.sh, 0, 0, frame.sw, frame.sh);
+    const isolated = {
+        atlas: surface,
+        sx: 0,
+        sy: 0,
+        sw: frame.sw,
+        sh: frame.sh,
+        width: frame.width,
+        height: frame.height
+    };
+    oreIsolatedFrameCache.set(cacheKey, { sourceAtlas: frame.atlas, frame: isolated });
+    return isolated;
 }
 
 function clearOreAnimationState(id) {
@@ -4392,6 +4492,7 @@ function drawEntities() {
                 }
                 const frameImg = getOreSpriteFrame(spriteKey, animState.frameIndex);
                 oreAnimationStates[e.id] = animState;
+                if (frameImg && frameImg.pendingAtlas) continue;
                 if (frameImg && drawCollectableFrame(frameImg, boxScreenX, boxScreenY)) {
                     boxSpriteHeight = frameImg.height || boxSpriteHeight;
                 } else {
@@ -5361,8 +5462,12 @@ function isRecoverableFlashWindowPosition(left, top) {
     return left >= bounds.minLeft && left <= bounds.maxLeft && top >= bounds.minTop && top <= bounds.maxTop;
 }
 
+function isFlashHudNoScaleWindowKey(key) {
+    return key === "logout" || key === "quest";
+}
+
 function isFlashViewportWindowKey(key) {
-    return key === "connection" || key === "connectionLost" || key === "logout";
+    return key === "connection" || key === "connectionLost" || isFlashHudNoScaleWindowKey(key);
 }
 
 function ensureFlashViewportWindowLayer() {
@@ -5382,21 +5487,21 @@ function getFlashViewportWindowPosition(key, winEl) {
     const left = parseFloat(winEl.style.left);
     const top = parseFloat(winEl.style.top);
     // Read with the last applied scale, not a newly resized parent scale.
-    return key === "logout" ? {
+    return isFlashHudNoScaleWindowKey(key) ? {
         left: left * (winEl.__flashViewportHudScaleX || 1),
         top: top * (winEl.__flashViewportHudScaleY || 1)
     } : { left: left, top: top };
 }
 
 function applyFlashViewportWindowPosition(key, winEl, position) {
-    if (key !== "logout") {
+    if (!isFlashHudNoScaleWindowKey(key)) {
         applyFlashWindowPosition(winEl, position);
         return;
     }
     const inHud = winEl.parentNode && winEl.parentNode.id === "hudRoot";
     const sx = inHud && typeof window.getHudScaleX === "function" ? window.getHudScaleX() : 1;
     const sy = inHud && typeof window.getHudScaleY === "function" ? window.getHudScaleY() : 1;
-    // Keep Logout in the ordinary z-order while its displayed pixels retain V3 geometry.
+    // Keep these windows in the ordinary z-order while native UI pixels stay square.
     winEl.style.transformOrigin = "0 0";
     winEl.style.transform = `scale(${1 / sx}, ${1 / sy})`;
     winEl.style.left = Math.round(position.left) / sx + "px";
@@ -9349,7 +9454,7 @@ function createGameWindows() {
             }
         }
         const winEl = createGenericWindow(key, cfg);
-        if (isFlashViewportWindowKey(key) && key !== "logout") {
+        if (isFlashViewportWindowKey(key) && !isFlashHudNoScaleWindowKey(key)) {
             ensureFlashViewportWindowLayer().appendChild(winEl);
         } else {
             window.appendToHud ? window.appendToHud(winEl) : document.body.appendChild(winEl);
@@ -9479,7 +9584,9 @@ function resetAndromedaWindowPositions(options = {}) {
                 syncFlashViewportWindowPosition(key, winEl);
             }
             const recovery = isFlashViewportWindowKey(key) ? getFlashViewportWindowPosition(key, winEl) : ensureFlashWindowRecoverablePosition(winEl);
-            finalPos = {
+            // Quest now displays in native viewport pixels but retains the
+            // existing logical-coordinate settings format, including Reset.
+            finalPos = key === "quest" ? resolveCurrentWindowTopLeft(winEl, key) : {
                 left: recovery.left,
                 top: recovery.top
             };
@@ -10723,14 +10830,15 @@ function ensureFlashConnectionResizeBinding() {
     window.addEventListener("resize", () => {
         if (flashConnectionInfoWindowElement) syncFlashConnectionWindowLayout("connection", flashConnectionInfoWindowElement);
         if (flashConnectionLostWindowElement) syncFlashConnectionWindowLayout("connectionLost", flashConnectionLostWindowElement);
-        const logoutWin = document.getElementById("win_logout");
-        if (logoutWin && logoutWin.__flashViewportResizeFrame == null) {
-            // The existing HUD resize applies its new scale on RAF, before this callback.
-            // Coalesce only resize events; this is not a permanent animation loop.
-            logoutWin.__flashViewportResizeFrame = requestAnimationFrame(() => {
-                logoutWin.__flashViewportResizeFrame = null;
-                if (document.getElementById("win_logout") !== logoutWin || logoutWin.style.display === "none") return;
-                syncFlashViewportWindowPosition("logout", logoutWin);
+        for (const key of ["logout", "quest"]) {
+            const win = document.getElementById("win_" + key);
+            if (!win || win.__flashViewportResizeFrame != null) continue;
+            // HUD resize applies its new scale first. Coalesce these two
+            // native-pixel windows without adding a permanent animation loop.
+            win.__flashViewportResizeFrame = requestAnimationFrame(() => {
+                win.__flashViewportResizeFrame = null;
+                if (document.getElementById("win_" + key) !== win || win.style.display === "none") return;
+                syncFlashViewportWindowPosition(key, win);
             });
         }
     });

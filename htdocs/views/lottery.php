@@ -172,11 +172,11 @@
             <div class="controls-zone">
                 <h3 class="shop-title">Materializer</h3>
                 <div class="gg-row"><span>Uridium</span><strong id="ggUridium">—</strong></div>
-                <div class="gg-row"><span>Cost / energy</span><strong>40 U.</strong></div>
+                <div class="gg-row"><span>Extra energy</span><strong id="ggFreeEnergy">—</strong></div>
                 <div class="gg-row"><span>Next multiplier</span><strong id="multBadge" class="multiplier-badge">×1</strong></div>
 
                 <div class="cost-box gg-row">
-                    <span>TOTAL COST</span>
+                    <span title="Extra energy is used first. Each remaining energy costs 40 Uridium.">TOTAL COST</span>
                     <span id="uiTotalCost">40 U.</span>
                 </div>
 
@@ -225,6 +225,7 @@ let spinAmount = 1;
 let actionPending = false;
 let renderGeneration = 0;
 let ggCsrf = "";
+let availableFreeEnergy = 0;
 
 // --- DOM ELEMENTS ---
 const leftZone = document.getElementById('leftZone');
@@ -283,6 +284,27 @@ function getMaterializationTitle(amount) {
 
 function formatNumber(value) {
     return parseInt(value || 0, 10).toLocaleString();
+}
+
+function updateEnergyCost() {
+    const freeUsed = Math.min(spinAmount, availableFreeEnergy);
+    const paid = Math.max(0, spinAmount - freeUsed);
+    uiTotalCost.textContent = formatNumber(COST_PER_SPIN * paid) + ' U.';
+    uiTotalCost.title = freeUsed > 0
+        ? formatNumber(freeUsed) + ' extra energy + ' + formatNumber(paid) + ' paid energy'
+        : '40 Uridium per energy';
+}
+
+function refreshFreeEnergy(payload) {
+    if (!payload || typeof payload !== 'object') return;
+    const raw = Object.prototype.hasOwnProperty.call(payload, 'free_energy')
+        ? payload.free_energy : payload.pilot && payload.pilot.free_energy;
+    if (raw === undefined || raw === null) return;
+    const value = Number(raw);
+    if (!Number.isSafeInteger(value) || value < 0) return;
+    availableFreeEnergy = value;
+    document.getElementById('ggFreeEnergy').textContent = formatNumber(value);
+    updateEnergyCost();
 }
 
 function buildResultCardHtml(card) {
@@ -366,6 +388,7 @@ function updateMultiplierBadge(multiplierNext) {
 
 function refreshPilotBar(pilot) {
     if (!pilot) return;
+    refreshFreeEnergy(pilot);
     document.getElementById("ggUridium").textContent = pilot.uridium + " U.";
 
     const creditsEl = document.getElementById('pilot-credits');
@@ -521,12 +544,13 @@ window.switchGate = function(id) {
 }
 
 window.setAmount = function(amt) {
+    if (![1, 5, 10, 100].includes(amt)) return;
     spinAmount = amt;
     amtBtns.forEach(btn => {
         if(parseInt(btn.innerText) === amt) btn.classList.add('active');
         else btn.classList.remove('active');
     });
-    uiTotalCost.innerText = (COST_PER_SPIN * amt).toLocaleString() + " U.";
+    updateEnergyCost();
 }
 
 // --- API CALLS ---
@@ -539,6 +563,7 @@ async function loadGateInfo() {
         if (generation !== renderGeneration) return;
         if(json.status === 'success') {
             ggCsrf = json.csrf;
+            refreshFreeEnergy(json);
             refreshPilotBar(json.pilot);
             gatesData = json.gates;
             updateMultiplierBadge(json.multiplier_next);
@@ -567,6 +592,7 @@ async function spinGate() {
         const data = await resp.json();
 
         if(data.status === 'success') {
+            refreshFreeEnergy(data);
             refreshPilotBar(data.pilot);
             const resultTitle = getMaterializationTitle(submittedAmount);
 

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "catalogue_sha256": "e05057d4d5c17d1da0eb39a3ff208472ec5fd5d10d210665a632d50db6f3f929",
+  "category_limits": {
+    "Normal": {
+      "max_active": 3,
+      "basis": "official legacy website maximum3 simultaneous jobs; customHavok quota remains separate"
+    },
+    "Challenges": null,
+    "Daily": null,
+    "Event": null
+  },
+  "catalogue_count": 283,
+  "enabled_catalogue_count": 280,
+  "documentary_definitions": 293,
+  "category_counts": {
+    "Normal": 283,
+    "Challenges": 0,
+    "Daily": 0,
+    "Event": 0
+  },
+  "unknown_firm_variants": 9,
+  "private_position_integrated_count": 4,
+  "staging_status": "QUALIFIED_NORMAL_APPEND_ONLY_NOT_ACTIVATED"
+}

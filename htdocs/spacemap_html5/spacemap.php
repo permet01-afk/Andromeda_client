@@ -736,13 +736,13 @@ Collect experience points by shooting down aliens and enemy ships, but don&#x27;
 <script src="client_config.js?v=p0c-client-stability-20261014-1"></script>
 <link rel="stylesheet" href="ship_death.css?v=phase5-window14-2">
 <script src="ship_death.js?v=phase5-window14-2"></script>
-<script src="client_network.js?v=historical-mechanics-20261024-1"></script>
+<script src="client_network.js?v=flash-ore-fidelity-20261027-1"></script>
 <script src="client_entities.js?v=gg-continue-animation-20261011-1"></script>
-<script src="client_combat.js?v=historical-mechanics-20261024-1"></script>
-<script src="client_graphics.js?v=mechanics-20261024-8"></script>
+<script src="client_combat.js?v=ore-beams-1s-20261027-g"></script>
+<script src="client_graphics.js?v=flash-ore-fidelity-20261027-1"></script>
 <link rel="stylesheet" href="historical_refinement.css?v=historical-mechanics-20261024-2">
 <script src="client_ui.js?v=flash-strict-combat-20261011-1"></script>
-<script src="client_quests.js?v=phase7-quest-visual-3"></script>
+<script src="client_quests.js?v=historical-ores-save10-20261027-1"></script>
 <script src="client_map_decor_data.js?v=phase8c-decor-1"></script>
 <script src="client_map_decor.js?v=phase8c-decor-1"></script>
 <link rel="stylesheet" href="tdm.css?v=phase10c-hud-d-1">
