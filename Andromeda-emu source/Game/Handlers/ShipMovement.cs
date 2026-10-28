@@ -310,8 +310,8 @@ namespace OrbitReborn_Emulator.Game.Handlers
             if (elapsed <= 0.0 || Session.CharacterInfo.ShipSpeed <= 0)
                 return;
 
-            double dx = (double)(newLocX - locX);
-            double dy = (double)(newLocY - locY);
+            double dx = (double)newLocX - locX;
+            double dy = (double)newLocY - locY;
             double distance = Math.Sqrt(dx * dx + dy * dy);
             if (distance <= 0.0)
                 return;
@@ -444,23 +444,17 @@ namespace OrbitReborn_Emulator.Game.Handlers
 #pragma warning disable IDE1006
         public static double getTimeTaken(Session Session, int nextInt1, int nextInt2)
         {
-            double dx = (double)(Session.CharacterInfo.LocX - nextInt1);
-            double dy = (double)(Session.CharacterInfo.LocY - nextInt2);
+            double dx = (double)Session.CharacterInfo.LocX - nextInt1;
+            double dy = (double)Session.CharacterInfo.LocY - nextInt2;
             double num = Math.Sqrt(dx * dx + dy * dy);
 
-            int limitX = 22000;
-            int limitY = 14000;
-
-            if (Session.CharacterInfo.MapId == 16 || Session.CharacterInfo.MapId == 29)
-            {
-                limitX = 43000;
-                limitY = 28000;
-            }
-
-            if (num < 50.0 || (nextInt1 > limitX || nextInt1 < -1000 || nextInt2 > limitY || nextInt2 < -1000))
+            if (num < 50.0)
                 return -1;
 
             double TimeTaken = num * 1000.0 / (double)Session.CharacterInfo.ShipSpeed;
+            // The existing movement packet serializes this duration as Int32.
+            if (double.IsNaN(TimeTaken) || double.IsInfinity(TimeTaken) || TimeTaken <= 0.0 || TimeTaken > int.MaxValue)
+                return -1;
             return TimeTaken;
         }
 #pragma warning restore IDE1006
@@ -771,10 +765,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
                             {
                                 Session.CharacterInfo.PlayerInRange.Add(sessionByCharacterId.CharacterId);
                                 Session.SendData(MapUserEnterComposer.Compose(sessionByCharacterId.CharacterInfo, Session));
-                                double moveDx = (double)(sessionByCharacterId.CharacterInfo.LocX - sessionByCharacterId.CharacterInfo.NewLocX);
-                                double moveDy = (double)(sessionByCharacterId.CharacterInfo.LocY - sessionByCharacterId.CharacterInfo.NewLocY);
+                                double moveDx = (double)sessionByCharacterId.CharacterInfo.LocX - sessionByCharacterId.CharacterInfo.NewLocX;
+                                double moveDy = (double)sessionByCharacterId.CharacterInfo.LocY - sessionByCharacterId.CharacterInfo.NewLocY;
                                 double TimeTaken = Math.Sqrt(moveDx * moveDx + moveDy * moveDy) * 1000.0 / (double)sessionByCharacterId.CharacterInfo.ShipSpeed;
-                                Session.SendData(MapShipMovementComposer.Compose(sessionByCharacterId.CharacterId, sessionByCharacterId.CharacterInfo.NewLocX, sessionByCharacterId.CharacterInfo.NewLocY, TimeTaken));
+                                if (!double.IsNaN(TimeTaken) && !double.IsInfinity(TimeTaken) && TimeTaken >= 0.0 && TimeTaken <= int.MaxValue)
+                                    Session.SendData(MapShipMovementComposer.Compose(sessionByCharacterId.CharacterId, sessionByCharacterId.CharacterInfo.NewLocX, sessionByCharacterId.CharacterInfo.NewLocY, TimeTaken));
                                 Fight.SendLockIntentToObserver(Session, sessionByCharacterId, instanceByMapId);
                             }
                         }

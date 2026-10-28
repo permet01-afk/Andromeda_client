@@ -131,16 +131,11 @@ namespace OrbitReborn_Emulator.Game.Handlers
 
                 SelectAction.SendConfigurationRefresh(Session);
 
-                bool isLargePvpMap = Session.CharacterInfo.MapId == 16 || Session.CharacterInfo.MapId == 29;
-                int limitX = isLargePvpMap ? 42500 : 22000;
-                int limitY = isLargePvpMap ? 28500 : 14000;
-
                 if (Session.CharacterInfo.IsMoving && (Session.CharacterInfo.NewLocX != Session.CharacterInfo.LocX || Session.CharacterInfo.NewLocY != Session.CharacterInfo.LocY))
                 {
-                    double num = Math.Sqrt(Math.Pow((double)(Session.CharacterInfo.LocX - Session.CharacterInfo.NewLocX), 2.0) + Math.Pow((double)(Session.CharacterInfo.LocY - Session.CharacterInfo.NewLocY), 2.0));
-                    if (num >= 50.0 && (Session.CharacterInfo.NewLocX <= limitX && Session.CharacterInfo.NewLocX >= -1000 && Session.CharacterInfo.NewLocY <= limitY && Session.CharacterInfo.NewLocY >= -1000))
+                    double TimeTaken = ShipMovement.getTimeTaken(Session, Session.CharacterInfo.NewLocX, Session.CharacterInfo.NewLocY);
+                    if (TimeTaken != -1)
                     {
-                        double TimeTaken = num * 1000.0 / (double)Session.CharacterInfo.ShipSpeed;
                         foreach (int key in (IEnumerable<int>)Session.CharacterInfo.PlayerInRange.Keys)
                         {
                             Session sessionByCharacterId = SessionManager.GetSessionByCharacterId(key);
