@@ -222,8 +222,6 @@
             });
             var activeCount = root.querySelector('[data-mc-active-count]');
             if (activeCount) activeCount.textContent = String(group.activeCount) + (group.maxActiveCount === null || group.maxActiveCount === undefined ? '' : ' / ' + String(group.maxActiveCount));
-            var label = root.querySelector('[data-mc-family-label]');
-            if (label) label.textContent = group.label;
             var tabPanel = root.querySelector('[data-mc-tab-panel]');
             if (tabPanel) tabPanel.setAttribute('aria-labelledby', 'mc-tab-' + id);
             root.querySelectorAll('[data-mc-weekly-summary]').forEach(function (node) { node.hidden = id !== 'weekly'; });
@@ -260,10 +258,17 @@
                 if (next.dataset.mcTab !== section) showGroup(next.dataset.mcTab, 'push');
             });
         });
+        function canonicalSection(id) {
+            var fallback = groups.has('normal') ? 'normal' : 'contracts';
+            if (id === 'daily') return 'weekly';
+            if (!id || id === 'challenges' || id === 'event' || (groups.has('normal') && (id === 'basic' || id === 'pvp'))) return fallback;
+            return id;
+        }
+
         function onPopState() {
             var url = new URL(window.location.href);
             if (url.searchParams.get('page') !== 'user' || url.searchParams.get('tab') !== 'quests') return;
-            var id = url.searchParams.get('section') || (groups.has('normal') ? 'normal' : 'contracts');
+            var id = canonicalSection(url.searchParams.get('section'));
             if (busy) pendingHistoryRoute = window.location.href;
             else showGroup(id, false, true);
         }
@@ -344,7 +349,7 @@
                 }).catch(function () {
                     localError('Unable to confirm the result. Refresh this page manually before trying the action again.');
                     if (pendingHistoryRoute) {
-                        var requested = new URL(pendingHistoryRoute).searchParams.get('section') || (groups.has('normal') ? 'normal' : 'contracts');
+                        var requested = canonicalSection(new URL(pendingHistoryRoute).searchParams.get('section'));
                         showGroup(requested, false, true);
                         pendingHistoryRoute = null;
                     }
@@ -357,7 +362,7 @@
 
         if (groups.size) {
             if (restoreAddress) {
-                var requestedSection = new URL(restoreAddress, window.location.href).searchParams.get('section') || (groups.has('normal') ? 'normal' : 'contracts');
+                var requestedSection = canonicalSection(new URL(restoreAddress, window.location.href).searchParams.get('section'));
                 if (groups.has(requestedSection)) section = requestedSection;
             }
             var initialKey = selected;

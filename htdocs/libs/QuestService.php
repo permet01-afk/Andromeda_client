@@ -454,11 +454,11 @@ class QuestService
                 throw new Exception('This hunting contract is not complete yet.');
             }
 
-            $claimBonus = 1.25;
-            $rewardCredits = (int)floor($goal * (int)$data['credits'] * $claimBonus);
-            $rewardUridium = (int)floor($goal * (int)$data['uridium'] * $claimBonus);
-            $rewardExperience = (int)floor($goal * (int)$data['experience'] * $claimBonus);
-            $rewardHonor = (int)floor($goal * (int)$data['honor'] * $claimBonus);
+            $rewards = $this->huntingContractRewards($goal, $data);
+            $rewardCredits = $rewards['credits'];
+            $rewardUridium = $rewards['uridium'];
+            $rewardExperience = $rewards['experience'];
+            $rewardHonor = $rewards['honor'];
 
             $this->db->prepare('UPDATE users_npc_lvl SET `' . $npcColumn . '` = `' . $npcColumn . '` + 1 WHERE id = :id')
                 ->execute([':id' => $this->playerId]);
@@ -677,7 +677,7 @@ class QuestService
             $pct = $goal > 0 ? min(100, ($displayProgress / $goal) * 100) : 0;
             $canClaim = ($progressInCurrentLevel >= $goal && $lvl < 10);
             $isMaxed = ($lvl >= 10);
-            $claimBonus = 1.25;
+            $rewards = $this->huntingContractRewards($goal, $data);
 
             $result[] = [
                 'npc' => $npcName,
@@ -687,10 +687,10 @@ class QuestService
                 'percent' => $pct,
                 'can_claim' => $canClaim,
                 'is_maxed' => $isMaxed,
-                'reward_credits' => (int)floor($goal * (int)$data['credits'] * $claimBonus),
-                'reward_uridium' => (int)floor($goal * (int)$data['uridium'] * $claimBonus),
-                'reward_experience' => (int)floor($goal * (int)$data['experience'] * $claimBonus),
-                'reward_honor' => (int)floor($goal * (int)$data['honor'] * $claimBonus),
+                'reward_credits' => $rewards['credits'],
+                'reward_uridium' => $rewards['uridium'],
+                'reward_experience' => $rewards['experience'],
+                'reward_honor' => $rewards['honor'],
             ];
         }
 
@@ -1385,6 +1385,18 @@ class QuestService
             throw new Exception('Invalid ore target.');
         }
         return $map[$ore];
+    }
+
+    private function huntingContractRewards(int $goal, array $data): array
+    {
+        // Preserve the old floored 1.25 claim bonus before scaling currencies.
+        $rewards = [];
+        foreach (['credits', 'uridium', 'experience', 'honor'] as $field) {
+            $rewards[$field] = intdiv($goal * (int)$data[$field] * 5, 4);
+        }
+        $rewards['credits'] = intdiv($rewards['credits'] * 40, 100);
+        $rewards['uridium'] = intdiv($rewards['uridium'], 2);
+        return $rewards;
     }
 
     private function contractLevelGoal(int $k, int $lvl): int

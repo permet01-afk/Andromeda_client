@@ -12,7 +12,8 @@ final class MissionControlPresenter
         'basic' => 'Basic Quests',
         'pvp' => 'PVP',
         'havok' => 'Havok Quests',
-        'weekly' => 'Weekly Missions',
+        // Keep the existing service/API identity; Daily is the player-facing name.
+        'weekly' => 'Daily',
     ];
 
     private const HISTORICAL_GROUPS = ['normal', 'challenges', 'daily', 'event'];
@@ -62,6 +63,11 @@ final class MissionControlPresenter
         if ($historicalMode && in_array($section, ['basic', 'pvp'], true)) {
             $section = 'normal';
         }
+        if ($section === 'daily') {
+            $section = 'weekly';
+        } elseif (in_array($section, ['challenges', 'event'], true)) {
+            $section = $defaultSection;
+        }
         $filter = self::text($context['filter'] ?? 'all');
         $filter = isset(self::FILTERS[$filter]) ? $filter : 'all';
         $checkedStates = null;
@@ -90,7 +96,12 @@ final class MissionControlPresenter
 
         $groupLabels = self::GROUPS;
         if ($historicalMode) {
-            unset($groupLabels['basic'], $groupLabels['pvp']);
+            $groupLabels = [
+                'normal' => self::GROUPS['normal'],
+                'contracts' => self::GROUPS['contracts'],
+                'weekly' => self::GROUPS['weekly'],
+                'havok' => self::GROUPS['havok'],
+            ];
         } else {
             foreach (self::HISTORICAL_GROUPS as $historicalGroup) {
                 unset($groupLabels[$historicalGroup]);
@@ -100,8 +111,10 @@ final class MissionControlPresenter
             $rows = is_array($catalogues[$group] ?? null) ? $catalogues[$group] : [];
             $count = 0;
             $groupHistorical = $historicalMode && in_array($group, self::HISTORICAL_GROUPS, true);
-            $groupActiveCount = $groupHistorical ? ($group === 'normal' ? (int)($historicalMeta['activeCount'] ?? 0) : 0) : $legacyActiveCount;
-            $groupMaxCount = $groupHistorical ? ($group === 'normal' && isset($historicalMeta['maxActive']) ? (int)$historicalMeta['maxActive'] : null) : $legacyMaxCount;
+            $automaticGroup = in_array($group, ['contracts', 'weekly'], true);
+            $groupActiveCount = $automaticGroup ? 0 : ($groupHistorical ? ($group === 'normal' ? (int)($historicalMeta['activeCount'] ?? 0) : 0) : $legacyActiveCount);
+            // Automatically active families have no admission quota. Never display the Havok quota here.
+            $groupMaxCount = $automaticGroup ? null : ($groupHistorical ? ($group === 'normal' && isset($historicalMeta['maxActive']) ? (int)$historicalMeta['maxActive'] : null) : $legacyMaxCount);
             $limitReached = $groupMaxCount !== null && $groupActiveCount >= $groupMaxCount;
             $hasLevels = false;
             foreach ($rows as $row) {
@@ -117,9 +130,12 @@ final class MissionControlPresenter
                 if (isset($mission['minLevel']) && is_numeric($mission['minLevel'])) $hasLevels = true;
                 $missions[] = $mission;
                 $count++;
-                if ($groupHistorical && $group !== 'normal' && in_array($mission['state'], ['active', 'ready'], true)) ++$groupActiveCount;
+                if (($automaticGroup || ($groupHistorical && $group !== 'normal')) && in_array($mission['state'], ['active', 'ready'], true)) ++$groupActiveCount;
             }
-            if ($groupHistorical && $group === $section) $activeCount = $groupActiveCount;
+            if (($groupHistorical || $automaticGroup) && $group === $section) {
+                $activeCount = $groupActiveCount;
+                $maxCount = $groupMaxCount;
+            }
             $groups[] = ['id' => $group, 'label' => $label, 'count' => $count, 'url' => self::url($group),
                 'activeCount' => $groupActiveCount, 'maxActiveCount' => $groupMaxCount, 'hasLevels' => $hasLevels];
         }
@@ -293,7 +309,7 @@ final class MissionControlPresenter
         $state = $complete ? 'completed' : ($ready ? 'ready' : ($accepted ? 'active' : ($locked ? 'locked' : 'available')));
         $reason = '';
         if ($locked) {
-            $reason = $automatic ? 'Weekly missions are activated automatically.'
+            $reason = $automatic ? 'Daily missions are activated automatically.'
                 : 'This quest is unavailable.';
         }
         if (!$locked && !$complete && !$accepted && $limitReached) $reason = 'Maximum active quests reached.';

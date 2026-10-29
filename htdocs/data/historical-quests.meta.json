@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalogue_sha256": "e05057d4d5c17d1da0eb39a3ff208472ec5fd5d10d210665a632d50db6f3f929",
+  "catalogue_sha256": "ac56bbde89246adc2ca52a6aca6bc325ae576f2aeaff6e6cf50dd4e9408517ea",
   "category_limits": {
     "Normal": {
       "max_active": 3,

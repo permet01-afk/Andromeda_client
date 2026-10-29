@@ -110753,21 +110753,21 @@ CREATE TABLE `site_weekly_missions` (
 --
 
 INSERT INTO `site_weekly_missions` (`id`, `code`, `title`, `description`, `rotation_group`, `slot`, `difficulty`, `recommended_level`, `reward_uridium`, `reward_experience`, `reward_honor`, `reward_ucb100`, `reward_rsb75`, `reward_seprom`, `enabled`, `updated_at`) VALUES
-(1, 'weekly_sector_cleanup', 'Sector Cleanup', 'Clean up the lower sectors by destroying classic alien forces.', 'A', 1, 'Hard', 8, 30000, 4000000, 20000, 35000, 10000, 1000, 1, '2026-06-06 22:40:01'),
-(2, 'weekly_heavy_alien_hunt', 'Heavy Alien Hunt', 'Hunt stronger aliens across dangerous sectors.', 'A', 2, 'Very Hard', 12, 45000, 8000000, 40000, 45000, 20000, 2000, 1, '2026-06-06 22:40:01'),
-(3, 'weekly_operation_45', 'Operation 4-5', 'Enter 4-5 and destroy Uber alien forces.', 'A', 3, 'Extreme', 14, 45000, 10000000, 50000, 50000, 20000, 2500, 1, '2026-06-06 22:40:01'),
-(4, 'weekly_boss_cubikon_suppression', 'Boss Cubikon Suppression', 'Suppress the Boss Cubikon presence in 4-5.', 'A', 4, 'Extreme', 15, 45000, 12000000, 60000, 45000, 20000, 2500, 1, '2026-06-06 22:40:01'),
-(5, 'weekly_enemy_hunter', 'Enemy Hunter Weekly', 'Destroy eligible enemy pilots from another company.', 'A', 5, 'PvP', 8, 35000, 6000000, 50000, 25000, 15000, 1000, 1, '2026-06-06 22:40:01'),
-(6, 'weekly_lower_maps_lockdown', 'Lower Maps Lockdown', 'Lock down the lower maps by destroying large classic alien groups.', 'B', 1, 'Hard', 8, 30000, 4000000, 20000, 35000, 10000, 1000, 1, '2026-06-06 22:40:01'),
-(7, 'weekly_crystal_front', 'Crystal Front', 'Push through the crystal alien front.', 'B', 2, 'Very Hard', 12, 45000, 8000000, 40000, 45000, 20000, 2000, 1, '2026-06-06 22:40:01'),
-(8, 'weekly_uber_vanguard', 'Uber Vanguard', 'Break the Uber alien vanguard in 4-5.', 'B', 3, 'Extreme', 14, 45000, 10000000, 50000, 50000, 20000, 2500, 1, '2026-06-06 22:40:01'),
-(9, 'weekly_boss_hive_control', 'Boss Hive Control', 'Control the Boss Cubikon hive in 4-5.', 'B', 4, 'Extreme', 15, 45000, 12000000, 60000, 45000, 20000, 2500, 1, '2026-06-06 22:40:01'),
-(10, 'weekly_enemy_ace_hunt', 'Enemy Ace Hunt', 'Destroy eligible enemy pilots from another company.', 'B', 5, 'PvP', 8, 35000, 6000000, 50000, 25000, 15000, 1000, 1, '2026-06-06 22:40:01'),
-(11, 'weekly_outer_sector_purge', 'Outer Sector Purge', 'Purge hostile alien forces from the outer sectors.', 'C', 1, 'Hard', 10, 30000, 4000000, 20000, 35000, 10000, 1000, 1, '2026-06-06 22:40:01'),
-(12, 'weekly_titan_hunt', 'Titan Hunt', 'Destroy the toughest classic alien targets.', 'C', 2, 'Very Hard', 12, 45000, 8000000, 40000, 45000, 20000, 2000, 1, '2026-06-06 22:40:01'),
-(13, 'weekly_uber_endurance_45', 'Uber Endurance 4-5', 'Survive a long 4-5 Uber alien hunt.', 'C', 3, 'Extreme', 14, 45000, 10000000, 50000, 50000, 20000, 2500, 1, '2026-06-06 22:40:01'),
-(14, 'weekly_boss_convoy_breaker', 'Boss Convoy Breaker', 'Break Boss Cubikon convoys in 4-5.', 'C', 4, 'Extreme', 15, 45000, 12000000, 60000, 45000, 20000, 2500, 1, '2026-06-06 22:40:01'),
-(15, 'weekly_pvp_war_effort', 'PvP War Effort', 'Destroy eligible enemy pilots from another company.', 'C', 5, 'PvP', 8, 35000, 6000000, 50000, 25000, 15000, 1000, 1, '2026-06-06 22:40:01');
+(1, 'weekly_sector_cleanup', 'Sector Cleanup', 'Clean up the lower sectors by destroying classic alien forces.', 'A', 1, 'Hard', 8, 6000, 800000, 4000, 7000, 2000, 200, 1, '2026-06-06 22:40:01'),
+(2, 'weekly_heavy_alien_hunt', 'Heavy Alien Hunt', 'Hunt stronger aliens across dangerous sectors.', 'A', 2, 'Very Hard', 12, 9000, 1600000, 8000, 9000, 4000, 400, 1, '2026-06-06 22:40:01'),
+(3, 'weekly_operation_45', 'Operation 4-5', 'Enter 4-5 and destroy Uber alien forces.', 'A', 3, 'Extreme', 14, 9000, 2000000, 10000, 10000, 4000, 500, 1, '2026-06-06 22:40:01'),
+(4, 'weekly_boss_cubikon_suppression', 'Boss Cubikon Suppression', 'Suppress the Boss Cubikon presence in 4-5.', 'A', 4, 'Extreme', 15, 9000, 2400000, 12000, 9000, 4000, 500, 1, '2026-06-06 22:40:01'),
+(5, 'weekly_enemy_hunter', 'Enemy Hunter Weekly', 'Destroy eligible enemy pilots from another company.', 'A', 5, 'PvP', 8, 7000, 1200000, 10000, 5000, 3000, 200, 1, '2026-06-06 22:40:01'),
+(6, 'weekly_lower_maps_lockdown', 'Lower Maps Lockdown', 'Lock down the lower maps by destroying large classic alien groups.', 'B', 1, 'Hard', 8, 6000, 800000, 4000, 7000, 2000, 200, 1, '2026-06-06 22:40:01'),
+(7, 'weekly_crystal_front', 'Crystal Front', 'Push through the crystal alien front.', 'B', 2, 'Very Hard', 12, 9000, 1600000, 8000, 9000, 4000, 400, 1, '2026-06-06 22:40:01'),
+(8, 'weekly_uber_vanguard', 'Uber Vanguard', 'Break the Uber alien vanguard in 4-5.', 'B', 3, 'Extreme', 14, 9000, 2000000, 10000, 10000, 4000, 500, 1, '2026-06-06 22:40:01'),
+(9, 'weekly_boss_hive_control', 'Boss Hive Control', 'Control the Boss Cubikon hive in 4-5.', 'B', 4, 'Extreme', 15, 9000, 2400000, 12000, 9000, 4000, 500, 1, '2026-06-06 22:40:01'),
+(10, 'weekly_enemy_ace_hunt', 'Enemy Ace Hunt', 'Destroy eligible enemy pilots from another company.', 'B', 5, 'PvP', 8, 7000, 1200000, 10000, 5000, 3000, 200, 1, '2026-06-06 22:40:01'),
+(11, 'weekly_outer_sector_purge', 'Outer Sector Purge', 'Purge hostile alien forces from the outer sectors.', 'C', 1, 'Hard', 10, 6000, 800000, 4000, 7000, 2000, 200, 1, '2026-06-06 22:40:01'),
+(12, 'weekly_titan_hunt', 'Titan Hunt', 'Destroy the toughest classic alien targets.', 'C', 2, 'Very Hard', 12, 9000, 1600000, 8000, 9000, 4000, 400, 1, '2026-06-06 22:40:01'),
+(13, 'weekly_uber_endurance_45', 'Uber Endurance 4-5', 'Survive a long 4-5 Uber alien hunt.', 'C', 3, 'Extreme', 14, 9000, 2000000, 10000, 10000, 4000, 500, 1, '2026-06-06 22:40:01'),
+(14, 'weekly_boss_convoy_breaker', 'Boss Convoy Breaker', 'Break Boss Cubikon convoys in 4-5.', 'C', 4, 'Extreme', 15, 9000, 2400000, 12000, 9000, 4000, 500, 1, '2026-06-06 22:40:01'),
+(15, 'weekly_pvp_war_effort', 'PvP War Effort', 'Destroy eligible enemy pilots from another company.', 'C', 5, 'PvP', 8, 7000, 1200000, 10000, 5000, 3000, 200, 1, '2026-06-06 22:40:01');
 
 -- --------------------------------------------------------
 
@@ -110839,7 +110839,7 @@ INSERT INTO `site_weekly_mission_objectives` (`id`, `mission_id`, `objective_typ
 (47, 13, 'weekly_npc_kill', '29:Uber Devolarium', 'Destroy 35 Uber Devolarium in 4-5', 35, 30),
 (48, 13, 'weekly_npc_kill', '29:Uber Lordakium', 'Destroy 25 Uber Lordakium in 4-5', 25, 40),
 (49, 13, 'weekly_npc_kill', '29:Uber Kristallon', 'Destroy 20 Uber Kristallon in 4-5', 20, 50),
-(50, 13, 'weekly_npc_kill', '29:Uber StreuneR', 'Destroy 20 Uber StreuneR in 4-5', 20, 60),
+(50, 13, 'weekly_npc_kill', '29:Uber StreuneR_X8', 'Destroy 20 Uber StreuneR in 4-5', 20, 60),
 (51, 14, 'weekly_npc_kill', '29:Boss Cubikon', 'Destroy 10 Boss Cubikon in 4-5', 10, 10),
 (52, 14, 'weekly_npc_kill', '29:Boss Protegit', 'Destroy 150 Boss Protegit in 4-5', 150, 20),
 (53, 15, 'weekly_player_kill', 'eligible_enemy_pilot', 'Destroy 25 eligible enemy pilots', 25, 10);

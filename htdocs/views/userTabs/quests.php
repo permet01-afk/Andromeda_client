@@ -8,6 +8,12 @@ $allowedSections = ['normal', 'challenges', 'daily', 'event', 'contracts', 'basi
 if (!in_array($section, $allowedSections, true)) {
     $section = 'contracts';
 }
+// The public Daily tab reuses the installed Weekly engine and its action names.
+if ($section === 'daily') {
+    $section = 'weekly';
+} elseif (in_array($section, ['challenges', 'event'], true)) {
+    $section = 'normal';
+}
 
 $playerId = (int)($_SESSION['player_id'] ?? 0);
 $questToken = $questCsrfToken ?? ($_SESSION['quest_csrf_token'] ?? '');
@@ -49,7 +55,7 @@ $noticeMap = [
     'claimed' => 'Quest reward claimed.',
     'aborted' => 'Quest aborted.',
     'contract_claimed' => 'Hunting contract reward claimed.',
-    'weekly_claimed' => 'Weekly mission reward claimed.',
+    'weekly_claimed' => 'Daily mission reward claimed.',
 ];
 if (isset($_GET['quest_msg']) && isset($noticeMap[$_GET['quest_msg']])) {
     $questNotice = $noticeMap[$_GET['quest_msg']];
@@ -190,10 +196,11 @@ try {
         $weeklyState = $weeklyMissionService->getWeeklyState();
         $weeklyMissions = $weeklyState['missions'] ?? [];
         $weeklyMeta = $weeklyState['meta'] ?? [];
+        $weeklyError = (string)($weeklyState['error'] ?? '');
     } catch (Exception $weeklyException) {
         $weeklyMissions = [];
         $weeklyMeta = $weeklyMissionService->getWeeklyMeta();
-        $weeklyError = 'Weekly Missions SQL is not installed yet.';
+        $weeklyError = 'Daily missions are temporarily unavailable.';
     }
     $activeQuestCount = $questService->getActiveQuestCount();
     $maxActiveQuestCount = $questService->getMaxActiveQuestCount();

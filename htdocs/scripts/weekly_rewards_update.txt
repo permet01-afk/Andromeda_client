@@ -1,0 +1,70 @@
+Daily (still Weekly) — absolute reward maintenance for an existing H1 database
+
+Final Andromeda decision: divide every quantitative reward of all fifteen
+Weekly definitions by five. This does NOT change the cadence: five missions
+per ISO Europe/Zurich week, A/B/C rotation, Monday 00:00 reset.
+
+Canonical file: data/weekly-rewards-andromeda.json
+SHA-256: cf8d5c7a0d11167aba6c0bdc5052b679514e9c875b04b8e52f8c379c824a9cfb
+The file contains the original H1 and the final ABSOLUTE values for every code.
+Never divide the current SQL value repeatedly.
+
+Individual rounding: positive nearest integer / half-up, implemented for
+division by five as intdiv(original + 2, 5). Each reward is rounded separately.
+The approved current fifteen definitions all divide exactly. Zero remains zero.
+There is no Credits reward column in this reference and no Credits are added.
+Unknown additional reward columns or custom intermediate amounts cause refusal.
+
+The six present reward columns are Uridium, Experience, Honor, UCB-100, RSB-75
+and Seprom. Every group A, B and C has these final totals:
+  Uridium     40,000
+  Experience  8,000,000
+  Honor       44,000
+  UCB-100     40,000
+  RSB-75      17,000
+  Seprom      1,800
+  Credits     0 (absent, not invented)
+
+Uber Endurance therefore gives 9,000 Uridium, 2,000,000 Experience,
+10,000 Honor, 10,000 UCB-100, 4,000 RSB-75 and 500 Seprom.
+Its two NPC quantities remain 80 and 20. Run the separate identity correction
+from weekly_uber_endurance_update.txt after installing these reward values.
+
+Existing installation procedure (manual, never automatic):
+1. Save and verify full database/application backups. Keep the old version.
+2. Stop the emulator and block HTTP quest writes. Verify no account is online.
+3. Install the approved application files, including the absolute JSON file.
+   Follow the distinct Normal/Hunting update instructions for those changes.
+4. Run the read-only inspection with your actual database and port:
+
+   php scripts/weekly_rewards_maintenance.php --expect-db=YOUR_DATABASE --expect-port=YOUR_PORT --expect-rewards-sha256=cf8d5c7a0d11167aba6c0bdc5052b679514e9c875b04b8e52f8c379c824a9cfb
+
+5. Review the fifteen original/already-updated rows. To apply the same plan,
+   add --execute --maintenance-confirmed and an existing writable absolute
+   --receipt-dir=ABSOLUTE_DIRECTORY_OUTSIDE_HTDOCS.
+
+The tool locks the existing InnoDB rows, writes a complete external pre-update
+receipt, and sets only the six approved reward values. All objectives, progress,
+statuses, claimed timestamps, period keys and account wallets remain intact.
+An already claimed mission is never reopened or paid again. No compensation,
+debit or retroactive reward is applied. The new amounts affect future claims,
+including already-accepted, unclaimed missions.
+
+Running the command again performs no reward update. Any value that is neither
+the exact approved old nor new vector refuses instead of guessing a multiplier.
+No new schema, column, table or mission is created.
+
+6. Apply/inspect the separate Uber identity correction, then restart the
+   emulator, refresh Mission Control, and verify Rewards against the receipts.
+
+Fresh installation: the tracked andromeda.sql seed already contains these final
+fifteen reward rows and the fixed X8 objective key. It is NOT an update script
+for an existing database. Never reimport that complete seed over live players.
+
+Rollback requires maintenance again and review of the external receipt/backup.
+Restore definition values only if explicitly approved; do not restore old player
+snapshots over later progress or remove rewards already granted after the update.
+The X8 identity rollback has separate collision constraints described in its file.
+
+These are future manual instructions. No main database or installation is touched
+by private validation; publication and execution require separate authorization.

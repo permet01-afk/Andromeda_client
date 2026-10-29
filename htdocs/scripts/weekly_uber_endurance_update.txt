@@ -1,0 +1,72 @@
+Uber Endurance: explicit existing-H1 maintenance
+
+This is a data correction, not a new quest system or schema migration.
+The Daily tab remains weekly: five of fifteen missions, ISO Zurich weeks,
+Monday 00:00 renewal, unchanged A/B/C calendar and objective quantities.
+The separate absolute-reward maintenance installs the approved divide-by-five
+reward schedule; this identity correction does not change that schedule again.
+
+The actual NPC templates are distinct:
+  -=[ Uber Streuner ]=-  : base model 2, regular canonical target
+  -=[ Uber StreuneR ]=-  : base model 85, canonical target with _X8 suffix
+NPC runtime IDs are ephemeral and must not be used as quest definition IDs.
+The existing C# death-event mapping already emits distinct canonical keys.
+
+For weekly_uber_endurance_45 only, the correction keeps:
+  29:Uber Streuner       : 80 kills
+and replaces the old case-only key with:
+  29:Uber StreuneR_X8    : 20 kills
+The labels, quantities, rewards (including the approved 9,000 Uridium after the separate divide-by-five update), period
+keys and every other objective remain unchanged.
+
+Before any installation:
+1. Save and verify a complete database backup and the previous application.
+2. Stop the emulator and block HTTP quest mutations. Do not run old and new
+   quest writers concurrently with maintenance.
+3. Install the approved files. The Historical reward catalogue update and
+   Hunting calculations have their separate maintenance instructions.
+4. Apply/inspect the separate weekly_rewards_maintenance.php update first,
+   using the approved SHA-256 of data/weekly-rewards-andromeda.json. It sets
+   all fifteen definitions to absolute final values and never divides them
+   repeatedly. Then inspect the Uber identity correction using the actual
+   configured database name and SQL port:
+
+   php scripts/weekly_uber_maintenance.php --expect-db=YOUR_DATABASE --expect-port=YOUR_PORT
+
+   This command is read-only by default. Do not copy the placeholders as
+   actual database settings. No credentials are accepted in command lines.
+
+5. If the inspection is correct, run the same command with:
+
+   --execute --maintenance-confirmed --receipt-dir=ABSOLUTE_EXTERNAL_DIRECTORY
+
+   The directory must already exist, be writable, and be outside htdocs.
+   A complete locked pre-write snapshot is written before the data changes.
+   The tool never executes DDL or creates SQL tables.
+
+Compatibility rules:
+- Existing claimed attempts, their counters, timestamps and account rewards
+  remain untouched. No compensation, debit or new claim is created.
+- Exact regular-key counters remain unchanged and are never copied to X8.
+- A zero stored under the old uppercase-R spelling on an in-progress attempt
+  may be normalized to the existing regular spelling. Its amount and timestamp
+  remain unchanged. The X8 row starts through the ordinary service activation.
+- A nonzero nonclaimed old uppercase-R counter, an orphan or an unexpected
+  definition causes refusal. No guessed split, copy, reset or attribution is
+  performed. Review the external receipt and obtain an explicit decision.
+- If already applied, a second execution changes no definition, counter or
+  claim. Subsequent Historical catalogue installation does not revert Weekly
+  objectives; repeat inspection after all maintenance steps.
+
+6. Restart the emulator so all in-memory objective snapshots reload. Reopen
+   Mission Control, check the two distinct objectives, then test normal play.
+
+Rollback:
+Use the complete pre-update backup and the locked external receipt while all
+writers remain stopped. Do not blindly rename X8 progress back to the old
+case-only key: after genuine X8 kills, the old case-insensitive primary key
+cannot represent both counters safely. Keep those later rows and obtain a
+reviewed reconciliation instead of losing or duplicating progress.
+
+These commands are instructions only. Running them against a main database
+requires a separate authorization; private validation never touches it.

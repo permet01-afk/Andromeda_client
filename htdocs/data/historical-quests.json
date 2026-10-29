@@ -91,7 +91,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -176,7 +176,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -277,7 +277,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -354,7 +354,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -455,7 +455,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -532,7 +532,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -633,7 +633,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -710,7 +710,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -819,7 +819,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -904,7 +904,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -1013,7 +1013,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -1098,7 +1098,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -1199,7 +1199,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -1276,7 +1276,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -1385,7 +1385,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -1470,7 +1470,7 @@
           "rewards": {
             "experience": 1600,
             "credits": 50000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -1808,7 +1808,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": 400,
             "items": [
               {
@@ -1921,7 +1921,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": 400,
             "items": [
               {
@@ -2034,7 +2034,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": 400,
             "items": [
               {
@@ -2160,7 +2160,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -2234,7 +2234,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -2308,7 +2308,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -2403,7 +2403,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -2477,7 +2477,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -2551,7 +2551,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -2891,7 +2891,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": [
               {
@@ -2998,7 +2998,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": [
               {
@@ -3105,7 +3105,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": [
               {
@@ -3231,7 +3231,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -3305,7 +3305,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -3379,7 +3379,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -3474,7 +3474,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -3548,7 +3548,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -3622,7 +3622,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -3717,7 +3717,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -3791,7 +3791,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -3865,7 +3865,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -3960,7 +3960,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -4034,7 +4034,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -4108,7 +4108,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -4203,7 +4203,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -4277,7 +4277,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -4351,7 +4351,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": null,
             "items": []
           },
@@ -4454,7 +4454,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 2000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 20,
             "items": []
           },
@@ -4536,7 +4536,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 2000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 20,
             "items": []
           },
@@ -4618,7 +4618,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 2000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 20,
             "items": []
           },
@@ -4715,7 +4715,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": [
               {
@@ -4822,7 +4822,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": [
               {
@@ -4929,7 +4929,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": [
               {
@@ -5057,7 +5057,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": [
               {
@@ -5164,7 +5164,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": [
               {
@@ -5271,7 +5271,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": [
               {
@@ -5405,7 +5405,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": []
           },
@@ -5487,7 +5487,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": []
           },
@@ -5569,7 +5569,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": []
           },
@@ -5668,7 +5668,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -5746,7 +5746,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -5824,7 +5824,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -5923,7 +5923,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -6001,7 +6001,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -6079,7 +6079,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -6174,7 +6174,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -6248,7 +6248,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -6322,7 +6322,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -6417,7 +6417,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -6491,7 +6491,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -6565,7 +6565,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -6660,7 +6660,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -6734,7 +6734,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -6808,7 +6808,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -6903,7 +6903,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -6977,7 +6977,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -7051,7 +7051,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -7146,7 +7146,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -7220,7 +7220,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -7294,7 +7294,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -7454,7 +7454,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": 160,
             "items": []
           },
@@ -7593,7 +7593,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": 160,
             "items": []
           },
@@ -7732,7 +7732,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": 160,
             "items": []
           },
@@ -7855,7 +7855,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": 40,
             "items": [
               {
@@ -7988,7 +7988,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": 40,
             "items": [
               {
@@ -8121,7 +8121,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": 40,
             "items": [
               {
@@ -8263,7 +8263,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": []
           },
@@ -8353,7 +8353,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": []
           },
@@ -8443,7 +8443,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 16000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": 160,
             "items": []
           },
@@ -8538,7 +8538,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -8612,7 +8612,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -8686,7 +8686,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -8782,7 +8782,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -8857,7 +8857,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -8932,7 +8932,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -9027,7 +9027,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -9101,7 +9101,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -9175,7 +9175,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -9270,7 +9270,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 32000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -9344,7 +9344,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 32000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -9418,7 +9418,7 @@
           "rewards": {
             "experience": 16000,
             "credits": 32000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -9513,7 +9513,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -9587,7 +9587,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -9661,7 +9661,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -9791,7 +9791,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": 320,
             "items": [
               {
@@ -9931,7 +9931,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": 320,
             "items": [
               {
@@ -10071,7 +10071,7 @@
           "rewards": {
             "experience": 32000,
             "credits": 32000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": 320,
             "items": [
               {
@@ -10214,7 +10214,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": 640,
             "items": [
               {
@@ -10336,7 +10336,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": 640,
             "items": [
               {
@@ -10458,7 +10458,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": 640,
             "items": [
               {
@@ -10584,7 +10584,7 @@
           "rewards": {
             "experience": 750000,
             "credits": 50000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -10658,7 +10658,7 @@
           "rewards": {
             "experience": 750000,
             "credits": 50000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -10732,7 +10732,7 @@
           "rewards": {
             "experience": 750000,
             "credits": 50000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -10827,7 +10827,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -10901,7 +10901,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -10975,7 +10975,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -11071,7 +11071,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -11146,7 +11146,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -11221,7 +11221,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -11316,7 +11316,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -11390,7 +11390,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -11464,7 +11464,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -11559,7 +11559,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -11633,7 +11633,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -11707,7 +11707,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": null,
             "items": []
           },
@@ -11825,7 +11825,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": 640,
             "items": [
               {
@@ -11953,7 +11953,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": 640,
             "items": [
               {
@@ -12081,7 +12081,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": 640,
             "items": [
               {
@@ -12207,7 +12207,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": 1280,
             "items": [
               {
@@ -12312,7 +12312,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": 1280,
             "items": [
               {
@@ -12417,7 +12417,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": 1280,
             "items": [
               {
@@ -12543,7 +12543,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -12617,7 +12617,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -12691,7 +12691,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -12786,7 +12786,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 160,
+            "uridium": 800,
             "honor": null,
             "items": []
           },
@@ -12860,7 +12860,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 160,
+            "uridium": 800,
             "honor": null,
             "items": []
           },
@@ -12934,7 +12934,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 160,
+            "uridium": 800,
             "honor": null,
             "items": []
           },
@@ -13029,7 +13029,7 @@
           "rewards": {
             "experience": 256000,
             "credits": 256000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -13103,7 +13103,7 @@
           "rewards": {
             "experience": 256000,
             "credits": 256000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -13177,7 +13177,7 @@
           "rewards": {
             "experience": 256000,
             "credits": 256000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -13272,7 +13272,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 175000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": null,
             "items": []
           },
@@ -13346,7 +13346,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 175000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": null,
             "items": []
           },
@@ -13420,7 +13420,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 175000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": null,
             "items": []
           },
@@ -13515,7 +13515,7 @@
           "rewards": {
             "experience": 150000,
             "credits": 120000,
-            "uridium": 150,
+            "uridium": 750,
             "honor": null,
             "items": []
           },
@@ -13589,7 +13589,7 @@
           "rewards": {
             "experience": 150000,
             "credits": 120000,
-            "uridium": 150,
+            "uridium": 750,
             "honor": null,
             "items": []
           },
@@ -13663,7 +13663,7 @@
           "rewards": {
             "experience": 150000,
             "credits": 120000,
-            "uridium": 150,
+            "uridium": 750,
             "honor": null,
             "items": []
           },
@@ -13758,7 +13758,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 75000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -13832,7 +13832,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 75000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -13906,7 +13906,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 75000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -13999,7 +13999,7 @@
           "rewards": {
             "experience": 700000,
             "credits": 700000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -14072,7 +14072,7 @@
           "rewards": {
             "experience": 700000,
             "credits": 700000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -14167,7 +14167,7 @@
           "rewards": {
             "experience": 700000,
             "credits": 700000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -14240,7 +14240,7 @@
           "rewards": {
             "experience": 700000,
             "credits": 700000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -14335,7 +14335,7 @@
           "rewards": {
             "experience": 700000,
             "credits": 700000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -14408,7 +14408,7 @@
           "rewards": {
             "experience": 700000,
             "credits": 700000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -14503,7 +14503,7 @@
           "rewards": {
             "experience": 600000,
             "credits": 600000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -14576,7 +14576,7 @@
           "rewards": {
             "experience": 600000,
             "credits": 600000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -14671,7 +14671,7 @@
           "rewards": {
             "experience": 600000,
             "credits": 600000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -14744,7 +14744,7 @@
           "rewards": {
             "experience": 600000,
             "credits": 600000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -14839,7 +14839,7 @@
           "rewards": {
             "experience": 600000,
             "credits": 600000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -14912,7 +14912,7 @@
           "rewards": {
             "experience": 600000,
             "credits": 600000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -15007,7 +15007,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 500000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -15080,7 +15080,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 500000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -15175,7 +15175,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 500000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -15248,7 +15248,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 500000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -15343,7 +15343,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 500000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -15416,7 +15416,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 500000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -15514,7 +15514,7 @@
           "rewards": {
             "experience": 6500000,
             "credits": 6500000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -15589,7 +15589,7 @@
           "rewards": {
             "experience": 6500000,
             "credits": 6500000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -15664,7 +15664,7 @@
           "rewards": {
             "experience": 6500000,
             "credits": 6500000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -16095,7 +16095,7 @@
           "rewards": {
             "experience": 7000000,
             "credits": 6000000,
-            "uridium": 8000,
+            "uridium": 40000,
             "honor": 1000,
             "items": [
               {
@@ -16200,7 +16200,7 @@
           "rewards": {
             "experience": 7000000,
             "credits": 6000000,
-            "uridium": 8000,
+            "uridium": 40000,
             "honor": 1000,
             "items": [
               {
@@ -16305,7 +16305,7 @@
           "rewards": {
             "experience": 7000000,
             "credits": 6000000,
-            "uridium": 8000,
+            "uridium": 40000,
             "honor": 1000,
             "items": [
               {
@@ -16435,7 +16435,7 @@
           "rewards": {
             "experience": 4000000,
             "credits": 4000000,
-            "uridium": 4000,
+            "uridium": 20000,
             "honor": 2000,
             "items": [
               {
@@ -16548,7 +16548,7 @@
           "rewards": {
             "experience": 4000000,
             "credits": 4000000,
-            "uridium": 4000,
+            "uridium": 20000,
             "honor": 2000,
             "items": [
               {
@@ -16661,7 +16661,7 @@
           "rewards": {
             "experience": 4000000,
             "credits": 4000000,
-            "uridium": 4000,
+            "uridium": 20000,
             "honor": 2000,
             "items": [
               {
@@ -16791,7 +16791,7 @@
           "rewards": {
             "experience": 4000000,
             "credits": 1500000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -16865,7 +16865,7 @@
           "rewards": {
             "experience": 4000000,
             "credits": 1500000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -16939,7 +16939,7 @@
           "rewards": {
             "experience": 4000000,
             "credits": 1500000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -17038,7 +17038,7 @@
           "rewards": {
             "experience": 6000000,
             "credits": 2500000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 2000,
             "items": [
               {
@@ -17151,7 +17151,7 @@
           "rewards": {
             "experience": 6000000,
             "credits": 2500000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 2000,
             "items": [
               {
@@ -17264,7 +17264,7 @@
           "rewards": {
             "experience": 6000000,
             "credits": 2500000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 2000,
             "items": [
               {
@@ -17395,7 +17395,7 @@
           "rewards": {
             "experience": 4500000,
             "credits": 2000000,
-            "uridium": 2200,
+            "uridium": 11000,
             "honor": null,
             "items": [
               {
@@ -17501,7 +17501,7 @@
           "rewards": {
             "experience": 4500000,
             "credits": 2000000,
-            "uridium": 2200,
+            "uridium": 11000,
             "honor": null,
             "items": [
               {
@@ -17607,7 +17607,7 @@
           "rewards": {
             "experience": 4500000,
             "credits": 2000000,
-            "uridium": 2200,
+            "uridium": 11000,
             "honor": null,
             "items": [
               {
@@ -17733,7 +17733,7 @@
           "rewards": {
             "experience": 2500000,
             "credits": 1000000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -17807,7 +17807,7 @@
           "rewards": {
             "experience": 2500000,
             "credits": 1000000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -17881,7 +17881,7 @@
           "rewards": {
             "experience": 2500000,
             "credits": 1000000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -17976,7 +17976,7 @@
           "rewards": {
             "experience": 1700000,
             "credits": 800000,
-            "uridium": 1750,
+            "uridium": 8750,
             "honor": null,
             "items": []
           },
@@ -18050,7 +18050,7 @@
           "rewards": {
             "experience": 1700000,
             "credits": 800000,
-            "uridium": 1750,
+            "uridium": 8750,
             "honor": null,
             "items": []
           },
@@ -18124,7 +18124,7 @@
           "rewards": {
             "experience": 1700000,
             "credits": 800000,
-            "uridium": 1750,
+            "uridium": 8750,
             "honor": null,
             "items": []
           },
@@ -18227,7 +18227,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 500000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": 5000,
             "items": []
           },
@@ -18309,7 +18309,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 500000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": 5000,
             "items": []
           },
@@ -18391,7 +18391,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 500000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": 5000,
             "items": []
           },
@@ -18487,7 +18487,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 250000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": 2500,
             "items": []
           },
@@ -18562,7 +18562,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 250000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": 2500,
             "items": []
           },
@@ -18637,7 +18637,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 250000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": 2500,
             "items": []
           },
@@ -18730,7 +18730,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -18803,7 +18803,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -18898,7 +18898,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -18971,7 +18971,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -19066,7 +19066,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -19139,7 +19139,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -19234,7 +19234,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -19307,7 +19307,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -19402,7 +19402,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -19475,7 +19475,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -19570,7 +19570,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -19643,7 +19643,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -19738,7 +19738,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -19811,7 +19811,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -19906,7 +19906,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -19979,7 +19979,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -20074,7 +20074,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -20147,7 +20147,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -20347,7 +20347,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 10000,
             "items": [
               {
@@ -20561,7 +20561,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 10000,
             "items": [
               {
@@ -20775,7 +20775,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 10000,
             "items": [
               {
@@ -20937,7 +20937,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 20000,
             "items": [
               {
@@ -21072,7 +21072,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 20000,
             "items": [
               {
@@ -21207,7 +21207,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 20000,
             "items": [
               {
@@ -21335,7 +21335,7 @@
           "rewards": {
             "experience": 20000000,
             "credits": 20000000,
-            "uridium": 30000,
+            "uridium": 150000,
             "honor": 10000,
             "items": [
               {
@@ -21447,7 +21447,7 @@
           "rewards": {
             "experience": 20000000,
             "credits": 20000000,
-            "uridium": 30000,
+            "uridium": 150000,
             "honor": 10000,
             "items": [
               {
@@ -21577,7 +21577,7 @@
           "rewards": {
             "experience": 20000000,
             "credits": 20000000,
-            "uridium": 30000,
+            "uridium": 150000,
             "honor": 10000,
             "items": [
               {
@@ -21681,7 +21681,7 @@
           "rewards": {
             "experience": 20000000,
             "credits": 20000000,
-            "uridium": 30000,
+            "uridium": 150000,
             "honor": 10000,
             "items": [
               {
@@ -21810,7 +21810,7 @@
           "rewards": {
             "experience": 100000,
             "credits": null,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -21885,7 +21885,7 @@
           "rewards": {
             "experience": 100000,
             "credits": null,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -21960,7 +21960,7 @@
           "rewards": {
             "experience": 100000,
             "credits": null,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -22056,7 +22056,7 @@
           "rewards": {
             "experience": 100000,
             "credits": null,
-            "uridium": 75,
+            "uridium": 375,
             "honor": null,
             "items": []
           },
@@ -22131,7 +22131,7 @@
           "rewards": {
             "experience": 100000,
             "credits": null,
-            "uridium": 75,
+            "uridium": 375,
             "honor": null,
             "items": []
           },
@@ -22206,7 +22206,7 @@
           "rewards": {
             "experience": 100000,
             "credits": null,
-            "uridium": 75,
+            "uridium": 375,
             "honor": null,
             "items": []
           },
@@ -22302,7 +22302,7 @@
           "rewards": {
             "experience": 100000,
             "credits": null,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -22377,7 +22377,7 @@
           "rewards": {
             "experience": 100000,
             "credits": null,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -22452,7 +22452,7 @@
           "rewards": {
             "experience": 100000,
             "credits": null,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -22547,7 +22547,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 500000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -22621,7 +22621,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 500000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -22695,7 +22695,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 500000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -22790,7 +22790,7 @@
           "rewards": {
             "experience": 150000,
             "credits": 225000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -22864,7 +22864,7 @@
           "rewards": {
             "experience": 150000,
             "credits": 225000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -22938,7 +22938,7 @@
           "rewards": {
             "experience": 150000,
             "credits": 225000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -23033,7 +23033,7 @@
           "rewards": {
             "experience": 80000,
             "credits": 100000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -23107,7 +23107,7 @@
           "rewards": {
             "experience": 80000,
             "credits": 100000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -23181,7 +23181,7 @@
           "rewards": {
             "experience": 80000,
             "credits": 100000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -23276,7 +23276,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 750000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -23350,7 +23350,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 750000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -23424,7 +23424,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 750000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -23519,7 +23519,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 1500000,
-            "uridium": 1250,
+            "uridium": 6250,
             "honor": null,
             "items": []
           },
@@ -23593,7 +23593,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 1500000,
-            "uridium": 1250,
+            "uridium": 6250,
             "honor": null,
             "items": []
           },
@@ -23667,7 +23667,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 1500000,
-            "uridium": 1250,
+            "uridium": 6250,
             "honor": null,
             "items": []
           },
@@ -23762,7 +23762,7 @@
           "rewards": {
             "experience": 175000,
             "credits": 750000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -23836,7 +23836,7 @@
           "rewards": {
             "experience": 175000,
             "credits": 750000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -23910,7 +23910,7 @@
           "rewards": {
             "experience": 175000,
             "credits": 750000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -24005,7 +24005,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 500000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": null,
             "items": []
           },
@@ -24079,7 +24079,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 500000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": null,
             "items": []
           },
@@ -24153,7 +24153,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 500000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": null,
             "items": []
           },
@@ -24249,7 +24249,7 @@
           "rewards": {
             "experience": 250000,
             "credits": null,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -24324,7 +24324,7 @@
           "rewards": {
             "experience": 250000,
             "credits": null,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -24399,7 +24399,7 @@
           "rewards": {
             "experience": 250000,
             "credits": null,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -24495,7 +24495,7 @@
           "rewards": {
             "experience": 150000,
             "credits": null,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -24570,7 +24570,7 @@
           "rewards": {
             "experience": 150000,
             "credits": null,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -24645,7 +24645,7 @@
           "rewards": {
             "experience": 150000,
             "credits": null,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -24739,7 +24739,7 @@
           "rewards": {
             "experience": 140000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -24824,7 +24824,7 @@
           "rewards": {
             "experience": 140000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -24931,7 +24931,7 @@
           "rewards": {
             "experience": 140000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -25016,7 +25016,7 @@
           "rewards": {
             "experience": 140000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -25123,7 +25123,7 @@
           "rewards": {
             "experience": 140000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -25208,7 +25208,7 @@
           "rewards": {
             "experience": 140000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -25315,7 +25315,7 @@
           "rewards": {
             "experience": 120000,
             "credits": 270000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -25400,7 +25400,7 @@
           "rewards": {
             "experience": 120000,
             "credits": 270000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -25507,7 +25507,7 @@
           "rewards": {
             "experience": 120000,
             "credits": 270000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -25592,7 +25592,7 @@
           "rewards": {
             "experience": 120000,
             "credits": 270000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -25699,7 +25699,7 @@
           "rewards": {
             "experience": 120000,
             "credits": 270000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -25784,7 +25784,7 @@
           "rewards": {
             "experience": 120000,
             "credits": 270000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -25891,7 +25891,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 250000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -25976,7 +25976,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 250000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -26083,7 +26083,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 250000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -26168,7 +26168,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 250000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -26275,7 +26275,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 250000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -26360,7 +26360,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 250000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -26468,7 +26468,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -26542,7 +26542,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -26616,7 +26616,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -26710,7 +26710,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 4000000,
-            "uridium": 6000,
+            "uridium": 30000,
             "honor": null,
             "items": []
           },
@@ -26784,7 +26784,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 4000000,
-            "uridium": 6000,
+            "uridium": 30000,
             "honor": null,
             "items": []
           },
@@ -26880,7 +26880,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 4000000,
-            "uridium": 6000,
+            "uridium": 30000,
             "honor": null,
             "items": []
           },
@@ -26963,7 +26963,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 4000000,
-            "uridium": 6000,
+            "uridium": 30000,
             "honor": null,
             "items": []
           },
@@ -27068,7 +27068,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 4000000,
-            "uridium": 6000,
+            "uridium": 30000,
             "honor": null,
             "items": []
           },
@@ -27151,7 +27151,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 4000000,
-            "uridium": 6000,
+            "uridium": 30000,
             "honor": null,
             "items": []
           },
@@ -27256,7 +27256,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 1750000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -27330,7 +27330,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 1750000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -27426,7 +27426,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 1750000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -27509,7 +27509,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 1750000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -27614,7 +27614,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 1750000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -27697,7 +27697,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 1750000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -27802,7 +27802,7 @@
           "rewards": {
             "experience": 1500000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -27876,7 +27876,7 @@
           "rewards": {
             "experience": 1500000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -27972,7 +27972,7 @@
           "rewards": {
             "experience": 1500000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -28055,7 +28055,7 @@
           "rewards": {
             "experience": 1500000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -28160,7 +28160,7 @@
           "rewards": {
             "experience": 1500000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -28243,7 +28243,7 @@
           "rewards": {
             "experience": 1500000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": null,
             "items": []
           },
@@ -28349,7 +28349,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 1250000,
-            "uridium": 750,
+            "uridium": 3750,
             "honor": null,
             "items": []
           },
@@ -28423,7 +28423,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 1250000,
-            "uridium": 750,
+            "uridium": 3750,
             "honor": null,
             "items": []
           },
@@ -28497,7 +28497,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 1250000,
-            "uridium": 750,
+            "uridium": 3750,
             "honor": null,
             "items": []
           },
@@ -28593,7 +28593,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 1500,
             "items": [
               {
@@ -28699,7 +28699,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 1500,
             "items": [
               {
@@ -28805,7 +28805,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 1500,
             "items": [
               {
@@ -28930,7 +28930,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 450000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -29015,7 +29015,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 450000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -29122,7 +29122,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 450000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -29207,7 +29207,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 450000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -29314,7 +29314,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 450000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -29399,7 +29399,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 450000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": null,
             "items": []
           },
@@ -29507,7 +29507,7 @@
           "rewards": {
             "experience": 400000,
             "credits": 750000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -29581,7 +29581,7 @@
           "rewards": {
             "experience": 400000,
             "credits": 750000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -29655,7 +29655,7 @@
           "rewards": {
             "experience": 400000,
             "credits": 750000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -29750,7 +29750,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 3500,
+            "uridium": 17500,
             "honor": null,
             "items": []
           },
@@ -29824,7 +29824,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 3500,
+            "uridium": 17500,
             "honor": null,
             "items": []
           },
@@ -29898,7 +29898,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 3500,
+            "uridium": 17500,
             "honor": null,
             "items": []
           },
@@ -29993,7 +29993,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 2500,
+            "uridium": 12500,
             "honor": null,
             "items": []
           },
@@ -30067,7 +30067,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 2500,
+            "uridium": 12500,
             "honor": null,
             "items": []
           },
@@ -30141,7 +30141,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 2500,
+            "uridium": 12500,
             "honor": null,
             "items": []
           },
@@ -30235,7 +30235,7 @@
           "rewards": {
             "experience": 7000000,
             "credits": 6000000,
-            "uridium": 8000,
+            "uridium": 40000,
             "honor": null,
             "items": []
           },
@@ -30309,7 +30309,7 @@
           "rewards": {
             "experience": 7000000,
             "credits": 6000000,
-            "uridium": 8000,
+            "uridium": 40000,
             "honor": null,
             "items": []
           },
@@ -30405,7 +30405,7 @@
           "rewards": {
             "experience": 7000000,
             "credits": 6000000,
-            "uridium": 8000,
+            "uridium": 40000,
             "honor": null,
             "items": []
           },
@@ -30488,7 +30488,7 @@
           "rewards": {
             "experience": 7000000,
             "credits": 6000000,
-            "uridium": 8000,
+            "uridium": 40000,
             "honor": null,
             "items": []
           },
@@ -30594,7 +30594,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -30668,7 +30668,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -30742,7 +30742,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": null,
             "items": []
           },
@@ -30837,7 +30837,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 2500000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -30911,7 +30911,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 2500000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -30985,7 +30985,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 2500000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": null,
             "items": []
           },
@@ -31092,7 +31092,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": 3000,
             "items": []
           },
@@ -31178,7 +31178,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": 3000,
             "items": []
           },
@@ -31264,7 +31264,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": 3000,
             "items": []
           },
@@ -31371,7 +31371,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": 3000,
             "items": []
           },
@@ -31457,7 +31457,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": 3000,
             "items": []
           },
@@ -31543,7 +31543,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": 3000,
             "items": []
           },
@@ -31651,7 +31651,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 2000,
             "items": [
               {
@@ -31769,7 +31769,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 2000,
             "items": [
               {
@@ -31887,7 +31887,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 2000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 2000,
             "items": [
               {
@@ -32041,7 +32041,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": [
               {
@@ -32174,7 +32174,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": [
               {
@@ -32307,7 +32307,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 1000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": [
               {
@@ -32433,7 +32433,7 @@
           "rewards": {
             "experience": 20000000,
             "credits": 15000000,
-            "uridium": 30000,
+            "uridium": 150000,
             "honor": null,
             "items": []
           },
@@ -32507,7 +32507,7 @@
           "rewards": {
             "experience": 20000000,
             "credits": 15000000,
-            "uridium": 30000,
+            "uridium": 150000,
             "honor": null,
             "items": []
           },
@@ -32581,7 +32581,7 @@
           "rewards": {
             "experience": 20000000,
             "credits": 15000000,
-            "uridium": 30000,
+            "uridium": 150000,
             "honor": null,
             "items": []
           },
@@ -32676,7 +32676,7 @@
           "rewards": {
             "experience": 10000000,
             "credits": 7500000,
-            "uridium": 15000,
+            "uridium": 75000,
             "honor": null,
             "items": []
           },
@@ -32750,7 +32750,7 @@
           "rewards": {
             "experience": 10000000,
             "credits": 7500000,
-            "uridium": 15000,
+            "uridium": 75000,
             "honor": null,
             "items": []
           },
@@ -32824,7 +32824,7 @@
           "rewards": {
             "experience": 10000000,
             "credits": 7500000,
-            "uridium": 15000,
+            "uridium": 75000,
             "honor": null,
             "items": []
           },
@@ -32919,7 +32919,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 5000000,
-            "uridium": 7000,
+            "uridium": 35000,
             "honor": null,
             "items": []
           },
@@ -32993,7 +32993,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 5000000,
-            "uridium": 7000,
+            "uridium": 35000,
             "honor": null,
             "items": []
           },
@@ -33067,7 +33067,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 5000000,
-            "uridium": 7000,
+            "uridium": 35000,
             "honor": null,
             "items": []
           },
@@ -33161,7 +33161,7 @@
           "rewards": {
             "experience": 10000000,
             "credits": 9000000,
-            "uridium": 15000,
+            "uridium": 75000,
             "honor": null,
             "items": []
           },
@@ -33235,7 +33235,7 @@
           "rewards": {
             "experience": 10000000,
             "credits": 9000000,
-            "uridium": 15000,
+            "uridium": 75000,
             "honor": null,
             "items": []
           },
@@ -33331,7 +33331,7 @@
           "rewards": {
             "experience": 10000000,
             "credits": 9000000,
-            "uridium": 15000,
+            "uridium": 75000,
             "honor": null,
             "items": []
           },
@@ -33405,7 +33405,7 @@
           "rewards": {
             "experience": 10000000,
             "credits": 9000000,
-            "uridium": 15000,
+            "uridium": 75000,
             "honor": null,
             "items": []
           },
@@ -33501,7 +33501,7 @@
           "rewards": {
             "experience": 10000000,
             "credits": 9000000,
-            "uridium": 15000,
+            "uridium": 75000,
             "honor": null,
             "items": []
           },
@@ -33575,7 +33575,7 @@
           "rewards": {
             "experience": 10000000,
             "credits": 9000000,
-            "uridium": 15000,
+            "uridium": 75000,
             "honor": null,
             "items": []
           },
@@ -33672,7 +33672,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 4000000,
-            "uridium": 2500,
+            "uridium": 12500,
             "honor": null,
             "items": []
           },
@@ -33746,7 +33746,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 4000000,
-            "uridium": 2500,
+            "uridium": 12500,
             "honor": null,
             "items": []
           },
@@ -33820,7 +33820,7 @@
           "rewards": {
             "experience": 2000000,
             "credits": 4000000,
-            "uridium": 2500,
+            "uridium": 12500,
             "honor": null,
             "items": []
           },
@@ -33941,7 +33941,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 5000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 50000,
             "items": [
               {
@@ -34072,7 +34072,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 5000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 50000,
             "items": [
               {
@@ -34203,7 +34203,7 @@
           "rewards": {
             "experience": 5000000,
             "credits": 5000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 50000,
             "items": [
               {
@@ -34328,7 +34328,7 @@
           "rewards": {
             "experience": 4000000,
             "credits": 4000000,
-            "uridium": 4000,
+            "uridium": 20000,
             "honor": 4000,
             "items": [
               {
@@ -34432,7 +34432,7 @@
           "rewards": {
             "experience": 4000000,
             "credits": 4000000,
-            "uridium": 4000,
+            "uridium": 20000,
             "honor": 4000,
             "items": [
               {
@@ -34536,7 +34536,7 @@
           "rewards": {
             "experience": 4000000,
             "credits": 4000000,
-            "uridium": 4000,
+            "uridium": 20000,
             "honor": 4000,
             "items": [
               {
@@ -34661,7 +34661,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 30000,
             "items": []
           },
@@ -34734,7 +34734,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 30000,
             "items": []
           },
@@ -34807,7 +34807,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 3000000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 30000,
             "items": []
           },
@@ -34901,7 +34901,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 600000,
-            "uridium": 1200,
+            "uridium": 6000,
             "honor": null,
             "items": []
           },
@@ -34986,7 +34986,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 600000,
-            "uridium": 1200,
+            "uridium": 6000,
             "honor": null,
             "items": []
           },
@@ -35093,7 +35093,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 600000,
-            "uridium": 1200,
+            "uridium": 6000,
             "honor": null,
             "items": []
           },
@@ -35178,7 +35178,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 600000,
-            "uridium": 1200,
+            "uridium": 6000,
             "honor": null,
             "items": []
           },
@@ -35285,7 +35285,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 600000,
-            "uridium": 1200,
+            "uridium": 6000,
             "honor": null,
             "items": []
           },
@@ -35370,7 +35370,7 @@
           "rewards": {
             "experience": 500000,
             "credits": 600000,
-            "uridium": 1200,
+            "uridium": 6000,
             "honor": null,
             "items": []
           },
@@ -35478,7 +35478,7 @@
           "rewards": {
             "experience": 600000,
             "credits": 1200000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -35552,7 +35552,7 @@
           "rewards": {
             "experience": 600000,
             "credits": 1200000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -35626,7 +35626,7 @@
           "rewards": {
             "experience": 600000,
             "credits": 1200000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -35721,7 +35721,7 @@
           "rewards": {
             "experience": 400000,
             "credits": 3000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -35795,7 +35795,7 @@
           "rewards": {
             "experience": 400000,
             "credits": 3000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -35869,7 +35869,7 @@
           "rewards": {
             "experience": 400000,
             "credits": 3000000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": null,
             "items": []
           },
@@ -35964,7 +35964,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 6000000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -36038,7 +36038,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 6000000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -36112,7 +36112,7 @@
           "rewards": {
             "experience": 3000000,
             "credits": 6000000,
-            "uridium": 5000,
+            "uridium": 25000,
             "honor": null,
             "items": []
           },
@@ -36219,7 +36219,7 @@
           "rewards": {
             "experience": 6000000,
             "credits": 6000000,
-            "uridium": 4000,
+            "uridium": 20000,
             "honor": 60000,
             "items": [
               {
@@ -36340,7 +36340,7 @@
           "rewards": {
             "experience": 6000000,
             "credits": 6000000,
-            "uridium": 4000,
+            "uridium": 20000,
             "honor": 60000,
             "items": [
               {
@@ -36461,7 +36461,7 @@
           "rewards": {
             "experience": 6000000,
             "credits": 6000000,
-            "uridium": 4000,
+            "uridium": 20000,
             "honor": 60000,
             "items": [
               {
@@ -36948,7 +36948,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37025,7 +37025,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37102,7 +37102,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37200,7 +37200,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37277,7 +37277,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37354,7 +37354,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37452,7 +37452,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37529,7 +37529,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37606,7 +37606,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37714,7 +37714,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37801,7 +37801,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37888,7 +37888,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -37996,7 +37996,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38083,7 +38083,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38170,7 +38170,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38269,7 +38269,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38347,7 +38347,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38425,7 +38425,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38524,7 +38524,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38602,7 +38602,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38680,7 +38680,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38797,7 +38797,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38893,7 +38893,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -38989,7 +38989,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39087,7 +39087,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39164,7 +39164,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39241,7 +39241,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39339,7 +39339,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39416,7 +39416,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39493,7 +39493,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39601,7 +39601,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39688,7 +39688,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39775,7 +39775,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39874,7 +39874,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -39952,7 +39952,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -40030,7 +40030,7 @@
           "rewards": {
             "experience": 1750,
             "credits": 60000,
-            "uridium": 30,
+            "uridium": 150,
             "honor": null,
             "items": []
           },
@@ -40128,7 +40128,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -40205,7 +40205,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -40282,7 +40282,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -40390,7 +40390,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -40477,7 +40477,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -40564,7 +40564,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -40672,7 +40672,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -40759,7 +40759,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -40846,7 +40846,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -40944,7 +40944,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41021,7 +41021,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41098,7 +41098,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41206,7 +41206,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41293,7 +41293,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41380,7 +41380,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41478,7 +41478,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41555,7 +41555,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41632,7 +41632,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41740,7 +41740,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41827,7 +41827,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -41914,7 +41914,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42012,7 +42012,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42089,7 +42089,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42166,7 +42166,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42264,7 +42264,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42341,7 +42341,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42418,7 +42418,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42526,7 +42526,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42613,7 +42613,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42700,7 +42700,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42815,7 +42815,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -42909,7 +42909,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43003,7 +43003,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43109,7 +43109,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43194,7 +43194,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43279,7 +43279,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43385,7 +43385,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43470,7 +43470,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43555,7 +43555,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43661,7 +43661,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43746,7 +43746,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43831,7 +43831,7 @@
           "rewards": {
             "experience": 1950,
             "credits": 70000,
-            "uridium": 35,
+            "uridium": 175,
             "honor": null,
             "items": []
           },
@@ -43930,7 +43930,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44008,7 +44008,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44086,7 +44086,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44184,7 +44184,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44261,7 +44261,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44338,7 +44338,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44444,7 +44444,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44529,7 +44529,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44614,7 +44614,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44723,7 +44723,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44811,7 +44811,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -44899,7 +44899,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45008,7 +45008,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45096,7 +45096,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45184,7 +45184,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45282,7 +45282,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45359,7 +45359,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45436,7 +45436,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45535,7 +45535,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45613,7 +45613,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45691,7 +45691,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45808,7 +45808,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -45904,7 +45904,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46000,7 +46000,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46098,7 +46098,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46175,7 +46175,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46252,7 +46252,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46351,7 +46351,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46429,7 +46429,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46507,7 +46507,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46605,7 +46605,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46682,7 +46682,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46759,7 +46759,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46857,7 +46857,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -46934,7 +46934,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -47011,7 +47011,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -47426,7 +47426,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -47511,7 +47511,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -47596,7 +47596,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -47710,7 +47710,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -47803,7 +47803,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -47896,7 +47896,7 @@
           "rewards": {
             "experience": 18900,
             "credits": 80000,
-            "uridium": 40,
+            "uridium": 200,
             "honor": null,
             "items": []
           },
@@ -47994,7 +47994,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48071,7 +48071,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48148,7 +48148,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48254,7 +48254,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48339,7 +48339,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48424,7 +48424,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48530,7 +48530,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48615,7 +48615,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48700,7 +48700,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48806,7 +48806,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48891,7 +48891,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -48976,7 +48976,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -49082,7 +49082,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -49167,7 +49167,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -49252,7 +49252,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -49349,7 +49349,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -49425,7 +49425,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -49501,7 +49501,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -49599,7 +49599,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -49676,7 +49676,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -49753,7 +49753,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -49851,7 +49851,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -49928,7 +49928,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -50005,7 +50005,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -50103,7 +50103,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -50180,7 +50180,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -50257,7 +50257,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -50354,7 +50354,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -50430,7 +50430,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -50506,7 +50506,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -50612,7 +50612,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -50697,7 +50697,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -50782,7 +50782,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -50880,7 +50880,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -50957,7 +50957,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -51034,7 +51034,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -51132,7 +51132,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -51209,7 +51209,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -51286,7 +51286,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -51392,7 +51392,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -51477,7 +51477,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -51562,7 +51562,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -51659,7 +51659,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -51735,7 +51735,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -51811,7 +51811,7 @@
           "rewards": {
             "experience": 53100,
             "credits": 90000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -51909,7 +51909,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -51986,7 +51986,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -52063,7 +52063,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -52162,7 +52162,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -52240,7 +52240,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -52318,7 +52318,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -52424,7 +52424,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -52509,7 +52509,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -52594,7 +52594,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -52700,7 +52700,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 53,
+            "uridium": 265,
             "honor": null,
             "items": []
           },
@@ -52785,7 +52785,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 53,
+            "uridium": 265,
             "honor": null,
             "items": []
           },
@@ -52870,7 +52870,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 53,
+            "uridium": 265,
             "honor": null,
             "items": []
           },
@@ -52967,7 +52967,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -53043,7 +53043,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -53119,7 +53119,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -53217,7 +53217,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -53294,7 +53294,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -53371,7 +53371,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -53479,7 +53479,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 64,
+            "uridium": 320,
             "honor": null,
             "items": []
           },
@@ -53566,7 +53566,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 64,
+            "uridium": 320,
             "honor": null,
             "items": []
           },
@@ -53653,7 +53653,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 64,
+            "uridium": 320,
             "honor": null,
             "items": []
           },
@@ -53769,7 +53769,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 58,
+            "uridium": 290,
             "honor": null,
             "items": []
           },
@@ -53864,7 +53864,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 58,
+            "uridium": 290,
             "honor": null,
             "items": []
           },
@@ -53959,7 +53959,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 58,
+            "uridium": 290,
             "honor": null,
             "items": []
           },
@@ -54057,7 +54057,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -54134,7 +54134,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -54211,7 +54211,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -54310,7 +54310,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -54388,7 +54388,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -54466,7 +54466,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -54564,7 +54564,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -54641,7 +54641,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -54718,7 +54718,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -54817,7 +54817,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -54905,7 +54905,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -54993,7 +54993,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -55101,7 +55101,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -55178,7 +55178,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -55255,7 +55255,7 @@
           "rewards": {
             "experience": 133300,
             "credits": 100000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -55353,7 +55353,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -55430,7 +55430,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -55507,7 +55507,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": null,
             "items": []
           },
@@ -55605,7 +55605,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -55682,7 +55682,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -55759,7 +55759,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 25,
+            "uridium": 125,
             "honor": null,
             "items": []
           },
@@ -55856,7 +55856,7 @@
           "rewards": {
             "experience": 213000,
             "credits": 110000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": 800,
             "items": []
           },
@@ -55932,7 +55932,7 @@
           "rewards": {
             "experience": 213000,
             "credits": 110000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": 800,
             "items": []
           },
@@ -56008,7 +56008,7 @@
           "rewards": {
             "experience": 213000,
             "credits": 110000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": 800,
             "items": []
           },
@@ -56106,7 +56106,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 24,
+            "uridium": 120,
             "honor": null,
             "items": []
           },
@@ -56183,7 +56183,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 24,
+            "uridium": 120,
             "honor": null,
             "items": []
           },
@@ -56260,7 +56260,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 24,
+            "uridium": 120,
             "honor": null,
             "items": []
           },
@@ -56357,7 +56357,7 @@
           "rewards": {
             "experience": 213000,
             "credits": 110000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": 800,
             "items": []
           },
@@ -56433,7 +56433,7 @@
           "rewards": {
             "experience": 213000,
             "credits": 110000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": 800,
             "items": []
           },
@@ -56509,7 +56509,7 @@
           "rewards": {
             "experience": 213000,
             "credits": 110000,
-            "uridium": 800,
+            "uridium": 4000,
             "honor": 800,
             "items": []
           },
@@ -56608,7 +56608,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -56686,7 +56686,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -56764,7 +56764,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 45,
+            "uridium": 225,
             "honor": null,
             "items": []
           },
@@ -56863,7 +56863,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 90,
+            "uridium": 450,
             "honor": null,
             "items": []
           },
@@ -56941,7 +56941,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 90,
+            "uridium": 450,
             "honor": null,
             "items": []
           },
@@ -57019,7 +57019,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 90,
+            "uridium": 450,
             "honor": null,
             "items": []
           },
@@ -57116,7 +57116,7 @@
           "rewards": {
             "experience": 213000,
             "credits": 110000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": 1000,
             "items": []
           },
@@ -57192,7 +57192,7 @@
           "rewards": {
             "experience": 213000,
             "credits": 110000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": 1000,
             "items": []
           },
@@ -57268,7 +57268,7 @@
           "rewards": {
             "experience": 213000,
             "credits": 110000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": 1000,
             "items": []
           },
@@ -57366,7 +57366,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -57443,7 +57443,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -57520,7 +57520,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -57626,7 +57626,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -57711,7 +57711,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -57796,7 +57796,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -57903,7 +57903,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -57989,7 +57989,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -58075,7 +58075,7 @@
           "rewards": {
             "experience": 307400,
             "credits": 110000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -58170,7 +58170,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -58245,7 +58245,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -58342,7 +58342,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -58417,7 +58417,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -58518,7 +58518,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -58596,7 +58596,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -58674,7 +58674,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -58773,7 +58773,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -58851,7 +58851,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -58929,7 +58929,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59028,7 +59028,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59106,7 +59106,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59184,7 +59184,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59292,7 +59292,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59379,7 +59379,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59466,7 +59466,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59566,7 +59566,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59645,7 +59645,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59724,7 +59724,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -59832,7 +59832,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 96,
+            "uridium": 480,
             "honor": null,
             "items": []
           },
@@ -59919,7 +59919,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 96,
+            "uridium": 480,
             "honor": null,
             "items": []
           },
@@ -60006,7 +60006,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 96,
+            "uridium": 480,
             "honor": null,
             "items": []
           },
@@ -60114,7 +60114,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 192,
+            "uridium": 960,
             "honor": null,
             "items": []
           },
@@ -60201,7 +60201,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 192,
+            "uridium": 960,
             "honor": null,
             "items": []
           },
@@ -60288,7 +60288,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 192,
+            "uridium": 960,
             "honor": null,
             "items": []
           },
@@ -60394,7 +60394,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 84,
+            "uridium": 420,
             "honor": null,
             "items": []
           },
@@ -60479,7 +60479,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 84,
+            "uridium": 420,
             "honor": null,
             "items": []
           },
@@ -60564,7 +60564,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 84,
+            "uridium": 420,
             "honor": null,
             "items": []
           },
@@ -60672,7 +60672,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -60759,7 +60759,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -60846,7 +60846,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 60,
+            "uridium": 300,
             "honor": null,
             "items": []
           },
@@ -60943,7 +60943,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -61019,7 +61019,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -61095,7 +61095,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": []
           },
@@ -61201,7 +61201,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -61286,7 +61286,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -61371,7 +61371,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -61485,7 +61485,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 280,
+            "uridium": 1400,
             "honor": null,
             "items": []
           },
@@ -61578,7 +61578,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 280,
+            "uridium": 1400,
             "honor": null,
             "items": []
           },
@@ -61671,7 +61671,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 280,
+            "uridium": 1400,
             "honor": null,
             "items": []
           },
@@ -61777,7 +61777,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -61862,7 +61862,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -61947,7 +61947,7 @@
           "rewards": {
             "experience": 565000,
             "credits": 120000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -62055,7 +62055,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 170,
+            "uridium": 850,
             "honor": null,
             "items": []
           },
@@ -62142,7 +62142,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 170,
+            "uridium": 850,
             "honor": null,
             "items": []
           },
@@ -62229,7 +62229,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 170,
+            "uridium": 850,
             "honor": null,
             "items": []
           },
@@ -62337,7 +62337,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 416,
+            "uridium": 2080,
             "honor": null,
             "items": []
           },
@@ -62424,7 +62424,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 416,
+            "uridium": 2080,
             "honor": null,
             "items": []
           },
@@ -62511,7 +62511,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 416,
+            "uridium": 2080,
             "honor": null,
             "items": []
           },
@@ -62610,7 +62610,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 160,
+            "uridium": 800,
             "honor": null,
             "items": []
           },
@@ -62688,7 +62688,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 160,
+            "uridium": 800,
             "honor": null,
             "items": []
           },
@@ -62766,7 +62766,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 160,
+            "uridium": 800,
             "honor": null,
             "items": []
           },
@@ -62863,7 +62863,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": 1000,
             "items": []
           },
@@ -62939,7 +62939,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": 1000,
             "items": []
           },
@@ -63015,7 +63015,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 1500,
+            "uridium": 7500,
             "honor": 1000,
             "items": []
           },
@@ -63115,7 +63115,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -63194,7 +63194,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -63273,7 +63273,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 50,
+            "uridium": 250,
             "honor": null,
             "items": []
           },
@@ -63373,7 +63373,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -63452,7 +63452,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -63531,7 +63531,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": null,
             "items": []
           },
@@ -63628,7 +63628,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 2500,
+            "uridium": 12500,
             "honor": 1200,
             "items": []
           },
@@ -63704,7 +63704,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 2500,
+            "uridium": 12500,
             "honor": 1200,
             "items": []
           },
@@ -63780,7 +63780,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 2500,
+            "uridium": 12500,
             "honor": 1200,
             "items": []
           },
@@ -63888,7 +63888,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 255,
+            "uridium": 1275,
             "honor": null,
             "items": []
           },
@@ -63975,7 +63975,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 255,
+            "uridium": 1275,
             "honor": null,
             "items": []
           },
@@ -64062,7 +64062,7 @@
           "rewards": {
             "experience": 1875840,
             "credits": 130000,
-            "uridium": 255,
+            "uridium": 1275,
             "honor": null,
             "items": []
           },
@@ -64168,7 +64168,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": [
               {
@@ -64281,7 +64281,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": [
               {
@@ -64394,7 +64394,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": [
               {
@@ -64566,7 +64566,7 @@
           "rewards": {
             "experience": 666666,
             "credits": 666666,
-            "uridium": 666,
+            "uridium": 3330,
             "honor": 6666,
             "items": []
           },
@@ -64750,7 +64750,7 @@
           "rewards": {
             "experience": 666666,
             "credits": 666666,
-            "uridium": 666,
+            "uridium": 3330,
             "honor": 6666,
             "items": []
           },
@@ -64934,7 +64934,7 @@
           "rewards": {
             "experience": 666666,
             "credits": 666666,
-            "uridium": 666,
+            "uridium": 3330,
             "honor": 6666,
             "items": []
           },
@@ -65110,7 +65110,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 250000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": 2500,
             "items": []
           },
@@ -65238,7 +65238,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 250000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": 2500,
             "items": []
           },
@@ -65366,7 +65366,7 @@
           "rewards": {
             "experience": 250000,
             "credits": 250000,
-            "uridium": 250,
+            "uridium": 1250,
             "honor": 2500,
             "items": []
           },
@@ -65544,7 +65544,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": 400,
             "items": [
               {
@@ -65734,7 +65734,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": 400,
             "items": [
               {
@@ -65924,7 +65924,7 @@
           "rewards": {
             "experience": 4000,
             "credits": 4000,
-            "uridium": 10,
+            "uridium": 50,
             "honor": 400,
             "items": [
               {
@@ -66122,7 +66122,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 2000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 20,
             "items": []
           },
@@ -66268,7 +66268,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 2000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 20,
             "items": []
           },
@@ -66414,7 +66414,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 2000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 20,
             "items": []
           },
@@ -66538,7 +66538,7 @@
           "rewards": {
             "experience": 300000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -66698,7 +66698,7 @@
           "rewards": {
             "experience": 300000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -66880,7 +66880,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 100000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -67031,7 +67031,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 100000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -67204,7 +67204,7 @@
           "rewards": {
             "experience": 300000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -67355,7 +67355,7 @@
           "rewards": {
             "experience": 300000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -67528,7 +67528,7 @@
           "rewards": {
             "experience": 300000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -67679,7 +67679,7 @@
           "rewards": {
             "experience": 300000,
             "credits": 300000,
-            "uridium": 600,
+            "uridium": 3000,
             "honor": null,
             "items": []
           },
@@ -67852,7 +67852,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 200000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -68003,7 +68003,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 200000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -68176,7 +68176,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 200000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -68327,7 +68327,7 @@
           "rewards": {
             "experience": 200000,
             "credits": 200000,
-            "uridium": 400,
+            "uridium": 2000,
             "honor": null,
             "items": []
           },
@@ -68500,7 +68500,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 100000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -68651,7 +68651,7 @@
           "rewards": {
             "experience": 100000,
             "credits": 100000,
-            "uridium": 200,
+            "uridium": 1000,
             "honor": null,
             "items": []
           },
@@ -68827,7 +68827,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 800000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": [
               {
@@ -68969,7 +68969,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 800000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": [
               {
@@ -69111,7 +69111,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 800000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": [
               {
@@ -69289,7 +69289,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 2000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 20,
             "items": []
           },
@@ -69437,7 +69437,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 2000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 20,
             "items": []
           },
@@ -69585,7 +69585,7 @@
           "rewards": {
             "experience": 2000,
             "credits": 2000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 20,
             "items": []
           },
@@ -70285,7 +70285,7 @@
           "rewards": {
             "experience": 9000000,
             "credits": 1200000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 2000,
             "items": [
               {
@@ -70524,7 +70524,7 @@
           "rewards": {
             "experience": 9000000,
             "credits": 1200000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 2000,
             "items": [
               {
@@ -70763,7 +70763,7 @@
           "rewards": {
             "experience": 9000000,
             "credits": 1200000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 2000,
             "items": [
               {
@@ -71023,7 +71023,7 @@
           "rewards": {
             "experience": 10500000,
             "credits": 1500000,
-            "uridium": 3500,
+            "uridium": 17500,
             "honor": 2000,
             "items": [
               {
@@ -71262,7 +71262,7 @@
           "rewards": {
             "experience": 10500000,
             "credits": 1500000,
-            "uridium": 3500,
+            "uridium": 17500,
             "honor": 2000,
             "items": [
               {
@@ -71501,7 +71501,7 @@
           "rewards": {
             "experience": 10500000,
             "credits": 1500000,
-            "uridium": 3500,
+            "uridium": 17500,
             "honor": 2000,
             "items": [
               {
@@ -71686,7 +71686,7 @@
           "rewards": {
             "experience": 512000,
             "credits": 512000,
-            "uridium": 300,
+            "uridium": 1500,
             "honor": 5120,
             "items": [
               {
@@ -71862,7 +71862,7 @@
           "rewards": {
             "experience": 512000,
             "credits": 512000,
-            "uridium": 300,
+            "uridium": 1500,
             "honor": 5120,
             "items": [
               {
@@ -72038,7 +72038,7 @@
           "rewards": {
             "experience": 512000,
             "credits": 512000,
-            "uridium": 300,
+            "uridium": 1500,
             "honor": 5120,
             "items": [
               {
@@ -72233,7 +72233,7 @@
           "rewards": {
             "experience": 7000000,
             "credits": 6000000,
-            "uridium": 8000,
+            "uridium": 40000,
             "honor": null,
             "items": []
           },
@@ -72358,7 +72358,7 @@
           "rewards": {
             "experience": 7000000,
             "credits": 6000000,
-            "uridium": 8000,
+            "uridium": 40000,
             "honor": null,
             "items": []
           },
@@ -72505,7 +72505,7 @@
           "rewards": {
             "experience": 20000000,
             "credits": 20000000,
-            "uridium": 30000,
+            "uridium": 150000,
             "honor": 10000,
             "items": [
               {
@@ -72681,7 +72681,7 @@
           "rewards": {
             "experience": 20000000,
             "credits": 20000000,
-            "uridium": 30000,
+            "uridium": 150000,
             "honor": 10000,
             "items": [
               {
@@ -72891,7 +72891,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": 1280,
             "items": [
               {
@@ -73064,7 +73064,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": 1280,
             "items": [
               {
@@ -73237,7 +73237,7 @@
           "rewards": {
             "experience": 128000,
             "credits": 128000,
-            "uridium": 100,
+            "uridium": 500,
             "honor": 1280,
             "items": [
               {
@@ -73431,7 +73431,7 @@
           "rewards": {
             "experience": 6000000,
             "credits": 6000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 60000,
             "items": [
               {
@@ -73618,7 +73618,7 @@
           "rewards": {
             "experience": 6000000,
             "credits": 6000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 60000,
             "items": [
               {
@@ -73805,7 +73805,7 @@
           "rewards": {
             "experience": 6000000,
             "credits": 6000000,
-            "uridium": 2000,
+            "uridium": 10000,
             "honor": 60000,
             "items": [
               {
@@ -74023,7 +74023,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": []
           },
@@ -74247,7 +74247,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": []
           },
@@ -74471,7 +74471,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": []
           },
@@ -74697,7 +74697,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": [
               {
@@ -74933,7 +74933,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": [
               {
@@ -75169,7 +75169,7 @@
           "rewards": {
             "experience": 8000,
             "credits": 8000,
-            "uridium": 20,
+            "uridium": 100,
             "honor": 80,
             "items": [
               {
@@ -75424,7 +75424,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 700000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -75627,7 +75627,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 700000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -75830,7 +75830,7 @@
           "rewards": {
             "experience": 1000000,
             "credits": 700000,
-            "uridium": 500,
+            "uridium": 2500,
             "honor": null,
             "items": []
           },
@@ -76116,7 +76116,7 @@
           "rewards": {
             "experience": 106200,
             "credits": 180000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": [
               {
@@ -76425,7 +76425,7 @@
           "rewards": {
             "experience": 106200,
             "credits": 180000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": [
               {
@@ -76734,7 +76734,7 @@
           "rewards": {
             "experience": 106200,
             "credits": 180000,
-            "uridium": 1000,
+            "uridium": 5000,
             "honor": 1000,
             "items": [
               {
@@ -77719,7 +77719,7 @@
           "rewards": {
             "experience": 575600,
             "credits": 220000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": 3800,
             "items": [
               {
@@ -77948,7 +77948,7 @@
           "rewards": {
             "experience": 575600,
             "credits": 220000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": 3800,
             "items": [
               {
@@ -78177,7 +78177,7 @@
           "rewards": {
             "experience": 575600,
             "credits": 220000,
-            "uridium": 3000,
+            "uridium": 15000,
             "honor": 3800,
             "items": [
               {
@@ -78388,7 +78388,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": 640,
             "items": [
               {
@@ -78592,7 +78592,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": 640,
             "items": [
               {
@@ -78796,7 +78796,7 @@
           "rewards": {
             "experience": 64000,
             "credits": 64000,
-            "uridium": 80,
+            "uridium": 400,
             "honor": 640,
             "items": [
               {

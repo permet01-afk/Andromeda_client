@@ -1,0 +1,361 @@
+{
+  "version": "andromeda-weekly-rewards-div5-v1",
+  "source_commit": "7fd683e1868718b101442654ca503353a6da560f",
+  "source_sql_sha256": "c5a5c4c536a29ed3f1237db69071b57228a56418c93d978d8668bbb6fd17b7c8",
+  "rounding": "Positive nearest integer, half-up: intdiv(original + 2, 5); applied individually to absolute H1 amounts.",
+  "reward_fields": [
+    "reward_uridium",
+    "reward_experience",
+    "reward_honor",
+    "reward_ucb100",
+    "reward_rsb75",
+    "reward_seprom"
+  ],
+  "missions": [
+    {
+      "id": 1,
+      "code": "weekly_sector_cleanup",
+      "rotation_group": "A",
+      "slot": 1,
+      "title": "Sector Cleanup",
+      "before": {
+        "reward_uridium": 30000,
+        "reward_experience": 4000000,
+        "reward_honor": 20000,
+        "reward_ucb100": 35000,
+        "reward_rsb75": 10000,
+        "reward_seprom": 1000
+      },
+      "after": {
+        "reward_uridium": 6000,
+        "reward_experience": 800000,
+        "reward_honor": 4000,
+        "reward_ucb100": 7000,
+        "reward_rsb75": 2000,
+        "reward_seprom": 200
+      }
+    },
+    {
+      "id": 2,
+      "code": "weekly_heavy_alien_hunt",
+      "rotation_group": "A",
+      "slot": 2,
+      "title": "Heavy Alien Hunt",
+      "before": {
+        "reward_uridium": 45000,
+        "reward_experience": 8000000,
+        "reward_honor": 40000,
+        "reward_ucb100": 45000,
+        "reward_rsb75": 20000,
+        "reward_seprom": 2000
+      },
+      "after": {
+        "reward_uridium": 9000,
+        "reward_experience": 1600000,
+        "reward_honor": 8000,
+        "reward_ucb100": 9000,
+        "reward_rsb75": 4000,
+        "reward_seprom": 400
+      }
+    },
+    {
+      "id": 3,
+      "code": "weekly_operation_45",
+      "rotation_group": "A",
+      "slot": 3,
+      "title": "Operation 4-5",
+      "before": {
+        "reward_uridium": 45000,
+        "reward_experience": 10000000,
+        "reward_honor": 50000,
+        "reward_ucb100": 50000,
+        "reward_rsb75": 20000,
+        "reward_seprom": 2500
+      },
+      "after": {
+        "reward_uridium": 9000,
+        "reward_experience": 2000000,
+        "reward_honor": 10000,
+        "reward_ucb100": 10000,
+        "reward_rsb75": 4000,
+        "reward_seprom": 500
+      }
+    },
+    {
+      "id": 4,
+      "code": "weekly_boss_cubikon_suppression",
+      "rotation_group": "A",
+      "slot": 4,
+      "title": "Boss Cubikon Suppression",
+      "before": {
+        "reward_uridium": 45000,
+        "reward_experience": 12000000,
+        "reward_honor": 60000,
+        "reward_ucb100": 45000,
+        "reward_rsb75": 20000,
+        "reward_seprom": 2500
+      },
+      "after": {
+        "reward_uridium": 9000,
+        "reward_experience": 2400000,
+        "reward_honor": 12000,
+        "reward_ucb100": 9000,
+        "reward_rsb75": 4000,
+        "reward_seprom": 500
+      }
+    },
+    {
+      "id": 5,
+      "code": "weekly_enemy_hunter",
+      "rotation_group": "A",
+      "slot": 5,
+      "title": "Enemy Hunter Weekly",
+      "before": {
+        "reward_uridium": 35000,
+        "reward_experience": 6000000,
+        "reward_honor": 50000,
+        "reward_ucb100": 25000,
+        "reward_rsb75": 15000,
+        "reward_seprom": 1000
+      },
+      "after": {
+        "reward_uridium": 7000,
+        "reward_experience": 1200000,
+        "reward_honor": 10000,
+        "reward_ucb100": 5000,
+        "reward_rsb75": 3000,
+        "reward_seprom": 200
+      }
+    },
+    {
+      "id": 6,
+      "code": "weekly_lower_maps_lockdown",
+      "rotation_group": "B",
+      "slot": 1,
+      "title": "Lower Maps Lockdown",
+      "before": {
+        "reward_uridium": 30000,
+        "reward_experience": 4000000,
+        "reward_honor": 20000,
+        "reward_ucb100": 35000,
+        "reward_rsb75": 10000,
+        "reward_seprom": 1000
+      },
+      "after": {
+        "reward_uridium": 6000,
+        "reward_experience": 800000,
+        "reward_honor": 4000,
+        "reward_ucb100": 7000,
+        "reward_rsb75": 2000,
+        "reward_seprom": 200
+      }
+    },
+    {
+      "id": 7,
+      "code": "weekly_crystal_front",
+      "rotation_group": "B",
+      "slot": 2,
+      "title": "Crystal Front",
+      "before": {
+        "reward_uridium": 45000,
+        "reward_experience": 8000000,
+        "reward_honor": 40000,
+        "reward_ucb100": 45000,
+        "reward_rsb75": 20000,
+        "reward_seprom": 2000
+      },
+      "after": {
+        "reward_uridium": 9000,
+        "reward_experience": 1600000,
+        "reward_honor": 8000,
+        "reward_ucb100": 9000,
+        "reward_rsb75": 4000,
+        "reward_seprom": 400
+      }
+    },
+    {
+      "id": 8,
+      "code": "weekly_uber_vanguard",
+      "rotation_group": "B",
+      "slot": 3,
+      "title": "Uber Vanguard",
+      "before": {
+        "reward_uridium": 45000,
+        "reward_experience": 10000000,
+        "reward_honor": 50000,
+        "reward_ucb100": 50000,
+        "reward_rsb75": 20000,
+        "reward_seprom": 2500
+      },
+      "after": {
+        "reward_uridium": 9000,
+        "reward_experience": 2000000,
+        "reward_honor": 10000,
+        "reward_ucb100": 10000,
+        "reward_rsb75": 4000,
+        "reward_seprom": 500
+      }
+    },
+    {
+      "id": 9,
+      "code": "weekly_boss_hive_control",
+      "rotation_group": "B",
+      "slot": 4,
+      "title": "Boss Hive Control",
+      "before": {
+        "reward_uridium": 45000,
+        "reward_experience": 12000000,
+        "reward_honor": 60000,
+        "reward_ucb100": 45000,
+        "reward_rsb75": 20000,
+        "reward_seprom": 2500
+      },
+      "after": {
+        "reward_uridium": 9000,
+        "reward_experience": 2400000,
+        "reward_honor": 12000,
+        "reward_ucb100": 9000,
+        "reward_rsb75": 4000,
+        "reward_seprom": 500
+      }
+    },
+    {
+      "id": 10,
+      "code": "weekly_enemy_ace_hunt",
+      "rotation_group": "B",
+      "slot": 5,
+      "title": "Enemy Ace Hunt",
+      "before": {
+        "reward_uridium": 35000,
+        "reward_experience": 6000000,
+        "reward_honor": 50000,
+        "reward_ucb100": 25000,
+        "reward_rsb75": 15000,
+        "reward_seprom": 1000
+      },
+      "after": {
+        "reward_uridium": 7000,
+        "reward_experience": 1200000,
+        "reward_honor": 10000,
+        "reward_ucb100": 5000,
+        "reward_rsb75": 3000,
+        "reward_seprom": 200
+      }
+    },
+    {
+      "id": 11,
+      "code": "weekly_outer_sector_purge",
+      "rotation_group": "C",
+      "slot": 1,
+      "title": "Outer Sector Purge",
+      "before": {
+        "reward_uridium": 30000,
+        "reward_experience": 4000000,
+        "reward_honor": 20000,
+        "reward_ucb100": 35000,
+        "reward_rsb75": 10000,
+        "reward_seprom": 1000
+      },
+      "after": {
+        "reward_uridium": 6000,
+        "reward_experience": 800000,
+        "reward_honor": 4000,
+        "reward_ucb100": 7000,
+        "reward_rsb75": 2000,
+        "reward_seprom": 200
+      }
+    },
+    {
+      "id": 12,
+      "code": "weekly_titan_hunt",
+      "rotation_group": "C",
+      "slot": 2,
+      "title": "Titan Hunt",
+      "before": {
+        "reward_uridium": 45000,
+        "reward_experience": 8000000,
+        "reward_honor": 40000,
+        "reward_ucb100": 45000,
+        "reward_rsb75": 20000,
+        "reward_seprom": 2000
+      },
+      "after": {
+        "reward_uridium": 9000,
+        "reward_experience": 1600000,
+        "reward_honor": 8000,
+        "reward_ucb100": 9000,
+        "reward_rsb75": 4000,
+        "reward_seprom": 400
+      }
+    },
+    {
+      "id": 13,
+      "code": "weekly_uber_endurance_45",
+      "rotation_group": "C",
+      "slot": 3,
+      "title": "Uber Endurance 4-5",
+      "before": {
+        "reward_uridium": 45000,
+        "reward_experience": 10000000,
+        "reward_honor": 50000,
+        "reward_ucb100": 50000,
+        "reward_rsb75": 20000,
+        "reward_seprom": 2500
+      },
+      "after": {
+        "reward_uridium": 9000,
+        "reward_experience": 2000000,
+        "reward_honor": 10000,
+        "reward_ucb100": 10000,
+        "reward_rsb75": 4000,
+        "reward_seprom": 500
+      }
+    },
+    {
+      "id": 14,
+      "code": "weekly_boss_convoy_breaker",
+      "rotation_group": "C",
+      "slot": 4,
+      "title": "Boss Convoy Breaker",
+      "before": {
+        "reward_uridium": 45000,
+        "reward_experience": 12000000,
+        "reward_honor": 60000,
+        "reward_ucb100": 45000,
+        "reward_rsb75": 20000,
+        "reward_seprom": 2500
+      },
+      "after": {
+        "reward_uridium": 9000,
+        "reward_experience": 2400000,
+        "reward_honor": 12000,
+        "reward_ucb100": 9000,
+        "reward_rsb75": 4000,
+        "reward_seprom": 500
+      }
+    },
+    {
+      "id": 15,
+      "code": "weekly_pvp_war_effort",
+      "rotation_group": "C",
+      "slot": 5,
+      "title": "PvP War Effort",
+      "before": {
+        "reward_uridium": 35000,
+        "reward_experience": 6000000,
+        "reward_honor": 50000,
+        "reward_ucb100": 25000,
+        "reward_rsb75": 15000,
+        "reward_seprom": 1000
+      },
+      "after": {
+        "reward_uridium": 7000,
+        "reward_experience": 1200000,
+        "reward_honor": 10000,
+        "reward_ucb100": 5000,
+        "reward_rsb75": 3000,
+        "reward_seprom": 200
+      }
+    }
+  ]
+}

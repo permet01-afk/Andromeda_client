@@ -40,8 +40,8 @@ if (is_array($mc['checkedStates'] ?? null)) {
     foreach ($mcChecked as $mcStateKey => $_) $mcChecked[$mcStateKey] = in_array($mcStateKey, $mc['checkedStates'], true);
 }
 ?>
-<link rel="stylesheet" href="assets/historical/mission-control.css?v=20261026" />
-<script src="assets/historical/mission-control.js?v=20261027manual" defer></script>
+<link rel="stylesheet" href="assets/historical/mission-control.css?v=20261028daily" />
+<script src="assets/historical/mission-control.js?v=20261028daily" defer></script>
 <div class="mc-shell" id="mission-control" data-mc-root data-mc-section="<?php echo $mcH($mcSection); ?>" data-mc-filter="<?php echo $mcH($mcFilter); ?>" data-mc-player-id="<?php echo (int)($mc['playerId'] ?? 0); ?>">
     <script type="application/json" data-mc-groups><?php echo json_encode($mc['groups'] ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
     <script type="application/json" data-mc-lifecycle-notice><?php echo json_encode($mc['lifecycleNotice'] ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?></script>
@@ -69,7 +69,7 @@ if (is_array($mc['checkedStates'] ?? null)) {
         </nav>
         <?php if (!empty($mc['weeklyMeta'])) { $mcWeekly = (array)$mc['weeklyMeta']; ?>
             <div class="mc-weekly-summary" data-mc-weekly-summary<?php echo $mcSection === 'weekly' ? '' : ' hidden'; ?>>
-                <?php if (!empty($mcWeekly['rotation_group'])) { ?><span>Rotation: Week <?php echo $mcH($mcWeekly['rotation_group']); ?></span><?php } ?>
+                <?php if (!empty($mcWeekly['rotation_group'])) { ?><span>Rotation: <?php echo $mcH($mcWeekly['rotation_group']); ?></span><?php } ?>
                 <?php if (!empty($mcWeekly['time_remaining_text'])) { ?><span>Time remaining: <?php echo $mcH($mcWeekly['time_remaining_text']); ?></span><?php } ?>
                 <?php if (!empty($mcWeekly['reset_at'])) { ?><span>Next reset: <?php echo $mcH($mcWeekly['reset_at']); ?> Europe/Zurich</span><?php } ?>
             </div>
@@ -190,7 +190,6 @@ if (is_array($mc['checkedStates'] ?? null)) {
             </div>
         </div>
         <footer class="mc-window-footer">
-            <span class="mc-family-label" data-mc-family-label><?php foreach ((array)($mc['groups'] ?? []) as $mcGroup) { if ((string)($mcGroup['id'] ?? '') === $mcSection) { echo $mcH($mcGroup['label'] ?? ''); } } ?></span>
             <button class="mc-button mc-button--secondary" type="button" data-mc-close>Close</button>
         </footer>
     </section>
