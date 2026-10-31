@@ -4305,8 +4305,9 @@ function drawEntities() {
     syncSelectedTargetBarFadeState();
     const scaledMarkerSize = BASE_MARKER_SIZE * entityScale;
     const boxMarkerSize = BASE_MARKER_SIZE;
-    for (const id in entities) {
-        const e = entities[id];
+    for (let paintIndex = 0; paintIndex < remoteShipDisplayOrder.length; paintIndex++) {
+        const e = remoteShipDisplayOrder[paintIndex];
+        if (!e || entities[e.id] !== e) continue;
         if (e && e.id === heroId) continue;
         if (e.kind === "box") continue;
         const dx = e.x - shipX;

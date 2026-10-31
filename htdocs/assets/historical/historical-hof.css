@@ -84,3 +84,11 @@
 }
 @media(max-width:420px){.hfOverlay .hfNav{width:177px}}
 @media(max-height:480px){.hfOverlay{align-items:flex-start}.hfOverlay .hfWindow{min-height:360px}}
+
+/* Native rank 23 is 26x16. Preserve the existing 16px inline flow allocation. */
+.hfOverlay .hfNativeIcon[src$="/23.png"] {
+    width: 19.5px !important;
+    height: 12px !important;
+    margin-left: -3.75px;
+    margin-right: .25px;
+}

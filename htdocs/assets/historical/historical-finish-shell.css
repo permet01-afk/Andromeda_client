@@ -689,3 +689,26 @@ body.historical-site .hist-history-pagination a{text-decoration:underline;font:1
 }
 /* DoPs home log entries have spacing, without horizontal separators. */
 body.historical-site.hist-finish-shell.hist-rev6-shell .hist-rev6-log-home .log-entry{border:0}
+
+/* Compact Hall of Fame: preserve each rank bitmap aspect ratio in its 11px slot. */
+body.historical-site.hist-finish-shell .hist-dashboard-native .hof-card .leaderboard-grade {
+    position: relative;
+    flex: 0 0 11px;
+    width: 11px;
+    height: 11px;
+    overflow: visible;
+}
+body.historical-site.hist-finish-shell .hist-dashboard-native .hof-card .leaderboard-grade img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 11px !important;
+    height: 11px !important;
+    max-width: none;
+    max-height: none;
+}
+/* Native rank 23 is 26x16; center its 16px body without compressing the wings. */
+body.historical-site.hist-finish-shell .hist-dashboard-native .hof-card .leaderboard-grade img[src$="ranks/23.png"] {
+    width: 17.875px !important;
+    transform: translateX(-3.4375px);
+}

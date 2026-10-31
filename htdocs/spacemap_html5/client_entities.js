@@ -1,5 +1,44 @@
 const entities = {};
 
+// Flash shipLayer keeps ordinary remote containers in creation order.
+// This registry changes only on model creation/type replacement/removal/map reset.
+const remoteShipDisplayOrder = [];
+
+function unregisterRemoteShipDisplay(ent) {
+    if (!ent) return;
+    const index = ent.__shipLayerIndex;
+    if (!Number.isInteger(index) || index < 0 || remoteShipDisplayOrder[index] !== ent) return;
+    for (let i = index + 1; i < remoteShipDisplayOrder.length; i++) {
+        const next = remoteShipDisplayOrder[i];
+        remoteShipDisplayOrder[i - 1] = next;
+        next.__shipLayerIndex = i - 1;
+    }
+    remoteShipDisplayOrder.pop();
+    ent.__shipLayerIndex = -1;
+    ent.__shipLayerModelId = null;
+}
+
+function registerRemoteShipDisplay(ent) {
+    if (!ent || ent.id === heroId || (ent.kind !== "player" && ent.kind !== "npc") || !(ent.shipId > 0)) return;
+    const index = ent.__shipLayerIndex;
+    if (Number.isInteger(index) && index >= 0 && remoteShipDisplayOrder[index] === ent) {
+        if (ent.__shipLayerModelId === ent.shipId) return;
+        // Flash replaces the container when its pattern type changes.
+        unregisterRemoteShipDisplay(ent);
+    }
+    ent.__shipLayerIndex = remoteShipDisplayOrder.length;
+    ent.__shipLayerModelId = ent.shipId;
+    remoteShipDisplayOrder.push(ent);
+}
+
+function clearRemoteShipDisplayOrder() {
+    for (let i = 0; i < remoteShipDisplayOrder.length; i++) {
+        remoteShipDisplayOrder[i].__shipLayerIndex = -1;
+        remoteShipDisplayOrder[i].__shipLayerModelId = null;
+    }
+    remoteShipDisplayOrder.length = 0;
+}
+
 const loggedEntities = new Set;
 
 const loggedObjectTypes = new Set;
@@ -115,12 +154,14 @@ function refreshEntityShieldEffectRegistration(ent) {
 
 function unregisterEntityRuntimeActiveState(entityId) {
     if (entityId == null) return;
+    unregisterRemoteShipDisplay(entities[entityId]);
     clearEntityFlashStatusEffects(entityId);
     activeTemporaryStatusEntityIds.delete(entityId);
     activeShieldEffectEntityIds.delete(entityId);
 }
 
 function clearEntityRuntimeActiveLists() {
+    clearRemoteShipDisplayOrder();
     activeTemporaryStatusEntityIds.clear();
     activeShieldEffectEntityIds.clear();
 }

@@ -13,6 +13,13 @@ namespace OrbitReborn_Emulator.Storage
     private MySqlConnection mConnection;
     private MySqlCommand mCommand;
     private bool mAvailable;
+    private bool mFaulted;
+
+    // A failed transport/reader cleanup cannot be returned as a healthy rental.
+    internal bool IsReusable
+    {
+      get { return !this.mFaulted && this.mConnection != null && this.mConnection.State == ConnectionState.Open; }
+    }
 
     public int Id
     {
@@ -88,6 +95,16 @@ namespace OrbitReborn_Emulator.Storage
       this.ClearParameters();
     }
 
+    private void ResetCommandAfterFailure()
+    {
+      // The connector can retain ActiveCommandId after a failed socket send.
+      // Do not replace that original failure by assigning CommandText on it.
+      if (this.mConnection == null || this.mConnection.State != ConnectionState.Open)
+      { this.mFaulted = true; return; }
+      try { this.ResetCommand(); }
+      catch (Exception) { this.mFaulted = true; } // Preserve the original exception.
+    }
+
     public int ExecuteNonQuery(string CommandText)
     {
             SqlFailureScope.ThrowIfCurrentFailed();
@@ -99,8 +116,8 @@ namespace OrbitReborn_Emulator.Storage
                 return num;
             } catch (Exception error)
             {
-                this.ResetCommand();
-                if (SqlFailureScope.Record(error, "SqlDatabaseClient.ExecuteNonQuery")) throw;
+                this.ResetCommandAfterFailure();
+                if (SqlFailureScope.Record(error, "SqlDatabaseClient.ExecuteNonQuery") || !this.IsReusable) throw;
                 Console.WriteLine("SQL operation failed: " + error);
                 return -1;
             }
@@ -121,7 +138,7 @@ namespace OrbitReborn_Emulator.Storage
       catch (Exception error)
       {
         SqlFailureScope.Record(error, "SqlDatabaseClient.ExecuteQuerySet");
-        this.ResetCommand();
+        this.ResetCommandAfterFailure();
         throw;
       }
     }
@@ -157,7 +174,7 @@ namespace OrbitReborn_Emulator.Storage
       catch (Exception error)
       {
         SqlFailureScope.Record(error, "SqlDatabaseClient.ExecuteScalar");
-        this.ResetCommand();
+        this.ResetCommandAfterFailure();
         throw;
       }
     }

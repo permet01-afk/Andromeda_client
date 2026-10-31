@@ -4622,6 +4622,7 @@ function handlePacket_f(parts, i) {
         }
     }
     applyPendingAttackLockForEntity(id);
+    registerRemoteShipDisplay(e);
 }
 
 function handlePacket_portal(parts, i) {
@@ -4850,6 +4851,7 @@ function handlePacket_C(parts, i) {
     e.name = name;
     e.factionId = isNaN(factionId) ? 0 : factionId;
     applyPendingAttackLockForEntity(id);
+    registerRemoteShipDisplay(e);
 }
 
 function handlePacket_CSS(parts, i) {}

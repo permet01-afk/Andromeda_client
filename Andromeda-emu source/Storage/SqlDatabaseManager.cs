@@ -167,6 +167,13 @@ namespace OrbitReborn_Emulator.Storage
         {
           if (item_0.Available)
           {
+            if (!item_0.IsReusable)
+            {
+              SqlDatabaseManager.mClients.Remove(item_0.Id);
+              try { item_0.Close(); }
+              catch (Exception) { Output.WriteLine("(Sql) Failed client removed; close did not complete cleanly.", OutputLevel.Warning); }
+              continue;
+            }
             item_0.Available = false;
             PerformanceProfiler.LogSqlPoolWait(Caller, PerfStart, SqlDatabaseManager.GetUsedClientCountUnsafe(), SqlDatabaseManager.mMaxPoolSize, false);
             return item_0;
